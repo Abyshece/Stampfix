@@ -4,7 +4,6 @@ import { isSupabaseConfigured } from './lib/supabase';
 import { LandingPage } from './components/LandingPage';
 import { MerchantApp } from './components/MerchantApp';
 import { CustomerApp } from './components/CustomerApp';
-import { Loader2 } from 'lucide-react';
 
 /**
  * Top-level routing.
@@ -21,7 +20,7 @@ import { Loader2 } from 'lucide-react';
 type View = 'landing' | 'merchant';
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [campaignFromUrl, setCampaignFromUrl] = useState<string | null>(null);
   const [view, setView] = useState<View>('landing');
 
@@ -40,14 +39,6 @@ export default function App() {
   }, [user]);
 
   if (!isSupabaseConfigured) return <ConfigError />;
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-gray-400">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </div>
-    );
-  }
 
   if (campaignFromUrl) {
     return (

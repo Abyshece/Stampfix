@@ -32,10 +32,15 @@ export function MerchantApp({ onLogout }: MerchantAppProps) {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [cards, setCards] = useState<UserCard[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const loadAll = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      // No user yet — make sure we're not stuck on a spinner. The auth
+      // listener will eventually fire and re-run this effect with a user.
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       console.log('[merchant] loading campaign for user', user.id);
