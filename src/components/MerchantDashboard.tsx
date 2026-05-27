@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import QRCode from 'react-qr-code';
 import type { Campaign, UserCard, ActivityItem } from '../types';
 import {
@@ -7,6 +7,7 @@ import {
   RotateCcw, Smile, MoreHorizontal, ArrowRight,
 } from 'lucide-react';
 import { WalletCard } from './WalletCard';
+import { QRScanner, parseCardQRPayload } from './QRScanner';
 
 interface MerchantDashboardProps {
   campaign: Campaign;
@@ -57,8 +58,7 @@ export function MerchantDashboard({
 
   // Scanner state
   const [manualId, setManualId] = useState('');
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanResult, setScanResult] = useState<{
     status: 'success' | 'error';
     card?: UserCard;
@@ -109,36 +109,46 @@ export function MerchantDashboard({
     setTimeout(() => setScanResult(null), 2500);
   };
 
-  const startCamera = async () => {
-    setIsCameraOpen(true);
-    setTimeout(async () => {
-      if (navigator.mediaDevices?.getUserMedia) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-          if (videoRef.current) videoRef.current.srcObject = stream;
-        } catch {
-          setScanResult({ status: 'error', message: 'Could not access camera' });
-          setIsCameraOpen(false);
-          setTimeout(() => setScanResult(null), 3000);
-        }
-      }
-    }, 100);
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
+  /**
+   * Handles a decoded QR payload from the live scanner. We deliberately do
+   * NOT close the scanner after a successful scan — a merchant stamping a
+   * busy queue should be able to scan one customer after another without
+   * tapping anything between. The success toast appears as an overlay and
+   * fades; the scanner keeps running. The QRScanner component debounces
+   * repeated reads of the same QR so we don't double-stamp.
+   */
+  const handleScan = (payload: string) => {
+    const parsed = parseCardQRPayload(payload);
+    if (!parsed) {
+      setScanResult({ status: 'error', message: "That doesn't look like a Stampify card" });
+      setTimeout(() => setScanResult(null), 2500);
+      return;
     }
-    setIsCameraOpen(false);
-  };
+    const target = cards.find((c) => c.id === parsed.cardId);
+    if (!target) {
+      setScanResult({
+        status: 'error',
+        message: 'Card not from this campaign',
+      });
+      setTimeout(() => setScanResult(null), 2500);
+      return;
+    }
+    if (target.status === 'BLOCKED') {
+      setScanResult({ status: 'error', message: 'This card is blocked', card: target });
+      setTimeout(() => setScanResult(null), 2500);
+      return;
+    }
 
-  const handleSimulateQRScan = () => {
-    const valid = cards.filter((c) => c.status !== 'BLOCKED');
-    if (valid.length === 0) {
-      setScanResult({ status: 'error', message: 'No active customers to scan' });
+    // If the card is already full, redeem instead of stamping — otherwise the
+    // merchant has to switch tabs to claim the customer's reward.
+    if (target.currentStamps >= campaign.maxStamps) {
+      onResetCard(target.id);
+      setScanResult({
+        status: 'success',
+        card: { ...target, currentStamps: 0, rewardsRedeemed: target.rewardsRedeemed + 1 },
+        message: 'Reward Redeemed',
+      });
     } else {
-      const target = valid[Math.floor(Math.random() * valid.length)];
       onStampCard(target.id);
       const newStamps = target.currentStamps + 1;
       setScanResult({
@@ -147,7 +157,7 @@ export function MerchantDashboard({
         message: newStamps >= campaign.maxStamps ? 'Reward Unlocked!' : 'Stamp Added',
       });
     }
-    setTimeout(() => setScanResult(null), 3000);
+    setTimeout(() => setScanResult(null), 2500);
   };
 
   const handleSaveSettings = () => {
@@ -380,26 +390,12 @@ export function MerchantDashboard({
                   </div>
                 )}
 
-                {isCameraOpen ? (
-                  <div className="relative flex-1 bg-black rounded-lg overflow-hidden flex flex-col cursor-pointer group" onClick={handleSimulateQRScan}>
-                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-90"></video>
-                    <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-                      <div className="w-64 h-64 border-2 border-white/40 rounded-3xl relative">
-                        <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-xl"></div>
-                        <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-xl"></div>
-                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-xl"></div>
-                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-xl"></div>
-                      </div>
-                      <div className="mt-8 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-white text-sm font-medium animate-pulse">
-                        Tap screen to scan
-                      </div>
-                    </div>
-                    <button onClick={(e) => { e.stopPropagation(); stopCamera(); }} className="absolute top-4 right-4 bg-black/40 text-white p-2 rounded-full hover:bg-black/60 z-10">
-                      <X className="w-5 h-5" />
-                    </button>
+                {isScannerOpen ? (
+                  <div className="relative flex-1 h-[360px] rounded-lg overflow-hidden">
+                    <QRScanner onScan={handleScan} onClose={() => setIsScannerOpen(false)} />
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 bg-[#F7F7F5] rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-[#F0F0EE] transition cursor-pointer group touch-manipulation active:scale-[0.98]" onClick={startCamera}>
+                  <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 bg-[#F7F7F5] rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-[#F0F0EE] transition cursor-pointer group touch-manipulation active:scale-[0.98]" onClick={() => setIsScannerOpen(true)}>
                     <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm border notion-border group-hover:scale-105 transition duration-300">
                       <Camera className="w-8 h-8 text-gray-400 group-hover:text-[#37352F] transition" />
                     </div>
