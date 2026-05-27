@@ -8,50 +8,34 @@ interface AuthState {
   loading: boolean;
 }
 
+/**
+ * Auth state hook.
+ *
+ * Design: loading starts as `false`. We never block the UI waiting for
+ * Supabase. The listener picks up any session asynchronously and updates
+ * state when it arrives. This makes the infinite-spinner failure
+ * impossible — at worst we show the logged-out UI for a moment before
+ * the listener fires.
+ */
 export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>({
     session: null,
     user: null,
-    loading: true,
+    loading: false,
   });
 
   useEffect(() => {
     let mounted = true;
 
-    // Safety net: if getSession() hangs (network issue, misconfigured URL,
-    // browser blocking storage access), don't leave the app stuck on a
-    // spinner forever. After 5s, proceed as if there's no session and let
-    // the user try to sign in.
-    const timeout = setTimeout(() => {
-      if (!mounted) return;
-      // eslint-disable-next-line no-console
-      console.warn('[auth] getSession timed out after 5s; proceeding without session');
-      setState((s) => (s.loading ? { session: null, user: null, loading: false } : s));
-    }, 5000);
-
-    // Hydrate from any existing session
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
-        if (!mounted) return;
-        clearTimeout(timeout);
-        if (error) {
-          // eslint-disable-next-line no-console
-          console.error('[auth] getSession error:', error);
-        }
-        setState({
-          session: data.session,
-          user: data.session?.user ?? null,
-          loading: false,
-        });
+    // Best-effort initial hydrate. If this hangs forever we don't care:
+    // loading is already false, so the UI renders. The listener handles
+    // any subsequent session changes.
+    supabase.auth.getSession()
+      .then(({ data }) => {
+        if (!mounted || !data.session) return;
+        setState({ session: data.session, user: data.session.user, loading: false });
       })
-      .catch((err) => {
-        if (!mounted) return;
-        clearTimeout(timeout);
-        // eslint-disable-next-line no-console
-        console.error('[auth] getSession threw:', err);
-        setState({ session: null, user: null, loading: false });
-      });
+      .catch(() => { /* swallow */ });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
@@ -64,7 +48,6 @@ export function useAuth(): AuthState {
 
     return () => {
       mounted = false;
-      clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
   }, []);
@@ -93,7 +76,6 @@ export async function signUpMerchant(
     },
   });
   if (error) throw error;
-  // If session is null, email confirmation is required
   return { needsEmailConfirmation: !data.session };
 }
 
@@ -106,8 +88,6 @@ export async function sendCustomerMagicLink(email: string, campaignId: string): 
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      // After clicking the link, the user lands back here and we know which
-      // campaign they were joining via the URL hash.
       emailRedirectTo: `${window.location.origin}/?campaign=${campaignId}`,
       data: { role: 'customer' },
     },
