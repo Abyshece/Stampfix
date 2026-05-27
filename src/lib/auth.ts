@@ -18,15 +18,40 @@ export function useAuth(): AuthState {
   useEffect(() => {
     let mounted = true;
 
-    // Hydrate from any existing session
-    supabase.auth.getSession().then(({ data }) => {
+    // Safety net: if getSession() hangs (network issue, misconfigured URL,
+    // browser blocking storage access), don't leave the app stuck on a
+    // spinner forever. After 5s, proceed as if there's no session and let
+    // the user try to sign in.
+    const timeout = setTimeout(() => {
       if (!mounted) return;
-      setState({
-        session: data.session,
-        user: data.session?.user ?? null,
-        loading: false,
+      // eslint-disable-next-line no-console
+      console.warn('[auth] getSession timed out after 5s; proceeding without session');
+      setState((s) => (s.loading ? { session: null, user: null, loading: false } : s));
+    }, 5000);
+
+    // Hydrate from any existing session
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!mounted) return;
+        clearTimeout(timeout);
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error('[auth] getSession error:', error);
+        }
+        setState({
+          session: data.session,
+          user: data.session?.user ?? null,
+          loading: false,
+        });
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        clearTimeout(timeout);
+        // eslint-disable-next-line no-console
+        console.error('[auth] getSession threw:', err);
+        setState({ session: null, user: null, loading: false });
       });
-    });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
@@ -39,6 +64,7 @@ export function useAuth(): AuthState {
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
   }, []);
