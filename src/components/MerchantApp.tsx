@@ -38,11 +38,14 @@ export function MerchantApp({ onLogout }: MerchantAppProps) {
     if (!user) return;
     setLoading(true);
     try {
+      console.log('[merchant] loading campaign for user', user.id);
       let c = await getCampaignByMerchant(user.id);
+      console.log('[merchant] got campaign:', c);
       // If the user just confirmed their email, they may have a pending
       // campaign config in sessionStorage from the signup form.
       if (!c) {
         const consumed = await consumePendingCampaign(user.id);
+        console.log('[merchant] consumed pending campaign?', consumed);
         if (consumed) c = await getCampaignByMerchant(user.id);
       }
       setCampaign(c);
@@ -54,6 +57,14 @@ export function MerchantApp({ onLogout }: MerchantAppProps) {
         setCards([]);
         setActivities([]);
       }
+    } catch (err) {
+      console.error('[merchant] loadAll failed:', err);
+      // Don't leave the user stuck on a spinner if the DB is unreachable
+      // or the schema isn't applied. Show the onboarding screen instead;
+      // they can sign out from there.
+      setCampaign(null);
+      setCards([]);
+      setActivities([]);
     } finally {
       setLoading(false);
     }
