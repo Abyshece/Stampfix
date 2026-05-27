@@ -1,0 +1,5 @@
+# A small config so `supabase functions deploy` works without prompts.
+project_id = "stampify"
+
+[functions.generate-wallet-jwt]
+verify_jwt = true
