@@ -9,8 +9,6 @@ import { signInMerchant, resetPassword } from '../lib/auth';
 
 interface LandingPageProps {
   onEnterMerchantFlow: () => void;
-  onSimulateCustomer: () => void;
-  forceLandingMode?: boolean;
   isAuthenticated?: boolean;
   onResumeMerchant?: () => void;
 }
