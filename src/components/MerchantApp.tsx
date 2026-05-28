@@ -19,6 +19,9 @@ import { MerchantDashboard } from './MerchantDashboard';
 
 interface MerchantAppProps {
   onLogout: () => void;
+  /** When true, the onboarding screen opens on the login form rather than
+   *  the signup form (used after a user confirms their email). */
+  startOnLogin?: boolean;
 }
 
 /**
@@ -27,7 +30,7 @@ interface MerchantAppProps {
  * after each action and refetches activities (cheap) — keeps the UI
  * snappy without needing a heavyweight data layer like react-query.
  */
-export function MerchantApp({ onLogout }: MerchantAppProps) {
+export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   const { user } = useAuth();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [cards, setCards] = useState<UserCard[]>([]);
@@ -195,7 +198,7 @@ export function MerchantApp({ onLogout }: MerchantAppProps) {
   }
 
   if (!campaign) {
-    return <MerchantOnboarding onComplete={loadAll} />;
+    return <MerchantOnboarding onComplete={loadAll} initialStep={startOnLogin ? 'LOGIN' : 'FORM'} />;
   }
 
   return (

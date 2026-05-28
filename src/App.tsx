@@ -1,45 +1,73 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from './lib/auth';
+import { useAuth, signOut } from './lib/auth';
 import { isSupabaseConfigured } from './lib/supabase';
 import { LandingPage } from './components/LandingPage';
 import { MerchantApp } from './components/MerchantApp';
 import { CustomerApp } from './components/CustomerApp';
+import { EmailConfirmed } from './components/EmailConfirmed';
 
 /**
  * Top-level routing.
  *
  * View precedence (first match wins):
- *  1. ?campaign=<id> in URL          -> CustomerApp (customer signup/wallet)
- *  2. signed-in user, not on landing -> MerchantApp (signup or dashboard)
- *  3. explicit "go to merchant flow" -> MerchantApp (signup form for new users)
- *  4. otherwise                      -> LandingPage
- *
- * `view` is the explicit user intent; auth state determines which screen
- * inside MerchantApp shows (onboarding vs dashboard).
+ *  1. ?confirmed=1 in URL   -> EmailConfirmed success page (post email-verify)
+ *  2. ?campaign=<id> in URL -> CustomerApp (customer signup/wallet)
+ *  3. view === 'merchant'   -> MerchantApp (signup form or dashboard)
+ *  4. otherwise             -> LandingPage
  */
 type View = 'landing' | 'merchant';
 
 export default function App() {
   const { user } = useAuth();
   const [campaignFromUrl, setCampaignFromUrl] = useState<string | null>(null);
+  const [showConfirmed, setShowConfirmed] = useState(false);
+  const [cameFromConfirmation, setCameFromConfirmation] = useState(false);
   const [view, setView] = useState<View>('landing');
 
-  // Read ?campaign= once on mount.
+  // Read URL params once on mount.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    if (params.get('confirmed') === '1') {
+      setShowConfirmed(true);
+      return; // don't also process ?campaign on the same load
+    }
     const campaign = params.get('campaign');
     if (campaign) setCampaignFromUrl(campaign);
   }, []);
 
-  // If the user signs in (from anywhere), drop them on the merchant view.
-  // This also handles the case where they click an email-confirmation link
-  // and land here authenticated.
+  // If the user signs in, drop them on the merchant view — UNLESS we're
+  // showing the post-confirmation success page, which deliberately wants
+  // the user to click "Sign in" themselves.
   useEffect(() => {
-    if (user) setView('merchant');
-  }, [user]);
+    if (user && !showConfirmed) setView('merchant');
+  }, [user, showConfirmed]);
 
   if (!isSupabaseConfigured) return <ConfigError />;
 
+  // 1) Post email-confirmation success screen.
+  if (showConfirmed) {
+    return (
+      <EmailConfirmed
+        onContinue={async () => {
+          // The confirmation link auto-logs-in the user. Sign them out so
+          // the "Sign in" button shows a real login form, matching the
+          // chosen UX (confirmation is separate from signing in).
+          try {
+            await signOut();
+          } catch {
+            /* ignore */
+          }
+          // Clean the URL so a refresh doesn't re-trigger this screen.
+          window.history.replaceState({}, '', window.location.pathname);
+          setShowConfirmed(false);
+          setCameFromConfirmation(true);
+          setView('merchant'); // MerchantApp shows login form when signed out
+        }}
+      />
+    );
+  }
+
+  // 2) Customer flow.
   if (campaignFromUrl) {
     return (
       <CustomerApp
@@ -52,10 +80,12 @@ export default function App() {
     );
   }
 
+  // 3) Merchant flow (login form if signed out, dashboard if signed in).
   if (view === 'merchant') {
-    return <MerchantApp onLogout={() => setView('landing')} />;
+    return <MerchantApp onLogout={() => setView('landing')} startOnLogin={cameFromConfirmation} />;
   }
 
+  // 4) Landing.
   return (
     <LandingPage
       isAuthenticated={Boolean(user)}

@@ -26,6 +26,8 @@ const EMOJI_LIST = [
 
 interface OnboardingProps {
   onComplete: () => void;
+  /** Which screen to open on. Defaults to the signup form. */
+  initialStep?: 'FORM' | 'LOGIN';
 }
 
 /**
@@ -38,8 +40,8 @@ interface OnboardingProps {
  * creation (because they need to be authenticated for RLS to allow the
  * insert). Otherwise we create immediately.
  */
-export function MerchantOnboarding({ onComplete }: OnboardingProps) {
-  const [step, setStep] = useState<'FORM' | 'CHECK_EMAIL' | 'LOGIN'>('FORM');
+export function MerchantOnboarding({ onComplete, initialStep = 'FORM' }: OnboardingProps) {
+  const [step, setStep] = useState<'FORM' | 'CHECK_EMAIL' | 'LOGIN'>(initialStep);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busName, setBusName] = useState('');
