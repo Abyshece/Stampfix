@@ -120,7 +120,7 @@ export function MerchantDashboard({
   const handleScan = (payload: string) => {
     const parsed = parseCardQRPayload(payload);
     if (!parsed) {
-      setScanResult({ status: 'error', message: "That doesn't look like a Stampify card" });
+      setScanResult({ status: 'error', message: "That doesn't look like a Stampfix card" });
       setTimeout(() => setScanResult(null), 2500);
       return;
     }

@@ -256,7 +256,7 @@ export function LandingPage({
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2 font-semibold text-lg">
           <div className="w-6 h-6 bg-[#37352F] rounded-sm flex items-center justify-center text-white text-xs font-bold">S</div>
-          Stampify
+          Stampfix
         </div>
         <div className="flex items-center gap-3 text-sm font-medium">
           {isAuthenticated && onResumeMerchant ? (
@@ -423,7 +423,7 @@ export function LandingPage({
             </div>
             <h2 className="text-4xl font-serif-display font-semibold">Know your customers,<br /> not just their orders.</h2>
             <p className="text-lg text-gray-500 leading-relaxed">
-              Stop guessing who your regulars are. Stampify tracks every scan, giving you powerful insights into visit frequency, retention rates, and reward redemptions.
+              Stop guessing who your regulars are. Stampfix tracks every scan, giving you powerful insights into visit frequency, retention rates, and reward redemptions.
             </p>
             <ul className="space-y-3 text-sm text-gray-600">
               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Identify top spenders automatically</li>
@@ -511,14 +511,14 @@ export function LandingPage({
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
           <div className="flex items-center gap-2 font-semibold text-[#37352F] mb-4 md:mb-0">
             <div className="w-5 h-5 bg-[#37352F] rounded-sm flex items-center justify-center text-white text-[10px] font-bold">S</div>
-            Stampify
+            Stampfix
           </div>
           <div className="flex gap-6">
             <a href="#" className="hover:text-[#37352F]">Privacy</a>
             <a href="#" className="hover:text-[#37352F]">Terms</a>
             <a href="#" className="hover:text-[#37352F]">Twitter</a>
           </div>
-          <div className="mt-4 md:mt-0">&copy; 2026 Stampify Inc.</div>
+          <div className="mt-4 md:mt-0">&copy; 2026 Stampfix Inc.</div>
         </div>
       </footer>
     </div>
