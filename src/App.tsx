@@ -5,6 +5,8 @@ import { LandingPage } from './components/LandingPage';
 import { MerchantApp } from './components/MerchantApp';
 import { CustomerApp } from './components/CustomerApp';
 import { EmailConfirmed } from './components/EmailConfirmed';
+import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
+import { TermsOfService } from './components/legal/TermsOfService';
 
 /**
  * Top-level routing.
@@ -43,6 +45,12 @@ export default function App() {
   }, [user, showConfirmed]);
 
   if (!isSupabaseConfigured) return <ConfigError />;
+
+  // Static legal pages — public, no auth needed. Path-based (Vercel SPA
+  // rewrites serve index.html for these, then we render the right page).
+  const path = window.location.pathname;
+  if (path === '/privacy') return <PrivacyPolicy />;
+  if (path === '/terms') return <TermsOfService />;
 
   // 1) Post email-confirmation success screen.
   if (showConfirmed) {
