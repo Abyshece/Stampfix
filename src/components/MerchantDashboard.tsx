@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import QRCode from 'react-qr-code';
-import type { Campaign, UserCard, ActivityItem, Location } from '../types';
+import type { Campaign, UserCard, ActivityItem, Location, OnboardingState } from '../types';
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive,
+  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check,
 } from 'lucide-react';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
@@ -16,6 +16,7 @@ interface MerchantDashboardProps {
   activities: ActivityItem[];
   locations: Location[];
   activeLocationId: string | null;
+  onboarding: OnboardingState;
   onSetActiveLocation: (id: string | null) => void;
   onAddLocation: (name: string, address?: string) => Promise<void>;
   onUpdateLocation: (locationId: string, patch: { name?: string; address?: string; archived?: boolean }) => Promise<void>;
@@ -31,6 +32,7 @@ interface MerchantDashboardProps {
   onAddCustomer: (data: { firstName: string; surname: string; email: string }) => void;
   onDeleteCustomer: (cardId: string) => void;
   onBlockCustomer: (cardId: string) => void;
+  onMarkOnboardingStep: (patch: Partial<OnboardingState>) => Promise<void>;
   onLogout: () => void;
 }
 
@@ -57,10 +59,10 @@ const EMOJI_LIST = [
 ];
 
 export function MerchantDashboard({
-  campaign, cards, activities, locations, activeLocationId,
+  campaign, cards, activities, locations, activeLocationId, onboarding,
   onSetActiveLocation, onAddLocation, onUpdateLocation,
   onStampCard, onResetCard, onRedeemToken, onUpdateCampaign,
-  onAddCustomer, onDeleteCustomer, onBlockCustomer, onLogout,
+  onAddCustomer, onDeleteCustomer, onBlockCustomer, onMarkOnboardingStep, onLogout,
 }: MerchantDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('DASHBOARD');
   const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
@@ -279,6 +281,11 @@ export function MerchantDashboard({
       </body></html>
     `);
     printWindow.document.close();
+    // Onboarding: downloading a poster from the Share tab counts as the
+    // poster-downloaded milestone. Fire and forget — non-critical.
+    if (!onboarding.poster_downloaded) {
+      onMarkOnboardingStep({ poster_downloaded: true });
+    }
   };
 
   const filteredCards = useMemo(() => {
@@ -433,6 +440,53 @@ export function MerchantDashboard({
               <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Scan Terminal</h1>
               <p className="text-gray-500 text-sm md:text-base">Ready to stamp. Point your device at a customer's card.</p>
             </header>
+
+            {/* Get Started checklist — disappears once all three milestones are hit */}
+            {!(onboarding.poster_downloaded && onboarding.test_signup_done && onboarding.first_stamp_given) && (
+              <div className="bg-gradient-to-br from-[#F7F7F5] to-white border notion-border rounded-lg p-5 max-w-2xl">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-500" /> Get Started
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Three small steps to your first stamp.
+                    </p>
+                  </div>
+                  <span className="text-xs font-medium text-gray-500">
+                    {Number(!!onboarding.poster_downloaded) + Number(!!onboarding.test_signup_done) + Number(!!onboarding.first_stamp_given)} / 3
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <ChecklistItem
+                    done={!!onboarding.poster_downloaded}
+                    label="Download your QR poster"
+                    actionLabel="Go to Share & Promote"
+                    onClick={() => setActiveTab('SHARE')}
+                  />
+                  <ChecklistItem
+                    done={!!onboarding.test_signup_done}
+                    label="Try the customer flow yourself"
+                    actionLabel="Open in new tab"
+                    onClick={async () => {
+                      const primary = activeLocations[0];
+                      const url = primary
+                        ? `${window.location.origin}/?campaign=${campaign.id}&location=${primary.id}`
+                        : `${window.location.origin}/?campaign=${campaign.id}`;
+                      window.open(url, '_blank');
+                      await onMarkOnboardingStep({ test_signup_done: true });
+                    }}
+                  />
+                  <ChecklistItem
+                    done={!!onboarding.first_stamp_given}
+                    label="Give your first stamp"
+                    actionLabel="Open scanner"
+                    onClick={() => setIsScannerOpen(true)}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="max-w-2xl">
               {/* Location picker — which branch is doing the stamping */}
               {activeLocations.length > 0 && (
@@ -821,7 +875,17 @@ export function MerchantDashboard({
                 <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
                   <h3 className="font-medium mb-2 text-blue-900">Try it yourself</h3>
                   <p className="text-sm text-blue-700 mb-4">Open the customer signup page in a new tab to preview the join flow.</p>
-                  <a href={joinUrlForLocation(activeLocations[0]?.id ?? null)} target="_blank" rel="noopener noreferrer" className="inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition items-center gap-2">
+                  <a
+                    href={joinUrlForLocation(activeLocations[0]?.id ?? null)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      if (!onboarding.test_signup_done) {
+                        onMarkOnboardingStep({ test_signup_done: true });
+                      }
+                    }}
+                    className="inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition items-center gap-2"
+                  >
                     Open Customer View <ArrowRight className="w-4 h-4" />
                   </a>
                 </div>
@@ -1090,6 +1154,35 @@ function ActivityBars({ activities }: { activities: ActivityItem[] }) {
           <span className="text-xs text-gray-400 font-medium">{d.label}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Single line in the "Get Started" checklist. Done state shows a green
+ * check and strikes through. Undone state shows a tappable action button.
+ */
+function ChecklistItem({
+  done, label, actionLabel, onClick,
+}: { done: boolean; label: string; actionLabel: string; onClick: () => void | Promise<void> }) {
+  return (
+    <div className="flex items-center justify-between bg-white border notion-border rounded-md px-3 py-2.5 text-sm">
+      <div className="flex items-center gap-2.5">
+        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+          done ? 'bg-green-500 text-white' : 'border-2 border-gray-300'
+        }`}>
+          {done && <Check className="w-3 h-3" strokeWidth={3} />}
+        </div>
+        <span className={done ? 'text-gray-400 line-through' : 'text-[#37352F]'}>{label}</span>
+      </div>
+      {!done && (
+        <button
+          onClick={onClick}
+          className="text-xs text-[#37352F] font-medium hover:underline flex items-center gap-1"
+        >
+          {actionLabel} <ArrowRight className="w-3 h-3" />
+        </button>
+      )}
     </div>
   );
 }

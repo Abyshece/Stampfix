@@ -220,24 +220,44 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
         </div>
       </div>
 
-      {/* Save to Google Wallet Button - Google's official styling */}
-      {!disableSave && (
-        <button
-          onClick={handleSaveToWallet}
-          disabled={isLoading}
-          className="w-full bg-black text-white rounded-[12px] h-[48px] flex items-center justify-center gap-3 hover:bg-gray-800 transition shadow-lg active:scale-95 duration-150 disabled:opacity-60"
-        >
-          {isLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <GoogleGLogo className="w-5 h-5" />
-          )}
-          <div className="text-left leading-none">
-            <div className="text-[8px] font-medium uppercase tracking-wide opacity-70">Add to</div>
-            <div className="text-[13px] font-semibold tracking-tight">Google Wallet</div>
-          </div>
-        </button>
-      )}
+      {/* Platform-aware save UI. Android gets Google Wallet, iOS users get
+       *  a "bookmark this page" hint since the rotating QR works fine in
+       *  Safari but Apple Wallet integration isn't built yet.
+       *  We detect via navigator.userAgent which is fine for v1 — when
+       *  Apple Wallet ships, replace this branch with the real button. */}
+      {!disableSave && (() => {
+        const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+        const isIOS = /iPhone|iPad|iPod/i.test(ua);
+        if (isIOS) {
+          return (
+            <div className="w-full bg-[#F7F7F5] border notion-border rounded-[12px] p-3 text-center">
+              <div className="text-[11px] uppercase tracking-wider text-gray-400 font-medium mb-1">
+                Save your card
+              </div>
+              <div className="text-xs text-gray-600 leading-relaxed">
+                Tap <strong>Share</strong> in Safari, then <strong>Add to Home Screen</strong>. Your card stays one tap away.
+              </div>
+            </div>
+          );
+        }
+        return (
+          <button
+            onClick={handleSaveToWallet}
+            disabled={isLoading}
+            className="w-full bg-black text-white rounded-[12px] h-[48px] flex items-center justify-center gap-3 hover:bg-gray-800 transition shadow-lg active:scale-95 duration-150 disabled:opacity-60"
+          >
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <GoogleGLogo className="w-5 h-5" />
+            )}
+            <div className="text-left leading-none">
+              <div className="text-[8px] font-medium uppercase tracking-wide opacity-70">Add to</div>
+              <div className="text-[13px] font-semibold tracking-tight">Google Wallet</div>
+            </div>
+          </button>
+        );
+      })()}
     </div>
   );
 }

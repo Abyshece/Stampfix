@@ -50,6 +50,9 @@ export interface ActivityItem {
   locationName?: string | null;
 }
 
+// Re-exported from db so components can import alongside other types.
+export type { OnboardingState } from '../lib/db';
+
 export enum ViewMode {
   LANDING = 'LANDING',
   MERCHANT = 'MERCHANT',

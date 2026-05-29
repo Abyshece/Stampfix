@@ -396,3 +396,57 @@ async function logActivity(
     console.warn('Failed to log activity:', error);
   }
 }
+
+// ---------------------------------------------------------------------
+// Merchant onboarding state
+// ---------------------------------------------------------------------
+
+/** Tracked onboarding steps. Keep this union narrow so typos are caught. */
+export type OnboardingKey =
+  | 'poster_downloaded'
+  | 'test_signup_done'
+  | 'first_stamp_given'
+  | 'wizard_dismissed';
+
+export interface OnboardingState {
+  poster_downloaded?: boolean;
+  test_signup_done?: boolean;
+  first_stamp_given?: boolean;
+  wizard_dismissed?: boolean;
+}
+
+export async function getOnboardingState(merchantId: string): Promise<OnboardingState> {
+  const { data, error } = await supabase
+    .from('merchants')
+    .select('onboarding_state')
+    .eq('id', merchantId)
+    .maybeSingle();
+  if (error) {
+    console.warn('getOnboardingState failed:', error);
+    return {};
+  }
+  return (data?.onboarding_state as OnboardingState | null) ?? {};
+}
+
+/**
+ * Merge new keys into the merchant's onboarding state. We always merge
+ * (never replace) so concurrent updates from different devices don't
+ * stomp each other.
+ */
+export async function setOnboardingFlag(
+  merchantId: string,
+  patch: Partial<Record<OnboardingKey, boolean>>,
+): Promise<OnboardingState> {
+  // Read-modify-write. Race window is small and the worst case is one
+  // flag flipping back briefly — not worth a stored procedure for v1.
+  const current = await getOnboardingState(merchantId);
+  const merged = { ...current, ...patch };
+  const { data, error } = await supabase
+    .from('merchants')
+    .update({ onboarding_state: merged })
+    .eq('id', merchantId)
+    .select('onboarding_state')
+    .single();
+  if (error) throw error;
+  return (data.onboarding_state as OnboardingState) ?? {};
+}

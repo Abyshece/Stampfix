@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { Campaign, UserCard, ActivityItem, Location } from '../types';
+import type { Campaign, UserCard, ActivityItem, Location, OnboardingState } from '../types';
 import { useAuth, signOut } from '../lib/auth';
 import {
   getCampaignByMerchant,
@@ -15,11 +15,14 @@ import {
   listLocations,
   createLocation,
   updateLocation,
+  getOnboardingState,
+  setOnboardingFlag,
 } from '../lib/db';
 import { syncWalletObject } from '../services/googleWallet';
 import { redeemStampToken } from '../services/stampToken';
 import { MerchantOnboarding, consumePendingCampaign } from './MerchantOnboarding';
 import { MerchantDashboard } from './MerchantDashboard';
+import { OnboardingWizard } from './OnboardingWizard';
 
 interface MerchantAppProps {
   onLogout: () => void;
@@ -40,6 +43,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   const [cards, setCards] = useState<UserCard[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [onboarding, setOnboarding] = useState<OnboardingState>({});
   // Which location the scanner is "operating as" right now. Persisted per
   // device in localStorage so a barista's tablet remembers between shifts.
   const [activeLocationId, setActiveLocationIdState] = useState<string | null>(
@@ -73,14 +77,16 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       }
       setCampaign(c);
       if (c) {
-        const [cs, acts, locs] = await Promise.all([
+        const [cs, acts, locs, ob] = await Promise.all([
           listCardsForCampaign(c.id),
           listActivities(c.id),
           listLocations(c.id),
+          getOnboardingState(user.id),
         ]);
         setCards(cs);
         setActivities(acts);
         setLocations(locs);
+        setOnboarding(ob);
         // If the persisted active location no longer exists (or there's
         // none yet), fall back to the first one. This keeps the scanner
         // always pointing somewhere sensible.
@@ -94,6 +100,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         setCards([]);
         setActivities([]);
         setLocations([]);
+        setOnboarding({});
       }
     } catch (err) {
       console.error('[merchant] loadAll failed:', err);
@@ -104,6 +111,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       setCards([]);
       setActivities([]);
       setLocations([]);
+      setOnboarding({});
     } finally {
       setLoading(false);
     }
@@ -202,6 +210,22 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     [campaign, refreshActivities],
   );
 
+  const handleMarkOnboardingStep = useCallback(
+    async (patch: Partial<OnboardingState>) => {
+      if (!user) return;
+      // Optimistic local update so UI feels instant.
+      setOnboarding((prev) => ({ ...prev, ...patch }));
+      try {
+        const updated = await setOnboardingFlag(user.id, patch);
+        setOnboarding(updated);
+      } catch (err) {
+        console.warn('[onboarding] flag update failed:', err);
+        // Best-effort; the wizard is non-critical.
+      }
+    },
+    [user],
+  );
+
   /**
    * Redeems a signed stamp token via the Edge Function. Server is
    * authoritative — it verifies the signature, checks expiry/replay,
@@ -229,9 +253,13 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       );
       refreshActivities();
       syncWalletObject(result.card.id);
+      // Onboarding: a successful stamp counts as the first-stamp milestone.
+      if (!onboarding.first_stamp_given) {
+        handleMarkOnboardingStep({ first_stamp_given: true });
+      }
       return result;
     },
-    [refreshActivities, activeLocationId],
+    [refreshActivities, activeLocationId, onboarding.first_stamp_given, handleMarkOnboardingStep],
   );
 
   // ----- Location handlers -----
@@ -290,24 +318,45 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     return <MerchantOnboarding onComplete={loadAll} initialStep={startOnLogin ? 'LOGIN' : 'FORM'} onBack={onLogout} />;
   }
 
+  // Show the first-run wizard when the merchant hasn't dismissed it AND
+  // hasn't completed the core milestones. Once they've dismissed (or
+  // completed) it, the dashboard's "Get Started" checklist takes over.
+  const shouldShowWizard = campaign && !onboarding.wizard_dismissed;
+
   return (
-    <MerchantDashboard
-      campaign={campaign}
-      cards={cards}
-      activities={activities}
-      locations={locations}
-      activeLocationId={activeLocationId}
-      onSetActiveLocation={setActiveLocationId}
-      onAddLocation={handleAddLocation}
-      onUpdateLocation={handleUpdateLocation}
-      onStampCard={handleStampCard}
-      onResetCard={handleResetCard}
-      onRedeemToken={handleRedeemToken}
-      onUpdateCampaign={handleUpdateCampaign}
-      onAddCustomer={handleAddCustomer}
-      onDeleteCustomer={handleDeleteCustomer}
-      onBlockCustomer={handleBlockCustomer}
-      onLogout={handleLogout}
-    />
+    <>
+      <MerchantDashboard
+        campaign={campaign}
+        cards={cards}
+        activities={activities}
+        locations={locations}
+        activeLocationId={activeLocationId}
+        onboarding={onboarding}
+        onSetActiveLocation={setActiveLocationId}
+        onAddLocation={handleAddLocation}
+        onUpdateLocation={handleUpdateLocation}
+        onStampCard={handleStampCard}
+        onResetCard={handleResetCard}
+        onRedeemToken={handleRedeemToken}
+        onUpdateCampaign={handleUpdateCampaign}
+        onAddCustomer={handleAddCustomer}
+        onDeleteCustomer={handleDeleteCustomer}
+        onBlockCustomer={handleBlockCustomer}
+        onMarkOnboardingStep={handleMarkOnboardingStep}
+        onLogout={handleLogout}
+      />
+      {shouldShowWizard && (
+        <OnboardingWizard
+          campaign={campaign}
+          locations={locations}
+          initialState={onboarding}
+          onMarkStep={handleMarkOnboardingStep}
+          onClose={() => {
+            // The wizard already saves wizard_dismissed=true to the server;
+            // local state will sync via handleMarkOnboardingStep.
+          }}
+        />
+      )}
+    </>
   );
 }
