@@ -1,20 +1,32 @@
 import { useMemo, useState } from 'react';
 import QRCode from 'react-qr-code';
-import type { Campaign, UserCard, ActivityItem } from '../types';
+import type { Campaign, UserCard, ActivityItem, Location } from '../types';
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight,
+  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive,
 } from 'lucide-react';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
+import { LocationsPanel } from './LocationsPanel';
 
 interface MerchantDashboardProps {
   campaign: Campaign;
   cards: UserCard[];
   activities: ActivityItem[];
+  locations: Location[];
+  activeLocationId: string | null;
+  onSetActiveLocation: (id: string | null) => void;
+  onAddLocation: (name: string, address?: string) => Promise<void>;
+  onUpdateLocation: (locationId: string, patch: { name?: string; address?: string; archived?: boolean }) => Promise<void>;
   onStampCard: (cardId: string) => void;
   onResetCard: (cardId: string) => void;
+  /** Redeems a scanned signed token server-side. Returns the result so the
+   *  scanner can show a toast. Throws if the token is invalid/expired/replayed. */
+  onRedeemToken: (token: string) => Promise<{
+    action: 'STAMP' | 'REDEEM';
+    card: { id: string; customerName: string; currentStamps: number; rewardsRedeemed: number; status: 'ACTIVE' | 'BLOCKED' };
+  }>;
   onUpdateCampaign: (patch: Partial<Campaign>) => void;
   onAddCustomer: (data: { firstName: string; surname: string; email: string }) => void;
   onDeleteCustomer: (cardId: string) => void;
@@ -45,7 +57,9 @@ const EMOJI_LIST = [
 ];
 
 export function MerchantDashboard({
-  campaign, cards, activities, onStampCard, onResetCard, onUpdateCampaign,
+  campaign, cards, activities, locations, activeLocationId,
+  onSetActiveLocation, onAddLocation, onUpdateLocation,
+  onStampCard, onResetCard, onRedeemToken, onUpdateCampaign,
   onAddCustomer, onDeleteCustomer, onBlockCustomer, onLogout,
 }: MerchantDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('DASHBOARD');
@@ -64,6 +78,13 @@ export function MerchantDashboard({
     card?: UserCard;
     message: string;
   } | null>(null);
+
+  // Derived: non-archived locations, and the currently active one.
+  const activeLocations = useMemo(() => locations.filter((l) => !l.archived), [locations]);
+  const activeLocation = useMemo(
+    () => activeLocations.find((l) => l.id === activeLocationId) ?? null,
+    [activeLocations, activeLocationId],
+  );
 
   // Customer list state
   const [customerSearch, setCustomerSearch] = useState('');
@@ -113,23 +134,57 @@ export function MerchantDashboard({
    * Handles a decoded QR payload from the live scanner. We deliberately do
    * NOT close the scanner after a successful scan — a merchant stamping a
    * busy queue should be able to scan one customer after another without
-   * tapping anything between. The success toast appears as an overlay and
-   * fades; the scanner keeps running. The QRScanner component debounces
-   * repeated reads of the same QR so we don't double-stamp.
+   * tapping anything between.
+   *
+   * Two QR formats are supported:
+   *  - Signed token (preferred, rotates every 30s) — sent to the server
+   *    for verification + stamping. Server is authoritative.
+   *  - Plain cardId (legacy, used by already-saved Google Wallet passes)
+   *    — handled client-side as before. Still safe because RLS ensures
+   *    merchants can only stamp cards in their own campaign, but it does
+   *    NOT defend against screenshot replay. The token path does.
    */
-  const handleScan = (payload: string) => {
+  const handleScan = async (payload: string) => {
     const parsed = parseCardQRPayload(payload);
     if (!parsed) {
       setScanResult({ status: 'error', message: "That doesn't look like a Stampfix card" });
       setTimeout(() => setScanResult(null), 2500);
       return;
     }
+
+    if (parsed.kind === 'token') {
+      try {
+        const result = await onRedeemToken(parsed.token);
+        setScanResult({
+          status: 'success',
+          card: {
+            id: result.card.id,
+            campaignId: campaign.id,
+            customerName: result.card.customerName,
+            email: '',
+            currentStamps: result.card.currentStamps,
+            rewardsRedeemed: result.card.rewardsRedeemed,
+            status: result.card.status,
+            joinedAt: new Date(),
+          },
+          message: result.action === 'REDEEM'
+            ? 'Reward Redeemed'
+            : result.card.currentStamps >= campaign.maxStamps
+              ? 'Reward Unlocked!'
+              : 'Stamp Added',
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Stamp failed';
+        setScanResult({ status: 'error', message: msg });
+      }
+      setTimeout(() => setScanResult(null), 2500);
+      return;
+    }
+
+    // Legacy cardId path — for old Google Wallet passes that don't rotate.
     const target = cards.find((c) => c.id === parsed.cardId);
     if (!target) {
-      setScanResult({
-        status: 'error',
-        message: 'Card not from this campaign',
-      });
+      setScanResult({ status: 'error', message: 'Card not from this campaign' });
       setTimeout(() => setScanResult(null), 2500);
       return;
     }
@@ -138,9 +193,6 @@ export function MerchantDashboard({
       setTimeout(() => setScanResult(null), 2500);
       return;
     }
-
-    // If the card is already full, redeem instead of stamping — otherwise the
-    // merchant has to switch tabs to claim the customer's reward.
     if (target.currentStamps >= campaign.maxStamps) {
       onResetCard(target.id);
       setScanResult({
@@ -192,13 +244,15 @@ export function MerchantDashboard({
     setConfirmAction(null);
   };
 
-  const handleDownloadPoster = () => {
+  const handleDownloadPoster = (location: Location | null) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    const svgEl = document.getElementById('share-qr-code');
+    const qrId = location ? `share-qr-${location.id}` : 'share-qr-code';
+    const svgEl = document.getElementById(qrId);
     const qrHtml = svgEl?.outerHTML ?? '';
+    const locationLine = location ? `<p class="loc-line">${location.name}</p>` : '';
     printWindow.document.write(`
-      <html><head><title>${campaign.businessName} Poster</title>
+      <html><head><title>${campaign.businessName}${location ? ' — ' + location.name : ''} Poster</title>
       <style>
         @page { size: A4 portrait; margin: 0; }
         body { font-family: -apple-system, sans-serif; margin: 0; height: 100vh;
@@ -212,9 +266,11 @@ export function MerchantDashboard({
         .qr-box { margin: 30px auto; width: 350px; height: 350px; }
         .qr-box svg { width: 100%; height: 100%; }
         .footer-name { font-size: 32px; font-weight: 700; margin-top: 40px; color: #37352F; }
+        .loc-line { font-size: 22px; color: #888; margin-top: -20px; margin-bottom: 30px; }
       </style></head><body>
         <div class="poster-container">
           <h1>Join ${campaign.businessName}</h1>
+          ${locationLine}
           <p class="subtitle">Scan to collect stamps &amp; rewards</p>
           <div class="qr-box">${qrHtml}</div>
           <div class="footer-name">${campaign.businessName}</div>
@@ -233,7 +289,13 @@ export function MerchantDashboard({
     );
   }, [cards, customerSearch]);
 
-  const joinUrl = `${window.location.origin}/?campaign=${campaign.id}`;
+  /** Per-location signup URL. The customer signup page reads ?location= and
+   *  records it on their new card. The base ?campaign= alone still works
+   *  and creates location-less signups. */
+  const joinUrlForLocation = (locationId: string | null) =>
+    locationId
+      ? `${window.location.origin}/?campaign=${campaign.id}&location=${locationId}`
+      : `${window.location.origin}/?campaign=${campaign.id}`;
 
   // -------------------- Render --------------------
 
@@ -372,6 +434,29 @@ export function MerchantDashboard({
               <p className="text-gray-500 text-sm md:text-base">Ready to stamp. Point your device at a customer's card.</p>
             </header>
             <div className="max-w-2xl">
+              {/* Location picker — which branch is doing the stamping */}
+              {activeLocations.length > 0 && (
+                <div className="mb-4 flex items-center justify-between bg-white border notion-border rounded-lg px-4 py-3 shadow-sm">
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-500">Stamping at</span>
+                    <select
+                      value={activeLocationId ?? ''}
+                      onChange={(e) => onSetActiveLocation(e.target.value || null)}
+                      className="font-medium text-[#37352F] bg-transparent focus:outline-none cursor-pointer"
+                    >
+                      {activeLocations.map((l) => (
+                        <option key={l.id} value={l.id}>{l.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {activeLocations.length > 1 && (
+                    <span className="text-[10px] uppercase tracking-wider text-gray-400">
+                      {activeLocations.length} locations
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="border notion-border rounded-xl bg-white shadow-sm p-4 flex flex-col justify-between min-h-[480px] relative overflow-hidden">
                 {scanResult && (
                   <div className="absolute inset-0 z-20 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
@@ -660,6 +745,7 @@ export function MerchantDashboard({
                       status: 'ACTIVE',
                     }}
                     disableSave
+                    staticQR
                   />
                 </div>
               </div>
@@ -672,27 +758,48 @@ export function MerchantDashboard({
           <div className="space-y-8 animate-in fade-in duration-500">
             <header>
               <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Share & Promote</h1>
-              <p className="text-gray-500 text-sm md:text-base">Print this QR code so customers can join your program.</p>
+              <p className="text-gray-500 text-sm md:text-base">
+                {activeLocations.length > 1
+                  ? `Print a poster for each of your ${activeLocations.length} locations. Each QR records which branch a customer joined at.`
+                  : 'Print this QR code so customers can join your program.'}
+              </p>
             </header>
+
             <div className="grid md:grid-cols-2 gap-12 items-start">
-              <div className="bg-white p-8 rounded-lg border notion-border shadow-sm flex flex-col items-center text-center space-y-6">
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-serif-display font-semibold">Join {campaign.businessName}</h3>
-                  <p className="text-sm text-gray-500">Scan to collect stamps & rewards</p>
-                </div>
-                <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl max-w-[240px]">
-                  <QRCode id="share-qr-code" value={joinUrl} size={160} />
-                </div>
-                <div className="space-y-2 w-full pt-4 border-t notion-border">
-                  <button onClick={handleDownloadPoster} className="w-full bg-[#37352F] text-white py-2 rounded-md font-medium text-sm hover:bg-opacity-90 transition">
-                    Download Poster (PDF)
-                  </button>
-                  <button onClick={() => navigator.clipboard.writeText(joinUrl)} className="w-full bg-white border notion-border text-[#37352F] py-2 rounded-md font-medium text-sm hover:bg-gray-50 transition">
-                    Copy Link
-                  </button>
-                </div>
-                <div className="text-[10px] text-gray-400 break-all">{joinUrl}</div>
+              {/* Left column: one QR card per location. Falls back to a single
+                  campaign-wide QR if there are no locations (defensive — every
+                  campaign should have a "Main" after the migration). */}
+              <div className="space-y-6">
+                {(activeLocations.length > 0 ? activeLocations : [null]).map((loc) => {
+                  const url = joinUrlForLocation(loc?.id ?? null);
+                  const qrId = loc ? `share-qr-${loc.id}` : 'share-qr-code';
+                  return (
+                    <div key={loc?.id ?? 'campaign-wide'} className="bg-white p-8 rounded-lg border notion-border shadow-sm flex flex-col items-center text-center space-y-5">
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-serif-display font-semibold">Join {campaign.businessName}</h3>
+                        {loc && (
+                          <p className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-gray-500 bg-[#F7F7F5] px-2.5 py-1 rounded-full border notion-border">
+                            <MapPin className="w-3 h-3" /> {loc.name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl max-w-[240px]">
+                        <QRCode id={qrId} value={url} size={160} />
+                      </div>
+                      <div className="space-y-2 w-full pt-2">
+                        <button onClick={() => handleDownloadPoster(loc)} className="w-full bg-[#37352F] text-white py-2 rounded-md font-medium text-sm hover:bg-opacity-90 transition">
+                          Download Poster
+                        </button>
+                        <button onClick={() => navigator.clipboard.writeText(url)} className="w-full bg-white border notion-border text-[#37352F] py-2 rounded-md font-medium text-sm hover:bg-gray-50 transition">
+                          Copy Link
+                        </button>
+                      </div>
+                      <div className="text-[10px] text-gray-400 break-all">{url}</div>
+                    </div>
+                  );
+                })}
               </div>
+
               <div className="space-y-6">
                 <div className="bg-[#F7F7F5] p-6 rounded-lg border notion-border">
                   <h3 className="font-medium mb-2">How it works</h3>
@@ -703,10 +810,18 @@ export function MerchantDashboard({
                     <li>You scan their card here on future visits to give stamps.</li>
                   </ul>
                 </div>
+                {activeLocations.length > 1 && (
+                  <div className="bg-amber-50 p-6 rounded-lg border border-amber-100">
+                    <h3 className="font-medium mb-2 text-amber-900">Multiple locations</h3>
+                    <p className="text-sm text-amber-800">
+                      Print a different poster for each branch. Customers' cards work everywhere — the per-location QR just records which branch they joined at, so you can see in Analytics which location is driving signups.
+                    </p>
+                  </div>
+                )}
                 <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
                   <h3 className="font-medium mb-2 text-blue-900">Try it yourself</h3>
                   <p className="text-sm text-blue-700 mb-4">Open the customer signup page in a new tab to preview the join flow.</p>
-                  <a href={joinUrl} target="_blank" rel="noopener noreferrer" className="inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition items-center gap-2">
+                  <a href={joinUrlForLocation(activeLocations[0]?.id ?? null)} target="_blank" rel="noopener noreferrer" className="inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition items-center gap-2">
                     Open Customer View <ArrowRight className="w-4 h-4" />
                   </a>
                 </div>
@@ -729,6 +844,13 @@ export function MerchantDashboard({
                 </div>
               )}
             </header>
+
+            <LocationsPanel
+              locations={locations}
+              activeLocationId={activeLocationId}
+              onAdd={onAddLocation}
+              onUpdate={onUpdateLocation}
+            />
 
             <div className="border notion-border rounded-lg p-6 space-y-8">
               <div>

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import type { Campaign, UserCard } from '../types';
 import { getSaveToWalletUrl } from '../services/googleWallet';
+import { issueStampToken } from '../services/stampToken';
 import { Loader2, X, ShieldAlert } from 'lucide-react';
 
 interface WalletCardProps {
@@ -9,12 +10,63 @@ interface WalletCardProps {
   campaign: Campaign;
   /** Disable the "Save to Google Wallet" button (e.g. in design previews). */
   disableSave?: boolean;
+  /** Disable the rotating-token QR (use a static cardId QR). For previews
+   *  and for callers that don't have a real authenticated session. */
+  staticQR?: boolean;
 }
 
-export function WalletCard({ card, campaign, disableSave }: WalletCardProps) {
+export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCardProps) {
   const stamps = Array.from({ length: campaign.maxStamps }, (_, i) => i + 1);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Rotating stamp token. Refreshed every 30s while the wallet view is open.
+  // We aim for a 60s token lifetime with 30s refresh interval so the
+  // visible QR always has 30-60s left when scanned.
+  const [tokenInfo, setTokenInfo] = useState<{ token: string; expiresAt: number } | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number>(0);
+
+  useEffect(() => {
+    if (staticQR) return;
+    let cancelled = false;
+
+    const refresh = async () => {
+      const fresh = await issueStampToken(card.id);
+      if (cancelled) return;
+      setTokenInfo(fresh);
+    };
+
+    refresh();
+    const refreshTimer = setInterval(refresh, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(refreshTimer);
+    };
+  }, [card.id, staticQR]);
+
+  // Visible countdown — updated every second for the small "rotates in Ns" hint.
+  useEffect(() => {
+    if (!tokenInfo) {
+      setSecondsLeft(0);
+      return;
+    }
+    const tick = () => {
+      const left = tokenInfo.expiresAt - Math.floor(Date.now() / 1000);
+      setSecondsLeft(Math.max(0, left));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [tokenInfo]);
+
+  // QR payload: signed token when available; otherwise fall back to the
+  // plain cardId so the card isn't useless if the token service is down
+  // (the merchant scanner accepts both — older Google Wallet passes also
+  // encode the plain cardId, and the merchant can still apply the stamp
+  // via the older client path).
+  const qrValue = !staticQR && tokenInfo
+    ? tokenInfo.token
+    : JSON.stringify({ cardId: card.id });
 
   const handleSaveToWallet = async () => {
     if (disableSave) return;
@@ -156,8 +208,15 @@ export function WalletCard({ card, campaign, disableSave }: WalletCardProps) {
           </div>
 
           <div className="bg-white p-2 rounded-lg shadow-sm border border-gray-200 mx-auto w-fit">
-            <QRCode value={JSON.stringify({ cardId: card.id })} size={100} fgColor="#000000" style={{ display: 'block' }} />
+            <QRCode value={qrValue} size={100} fgColor="#000000" style={{ display: 'block' }} />
           </div>
+          {!staticQR && (
+            <div className="mt-2 text-center text-[9px] uppercase tracking-widest text-gray-400">
+              {tokenInfo
+                ? `Code rotates in ${secondsLeft}s`
+                : 'Loading secure code…'}
+            </div>
+          )}
         </div>
       </div>
 

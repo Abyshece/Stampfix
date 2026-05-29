@@ -360,7 +360,7 @@ export function LandingPage({
                   </div>
                   <div className="w-full px-2 pt-2 pb-0 flex-1 overflow-hidden bg-gray-50 flex flex-col items-center">
                     <div className="transform scale-[0.70] origin-top w-full -mt-2">
-                      <WalletCard campaign={DEMO_CAMPAIGN} card={DEMO_CARD} disableSave />
+                      <WalletCard campaign={DEMO_CAMPAIGN} card={DEMO_CARD} disableSave staticQR />
                     </div>
                   </div>
                   <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-black rounded-full z-20"></div>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { Campaign, UserCard, ActivityItem } from '../types';
+import type { Campaign, UserCard, ActivityItem, Location } from '../types';
 import { useAuth, signOut } from '../lib/auth';
 import {
   getCampaignByMerchant,
@@ -12,8 +12,12 @@ import {
   setCardStatus,
   deleteCard,
   createCard,
+  listLocations,
+  createLocation,
+  updateLocation,
 } from '../lib/db';
 import { syncWalletObject } from '../services/googleWallet';
+import { redeemStampToken } from '../services/stampToken';
 import { MerchantOnboarding, consumePendingCampaign } from './MerchantOnboarding';
 import { MerchantDashboard } from './MerchantDashboard';
 
@@ -35,6 +39,17 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [cards, setCards] = useState<UserCard[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  // Which location the scanner is "operating as" right now. Persisted per
+  // device in localStorage so a barista's tablet remembers between shifts.
+  const [activeLocationId, setActiveLocationIdState] = useState<string | null>(
+    () => localStorage.getItem('stampfix_active_location_id'),
+  );
+  const setActiveLocationId = useCallback((id: string | null) => {
+    setActiveLocationIdState(id);
+    if (id) localStorage.setItem('stampfix_active_location_id', id);
+    else localStorage.removeItem('stampfix_active_location_id');
+  }, []);
   const [loading, setLoading] = useState(false);
 
   const loadAll = useCallback(async () => {
@@ -58,12 +73,27 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       }
       setCampaign(c);
       if (c) {
-        const [cs, acts] = await Promise.all([listCardsForCampaign(c.id), listActivities(c.id)]);
+        const [cs, acts, locs] = await Promise.all([
+          listCardsForCampaign(c.id),
+          listActivities(c.id),
+          listLocations(c.id),
+        ]);
         setCards(cs);
         setActivities(acts);
+        setLocations(locs);
+        // If the persisted active location no longer exists (or there's
+        // none yet), fall back to the first one. This keeps the scanner
+        // always pointing somewhere sensible.
+        const persisted = localStorage.getItem('stampfix_active_location_id');
+        const stillValid = persisted && locs.some((l) => l.id === persisted && !l.archived);
+        if (!stillValid) {
+          const first = locs.find((l) => !l.archived);
+          setActiveLocationId(first ? first.id : null);
+        }
       } else {
         setCards([]);
         setActivities([]);
+        setLocations([]);
       }
     } catch (err) {
       console.error('[merchant] loadAll failed:', err);
@@ -73,10 +103,11 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       setCampaign(null);
       setCards([]);
       setActivities([]);
+      setLocations([]);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, setActiveLocationId]);
 
   useEffect(() => {
     loadAll();
@@ -171,6 +202,64 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     [campaign, refreshActivities],
   );
 
+  /**
+   * Redeems a signed stamp token via the Edge Function. Server is
+   * authoritative — it verifies the signature, checks expiry/replay,
+   * applies the stamp, and returns the updated card. We mirror that
+   * update locally so the UI stays in sync without a full refetch, then
+   * fire the wallet sync (best-effort).
+   *
+   * The active location id is sent along so the server can tag the
+   * activity row with which branch did the stamping.
+   */
+  const handleRedeemToken = useCallback(
+    async (token: string) => {
+      const result = await redeemStampToken(token, activeLocationId);
+      setCards((prev) =>
+        prev.map((c) =>
+          c.id === result.card.id
+            ? {
+                ...c,
+                currentStamps: result.card.currentStamps,
+                rewardsRedeemed: result.card.rewardsRedeemed,
+                status: result.card.status,
+              }
+            : c,
+        ),
+      );
+      refreshActivities();
+      syncWalletObject(result.card.id);
+      return result;
+    },
+    [refreshActivities, activeLocationId],
+  );
+
+  // ----- Location handlers -----
+
+  const handleAddLocation = useCallback(
+    async (name: string, address?: string) => {
+      if (!campaign) return;
+      const created = await createLocation({ campaignId: campaign.id, name, address });
+      setLocations((prev) => [...prev, created]);
+      // If we didn't have an active location yet, the new one becomes active.
+      if (!activeLocationId) setActiveLocationId(created.id);
+    },
+    [campaign, activeLocationId, setActiveLocationId],
+  );
+
+  const handleUpdateLocation = useCallback(
+    async (locationId: string, patch: { name?: string; address?: string; archived?: boolean }) => {
+      const updated = await updateLocation(locationId, patch);
+      setLocations((prev) => prev.map((l) => (l.id === locationId ? updated : l)));
+      // If the active location was archived, pick another one.
+      if (updated.archived && activeLocationId === locationId) {
+        const next = locations.find((l) => l.id !== locationId && !l.archived);
+        setActiveLocationId(next ? next.id : null);
+      }
+    },
+    [activeLocationId, locations, setActiveLocationId],
+  );
+
   const handleUpdateCampaign = useCallback(
     async (patch: Partial<Campaign>) => {
       if (!campaign) return;
@@ -198,7 +287,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   }
 
   if (!campaign) {
-    return <MerchantOnboarding onComplete={loadAll} initialStep={startOnLogin ? 'LOGIN' : 'FORM'} />;
+    return <MerchantOnboarding onComplete={loadAll} initialStep={startOnLogin ? 'LOGIN' : 'FORM'} onBack={onLogout} />;
   }
 
   return (
@@ -206,8 +295,14 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       campaign={campaign}
       cards={cards}
       activities={activities}
+      locations={locations}
+      activeLocationId={activeLocationId}
+      onSetActiveLocation={setActiveLocationId}
+      onAddLocation={handleAddLocation}
+      onUpdateLocation={handleUpdateLocation}
       onStampCard={handleStampCard}
       onResetCard={handleResetCard}
+      onRedeemToken={handleRedeemToken}
       onUpdateCampaign={handleUpdateCampaign}
       onAddCustomer={handleAddCustomer}
       onDeleteCustomer={handleDeleteCustomer}
