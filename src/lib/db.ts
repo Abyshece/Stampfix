@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Campaign, UserCard, ActivityItem } from '../types';
+import type { Campaign, UserCard, ActivityItem, Location } from '../types';
 
 // ---------------------------------------------------------------------
 // Row <-> Domain mappers
@@ -22,6 +22,14 @@ interface CampaignRow {
   logo_image: string | null;
 }
 
+interface LocationRow {
+  id: string;
+  campaign_id: string;
+  name: string;
+  address: string | null;
+  archived: boolean;
+}
+
 interface CardRow {
   id: string;
   campaign_id: string;
@@ -33,6 +41,7 @@ interface CardRow {
   rewards_redeemed: number;
   status: 'ACTIVE' | 'BLOCKED';
   joined_at: string;
+  joined_at_location_id: string | null;
 }
 
 interface ActivityRow {
@@ -42,6 +51,10 @@ interface ActivityRow {
   customer_name: string;
   type: ActivityItem['type'];
   created_at: string;
+  location_id: string | null;
+  // When the query joins to locations, supabase returns it as a nested
+  // object. Optional because some queries don't join.
+  locations?: { name: string } | null;
 }
 
 const toCampaign = (r: CampaignRow): Campaign => ({
@@ -59,6 +72,14 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   logoImage: r.logo_image,
 });
 
+const toLocation = (r: LocationRow): Location => ({
+  id: r.id,
+  campaignId: r.campaign_id,
+  name: r.name,
+  address: r.address,
+  archived: r.archived,
+});
+
 const toCard = (r: CardRow): UserCard => ({
   id: r.id,
   campaignId: r.campaign_id,
@@ -70,6 +91,7 @@ const toCard = (r: CardRow): UserCard => ({
   rewardsRedeemed: r.rewards_redeemed,
   status: r.status,
   joinedAt: new Date(r.joined_at),
+  joinedAtLocationId: r.joined_at_location_id,
 });
 
 const toActivity = (r: ActivityRow): ActivityItem => ({
@@ -79,6 +101,8 @@ const toActivity = (r: ActivityRow): ActivityItem => ({
   customerName: r.customer_name,
   type: r.type,
   timestamp: new Date(r.created_at),
+  locationId: r.location_id,
+  locationName: r.locations?.name ?? null,
 });
 
 // ---------------------------------------------------------------------
@@ -185,6 +209,7 @@ export async function createCard(input: {
   customerName: string;
   email: string;
   age?: number | null;
+  joinedAtLocationId?: string | null;
 }): Promise<UserCard> {
   const { data, error } = await supabase
     .from('cards')
@@ -194,6 +219,7 @@ export async function createCard(input: {
       customer_name: input.customerName,
       email: input.email,
       age: input.age ?? null,
+      joined_at_location_id: input.joinedAtLocationId ?? null,
     })
     .select('*')
     .single();
@@ -286,12 +312,70 @@ export async function deleteCard(cardId: string): Promise<void> {
 export async function listActivities(campaignId: string, limit = 50): Promise<ActivityItem[]> {
   const { data, error } = await supabase
     .from('activities')
-    .select('*')
+    .select('*, locations(name)')
     .eq('campaign_id', campaignId)
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
   return (data as ActivityRow[]).map(toActivity);
+}
+
+// ---------------------------------------------------------------------
+// Locations
+// ---------------------------------------------------------------------
+
+export async function listLocations(campaignId: string, includeArchived = false): Promise<Location[]> {
+  let query = supabase.from('locations').select('*').eq('campaign_id', campaignId).order('created_at');
+  if (!includeArchived) query = query.eq('archived', false);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data as LocationRow[]).map(toLocation);
+}
+
+export async function getLocation(locationId: string): Promise<Location | null> {
+  const { data, error } = await supabase
+    .from('locations')
+    .select('*')
+    .eq('id', locationId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toLocation(data as LocationRow) : null;
+}
+
+export async function createLocation(input: {
+  campaignId: string;
+  name: string;
+  address?: string | null;
+}): Promise<Location> {
+  const { data, error } = await supabase
+    .from('locations')
+    .insert({
+      campaign_id: input.campaignId,
+      name: input.name,
+      address: input.address ?? null,
+    })
+    .select('*')
+    .single();
+  if (error) throw error;
+  return toLocation(data as LocationRow);
+}
+
+export async function updateLocation(
+  locationId: string,
+  patch: Partial<Pick<Location, 'name' | 'address' | 'archived'>>,
+): Promise<Location> {
+  const update: Record<string, unknown> = {};
+  if (patch.name !== undefined) update.name = patch.name;
+  if (patch.address !== undefined) update.address = patch.address;
+  if (patch.archived !== undefined) update.archived = patch.archived;
+  const { data, error } = await supabase
+    .from('locations')
+    .update(update)
+    .eq('id', locationId)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return toLocation(data as LocationRow);
 }
 
 async function logActivity(

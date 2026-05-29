@@ -17,6 +17,14 @@ export interface Campaign {
   logoImage?: string | null;
 }
 
+export interface Location {
+  id: string;
+  campaignId: string;
+  name: string;
+  address?: string | null;
+  archived: boolean;
+}
+
 export interface UserCard {
   id: string;
   campaignId: string;
@@ -28,6 +36,7 @@ export interface UserCard {
   rewardsRedeemed: number;
   status: 'ACTIVE' | 'BLOCKED';
   joinedAt: Date;
+  joinedAtLocationId?: string | null;
 }
 
 export interface ActivityItem {
@@ -37,6 +46,8 @@ export interface ActivityItem {
   customerName: string;
   type: 'STAMP' | 'REDEEM' | 'JOIN' | 'BLOCK' | 'UNBLOCK';
   timestamp: Date;
+  locationId?: string | null;
+  locationName?: string | null;
 }
 
 export enum ViewMode {

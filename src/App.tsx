@@ -22,6 +22,7 @@ type View = 'landing' | 'merchant';
 export default function App() {
   const { user } = useAuth();
   const [campaignFromUrl, setCampaignFromUrl] = useState<string | null>(null);
+  const [locationFromUrl, setLocationFromUrl] = useState<string | null>(null);
   const [showConfirmed, setShowConfirmed] = useState(false);
   const [cameFromConfirmation, setCameFromConfirmation] = useState(false);
   const [view, setView] = useState<View>('landing');
@@ -35,6 +36,8 @@ export default function App() {
     }
     const campaign = params.get('campaign');
     if (campaign) setCampaignFromUrl(campaign);
+    const location = params.get('location');
+    if (location) setLocationFromUrl(location);
   }, []);
 
   // If the user signs in, drop them on the merchant view — UNLESS we're
@@ -80,8 +83,10 @@ export default function App() {
     return (
       <CustomerApp
         campaignId={campaignFromUrl}
+        joinedLocationId={locationFromUrl}
         onExit={() => {
           setCampaignFromUrl(null);
+          setLocationFromUrl(null);
           window.history.replaceState({}, '', window.location.pathname);
         }}
       />

@@ -7,6 +7,10 @@ import { WalletCard } from './WalletCard';
 
 interface CustomerAppProps {
   campaignId: string;
+  /** Optional: location id from `?location=` URL param. When set, the
+   *  customer's card is tagged with the branch they joined at, so the
+   *  merchant can see which location drove the signup. */
+  joinedLocationId?: string | null;
   onExit: () => void;
 }
 
@@ -22,7 +26,7 @@ interface CustomerAppProps {
  * sends them an email with a link back to `?campaign=<id>`. When they
  * click it, they land here authenticated.
  */
-export function CustomerApp({ campaignId, onExit }: CustomerAppProps) {
+export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAppProps) {
   const { user, loading: authLoading } = useAuth();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [card, setCard] = useState<UserCard | null>(null);
@@ -86,6 +90,7 @@ export function CustomerApp({ campaignId, onExit }: CustomerAppProps) {
             customerName: name,
             email: user.email ?? '',
             age,
+            joinedAtLocationId: joinedLocationId ?? null,
           });
           sessionStorage.removeItem('pending_customer_signup');
         }
