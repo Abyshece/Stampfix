@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Campaign, UserCard, ActivityItem, Location } from '../types';
+import type { Campaign, UserCard, ActivityItem, Location, MerchantBilling, Plan } from '../types';
 
 // ---------------------------------------------------------------------
 // Row <-> Domain mappers
@@ -223,7 +223,18 @@ export async function createCard(input: {
     })
     .select('*')
     .single();
-  if (error) throw error;
+  if (error) {
+    // The DB trigger raises `free_tier_limit_reached` when a free-plan
+    // merchant has hit 10 customers. Surface a typed error so callers
+    // (customer signup flow, merchant "add customer" form) can render
+    // the right message without parsing strings.
+    if (error.message?.includes('free_tier_limit_reached')) {
+      const e = new Error('This loyalty program is currently full. Please ask the merchant to upgrade their account to add more customers.') as Error & { code?: string };
+      e.code = 'free_tier_limit_reached';
+      throw e;
+    }
+    throw error;
+  }
   const card = toCard(data as CardRow);
   await logActivity(card.campaignId, card.id, card.customerName, 'JOIN');
   return card;
@@ -449,4 +460,41 @@ export async function setOnboardingFlag(
     .single();
   if (error) throw error;
   return (data.onboarding_state as OnboardingState) ?? {};
+}
+
+// ---------------------------------------------------------------------
+// Merchant billing / plan
+// ---------------------------------------------------------------------
+
+interface MerchantBillingRow {
+  plan: Plan;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  plan_started_at: string | null;
+  country: 'DE' | 'CA' | null;
+}
+
+export interface MerchantBillingWithCountry extends MerchantBilling {
+  country: 'DE' | 'CA' | null;
+}
+
+export async function getMerchantBilling(merchantId: string): Promise<MerchantBillingWithCountry> {
+  const { data, error } = await supabase
+    .from('merchants')
+    .select('plan, stripe_customer_id, stripe_subscription_id, plan_started_at, country')
+    .eq('id', merchantId)
+    .maybeSingle();
+  if (error) {
+    console.warn('getMerchantBilling failed:', error);
+    return { plan: 'free', country: null };
+  }
+  const row = (data as MerchantBillingRow | null) ?? { plan: 'free' as Plan,
+    stripe_customer_id: null, stripe_subscription_id: null, plan_started_at: null, country: null };
+  return {
+    plan: row.plan ?? 'free',
+    stripeCustomerId: row.stripe_customer_id,
+    stripeSubscriptionId: row.stripe_subscription_id,
+    planStartedAt: row.plan_started_at ? new Date(row.plan_started_at) : null,
+    country: row.country,
+  };
 }

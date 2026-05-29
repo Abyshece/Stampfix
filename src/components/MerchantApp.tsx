@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { Campaign, UserCard, ActivityItem, Location, OnboardingState } from '../types';
+import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, MerchantBilling, Plan } from '../types';
 import { useAuth, signOut } from '../lib/auth';
 import {
   getCampaignByMerchant,
@@ -17,6 +17,7 @@ import {
   updateLocation,
   getOnboardingState,
   setOnboardingFlag,
+  getMerchantBilling,
 } from '../lib/db';
 import { syncWalletObject } from '../services/googleWallet';
 import { redeemStampToken } from '../services/stampToken';
@@ -44,6 +45,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [onboarding, setOnboarding] = useState<OnboardingState>({});
+  const [billing, setBilling] = useState<MerchantBilling & { country: 'DE' | 'CA' | null }>({ plan: 'free', country: null });
   // Which location the scanner is "operating as" right now. Persisted per
   // device in localStorage so a barista's tablet remembers between shifts.
   const [activeLocationId, setActiveLocationIdState] = useState<string | null>(
@@ -77,16 +79,18 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       }
       setCampaign(c);
       if (c) {
-        const [cs, acts, locs, ob] = await Promise.all([
+        const [cs, acts, locs, ob, bill] = await Promise.all([
           listCardsForCampaign(c.id),
           listActivities(c.id),
           listLocations(c.id),
           getOnboardingState(user.id),
+          getMerchantBilling(user.id),
         ]);
         setCards(cs);
         setActivities(acts);
         setLocations(locs);
         setOnboarding(ob);
+        setBilling(bill);
         // If the persisted active location no longer exists (or there's
         // none yet), fall back to the first one. This keeps the scanner
         // always pointing somewhere sensible.
@@ -332,6 +336,8 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         locations={locations}
         activeLocationId={activeLocationId}
         onboarding={onboarding}
+        billing={billing}
+        country={billing.country}
         onSetActiveLocation={setActiveLocationId}
         onAddLocation={handleAddLocation}
         onUpdateLocation={handleUpdateLocation}

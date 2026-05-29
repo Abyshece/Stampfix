@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import QRCode from 'react-qr-code';
-import type { Campaign, UserCard, ActivityItem, Location, OnboardingState } from '../types';
+import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, MerchantBilling } from '../types';
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
@@ -9,6 +9,8 @@ import {
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { LocationsPanel } from './LocationsPanel';
+import { UpgradeBanner } from './UpgradeBanner';
+import { UpgradeModal } from './UpgradeModal';
 
 interface MerchantDashboardProps {
   campaign: Campaign;
@@ -17,6 +19,11 @@ interface MerchantDashboardProps {
   locations: Location[];
   activeLocationId: string | null;
   onboarding: OnboardingState;
+  /** Merchant's current plan + Stripe state. Used to decide whether to show
+   *  upgrade banners (free plan only) and which CTA to render. */
+  billing: MerchantBilling;
+  /** Merchant country, used for currency-aware pricing copy. */
+  country?: 'DE' | 'CA' | null;
   onSetActiveLocation: (id: string | null) => void;
   onAddLocation: (name: string, address?: string) => Promise<void>;
   onUpdateLocation: (locationId: string, patch: { name?: string; address?: string; archived?: boolean }) => Promise<void>;
@@ -59,7 +66,7 @@ const EMOJI_LIST = [
 ];
 
 export function MerchantDashboard({
-  campaign, cards, activities, locations, activeLocationId, onboarding,
+  campaign, cards, activities, locations, activeLocationId, onboarding, billing, country,
   onSetActiveLocation, onAddLocation, onUpdateLocation,
   onStampCard, onResetCard, onRedeemToken, onUpdateCampaign,
   onAddCustomer, onDeleteCustomer, onBlockCustomer, onMarkOnboardingStep, onLogout,
@@ -87,6 +94,22 @@ export function MerchantDashboard({
     () => activeLocations.find((l) => l.id === activeLocationId) ?? null,
     [activeLocations, activeLocationId],
   );
+
+  // Upgrade UI state. The warning-state banner is dismissible per-session
+  // (sessionStorage so it pops back if they refresh — they should see it
+  // at least once per visit until they upgrade). The "at limit" banner
+  // can NOT be dismissed because it reflects a real, ongoing block.
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [warningDismissed, setWarningDismissed] = useState(() =>
+    sessionStorage.getItem('stampfix_upgrade_warning_dismissed') === '1',
+  );
+  const dismissWarning = () => {
+    setWarningDismissed(true);
+    sessionStorage.setItem('stampfix_upgrade_warning_dismissed', '1');
+  };
+
+  // Show banner only for free-plan merchants. Pro is unlimited so no nudges.
+  const showBanner = billing.plan === 'free';
 
   // Customer list state
   const [customerSearch, setCustomerSearch] = useState('');
@@ -488,6 +511,21 @@ export function MerchantDashboard({
             )}
 
             <div className="max-w-2xl">
+              {/* Upgrade banner — sits above the scanner so it's seen the
+               *  moment the merchant lands on Dashboard. Free plan only;
+               *  hidden under 8/10 customers; warning at 8-9 (dismissible
+               *  per session); hard block at 10 (not dismissible). */}
+              {showBanner && cards.length >= 8 &&
+               !(cards.length < 10 && warningDismissed) && (
+                <div className="mb-4">
+                  <UpgradeBanner
+                    customerCount={cards.length}
+                    country={country}
+                    onUpgrade={() => setShowUpgradeModal(true)}
+                    onDismiss={cards.length < 10 ? dismissWarning : undefined}
+                  />
+                </div>
+              )}
               {/* Location picker — which branch is doing the stamping */}
               {activeLocations.length > 0 && (
                 <div className="mb-4 flex items-center justify-between bg-white border notion-border rounded-lg px-4 py-3 shadow-sm">
@@ -1096,6 +1134,11 @@ export function MerchantDashboard({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Upgrade modal — rendered at the root so it overlays everything */}
+      {showUpgradeModal && (
+        <UpgradeModal country={country ?? null} onClose={() => setShowUpgradeModal(false)} />
       )}
     </div>
   );

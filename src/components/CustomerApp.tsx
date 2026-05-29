@@ -136,10 +136,28 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
     );
   }
   if (error || !campaign) {
+    // Special-case the free-tier limit error so it doesn't look like a
+    // bug. This is a "soft" block — the merchant just needs to upgrade.
+    const isLimitError = error?.toLowerCase().includes('currently full')
+                       || error?.toLowerCase().includes('free-tier');
     return (
       <div className="min-h-screen flex items-center justify-center bg-white p-6 text-center">
-        <div className="max-w-md space-y-4">
-          <p className="text-gray-500">{error || 'No campaign found for this link.'}</p>
+        <div className="max-w-md space-y-5">
+          {isLimitError ? (
+            <>
+              <div className="text-5xl">🎉</div>
+              <h2 className="text-2xl font-serif-display font-semibold">This program is popular!</h2>
+              <p className="text-gray-600 leading-relaxed">
+                The loyalty program is currently at capacity. Please ask the staff to upgrade their
+                Stampfix account so you can join.
+              </p>
+              <p className="text-xs text-gray-400">
+                Existing customers can still collect stamps as normal.
+              </p>
+            </>
+          ) : (
+            <p className="text-gray-500">{error || 'No campaign found for this link.'}</p>
+          )}
           <button onClick={onExit} className="text-blue-600 hover:underline">Return Home</button>
         </div>
       </div>
