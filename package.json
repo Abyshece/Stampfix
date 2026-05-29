@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sentry/react": "^10.55.0",
     "@supabase/supabase-js": "^2.45.4",
     "jsqr": "^1.4.0",
     "jszip": "3.10.1",
