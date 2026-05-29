@@ -320,6 +320,13 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             Present the QR code on your card to the cashier at <strong>{campaign.businessName}</strong> to collect stamps and redeem rewards.
           </p>
         </div>
+
+        <div className="mt-6 max-w-xs w-full bg-[#F7F7F5] border notion-border rounded-lg p-3 text-center">
+          <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1.5">Coming back later?</p>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            Visit <a href="/my-card" className="text-[#37352F] font-medium underline">stampfix.app/my-card</a> and enter this same email to find your card again.
+          </p>
+        </div>
       </main>
     </div>
   );

@@ -203,6 +203,38 @@ export async function getCardForCustomer(
   return data ? toCard(data as CardRow) : null;
 }
 
+/**
+ * Lists every card belonging to a customer across all merchants they've
+ * joined. Used by the `/my-card` self-service page so customers can find
+ * all their loyalty cards from a single login.
+ */
+export async function listCardsForCustomer(customerId: string): Promise<UserCard[]> {
+  const { data, error } = await supabase
+    .from('cards')
+    .select('*')
+    .eq('customer_id', customerId)
+    .eq('status', 'ACTIVE')
+    .order('joined_at', { ascending: false });
+  if (error) throw error;
+  return (data as CardRow[]).map(toCard);
+}
+
+/**
+ * Bulk-fetch the campaigns that a set of cards belong to. RLS-friendly
+ * (the "campaigns public read" policy makes this work for any signed-in
+ * user, even when they're not the merchant). Used by /my-card to render
+ * each card with its merchant's branding.
+ */
+export async function getCampaignsByIds(ids: string[]): Promise<Campaign[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('*')
+    .in('id', ids);
+  if (error) throw error;
+  return (data as CampaignRow[]).map(toCampaign);
+}
+
 export async function createCard(input: {
   campaignId: string;
   customerId?: string | null;

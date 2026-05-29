@@ -7,6 +7,7 @@ import { CustomerApp } from './components/CustomerApp';
 import { EmailConfirmed } from './components/EmailConfirmed';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { TermsOfService } from './components/legal/TermsOfService';
+import { MyCardPage } from './components/MyCardPage';
 
 /**
  * Top-level routing.
@@ -54,6 +55,17 @@ export default function App() {
   const path = window.location.pathname;
   if (path === '/privacy') return <PrivacyPolicy />;
   if (path === '/terms') return <TermsOfService />;
+  if (path === '/my-card') {
+    return (
+      <MyCardPage
+        onExit={() => {
+          window.history.replaceState({}, '', '/');
+          // Re-render by reloading; cheaper than threading state for one nav.
+          window.location.reload();
+        }}
+      />
+    );
+  }
 
   // 1) Post email-confirmation success screen.
   if (showConfirmed) {
