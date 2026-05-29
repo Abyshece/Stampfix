@@ -63,6 +63,8 @@ export async function signUpMerchant(
   email: string,
   password: string,
   businessName: string,
+  country: 'DE' | 'CA',
+  marketingOptIn: boolean,
 ): Promise<{ needsEmailConfirmation: boolean }> {
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -71,6 +73,8 @@ export async function signUpMerchant(
       data: {
         role: 'merchant',
         business_name: businessName,
+        country,
+        marketing_opt_in: marketingOptIn,
       },
       emailRedirectTo: `${window.location.origin}/?confirmed=1`,
     },

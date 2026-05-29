@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check } from 'lucide-react';
+import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff } from 'lucide-react';
 import { signUpMerchant, signInMerchant } from '../lib/auth';
-import { createCampaign } from '../lib/db';
+import { createCampaign, createLocation } from '../lib/db';
 import { supabase } from '../lib/supabase';
 
 const NOTION_COLORS = [
@@ -28,6 +28,8 @@ interface OnboardingProps {
   onComplete: () => void;
   /** Which screen to open on. Defaults to the signup form. */
   initialStep?: 'FORM' | 'LOGIN';
+  /** Optional: show a back button that returns to the landing page. */
+  onBack?: () => void;
 }
 
 /**
@@ -40,24 +42,34 @@ interface OnboardingProps {
  * creation (because they need to be authenticated for RLS to allow the
  * insert). Otherwise we create immediately.
  */
-export function MerchantOnboarding({ onComplete, initialStep = 'FORM' }: OnboardingProps) {
+export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }: OnboardingProps) {
   const [step, setStep] = useState<'FORM' | 'CHECK_EMAIL' | 'LOGIN'>(initialStep);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [busName, setBusName] = useState('');
+  const [country, setCountry] = useState<'DE' | 'CA' | ''>('');
   const [offerTitle, setOfferTitle] = useState('Buy 6 coffee, get 1 free');
   const [logoText, setLogoText] = useState('');
   const [selectedColor, setSelectedColor] = useState(NOTION_COLORS[0].hex);
   const [selectedIcon, setSelectedIcon] = useState('☕️');
   const [maxStamps, setMaxStamps] = useState(6);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // Primary location name. Defaults to the business name so single-
+  // location merchants don't have to think about it; multi-location ones
+  // can give the first location a meaningful name (e.g. "Mitte branch").
+  const [primaryLocationName, setPrimaryLocationName] = useState('');
+  // Consent state. termsAccepted blocks signup; marketingOptIn is purely
+  // optional (default false per GDPR Article 7 — explicit opt-in only).
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const createCampaignForCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
-    await createCampaign({
+    const campaign = await createCampaign({
       merchantId: user.id,
       businessName: busName,
       offerTitle,
@@ -70,20 +82,36 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM' }: Onboard
       customIcon: selectedIcon,
       logoImage: null,
     });
+    // Always create a first location so the campaign is immediately usable
+    // by the scanner. If the merchant didn't customise the name, default
+    // to the business name (single-location case).
+    await createLocation({
+      campaignId: campaign.id,
+      name: primaryLocationName.trim() || busName,
+    });
   };
 
   const handleSignup = async () => {
     setError(null);
-    if (!busName || !email || !password) return;
+    if (!busName || !email || !password || !country) return;
+    if (!termsAccepted) {
+      setError('Please accept the Terms of Service and Privacy Policy to continue.');
+      return;
+    }
     setLoading(true);
     try {
-      const { needsEmailConfirmation } = await signUpMerchant(email, password, busName);
+      const { needsEmailConfirmation } = await signUpMerchant(
+        email, password, busName, country, marketingOptIn,
+      );
       if (needsEmailConfirmation) {
         // Can't create the campaign yet (RLS needs a session). Save form
         // values in sessionStorage for after confirmation.
         sessionStorage.setItem(
           'pending_campaign',
-          JSON.stringify({ busName, offerTitle, maxStamps, selectedColor, selectedIcon, logoText }),
+          JSON.stringify({
+            busName, offerTitle, maxStamps, selectedColor, selectedIcon, logoText,
+            primaryLocationName: primaryLocationName.trim() || busName,
+          }),
         );
         setStep('CHECK_EMAIL');
       } else {
@@ -167,12 +195,22 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM' }: Onboard
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold uppercase text-gray-400 tracking-wider">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             {error && (
               <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{error}</div>
@@ -200,6 +238,14 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM' }: Onboard
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6 text-[#37352F]">
       <div className="max-w-xl w-full">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="mb-6 text-sm text-gray-500 hover:text-[#37352F] flex items-center gap-1 transition"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to home
+          </button>
+        )}
         <div className="mb-10 text-center">
           <div className="w-16 h-16 bg-[#F7F7F5] rounded-lg mx-auto flex items-center justify-center mb-4 border notion-border text-3xl">☕️</div>
           <h2 className="text-3xl font-serif-display font-semibold mb-2">Create Workspace</h2>
@@ -222,13 +268,23 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM' }: Onboard
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-                placeholder="At least 6 characters"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                  placeholder="At least 6 characters"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -243,6 +299,41 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM' }: Onboard
                 className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
                 placeholder="e.g. Acme Coffee Co."
               />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                Primary location
+                <span className="text-[10px] text-gray-400 font-normal uppercase tracking-wider">Optional</span>
+              </label>
+              <input
+                value={primaryLocationName}
+                onChange={(e) => setPrimaryLocationName(e.target.value)}
+                className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                placeholder={busName || 'e.g. Mitte branch, or just your shop name'}
+              />
+              <p className="text-[11px] text-gray-400">If you have multiple branches with the same name, name this one (e.g. "Mitte"). You can add more locations later in Settings.</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Country</label>
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                {([
+                  ['DE', '🇩🇪', 'Germany'],
+                  ['CA', '🇨🇦', 'Canada'],
+                ] as const).map(([code, flag, name]) => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => setCountry(code)}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-md border-2 text-sm font-medium transition ${
+                      country === code
+                        ? 'border-[#37352F] bg-[#F7F7F5]'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-lg">{flag}</span> {name}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
@@ -345,9 +436,43 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM' }: Onboard
             <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-3 rounded">{error}</div>
           )}
 
+          {/* Consent block — GDPR Article 13 (information) + Article 7
+              (explicit opt-in for marketing). Terms acceptance is required;
+              marketing is genuinely optional. */}
+          <div className="space-y-3 pt-2">
+            <label className="flex gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#37352F] focus:ring-1 focus:ring-gray-300 cursor-pointer flex-shrink-0"
+              />
+              <span className="text-xs text-gray-600 leading-relaxed">
+                I agree to the{' '}
+                <a href="/terms" target="_blank" className="underline hover:text-[#37352F]">Terms of Service</a>{' '}
+                and acknowledge the{' '}
+                <a href="/privacy" target="_blank" className="underline hover:text-[#37352F]">Privacy Policy</a>.
+                {country === 'DE' && ' Data is processed in the EU and Canada under an EU adequacy decision.'}
+                <span className="text-red-500 ml-0.5">*</span>
+              </span>
+            </label>
+            <label className="flex gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={marketingOptIn}
+                onChange={(e) => setMarketingOptIn(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#37352F] focus:ring-1 focus:ring-gray-300 cursor-pointer flex-shrink-0"
+              />
+              <span className="text-xs text-gray-600 leading-relaxed">
+                Send me product updates, tips, and occasional news by email.
+                <span className="text-gray-400"> (optional, you can unsubscribe anytime)</span>
+              </span>
+            </label>
+          </div>
+
           <button
             onClick={handleSignup}
-            disabled={!busName || !email || !password || loading}
+            disabled={!busName || !email || !password || !country || !termsAccepted || loading}
             className="w-full bg-[#37352F] text-white py-3 rounded hover:bg-opacity-90 transition font-medium disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
@@ -379,7 +504,7 @@ export async function consumePendingCampaign(userId: string): Promise<boolean> {
   if (!raw) return false;
   try {
     const p = JSON.parse(raw);
-    await createCampaign({
+    const campaign = await createCampaign({
       merchantId: userId,
       businessName: p.busName,
       offerTitle: p.offerTitle,
@@ -391,6 +516,10 @@ export async function consumePendingCampaign(userId: string): Promise<boolean> {
       cardPattern: 'solid',
       customIcon: p.selectedIcon,
       logoImage: null,
+    });
+    await createLocation({
+      campaignId: campaign.id,
+      name: p.primaryLocationName || p.busName,
     });
     sessionStorage.removeItem('pending_campaign');
     return true;
