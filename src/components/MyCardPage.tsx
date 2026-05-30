@@ -5,6 +5,8 @@ import { useAuth, signOut } from '../lib/auth';
 import { listCardsForCustomer, getCampaignsByIds } from '../lib/db';
 import type { UserCard, Campaign } from '../types';
 import { WalletCard } from './WalletCard';
+import { Turnstile } from './Turnstile';
+import { verifyTurnstile } from '../services/turnstile';
 
 /**
  * Self-service page where any customer can look up their loyalty cards.
@@ -24,6 +26,8 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
   const [linkSent, setLinkSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Turnstile token for anti-bot protection on the magic-link request.
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Card data (once logged in)
   const [cards, setCards] = useState<UserCard[]>([]);
@@ -68,8 +72,19 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
   const handleSendLink = async () => {
     setError(null);
     if (!email.trim()) return;
+    if (!turnstileToken) {
+      setError('Please complete the security check.');
+      return;
+    }
     setSending(true);
     try {
+      const ok = await verifyTurnstile(turnstileToken);
+      if (!ok) {
+        setError('Security check failed. Please try again.');
+        setTurnstileToken(null);
+        setSending(false);
+        return;
+      }
       const { error: err } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
@@ -154,9 +169,13 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
             {error && (
               <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{error}</div>
             )}
+            <Turnstile
+              onVerify={setTurnstileToken}
+              onError={() => setTurnstileToken(null)}
+            />
             <button
               onClick={handleSendLink}
-              disabled={!email.trim() || sending}
+              disabled={!email.trim() || !turnstileToken || sending}
               className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium text-sm hover:bg-opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : (

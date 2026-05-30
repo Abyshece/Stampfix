@@ -16,3 +16,9 @@ supabase/.temp/
 *service-account*.json
 *-credentials*.json
 .gcp/
+
+# Google Cloud service account keys — NEVER commit these
+*-wallet-*.json
+*service-account*.json
+*-credentials*.json
+.gcp/

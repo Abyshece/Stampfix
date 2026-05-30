@@ -3,6 +3,8 @@ import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff } from 
 import { signUpMerchant, signInMerchant } from '../lib/auth';
 import { createCampaign, createLocation } from '../lib/db';
 import { supabase } from '../lib/supabase';
+import { Turnstile } from './Turnstile';
+import { verifyTurnstile } from '../services/turnstile';
 
 const NOTION_COLORS = [
   { name: 'Default', hex: '#37352F' },
@@ -63,6 +65,10 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   // optional (default false per GDPR Article 7 — explicit opt-in only).
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
+  // Turnstile (anti-bot) token. null until the widget verifies; the
+  // submit button is gated on this so bots can't bypass the check by
+  // simply clicking before it fires.
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,8 +104,22 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
       setError('Please accept the Terms of Service and Privacy Policy to continue.');
       return;
     }
+    if (!turnstileToken) {
+      setError('Please complete the security check.');
+      return;
+    }
     setLoading(true);
     try {
+      // Verify the Turnstile token server-side BEFORE creating an account.
+      // verifyTurnstile fails open on infra issues so legitimate users
+      // aren't blocked by a Cloudflare outage.
+      const ok = await verifyTurnstile(turnstileToken);
+      if (!ok) {
+        setError('Security check failed. Please try again.');
+        setTurnstileToken(null);
+        setLoading(false);
+        return;
+      }
       const { needsEmailConfirmation } = await signUpMerchant(
         email, password, busName, country, marketingOptIn,
       );
@@ -470,9 +490,17 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
             </label>
           </div>
 
+          {/* Anti-bot challenge. Renders nothing if no Turnstile site key
+              is configured (dev/preview), in which case the form still
+              works but you're trusting your audience. */}
+          <Turnstile
+            onVerify={setTurnstileToken}
+            onError={() => setTurnstileToken(null)}
+          />
+
           <button
             onClick={handleSignup}
-            disabled={!busName || !email || !password || !country || !termsAccepted || loading}
+            disabled={!busName || !email || !password || !country || !termsAccepted || !turnstileToken || loading}
             className="w-full bg-[#37352F] text-white py-3 rounded hover:bg-opacity-90 transition font-medium disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (

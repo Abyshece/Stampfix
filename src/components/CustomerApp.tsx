@@ -4,6 +4,8 @@ import type { Campaign, UserCard } from '../types';
 import { useAuth, sendCustomerMagicLink, signOut } from '../lib/auth';
 import { getCampaignById, getCardForCustomer, createCard } from '../lib/db';
 import { WalletCard } from './WalletCard';
+import { Turnstile } from './Turnstile';
+import { verifyTurnstile } from '../services/turnstile';
 
 interface CustomerAppProps {
   campaignId: string;
@@ -37,6 +39,8 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   const [formData, setFormData] = useState({ firstName: '', surname: '', email: '', age: '' });
   const [isSendingLink, setIsSendingLink] = useState(false);
   const [linkSent, setLinkSent] = useState(false);
+  // Turnstile token gating the magic-link send.
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // 1) Load campaign on mount
   useEffect(() => {
@@ -108,9 +112,20 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
 
   const handleSendLink = async () => {
     if (!formData.firstName || !formData.email) return;
+    if (!turnstileToken) {
+      setError('Please complete the security check.');
+      return;
+    }
     setError(null);
     setIsSendingLink(true);
     try {
+      const ok = await verifyTurnstile(turnstileToken);
+      if (!ok) {
+        setError('Security check failed. Please try again.');
+        setTurnstileToken(null);
+        setIsSendingLink(false);
+        return;
+      }
       // Stash form so we have the name when the magic link redirects back
       sessionStorage.setItem('pending_customer_signup', JSON.stringify(formData));
       await sendCustomerMagicLink(formData.email, campaignId);
@@ -248,9 +263,14 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
               <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{error}</div>
             )}
 
+            <Turnstile
+              onVerify={setTurnstileToken}
+              onError={() => setTurnstileToken(null)}
+            />
+
             <button
               onClick={handleSendLink}
-              disabled={!formData.firstName || !formData.email || isSendingLink}
+              disabled={!formData.firstName || !formData.email || !turnstileToken || isSendingLink}
               className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-2 mt-2"
             >
               {isSendingLink ? <Loader2 className="w-4 h-4 animate-spin" /> : (
