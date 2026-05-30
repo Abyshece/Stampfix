@@ -10,3 +10,9 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 supabase/.temp/
+
+# Google Cloud service account keys — NEVER commit these
+*-wallet-*.json
+*service-account*.json
+*-credentials*.json
+.gcp/

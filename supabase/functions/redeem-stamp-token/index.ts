@@ -150,14 +150,17 @@ Deno.serve(async (req) => {
   // not return rows the user can't access, so the .single() will fail.
   const { data: card, error: cardErr } = await userClient
     .from('cards')
-    .select('id, campaign_id, customer_name, current_stamps, rewards_redeemed, status, campaigns(max_stamps)')
+    .select('id, campaign_id, customer_name, email, current_stamps, rewards_redeemed, status, campaigns(max_stamps, business_name, offer_title)')
     .eq('id', cardId)
     .single();
   if (cardErr || !card) return json(404, { error: 'Card not found or not yours to stamp' });
   if (card.status === 'BLOCKED') return json(403, { error: 'Card is blocked' });
 
   // deno-lint-ignore no-explicit-any
-  const maxStamps = (card as any).campaigns?.max_stamps ?? 6;
+  const campaignData = (card as any).campaigns ?? {};
+  const maxStamps = campaignData.max_stamps ?? 6;
+  const businessName = campaignData.business_name ?? 'a merchant';
+  const offerTitle = campaignData.offer_title ?? '';
 
   let action: 'STAMP' | 'REDEEM';
   let newStamps: number;
@@ -194,5 +197,107 @@ Deno.serve(async (req) => {
     location_id: body.locationId ?? null,
   });
 
+  // Fire retention email when the customer is one stamp away from their
+  // reward. This is the single highest-leverage moment in the loyalty
+  // loop — they're motivated to come back, and a small nudge often
+  // works. Best-effort: if Resend is misconfigured we don't fail the
+  // stamp. Only sends on STAMP (not REDEEM) and only at exactly the
+  // "one away" boundary so the customer doesn't get spammed.
+  if (action === 'STAMP' && newStamps === maxStamps - 1 && card.email) {
+    sendOneAwayEmail({
+      to: card.email,
+      customerName: updated.customer_name,
+      businessName,
+      offerTitle,
+      currentStamps: newStamps,
+      maxStamps,
+    }).catch((err) => console.warn('[notify] one-away email failed:', err));
+  }
+
   return json(200, { ok: true, action, card: updated });
 });
+
+// ---------------------------------------------------------------------
+// Retention email
+// ---------------------------------------------------------------------
+
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+const APP_ORIGIN = Deno.env.get('PUBLIC_APP_ORIGIN') ?? 'https://stampfix.app';
+const FROM_ADDRESS = Deno.env.get('NOTIFY_FROM_ADDRESS') ?? 'Stampfix <hello@stampfix.app>';
+
+async function sendOneAwayEmail(input: {
+  to: string;
+  customerName: string;
+  businessName: string;
+  offerTitle: string;
+  currentStamps: number;
+  maxStamps: number;
+}): Promise<void> {
+  if (!RESEND_API_KEY) {
+    console.warn('[notify] RESEND_API_KEY not set; skipping email');
+    return;
+  }
+
+  const subject = `You're 1 stamp away from your reward at ${input.businessName}!`;
+  const html = `
+<!doctype html>
+<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F7F7F5;margin:0;padding:32px;color:#37352F;">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #E9E9E7;overflow:hidden;">
+    <div style="padding:32px 32px 16px;">
+      <div style="font-size:32px;text-align:center;margin-bottom:16px;">☕️</div>
+      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:600;margin:0 0 12px;text-align:center;">
+        You're 1 stamp away!
+      </h1>
+      <p style="font-size:15px;line-height:1.5;color:#6B6B6B;text-align:center;margin:0 0 24px;">
+        Hi ${escapeHtml(input.customerName)}, you've collected
+        <strong style="color:#37352F;">${input.currentStamps} of ${input.maxStamps}</strong> stamps
+        at <strong style="color:#37352F;">${escapeHtml(input.businessName)}</strong>.
+        One more visit and your reward is yours.
+      </p>
+      ${input.offerTitle ? `
+      <div style="background:#F7F7F5;border:1px solid #E9E9E7;border-radius:8px;padding:16px;text-align:center;margin-bottom:24px;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#9B9A97;margin-bottom:4px;">Your reward</div>
+        <div style="font-size:16px;font-weight:600;">${escapeHtml(input.offerTitle)}</div>
+      </div>` : ''}
+      <div style="text-align:center;margin-bottom:8px;">
+        <a href="${APP_ORIGIN}/my-card"
+           style="display:inline-block;background:#37352F;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:500;font-size:14px;">
+          See your card
+        </a>
+      </div>
+    </div>
+    <div style="background:#F7F7F5;padding:16px 32px;text-align:center;border-top:1px solid #E9E9E7;">
+      <p style="margin:0;font-size:11px;color:#9B9A97;line-height:1.5;">
+        You're receiving this because you're enrolled in ${escapeHtml(input.businessName)}'s loyalty program on Stampfix.
+      </p>
+    </div>
+  </div>
+</body></html>`.trim();
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: FROM_ADDRESS,
+      to: input.to,
+      subject,
+      html,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Resend ${res.status}: ${text}`);
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}

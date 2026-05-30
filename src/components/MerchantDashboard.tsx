@@ -11,6 +11,8 @@ import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { LocationsPanel } from './LocationsPanel';
 import { UpgradeBanner } from './UpgradeBanner';
 import { UpgradeModal } from './UpgradeModal';
+import { AccountBilling } from './AccountBilling';
+import { ComplianceSettings } from './ComplianceSettings';
 
 interface MerchantDashboardProps {
   campaign: Campaign;
@@ -947,12 +949,20 @@ export function MerchantDashboard({
               )}
             </header>
 
+            <AccountBilling
+              billing={billing}
+              country={country}
+              cards={cards}
+            />
+
             <LocationsPanel
               locations={locations}
               activeLocationId={activeLocationId}
               onAdd={onAddLocation}
               onUpdate={onUpdateLocation}
             />
+
+            <ComplianceSettings merchantId={campaign.merchantId} />
 
             <div className="border notion-border rounded-lg p-6 space-y-8">
               <div>
