@@ -432,6 +432,32 @@ export function MerchantDashboard({
             ))}
           </div>
         </div>
+
+        {/* Pro upgrade CTA — free plan only. Sits above logout so it's
+         *  always visible without being intrusive. Single click opens
+         *  the same UpgradeModal used elsewhere. */}
+        {billing.plan === 'free' && (
+          <div className="px-3 pb-3">
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="w-full text-left group bg-gradient-to-br from-[#37352F] to-[#1a1918] text-white rounded-lg p-3.5 shadow-sm hover:shadow-md transition-all hover:scale-[1.02]"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-6 h-6 rounded-full bg-amber-400/20 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                </div>
+                <span className="text-sm font-semibold">Upgrade to Pro</span>
+              </div>
+              <p className="text-[11px] text-gray-300 leading-snug">
+                Unlock unlimited customers and unlock more.
+              </p>
+              <div className="mt-2 text-[10px] font-medium text-amber-300 group-hover:text-amber-200 inline-flex items-center gap-0.5">
+                See plans <ArrowRight className="w-3 h-3" />
+              </div>
+            </button>
+          </div>
+        )}
+
         <div className="p-3 border-t notion-border">
           <button onClick={onLogout} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-red-50 text-gray-600 hover:text-red-600">
             <LogOut className="w-4 h-4" /> Log out
@@ -967,6 +993,12 @@ export function MerchantDashboard({
             <div className="border notion-border rounded-lg p-6 space-y-8">
               <div>
                 <h3 className="font-medium mb-4 flex items-center gap-2"><Settings className="w-4 h-4" /> General Configuration</h3>
+                <div className="bg-blue-50 border border-blue-100 rounded-md p-3 mb-4 text-xs text-blue-800 leading-relaxed">
+                  <strong>How offer changes work:</strong> When you change the offer title or
+                  required stamps, only <strong>new customers</strong> get the updated offer.
+                  Existing customers keep working toward the offer they originally signed up for.
+                  Once they redeem their reward, their next cycle automatically uses your current offer.
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase">Business Name</label>

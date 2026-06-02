@@ -16,7 +16,15 @@ interface WalletCardProps {
 }
 
 export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCardProps) {
-  const stamps = Array.from({ length: campaign.maxStamps }, (_, i) => i + 1);
+  // The card's snapshot drives what the customer sees. This way an
+  // existing customer keeps showing their original offer even after
+  // the merchant changes the campaign. Fallbacks to campaign for cards
+  // created before the snapshot migration (those got backfilled to
+  // campaign values anyway, so the fallback is just belt-and-braces).
+  const effectiveMaxStamps = card.maxStampsSnapshot ?? campaign.maxStamps;
+  const effectiveOfferTitle = card.offerTitleSnapshot ?? campaign.offerTitle;
+  const effectiveIcon = card.customIconSnapshot ?? campaign.customIcon;
+  const stamps = Array.from({ length: effectiveMaxStamps }, (_, i) => i + 1);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -108,7 +116,7 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
     return { cols: 'grid-cols-4', gap: 'gap-3', size: 'w-10 h-10', text: 'text-sm', icon: 'text-sm' };
   };
 
-  const layout = getGridSettings(campaign.maxStamps);
+  const layout = getGridSettings(effectiveMaxStamps);
 
   return (
     <div className="w-full space-y-4">
@@ -151,7 +159,7 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
               <img src={campaign.logoImage} alt="Logo" className="w-10 h-10 object-contain rounded-full bg-gray-50 border border-gray-100" />
             ) : (
               <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-lg shadow-sm text-black">
-                {campaign.customIcon || '🏷️'}
+                {effectiveIcon || '🏷️'}
               </div>
             )}
             <h2 className="text-xs font-bold uppercase tracking-widest max-w-[140px] leading-tight text-gray-900">
@@ -174,7 +182,7 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
                   <div className={`relative ${layout.size} flex items-center justify-center transition-all duration-300`}>
                     {isStamped ? (
                       <div className={`w-full h-full rounded-full bg-black text-white flex items-center justify-center shadow-md animate-in zoom-in duration-300 ${layout.icon}`}>
-                        <div className="font-bold">{campaign.customIcon || <span>✔</span>}</div>
+                        <div className="font-bold">{effectiveIcon || <span>✔</span>}</div>
                       </div>
                     ) : (
                       <div className={`w-full h-full rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center font-bold text-gray-300 ${layout.text}`}>
@@ -189,7 +197,7 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
 
           <div className="mt-6 flex justify-center shrink-0">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 truncate max-w-[200px]">
-              {campaign.offerTitle}
+              {effectiveOfferTitle}
             </span>
           </div>
         </div>

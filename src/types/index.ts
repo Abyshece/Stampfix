@@ -57,6 +57,13 @@ export interface UserCard {
   status: 'ACTIVE' | 'BLOCKED';
   joinedAt: Date;
   joinedAtLocationId?: string | null;
+  /** Reward text frozen at signup. Stays the same until the customer
+   *  redeems, at which point the server re-snapshots from the campaign's
+   *  current values. The wallet pass should render from this, NOT from
+   *  the campaign — that's the whole point of the snapshot model. */
+  offerTitleSnapshot?: string | null;
+  maxStampsSnapshot?: number | null;
+  customIconSnapshot?: string | null;
 }
 
 export interface ActivityItem {

@@ -42,6 +42,9 @@ interface CardRow {
   status: 'ACTIVE' | 'BLOCKED';
   joined_at: string;
   joined_at_location_id: string | null;
+  offer_title_snapshot: string | null;
+  max_stamps_snapshot: number | null;
+  custom_icon_snapshot: string | null;
 }
 
 interface ActivityRow {
@@ -92,6 +95,9 @@ const toCard = (r: CardRow): UserCard => ({
   status: r.status,
   joinedAt: new Date(r.joined_at),
   joinedAtLocationId: r.joined_at_location_id,
+  offerTitleSnapshot: r.offer_title_snapshot,
+  maxStampsSnapshot: r.max_stamps_snapshot,
+  customIconSnapshot: r.custom_icon_snapshot,
 });
 
 const toActivity = (r: ActivityRow): ActivityItem => ({
@@ -243,6 +249,19 @@ export async function createCard(input: {
   age?: number | null;
   joinedAtLocationId?: string | null;
 }): Promise<UserCard> {
+  // Snapshot the campaign's current offer onto the new card. This is
+  // what "freezes" the customer's reward at signup — even if the
+  // merchant changes the campaign tomorrow, this card keeps showing
+  // the offer they originally signed up for. Server-side, the
+  // redeem-stamp-token edge function re-snapshots on redemption so
+  // subsequent cycles get the current offer.
+  const { data: campaign, error: campErr } = await supabase
+    .from('campaigns')
+    .select('offer_title, max_stamps, custom_icon')
+    .eq('id', input.campaignId)
+    .single();
+  if (campErr) throw campErr;
+
   const { data, error } = await supabase
     .from('cards')
     .insert({
@@ -252,6 +271,9 @@ export async function createCard(input: {
       email: input.email,
       age: input.age ?? null,
       joined_at_location_id: input.joinedAtLocationId ?? null,
+      offer_title_snapshot: campaign.offer_title,
+      max_stamps_snapshot: campaign.max_stamps,
+      custom_icon_snapshot: campaign.custom_icon,
     })
     .select('*')
     .single();

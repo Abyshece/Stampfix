@@ -148,9 +148,12 @@ Deno.serve(async (req) => {
   // Now look up the card through the merchant's RLS context. This ensures
   // a merchant for campaign A can't stamp a card in campaign B — RLS does
   // not return rows the user can't access, so the .single() will fail.
+  // We pull both the card's snapshot fields AND the campaign's current
+  // values — the snapshot drives the active cycle; the current values
+  // re-snapshot the card if this stamp triggers a reward redemption.
   const { data: card, error: cardErr } = await userClient
     .from('cards')
-    .select('id, campaign_id, customer_name, email, current_stamps, rewards_redeemed, status, campaigns(max_stamps, business_name, offer_title)')
+    .select('id, campaign_id, customer_name, email, current_stamps, rewards_redeemed, status, offer_title_snapshot, max_stamps_snapshot, custom_icon_snapshot, campaigns(max_stamps, business_name, offer_title, custom_icon)')
     .eq('id', cardId)
     .single();
   if (cardErr || !card) return json(404, { error: 'Card not found or not yours to stamp' });
@@ -158,17 +161,36 @@ Deno.serve(async (req) => {
 
   // deno-lint-ignore no-explicit-any
   const campaignData = (card as any).campaigns ?? {};
-  const maxStamps = campaignData.max_stamps ?? 6;
   const businessName = campaignData.business_name ?? 'a merchant';
-  const offerTitle = campaignData.offer_title ?? '';
+
+  // The card's snapshot drives THIS cycle. Fallback to campaign values
+  // for cards created before the snapshot migration (defensive — the
+  // migration backfilled all existing rows, but belt-and-braces).
+  // deno-lint-ignore no-explicit-any
+  const cardAny = card as any;
+  const activeMaxStamps = cardAny.max_stamps_snapshot ?? campaignData.max_stamps ?? 6;
+  const activeOfferTitle = cardAny.offer_title_snapshot ?? campaignData.offer_title ?? '';
 
   let action: 'STAMP' | 'REDEEM';
   let newStamps: number;
   let newRedeemed: number;
-  if (card.current_stamps >= maxStamps) {
+  // After REDEEM we re-snapshot to the merchant's CURRENT campaign
+  // values so the next cycle reflects the current offer. After STAMP
+  // we leave the snapshot alone.
+  let snapshotUpdate: Record<string, unknown> = {};
+
+  if (card.current_stamps >= activeMaxStamps) {
     action = 'REDEEM';
     newStamps = 0;
     newRedeemed = card.rewards_redeemed + 1;
+    // Re-snapshot to the merchant's current offer for the next cycle.
+    // The customer just earned their reward; their NEXT card reflects
+    // whatever the merchant is currently promoting.
+    snapshotUpdate = {
+      offer_title_snapshot: campaignData.offer_title ?? activeOfferTitle,
+      max_stamps_snapshot:  campaignData.max_stamps  ?? activeMaxStamps,
+      custom_icon_snapshot: campaignData.custom_icon ?? cardAny.custom_icon_snapshot,
+    };
   } else {
     action = 'STAMP';
     newStamps = card.current_stamps + 1;
@@ -178,7 +200,11 @@ Deno.serve(async (req) => {
   // Apply the update through the merchant's RLS context too.
   const { data: updated, error: updErr } = await userClient
     .from('cards')
-    .update({ current_stamps: newStamps, rewards_redeemed: newRedeemed })
+    .update({
+      current_stamps: newStamps,
+      rewards_redeemed: newRedeemed,
+      ...snapshotUpdate,
+    })
     .eq('id', cardId)
     .select('id, customer_name, current_stamps, rewards_redeemed, status')
     .single();
@@ -203,14 +229,16 @@ Deno.serve(async (req) => {
   // works. Best-effort: if Resend is misconfigured we don't fail the
   // stamp. Only sends on STAMP (not REDEEM) and only at exactly the
   // "one away" boundary so the customer doesn't get spammed.
-  if (action === 'STAMP' && newStamps === maxStamps - 1 && card.email) {
+  // Uses the card's snapshot values so the email matches what the
+  // customer sees on their actual card.
+  if (action === 'STAMP' && newStamps === activeMaxStamps - 1 && card.email) {
     sendOneAwayEmail({
       to: card.email,
       customerName: updated.customer_name,
       businessName,
-      offerTitle,
+      offerTitle: activeOfferTitle,
       currentStamps: newStamps,
-      maxStamps,
+      maxStamps: activeMaxStamps,
     }).catch((err) => console.warn('[notify] one-away email failed:', err));
   }
 
