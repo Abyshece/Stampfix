@@ -25,6 +25,7 @@ export default function App() {
   const [campaignFromUrl, setCampaignFromUrl] = useState<string | null>(null);
   const [locationFromUrl, setLocationFromUrl] = useState<string | null>(null);
   const [showConfirmed, setShowConfirmed] = useState(false);
+  const [showUpgraded, setShowUpgraded] = useState(false);
   const [cameFromConfirmation, setCameFromConfirmation] = useState(false);
   const [view, setView] = useState<View>('landing');
 
@@ -34,6 +35,14 @@ export default function App() {
     if (params.get('confirmed') === '1') {
       setShowConfirmed(true);
       return; // don't also process ?campaign on the same load
+    }
+    if (params.get('upgraded') === '1') {
+      setShowUpgraded(true);
+      // Clean the URL so refresh doesn't re-trigger the toast.
+      window.history.replaceState({}, '', window.location.pathname);
+      // Auto-dismiss the toast after 6 seconds.
+      const t = setTimeout(() => setShowUpgraded(false), 6000);
+      return () => clearTimeout(t);
     }
     const campaign = params.get('campaign');
     if (campaign) setCampaignFromUrl(campaign);
@@ -107,16 +116,47 @@ export default function App() {
 
   // 3) Merchant flow (login form if signed out, dashboard if signed in).
   if (view === 'merchant') {
-    return <MerchantApp onLogout={() => setView('landing')} startOnLogin={cameFromConfirmation} />;
+    return (
+      <>
+        <MerchantApp onLogout={() => setView('landing')} startOnLogin={cameFromConfirmation} />
+        {showUpgraded && <UpgradeSuccessToast onClose={() => setShowUpgraded(false)} />}
+      </>
+    );
   }
 
   // 4) Landing.
   return (
-    <LandingPage
-      isAuthenticated={Boolean(user)}
-      onEnterMerchantFlow={() => setView('merchant')}
-      onResumeMerchant={() => setView('merchant')}
-    />
+    <>
+      <LandingPage
+        isAuthenticated={Boolean(user)}
+        onEnterMerchantFlow={() => setView('merchant')}
+        onResumeMerchant={() => setView('merchant')}
+      />
+      {showUpgraded && <UpgradeSuccessToast onClose={() => setShowUpgraded(false)} />}
+    </>
+  );
+}
+
+/**
+ * Small banner that flashes when Stripe redirects back after a
+ * successful upgrade. Auto-dismisses; user can close early.
+ */
+function UpgradeSuccessToast({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed top-4 inset-x-4 sm:left-auto sm:right-4 sm:w-96 z-[100] animate-in slide-in-from-top duration-300">
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-lg p-4 shadow-xl flex items-start gap-3">
+        <div className="text-2xl">🎉</div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-green-900">You're on Pro!</h3>
+          <p className="text-sm text-green-800 mt-0.5">
+            Unlimited customers unlocked. Your subscription is active.
+          </p>
+        </div>
+        <button onClick={onClose} className="text-green-700/60 hover:text-green-900 p-1">
+          ×
+        </button>
+      </div>
+    </div>
   );
 }
 

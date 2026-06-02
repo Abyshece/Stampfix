@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { CreditCard, Sparkles, Check } from 'lucide-react';
+import { CreditCard, Sparkles, Check, Loader2, ExternalLink } from 'lucide-react';
 import type { MerchantBilling, UserCard } from '../types';
 import { FREE_TIER_CARD_LIMIT } from '../types';
 import { UpgradeModal } from './UpgradeModal';
+import { openBillingPortal } from '../services/billing';
 
 interface AccountBillingProps {
   billing: MerchantBilling;
@@ -18,6 +19,22 @@ interface AccountBillingProps {
  */
 export function AccountBilling({ billing, country, cards }: AccountBillingProps) {
   const [showModal, setShowModal] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState<string | null>(null);
+
+  const handleOpenPortal = async () => {
+    setPortalError(null);
+    setPortalLoading(true);
+    try {
+      await openBillingPortal();
+      // openBillingPortal does window.location.href = ..., so this
+      // function never returns in the success case.
+    } catch (e) {
+      setPortalError(e instanceof Error ? e.message : 'Could not open billing portal');
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   const isPro = billing.plan === 'pro';
   const used = cards.length;
@@ -64,8 +81,23 @@ export function AccountBilling({ billing, country, cards }: AccountBillingProps)
               Upgrade
             </button>
           )}
+          {isPro && (
+            <button
+              onClick={handleOpenPortal}
+              disabled={portalLoading}
+              className="bg-white border notion-border text-[#37352F] px-4 py-2 rounded-md font-medium text-sm hover:bg-[#F7F7F5] transition flex items-center gap-2 disabled:opacity-50"
+            >
+              {portalLoading ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <><ExternalLink className="w-3.5 h-3.5" /> Manage</>}
+            </button>
+          )}
         </div>
       </div>
+      {portalError && (
+        <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">
+          {portalError}
+        </div>
+      )}
 
       {/* Usage meter (free plan only) */}
       {!isPro && (

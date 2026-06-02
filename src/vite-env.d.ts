@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_SENTRY_DSN?: string;
   readonly VITE_VERCEL_ENV?: string;
   readonly VITE_TURNSTILE_SITE_KEY?: string;
+  readonly VITE_STRIPE_PUBLISHABLE_KEY?: string;
 }
 
 interface ImportMeta {
