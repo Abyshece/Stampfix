@@ -35,6 +35,9 @@ export interface Campaign {
   cardPattern: 'solid' | 'dots' | 'grid';
   customIcon: string;
   logoImage?: string | null;
+  /** Custom poster background. Solid hex or CSS gradient. Falls back
+   *  to primaryColor when null. See migration 20260528070000. */
+  posterColor?: string | null;
 }
 
 export interface Location {

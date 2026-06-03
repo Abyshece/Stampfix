@@ -20,6 +20,7 @@ interface CampaignRow {
   card_pattern: 'solid' | 'dots' | 'grid';
   custom_icon: string;
   logo_image: string | null;
+  poster_color: string | null;
 }
 
 interface LocationRow {
@@ -73,6 +74,7 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   cardPattern: r.card_pattern,
   customIcon: r.custom_icon,
   logoImage: r.logo_image,
+  posterColor: r.poster_color,
 });
 
 const toLocation = (r: LocationRow): Location => ({
@@ -170,6 +172,7 @@ export async function updateCampaign(id: string, patch: Partial<Campaign>): Prom
   if (patch.cardPattern !== undefined) dbPatch.card_pattern = patch.cardPattern;
   if (patch.customIcon !== undefined) dbPatch.custom_icon = patch.customIcon;
   if (patch.logoImage !== undefined) dbPatch.logo_image = patch.logoImage;
+  if (patch.posterColor !== undefined) dbPatch.poster_color = patch.posterColor;
 
   const { data, error } = await supabase
     .from('campaigns')

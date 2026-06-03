@@ -13,6 +13,8 @@ import { UpgradeBanner } from './UpgradeBanner';
 import { UpgradeModal } from './UpgradeModal';
 import { AccountBilling } from './AccountBilling';
 import { ComplianceSettings } from './ComplianceSettings';
+import { PosterSettings } from './PosterSettings';
+import { buildPosterHtml, type PosterSize } from '../services/posterGenerator';
 
 interface MerchantDashboardProps {
   campaign: Campaign;
@@ -271,43 +273,26 @@ export function MerchantDashboard({
     setConfirmAction(null);
   };
 
-  const handleDownloadPoster = (location: Location | null) => {
+  /** Download the new-format printable poster for a specific location.
+   *  Size determines the paper format. The HTML template is generated
+   *  by services/posterGenerator and includes the merchant's offer,
+   *  branding color (or gradient from posterColor), icon, business name,
+   *  and a per-location QR code. */
+  const handleDownloadPoster = (location: Location | null, size: PosterSize = 'poster') => {
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    const qrId = location ? `share-qr-${location.id}` : 'share-qr-code';
-    const svgEl = document.getElementById(qrId);
-    const qrHtml = svgEl?.outerHTML ?? '';
-    const locationLine = location ? `<p class="loc-line">${location.name}</p>` : '';
-    printWindow.document.write(`
-      <html><head><title>${campaign.businessName}${location ? ' — ' + location.name : ''} Poster</title>
-      <style>
-        @page { size: A4 portrait; margin: 0; }
-        body { font-family: -apple-system, sans-serif; margin: 0; height: 100vh;
-               display: flex; flex-direction: column; align-items: center;
-               justify-content: center; background: white; text-align: center;
-               -webkit-print-color-adjust: exact; }
-        .poster-container { border: 8px solid #37352F; padding: 80px 100px;
-                            border-radius: 40px; max-width: 80%; box-sizing: border-box; }
-        h1 { font-size: 48px; color: #37352F; margin-bottom: 20px; font-weight: 800; line-height: 1.1; }
-        p.subtitle { font-size: 24px; color: #666; margin-top: 0; margin-bottom: 50px; }
-        .qr-box { margin: 30px auto; width: 350px; height: 350px; }
-        .qr-box svg { width: 100%; height: 100%; }
-        .footer-name { font-size: 32px; font-weight: 700; margin-top: 40px; color: #37352F; }
-        .loc-line { font-size: 22px; color: #888; margin-top: -20px; margin-bottom: 30px; }
-      </style></head><body>
-        <div class="poster-container">
-          <h1>Join ${campaign.businessName}</h1>
-          ${locationLine}
-          <p class="subtitle">Scan to collect stamps &amp; rewards</p>
-          <div class="qr-box">${qrHtml}</div>
-          <div class="footer-name">${campaign.businessName}</div>
-        </div>
-        <script>window.onload = () => { setTimeout(() => window.print(), 500); };</script>
-      </body></html>
-    `);
+    if (!printWindow) {
+      alert('Please allow pop-ups to download the poster.');
+      return;
+    }
+    const html = buildPosterHtml({
+      campaign,
+      location,
+      size,
+    });
+    printWindow.document.write(html);
     printWindow.document.close();
-    // Onboarding: downloading a poster from the Share tab counts as the
-    // poster-downloaded milestone. Fire and forget — non-critical.
+    // Onboarding: downloading any poster from the Share tab counts as
+    // the poster-downloaded milestone. Fire and forget.
     if (!onboarding.poster_downloaded) {
       onMarkOnboardingStep({ poster_downloaded: true });
     }
@@ -907,9 +892,18 @@ export function MerchantDashboard({
                         <QRCode id={qrId} value={url} size={160} />
                       </div>
                       <div className="space-y-2 w-full pt-2">
-                        <button onClick={() => handleDownloadPoster(loc)} className="w-full bg-[#37352F] text-white py-2 rounded-md font-medium text-sm hover:bg-opacity-90 transition">
-                          Download Poster
-                        </button>
+                        <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-1">Download as</div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <button onClick={() => handleDownloadPoster(loc, 'card')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Business card (85×55mm)">
+                            Card
+                          </button>
+                          <button onClick={() => handleDownloadPoster(loc, 'pamphlet')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Pamphlet (A5 landscape)">
+                            Pamphlet
+                          </button>
+                          <button onClick={() => handleDownloadPoster(loc, 'poster')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Poster (A4 portrait)">
+                            Poster
+                          </button>
+                        </div>
                         <button onClick={() => navigator.clipboard.writeText(url)} className="w-full bg-white border notion-border text-[#37352F] py-2 rounded-md font-medium text-sm hover:bg-gray-50 transition">
                           Copy Link
                         </button>
@@ -989,6 +983,11 @@ export function MerchantDashboard({
             />
 
             <ComplianceSettings merchantId={campaign.merchantId} />
+
+            <PosterSettings
+              campaign={campaign}
+              onUpdated={(updated) => onUpdateCampaign({ posterColor: updated.posterColor })}
+            />
 
             <div className="border notion-border rounded-lg p-6 space-y-8">
               <div>
