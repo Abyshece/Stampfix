@@ -234,20 +234,25 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     width: 380px; background: white;
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    padding: 40px 30px; position: relative;
+    padding: 30px; position: relative;
+    gap: 14px;
   }
-  .size-card .bc-qr img { width: 280px; height: 280px; display: block; }
   .size-card .bc-scan-label {
-    margin-top: 18px; font-size: 16px; font-weight: 700;
+    font-size: 14px; font-weight: 700;
     color: #1E40AF; text-transform: uppercase;
     letter-spacing: 2px; text-align: center;
+    position: relative; z-index: 6;
   }
+  .size-card .bc-qr {
+    position: relative; z-index: 6;
+  }
+  .size-card .bc-qr img { width: 230px; height: 230px; display: block; }
   .size-card .bc-starburst {
-    position: absolute; bottom: -40px; right: -30px;
-    width: 200px; height: 200px;
+    position: absolute; bottom: 14px; right: 14px;
+    width: 110px; height: 110px;
     background: #FBBF24; color: #1E3A8A;
     display: flex; align-items: center; justify-content: center;
-    text-align: center; transform: rotate(15deg);
+    text-align: center; transform: rotate(8deg);
     clip-path: polygon(
       50% 0%, 61% 14%, 75% 5%, 79% 22%, 95% 20%, 90% 38%,
       100% 50%, 90% 62%, 95% 80%, 79% 78%, 75% 95%, 61% 86%,
@@ -255,10 +260,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
       0% 50%, 10% 38%, 5% 20%, 21% 22%, 25% 5%, 39% 14%
     );
     z-index: 5;
+    padding: 18px;
   }
   .size-card .bc-starburst-inner {
-    transform: translate(-22px, -22px);
-    font-size: 17px; font-weight: 900; line-height: 1.15;
+    font-size: 9px; font-weight: 900; line-height: 1.15;
   }
   .size-card .bc-powered {
     position: absolute; bottom: 16px; left: 40px;
@@ -524,10 +529,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
       </div>
     </div>
     <div class="bc-right">
+      <div class="bc-scan-label">Scan to join</div>
       <div class="bc-qr">
         <img src="__QR_URL__" alt="Scan to join" />
       </div>
-      <div class="bc-scan-label">Scan to join</div>
     </div>
     <div class="bc-starburst">
       <div class="bc-starburst-inner">__STARBURST__</div>
