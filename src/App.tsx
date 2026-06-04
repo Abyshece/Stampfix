@@ -8,6 +8,7 @@ import { EmailConfirmed } from './components/EmailConfirmed';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { TermsOfService } from './components/legal/TermsOfService';
 import { MyCardPage } from './components/MyCardPage';
+import { AdminPanel } from './components/AdminPanel';
 
 /**
  * Top-level routing.
@@ -64,6 +65,7 @@ export default function App() {
   const path = window.location.pathname;
   if (path === '/privacy') return <PrivacyPolicy />;
   if (path === '/terms') return <TermsOfService />;
+  if (path === '/admin') return <AdminPanel />;
   if (path === '/my-card') {
     return (
       <MyCardPage
