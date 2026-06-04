@@ -1,80 +1,99 @@
 import { supabase } from '../lib/supabase';
 
-/**
- * Admin service — wrappers for platform-admin RPCs.
- *
- * Every function calls a SECURITY DEFINER Postgres function that checks
- * is_platform_admin() before returning data. If the caller isn't an
- * admin, the RPCs return null/empty and these wrappers surface a clean
- * "Not authorized" error.
- *
- * Don't bypass this layer with raw .from() queries — that's how data
- * leaks happen. All admin reads/writes go through these named RPCs.
- */
-
-export interface PlatformStats {
-  merchants_total: number;
-  merchants_free: number;
-  merchants_pro: number;
-  cards_active: number;
-  cards_blocked: number;
-  activities_24h: number;
+export interface KPIBuckets {
+  signups_today: number;
+  signups_yesterday: number;
+  signups_7d: number;
+  signups_30d: number;
+  customers_today: number;
+  customers_7d: number;
+  customers_30d: number;
+  activities_today: number;
   activities_7d: number;
-  new_merchants_7d: number;
-  campaigns_total: number;
-  locations_total: number;
-  mrr_eur_cents: number;
-  mrr_cad_cents: number;
-  mrr_other_cents: number;
+  activities_30d: number;
+  rewards_today: number;
+  rewards_7d: number;
+  rewards_30d: number;
+  open_tickets: number;
+  new_contact_messages: number;
+  signups_sparkline: Array<{ date: string; count: number }>;
 }
+
+export type MerchantStatus = 'active' | 'frozen' | 'blocked' | 'deleted';
 
 export interface MerchantRow {
   id: string;
+  merchant_code: string;
   email: string;
   business_name: string;
   country: string | null;
   plan: 'free' | 'pro';
+  status: MerchantStatus;
   is_platform_admin: boolean;
   created_at: string;
   card_count: number;
   recent_activity_count: number;
 }
 
-export interface SuspiciousRow {
-  campaign_id: string;
-  business_name: string;
-  stamps_last_hour: number;
-  first_stamp: string;
-  last_stamp: string;
-}
-
-export interface ActivityRow {
-  id: string;
-  type: 'JOIN' | 'STAMP' | 'REDEEM' | 'BLOCK' | 'UNBLOCK';
-  campaign_id: string;
-  business_name: string;
+export interface CustomerRow {
+  card_id: string;
+  customer_id: string | null;
   customer_name: string;
-  created_at: string;
+  email: string;
+  joined_at: string;
+  current_stamps: number;
+  rewards_redeemed: number;
+  status: 'ACTIVE' | 'BLOCKED';
+  merchant_id: string;
+  merchant_code: string;
+  business_name: string;
+  campaign_id: string;
   location_name: string | null;
 }
 
-/** Returns whether the current user has the platform-admin flag. */
+export interface TicketRow {
+  id: string;
+  source_type: 'merchant' | 'customer';
+  merchant_id: string | null;
+  merchant_code: string | null;
+  merchant_email: string | null;
+  customer_email: string | null;
+  customer_name: string | null;
+  related_business_name: string | null;
+  category: string;
+  subject: string;
+  body: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'dismissed';
+  admin_notes: string | null;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  inquiry_type: string;
+  business_name: string | null;
+  message: string;
+  status: 'new' | 'replied' | 'archived';
+  admin_notes: string | null;
+  created_at: string;
+}
+
 export async function checkIsAdmin(): Promise<boolean> {
   const { data, error } = await supabase.rpc('is_platform_admin');
-  if (error) {
-    console.warn('[admin] check failed:', error);
-    return false;
-  }
+  if (error) { console.warn('[admin]', error); return false; }
   return data === true;
 }
 
-export async function fetchPlatformStats(): Promise<PlatformStats | null> {
-  const { data, error } = await supabase.rpc('admin_platform_stats');
+export async function fetchKPIs(): Promise<KPIBuckets | null> {
+  const { data, error } = await supabase.rpc('admin_kpi_buckets');
   if (error) throw error;
-  return data as PlatformStats | null;
+  return data as KPIBuckets | null;
 }
 
-export async function listMerchants(searchTerm?: string, limit = 50): Promise<MerchantRow[]> {
+export async function listMerchants(searchTerm?: string, limit = 100): Promise<MerchantRow[]> {
   const { data, error } = await supabase.rpc('admin_list_merchants', {
     search_term: searchTerm ?? null,
     limit_to: limit,
@@ -83,22 +102,118 @@ export async function listMerchants(searchTerm?: string, limit = 50): Promise<Me
   return (data ?? []) as MerchantRow[];
 }
 
-export async function fetchSuspicious(): Promise<SuspiciousRow[]> {
-  const { data, error } = await supabase.rpc('admin_suspicious_stamping');
+export async function listCustomers(
+  searchTerm?: string,
+  merchantId?: string | null,
+  limit = 100,
+): Promise<CustomerRow[]> {
+  const { data, error } = await supabase.rpc('admin_list_customers', {
+    search_term: searchTerm ?? null,
+    merchant_filter: merchantId ?? null,
+    limit_to: limit,
+  });
   if (error) throw error;
-  return (data ?? []) as SuspiciousRow[];
+  return (data ?? []) as CustomerRow[];
 }
 
-export async function fetchAdminRecentActivity(limit = 30): Promise<ActivityRow[]> {
-  const { data, error } = await supabase.rpc('admin_recent_activity', { limit_to: limit });
+export async function listTickets(
+  sourceFilter?: 'merchant' | 'customer' | null,
+  statusFilter?: 'open' | 'in_progress' | 'resolved' | 'dismissed' | null,
+  limit = 100,
+): Promise<TicketRow[]> {
+  const { data, error } = await supabase.rpc('admin_list_tickets', {
+    source_filter: sourceFilter ?? null,
+    status_filter: statusFilter ?? null,
+    limit_to: limit,
+  });
   if (error) throw error;
-  return (data ?? []) as ActivityRow[];
+  return (data ?? []) as TicketRow[];
+}
+
+export async function setMerchantStatus(merchantId: string, status: MerchantStatus): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_merchant_status', {
+    merchant_id_in: merchantId,
+    new_status: status,
+  });
+  if (error) throw error;
 }
 
 export async function setMerchantPlan(merchantId: string, plan: 'free' | 'pro'): Promise<void> {
   const { error } = await supabase.rpc('admin_set_merchant_plan', {
     merchant_id_in: merchantId,
     new_plan: plan,
+  });
+  if (error) throw error;
+}
+
+export async function setTicketStatus(
+  ticketId: string,
+  status: 'open' | 'in_progress' | 'resolved' | 'dismissed',
+  notes?: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_ticket_status', {
+    ticket_id_in: ticketId,
+    new_status: status,
+    notes: notes ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function listContactMessages(statusFilter?: string | null, limit = 100): Promise<ContactMessage[]> {
+  const { data, error } = await supabase.rpc('admin_list_contact_messages', {
+    status_filter: statusFilter ?? null,
+    limit_to: limit,
+  });
+  if (error) throw error;
+  return (data ?? []) as ContactMessage[];
+}
+
+export async function setContactMessageStatus(messageId: string, status: 'new' | 'replied' | 'archived'): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_contact_message_status', {
+    message_id: messageId,
+    new_status: status,
+  });
+  if (error) throw error;
+}
+
+export async function submitContactMessage(input: {
+  name: string;
+  email: string;
+  inquiryType: 'merchant_inquiry' | 'customer_inquiry' | 'partnership' | 'other';
+  businessName?: string;
+  message: string;
+}): Promise<void> {
+  const { error } = await supabase.from('contact_messages').insert({
+    name: input.name.trim(),
+    email: input.email.trim(),
+    inquiry_type: input.inquiryType,
+    business_name: input.businessName?.trim() ?? null,
+    message: input.message.trim(),
+  });
+  if (error) throw error;
+}
+
+export async function submitTicket(input: {
+  sourceType: 'merchant' | 'customer';
+  merchantId?: string | null;
+  customerEmail?: string | null;
+  customerName?: string | null;
+  relatedMerchantId?: string | null;
+  relatedCampaignId?: string | null;
+  category: string;
+  subject: string;
+  body: string;
+}): Promise<void> {
+  const { error } = await supabase.from('support_tickets').insert({
+    source_type: input.sourceType,
+    merchant_id: input.merchantId ?? null,
+    customer_email: input.customerEmail ?? null,
+    customer_name: input.customerName ?? null,
+    related_merchant_id: input.relatedMerchantId ?? null,
+    related_campaign_id: input.relatedCampaignId ?? null,
+    category: input.category,
+    subject: input.subject.trim(),
+    body: input.body.trim(),
   });
   if (error) throw error;
 }

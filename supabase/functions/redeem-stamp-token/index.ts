@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
   // re-snapshot the card if this stamp triggers a reward redemption.
   const { data: card, error: cardErr } = await userClient
     .from('cards')
-    .select('id, campaign_id, customer_name, email, current_stamps, rewards_redeemed, status, offer_title_snapshot, max_stamps_snapshot, custom_icon_snapshot, campaigns(max_stamps, business_name, offer_title, custom_icon)')
+    .select('id, campaign_id, customer_name, email, current_stamps, rewards_redeemed, status, offer_title_snapshot, max_stamps_snapshot, custom_icon_snapshot, campaigns(max_stamps, business_name, offer_title, custom_icon, merchant_id, merchants(status))')
     .eq('id', cardId)
     .single();
   if (cardErr || !card) return json(404, { error: 'Card not found or not yours to stamp' });
@@ -161,6 +161,15 @@ Deno.serve(async (req) => {
 
   // deno-lint-ignore no-explicit-any
   const campaignData = (card as any).campaigns ?? {};
+  // deno-lint-ignore no-explicit-any
+  const merchantStatus = (campaignData?.merchants?.status) as string | undefined;
+  if (merchantStatus && merchantStatus !== 'active') {
+    return json(403, {
+      error: merchantStatus === 'frozen'
+        ? 'Stamping is temporarily disabled for this merchant. Please contact support.'
+        : 'This merchant account is not active.',
+    });
+  }
   const businessName = campaignData.business_name ?? 'a merchant';
 
   // The card's snapshot drives THIS cycle. Fallback to campaign values

@@ -6,6 +6,7 @@ import {
 import { WalletCard } from './WalletCard';
 import type { Campaign, UserCard } from '../types';
 import { signInMerchant, resetPassword } from '../lib/auth';
+import { ContactFormSection } from './ContactFormSection';
 
 interface LandingPageProps {
   onEnterMerchantFlow: () => void;
@@ -506,6 +507,9 @@ export function LandingPage({
         </div>
       </section>
 
+      {/* Contact form (lands in admin → Contact Inquiries) */}
+      <ContactFormSection />
+
       {/* Footer */}
       <footer className="border-t notion-border bg-white py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
@@ -514,9 +518,9 @@ export function LandingPage({
             Stampfix
           </div>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-[#37352F]">Privacy</a>
-            <a href="#" className="hover:text-[#37352F]">Terms</a>
-            <a href="#" className="hover:text-[#37352F]">Twitter</a>
+            <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>
+            <a href="/terms" className="hover:text-[#37352F]">Terms</a>
+            <a href="#contact" className="hover:text-[#37352F]">Contact</a>
           </div>
           <div className="mt-4 md:mt-0">&copy; 2026 Stampfix Inc.</div>
         </div>
