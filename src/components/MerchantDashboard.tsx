@@ -14,6 +14,7 @@ import { UpgradeModal } from './UpgradeModal';
 import { AccountBilling } from './AccountBilling';
 import { ComplianceSettings } from './ComplianceSettings';
 import { PosterSettings } from './PosterSettings';
+import { InsightsPanel } from './InsightsPanel';
 import { buildPosterHtml, type PosterSize } from '../services/posterGenerator';
 
 interface MerchantDashboardProps {
@@ -792,24 +793,12 @@ export function MerchantDashboard({
 
         {/* --- ANALYTICS --- */}
         {activeTab === 'ANALYTICS' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <header>
-              <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Insights</h1>
-              <p className="text-gray-500 text-sm md:text-base">Track the performance of your loyalty program.</p>
-            </header>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <MetricCard label="Total Members" value={cards.length} icon={<Users className="w-5 h-5" />} color="bg-blue-50 text-blue-600" />
-              <MetricCard label="Total Stamps" value={cards.reduce((acc, c) => acc + c.currentStamps + c.rewardsRedeemed * campaign.maxStamps, 0)} icon={<TrendingUp className="w-5 h-5" />} color="bg-orange-50 text-orange-600" />
-              <MetricCard label="Rewards Claimed" value={cards.reduce((acc, c) => acc + c.rewardsRedeemed, 0)} icon={<Award className="w-5 h-5" />} color="bg-green-50 text-green-600" />
-            </div>
-            <div className="bg-white border notion-border rounded-lg p-8">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-semibold text-lg">Activity Pattern</h3>
-                <span className="text-xs text-gray-400">Last 7 days</span>
-              </div>
-              <ActivityBars activities={activities} />
-            </div>
-          </div>
+          <InsightsPanel
+            campaign={campaign}
+            cards={cards}
+            activities={activities}
+            locations={locations}
+          />
         )}
 
         {/* --- PREVIEW --- */}

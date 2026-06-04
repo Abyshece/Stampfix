@@ -73,11 +73,39 @@ Deno.serve(async (req) => {
   // service-role client to bypass RLS — the merchant should always be
   // able to read their own row, but service-role avoids relying on that.
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const { data: merchant, error: mErr } = await admin
+  let { data: merchant, error: mErr } = await admin
     .from('merchants')
     .select('id, email, country, stripe_customer_id, plan')
     .eq('id', user.id)
     .maybeSingle();
+
+  // SELF-HEAL: if the merchant row is missing but the auth user has
+  // role=merchant, create the row on demand. This handles users who
+  // signed up before the handle_new_user trigger existed, or for
+  // whom the trigger failed silently. Without this, they get stuck
+  // unable to upgrade and have to contact support.
+  if (!mErr && !merchant) {
+    const role = user.user_metadata?.role;
+    if (role === 'merchant') {
+      console.warn(`[checkout] auto-creating missing merchant row for ${user.id}`);
+      const { data: created, error: createErr } = await admin
+        .from('merchants')
+        .insert({
+          id: user.id,
+          email: user.email ?? '',
+          business_name: user.user_metadata?.business_name ?? '',
+          country: user.user_metadata?.country ?? null,
+        })
+        .select('id, email, country, stripe_customer_id, plan')
+        .single();
+      if (createErr) {
+        console.error('[checkout] auto-create failed:', createErr);
+        return json(500, { error: 'Could not initialize merchant account. Please contact support.' });
+      }
+      merchant = created;
+    }
+  }
+
   if (mErr || !merchant) {
     console.error('[checkout] merchant fetch failed:', mErr);
     return json(404, { error: 'Merchant record not found' });
