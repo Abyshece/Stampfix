@@ -41,6 +41,11 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   const [linkSent, setLinkSent] = useState(false);
   // Turnstile token gating the magic-link send.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // Consent: required (terms + data processing) and optional (marketing).
+  // Without termsAccepted = true, the submit button stays disabled.
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
 
   // 1) Load campaign on mount
   useEffect(() => {
@@ -79,11 +84,15 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
           const pendingRaw = sessionStorage.getItem('pending_customer_signup');
           let name = user.email?.split('@')[0] ?? 'Customer';
           let age: number | null = null;
+          let consentGiven = false;
+          let marketing = false;
           if (pendingRaw) {
             try {
               const p = JSON.parse(pendingRaw);
               name = `${p.firstName} ${p.surname}`.trim() || name;
               age = p.age ? parseInt(p.age) : null;
+              consentGiven = p.termsAccepted === true;
+              marketing = p.marketingOptIn === true;
             } catch {
               // ignore
             }
@@ -95,6 +104,8 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             email: user.email ?? '',
             age,
             joinedAtLocationId: joinedLocationId ?? null,
+            customerConsentAt: consentGiven ? new Date().toISOString() : null,
+            marketingOptIn: marketing,
           });
           sessionStorage.removeItem('pending_customer_signup');
         }
@@ -126,8 +137,12 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
         setIsSendingLink(false);
         return;
       }
-      // Stash form so we have the name when the magic link redirects back
-      sessionStorage.setItem('pending_customer_signup', JSON.stringify(formData));
+      // Stash form + consent flags so we can apply them after magic-link callback.
+      sessionStorage.setItem('pending_customer_signup', JSON.stringify({
+        ...formData,
+        termsAccepted,
+        marketingOptIn,
+      }));
       await sendCustomerMagicLink(formData.email, campaignId);
       setLinkSent(true);
     } catch (e) {
@@ -263,6 +278,44 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
               <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{error}</div>
             )}
 
+            {/* Consent — required by GDPR. Customer must explicitly tick this. */}
+            <div className="space-y-2.5 pt-2 border-t notion-border">
+              <label className="flex items-start gap-2.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-[#37352F] flex-shrink-0"
+                />
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  I agree to {campaign.businessName}'s{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setShowPrivacyNotice(true); }}
+                    className="underline text-[#37352F] font-medium"
+                  >
+                    privacy notice
+                  </button>
+                  {' '}and{' '}
+                  <a href="/terms" target="_blank" rel="noreferrer" className="underline text-[#37352F] font-medium">
+                    Stampfix's terms
+                  </a>
+                  .
+                </span>
+              </label>
+              <label className="flex items-start gap-2.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={marketingOptIn}
+                  onChange={(e) => setMarketingOptIn(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-[#37352F] flex-shrink-0"
+                />
+                <span className="text-xs text-gray-500 leading-relaxed">
+                  Send me marketing emails from {campaign.businessName} (optional).
+                </span>
+              </label>
+            </div>
+
             <Turnstile
               onVerify={setTurnstileToken}
               onError={() => setTurnstileToken(null)}
@@ -270,7 +323,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
 
             <button
               onClick={handleSendLink}
-              disabled={!formData.firstName || !formData.email || !turnstileToken || isSendingLink}
+              disabled={!formData.firstName || !formData.email || !turnstileToken || !termsAccepted || isSendingLink}
               className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-2 mt-2"
             >
               {isSendingLink ? <Loader2 className="w-4 h-4 animate-spin" /> : (
@@ -278,10 +331,31 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
               )}
             </button>
             <p className="text-[10px] text-gray-400 text-center">
-              By joining you agree to receive marketing emails from {campaign.businessName}.
+              We'll email you a single-use sign-in link. No password needed.
             </p>
           </div>
         </div>
+
+        {/* Privacy notice modal */}
+        {showPrivacyNotice && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setShowPrivacyNotice(false)}>
+            <div className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="sticky top-0 bg-white border-b notion-border px-5 py-3 flex items-center justify-between">
+                <h3 className="font-semibold">{campaign.businessName} — Privacy notice</h3>
+                <button onClick={() => setShowPrivacyNotice(false)} className="text-gray-400 hover:text-[#37352F] text-xl leading-none">&times;</button>
+              </div>
+              <div className="px-5 py-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {campaign.customerPrivacyNotice ?? (
+                  <>
+                    <p>{campaign.businessName} collects your name and email to operate their loyalty program. They use this information solely for the purpose of tracking your stamps, sending reward notifications, and (with your consent) sending marketing communications.</p>
+                    <p className="mt-3">{campaign.businessName} has not yet published a custom privacy notice. For Stampfix's general data handling practices, see our <a href="/privacy" className="underline">platform privacy policy</a>.</p>
+                    <p className="mt-3">You can request deletion of your data at any time from the "My Card" page.</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

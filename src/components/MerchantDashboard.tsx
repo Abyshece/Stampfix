@@ -14,7 +14,9 @@ import { UpgradeModal } from './UpgradeModal';
 import { AccountBilling } from './AccountBilling';
 import { ComplianceSettings } from './ComplianceSettings';
 import { PosterSettings } from './PosterSettings';
+import { CustomerPrivacyNoticePanel } from './CustomerPrivacyNoticePanel';
 import { InsightsPanel } from './InsightsPanel';
+import { RevealableEmail } from './RevealableEmail';
 import { buildPosterHtml, type PosterSize } from '../services/posterGenerator';
 
 interface MerchantDashboardProps {
@@ -697,7 +699,7 @@ export function MerchantDashboard({
                   <div key={card.id} className="p-4 flex items-center justify-between">
                     <div className="space-y-1">
                       <div className="font-medium text-sm">{card.customerName}</div>
-                      <div className="text-xs text-gray-500">{card.email}</div>
+                      <div className="text-xs text-gray-500"><RevealableEmail email={card.email} /></div>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                         card.status === 'BLOCKED' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
                       }`}>{card.currentStamps} Stamps</span>
@@ -736,7 +738,7 @@ export function MerchantDashboard({
                   {filteredCards.map((card) => (
                     <tr key={card.id} className="hover:bg-[#F7F7F5]">
                       <td className="px-4 py-3 font-medium">{card.customerName}</td>
-                      <td className="px-4 py-3 text-gray-500">{card.email || '-'}</td>
+                      <td className="px-4 py-3 text-gray-500"><RevealableEmail email={card.email || ''} /></td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -976,6 +978,11 @@ export function MerchantDashboard({
             <PosterSettings
               campaign={campaign}
               onUpdated={(updated) => onUpdateCampaign({ posterColor: updated.posterColor })}
+            />
+
+            <CustomerPrivacyNoticePanel
+              campaign={campaign}
+              onUpdated={(updated) => onUpdateCampaign({ customerPrivacyNotice: updated.customerPrivacyNotice })}
             />
 
             <div className="border notion-border rounded-lg p-6 space-y-8">

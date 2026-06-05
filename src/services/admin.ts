@@ -36,19 +36,19 @@ export interface MerchantRow {
 }
 
 export interface CustomerRow {
-  card_id: string;
-  customer_id: string | null;
+  customer_id: string;
+  customer_code: string;
   customer_name: string;
   email: string;
-  joined_at: string;
-  current_stamps: number;
-  rewards_redeemed: number;
-  status: 'ACTIVE' | 'BLOCKED';
-  merchant_id: string;
-  merchant_code: string;
-  business_name: string;
-  campaign_id: string;
-  location_name: string | null;
+  active_since: string;
+  cards_in_wallet: number;
+  total_stamps: number;
+  total_rewards_redeemed: number;
+  last_stamp_at: string | null;
+  last_stamp_merchant: string | null;
+  last_login_at: string | null;
+  merchants_list: string;
+  any_deletion_pending: boolean;
 }
 
 export interface TicketRow {

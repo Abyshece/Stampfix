@@ -38,6 +38,9 @@ export interface Campaign {
   /** Custom poster background. Solid hex or CSS gradient. Falls back
    *  to primaryColor when null. See migration 20260528070000. */
   posterColor?: string | null;
+  /** Merchant's own customer-facing privacy notice. Shown to customers
+   *  at signup. If null, a generic Stampfix-pointing fallback is used. */
+  customerPrivacyNotice?: string | null;
 }
 
 export interface Location {
@@ -67,6 +70,14 @@ export interface UserCard {
   offerTitleSnapshot?: string | null;
   maxStampsSnapshot?: number | null;
   customIconSnapshot?: string | null;
+  /** SF00001-style short ID. Assigned automatically by DB trigger. */
+  customerCode?: string | null;
+  /** Timestamp the customer ticked the consent checkbox at signup. */
+  customerConsentAt?: string | null;
+  /** Did the customer opt in to marketing emails at signup? */
+  marketingOptIn?: boolean;
+  /** When the customer requested deletion. 24h grace before scrub. */
+  deletionRequestedAt?: string | null;
 }
 
 export interface ActivityItem {

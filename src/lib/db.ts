@@ -21,6 +21,7 @@ interface CampaignRow {
   custom_icon: string;
   logo_image: string | null;
   poster_color: string | null;
+  customer_privacy_notice: string | null;
 }
 
 interface LocationRow {
@@ -46,6 +47,10 @@ interface CardRow {
   offer_title_snapshot: string | null;
   max_stamps_snapshot: number | null;
   custom_icon_snapshot: string | null;
+  customer_code: string | null;
+  customer_consent_at: string | null;
+  marketing_opt_in: boolean | null;
+  deletion_requested_at: string | null;
 }
 
 interface ActivityRow {
@@ -75,6 +80,7 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   customIcon: r.custom_icon,
   logoImage: r.logo_image,
   posterColor: r.poster_color,
+  customerPrivacyNotice: r.customer_privacy_notice,
 });
 
 const toLocation = (r: LocationRow): Location => ({
@@ -100,6 +106,10 @@ const toCard = (r: CardRow): UserCard => ({
   offerTitleSnapshot: r.offer_title_snapshot,
   maxStampsSnapshot: r.max_stamps_snapshot,
   customIconSnapshot: r.custom_icon_snapshot,
+  customerCode: r.customer_code,
+  customerConsentAt: r.customer_consent_at,
+  marketingOptIn: r.marketing_opt_in ?? false,
+  deletionRequestedAt: r.deletion_requested_at,
 });
 
 const toActivity = (r: ActivityRow): ActivityItem => ({
@@ -173,6 +183,7 @@ export async function updateCampaign(id: string, patch: Partial<Campaign>): Prom
   if (patch.customIcon !== undefined) dbPatch.custom_icon = patch.customIcon;
   if (patch.logoImage !== undefined) dbPatch.logo_image = patch.logoImage;
   if (patch.posterColor !== undefined) dbPatch.poster_color = patch.posterColor;
+  if (patch.customerPrivacyNotice !== undefined) dbPatch.customer_privacy_notice = patch.customerPrivacyNotice;
 
   const { data, error } = await supabase
     .from('campaigns')
@@ -251,6 +262,8 @@ export async function createCard(input: {
   email: string;
   age?: number | null;
   joinedAtLocationId?: string | null;
+  customerConsentAt?: string | null;
+  marketingOptIn?: boolean;
 }): Promise<UserCard> {
   // Snapshot the campaign's current offer onto the new card. This is
   // what "freezes" the customer's reward at signup — even if the
@@ -277,6 +290,9 @@ export async function createCard(input: {
       offer_title_snapshot: campaign.offer_title,
       max_stamps_snapshot: campaign.max_stamps,
       custom_icon_snapshot: campaign.custom_icon,
+      // GDPR consent timestamp — captured at signup, never modified after.
+      customer_consent_at: input.customerConsentAt ?? null,
+      marketing_opt_in: input.marketingOptIn ?? false,
     })
     .select('*')
     .single();
@@ -370,6 +386,21 @@ export async function setCardStatus(
 
 export async function deleteCard(cardId: string): Promise<void> {
   const { error } = await supabase.from('cards').delete().eq('id', cardId);
+  if (error) throw error;
+}
+
+/** Customer-initiated deletion request. Soft-deletes via timestamp;
+ *  the actual scrub happens in the 24h grace period after. The card
+ *  is marked BLOCKED immediately so no further stamps accrue. */
+export async function requestCardDeletion(cardId: string): Promise<void> {
+  const { error } = await supabase.rpc('request_card_deletion', { card_id_in: cardId });
+  if (error) throw error;
+}
+
+/** Cancel a pending deletion if the customer changes their mind
+ *  within the 24h grace window. */
+export async function cancelCardDeletion(cardId: string): Promise<void> {
+  const { error } = await supabase.rpc('cancel_card_deletion', { card_id_in: cardId });
   if (error) throw error;
 }
 

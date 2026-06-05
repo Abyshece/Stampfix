@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Mail, Loader2, ArrowLeft, Smartphone, LogOut, Bookmark } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth, signOut } from '../lib/auth';
-import { listCardsForCustomer, getCampaignsByIds } from '../lib/db';
+import { listCardsForCustomer, getCampaignsByIds, requestCardDeletion, cancelCardDeletion } from '../lib/db';
 import type { UserCard, Campaign } from '../types';
 import { WalletCard } from './WalletCard';
 import { Turnstile } from './Turnstile';
@@ -38,35 +38,43 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
   const isIOS = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   // ----- Load cards once authenticated -----
+  const loadCards = async (signal?: { cancelled: boolean }) => {
+    if (!user) return;
+    setLoadingCards(true);
+    try {
+      const myCards = await listCardsForCustomer(user.id);
+      if (signal?.cancelled) return;
+      setCards(myCards);
+      const campaignIds = Array.from(new Set(myCards.map((c) => c.campaignId)));
+      const campaigns = await getCampaignsByIds(campaignIds);
+      if (signal?.cancelled) return;
+      const map: Record<string, Campaign> = {};
+      for (const camp of campaigns) map[camp.id] = camp;
+      setCampaignsById(map);
+    } catch (e) {
+      if (!signal?.cancelled) {
+        console.error('[my-card] failed to load cards:', e);
+      }
+    } finally {
+      if (!signal?.cancelled) setLoadingCards(false);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       setCards([]);
       setCampaignsById({});
       return;
     }
-    let cancelled = false;
-    (async () => {
-      setLoadingCards(true);
-      try {
-        const myCards = await listCardsForCustomer(user.id);
-        if (cancelled) return;
-        setCards(myCards);
-        const campaignIds = Array.from(new Set(myCards.map((c) => c.campaignId)));
-        const campaigns = await getCampaignsByIds(campaignIds);
-        if (cancelled) return;
-        const map: Record<string, Campaign> = {};
-        for (const camp of campaigns) map[camp.id] = camp;
-        setCampaignsById(map);
-      } catch (e) {
-        if (!cancelled) {
-          console.error('[my-card] failed to load cards:', e);
-        }
-      } finally {
-        if (!cancelled) setLoadingCards(false);
-      }
-    })();
-    return () => { cancelled = true; };
+    const signal = { cancelled: false };
+    loadCards(signal);
+    return () => { signal.cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  /** Called by child components (DeletionRow) after a mutation, so the
+   *  card list re-renders with fresh status. */
+  const refresh = () => loadCards();
 
   // ----- Send magic link -----
   const handleSendLink = async () => {
@@ -235,8 +243,11 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
               const campaign = campaignsById[card.campaignId];
               if (!campaign) return null;
               return (
-                <div key={card.id} className="bg-white border notion-border rounded-xl p-4 shadow-sm">
+                <div key={card.id} className="bg-white border notion-border rounded-xl p-4 shadow-sm space-y-3">
                   <WalletCard card={card} campaign={campaign} />
+
+                  {/* Deletion status + request button */}
+                  <DeletionRow card={card} onRefresh={refresh} />
                 </div>
               );
             })}
@@ -289,6 +300,90 @@ function Shell({
       <main className="max-w-md mx-auto px-5 py-6">
         {children}
       </main>
+    </div>
+  );
+}
+
+// ----- Deletion request UI ------------------------------------------------
+
+/**
+ * Renders a small grey "Request deletion" link below each card.
+ * If a deletion is already pending (within the 24h grace window),
+ * shows status + a cancel option.
+ *
+ * The button is deliberately understated — grey text, secondary
+ * styling. We want it accessible (GDPR Article 17 right to erasure)
+ * but not so prominent that customers click it accidentally.
+ */
+function DeletionRow({ card, onRefresh }: { card: UserCard; onRefresh: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const isPending = !!card.deletionRequestedAt;
+  const requestedAt = card.deletionRequestedAt ? new Date(card.deletionRequestedAt) : null;
+  const hoursPending = requestedAt
+    ? Math.floor((Date.now() - requestedAt.getTime()) / (1000 * 60 * 60))
+    : 0;
+  const hoursRemaining = Math.max(0, 24 - hoursPending);
+
+  const handleRequest = async () => {
+    if (!confirm(
+      `Request deletion of this loyalty card?\n\n` +
+      `Your stamps and history will be permanently removed within 24 hours. ` +
+      `You can cancel anytime during that window.`
+    )) return;
+    setBusy(true);
+    try {
+      await requestCardDeletion(card.id);
+      await onRefresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Could not request deletion');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    setBusy(true);
+    try {
+      await cancelCardDeletion(card.id);
+      await onRefresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Could not cancel');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (isPending) {
+    return (
+      <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-xs">
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <div className="font-medium text-amber-900">Deletion pending</div>
+            <div className="text-amber-700 mt-0.5">
+              This card will be deleted in about {hoursRemaining} hour{hoursRemaining === 1 ? '' : 's'}. No more stamps can be added.
+            </div>
+          </div>
+          <button
+            onClick={handleCancel}
+            disabled={busy}
+            className="bg-white border border-amber-300 text-amber-800 px-2 py-1 rounded text-xs font-medium hover:bg-amber-100 disabled:opacity-50 whitespace-nowrap"
+          >
+            {busy ? '...' : 'Cancel'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-end pt-1">
+      <button
+        onClick={handleRequest}
+        disabled={busy}
+        className="text-[11px] text-gray-400 hover:text-red-600 underline disabled:opacity-50 transition"
+      >
+        {busy ? 'Working...' : 'Request data deletion'}
+      </button>
     </div>
   );
 }
