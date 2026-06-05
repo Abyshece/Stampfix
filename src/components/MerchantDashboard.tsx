@@ -646,12 +646,32 @@ export function MerchantDashboard({
                             act.type === 'BLOCK' ? '🚫' : '✓'}
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {act.type === 'STAMP' ? `Stamped ${act.customerName}` :
-                              act.type === 'REDEEM' ? `Reward claimed by ${act.customerName}` :
-                              act.type === 'JOIN' ? `${act.customerName} joined the program` :
-                              act.type === 'BLOCK' ? `Blocked ${act.customerName}` :
-                              `Unblocked ${act.customerName}`}
+                          <div className="text-sm font-medium text-gray-900 flex items-center gap-2 flex-wrap">
+                            <span>
+                              {act.type === 'STAMP' ? `Stamped ${act.customerName}` :
+                                act.type === 'REDEEM' ? `Reward claimed by ${act.customerName}` :
+                                act.type === 'JOIN' ? `${act.customerName} joined the program` :
+                                act.type === 'BLOCK' ? `Blocked ${act.customerName}` :
+                                `Unblocked ${act.customerName}`}
+                            </span>
+                            {act.source && (
+                              <span className={`text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded ${
+                                act.source === 'qr' ? 'bg-green-50 text-green-700' :
+                                act.source === 'manual_dashboard' ? 'bg-amber-50 text-amber-700' :
+                                'bg-gray-100 text-gray-600'
+                              }`} title={
+                                act.source === 'qr' ? 'Triggered by a real QR scan'
+                                  : act.source === 'manual_dashboard' ? 'Manually clicked in the dashboard'
+                                  : act.source
+                              }>
+                                {act.source === 'qr' ? 'QR scan' : act.source === 'manual_dashboard' ? 'Manual' : act.source}
+                              </span>
+                            )}
+                            {act.locationName && (
+                              <span className="text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">
+                                {act.locationName}
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-gray-500">{act.timestamp.toLocaleString()}</div>
                         </div>

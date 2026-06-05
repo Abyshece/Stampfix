@@ -6,10 +6,10 @@ import {
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import {
-  checkIsAdmin, fetchKPIs, listMerchants, listCustomers,
+  checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers,
   listTickets, listContactMessages,
   setMerchantStatus, setMerchantPlan, setTicketStatus, setContactMessageStatus,
-  type KPIBuckets, type MerchantRow, type CustomerRow, type TicketRow,
+  type RangedKPIs, type KPIBlock, type MerchantRow, type CustomerRow, type TicketRow,
   type ContactMessage, type MerchantStatus,
 } from '../services/admin';
 
@@ -93,144 +93,194 @@ export function AdminPanel() {
 // OVERVIEW
 // =====================================================================
 
+type RangePreset = 'today' | 'yesterday' | '7d' | '30d' | 'this_month' | 'last_month' | 'custom';
+
 function OverviewTab() {
-  const [kpi, setKpi] = useState<KPIBuckets | null>(null);
+  const [preset, setPreset] = useState<RangePreset>('30d');
+  const [customFrom, setCustomFrom] = useState<string>('');
+  const [customTo, setCustomTo] = useState<string>('');
+  const [data, setData] = useState<RangedKPIs | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchKPIs().then(setKpi).catch(console.error).finally(() => setLoading(false));
-  }, []);
+  // Resolve the chosen preset into actual from/to dates.
+  const { fromDate, toDate, label } = useMemo(() => {
+    return resolveRange(preset, customFrom, customTo);
+  }, [preset, customFrom, customTo]);
 
-  if (loading) return <Loader />;
-  if (!kpi) return <Empty msg="No data." />;
+  useEffect(() => {
+    setLoading(true);
+    fetchRangedKPIs(fromDate, toDate)
+      .then(setData)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [fromDate, toDate]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-serif-display font-semibold mb-1">Overview</h1>
-        <p className="text-gray-500 text-sm">Platform-wide KPIs across daily, weekly, and monthly windows.</p>
+        <p className="text-gray-500 text-sm">Platform KPIs for {label}.</p>
       </header>
 
-      {/* Top: open work attention */}
-      {(kpi.open_tickets > 0 || kpi.new_contact_messages > 0) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-          <div className="flex-1 text-sm">
-            <strong>You have unfinished work.</strong>
-            {kpi.open_tickets > 0 && ` ${kpi.open_tickets} open ticket${kpi.open_tickets === 1 ? '' : 's'}.`}
-            {kpi.new_contact_messages > 0 && ` ${kpi.new_contact_messages} new contact inquir${kpi.new_contact_messages === 1 ? 'y' : 'ies'}.`}
-          </div>
+      {/* Date range picker — single source of truth for everything below */}
+      <div className="bg-white border notion-border rounded-lg p-4 space-y-3 sticky top-0 z-10">
+        <div className="flex flex-wrap gap-2 items-center">
+          {([
+            ['today', 'Today'],
+            ['yesterday', 'Yesterday'],
+            ['7d', 'Last 7 days'],
+            ['30d', 'Last 30 days'],
+            ['this_month', 'This month'],
+            ['last_month', 'Last month'],
+            ['custom', 'Custom'],
+          ] as const).map(([id, lbl]) => (
+            <button
+              key={id}
+              onClick={() => setPreset(id)}
+              className={`text-xs px-3 py-1.5 rounded-md border transition ${
+                preset === id ? 'bg-[#37352F] text-white border-[#37352F]' : 'bg-white notion-border hover:bg-[#F7F7F5]'
+              }`}
+            >
+              {lbl}
+            </button>
+          ))}
         </div>
-      )}
-
-      <KPIBucket
-        title="Merchant signups"
-        today={kpi.signups_today}
-        weekly={kpi.signups_7d}
-        monthly={kpi.signups_30d}
-        delta={{ today: kpi.signups_today, yesterday: kpi.signups_yesterday }}
-      />
-      <KPIBucket
-        title="New customer cards"
-        today={kpi.customers_today}
-        weekly={kpi.customers_7d}
-        monthly={kpi.customers_30d}
-      />
-      <KPIBucket
-        title="Stamping activity"
-        today={kpi.activities_today}
-        weekly={kpi.activities_7d}
-        monthly={kpi.activities_30d}
-      />
-      <KPIBucket
-        title="Rewards redeemed"
-        today={kpi.rewards_today}
-        weekly={kpi.rewards_7d}
-        monthly={kpi.rewards_30d}
-      />
-
-      {/* Signup sparkline */}
-      <div className="bg-white border notion-border rounded-lg p-6">
-        <h3 className="font-semibold mb-2">Merchant signups · last 14 days</h3>
-        <Sparkline data={kpi.signups_sparkline} />
-      </div>
-    </div>
-  );
-}
-
-function KPIBucket({
-  title, today, weekly, monthly, delta,
-}: {
-  title: string;
-  today: number;
-  weekly: number;
-  monthly: number;
-  delta?: { today: number; yesterday: number };
-}) {
-  let trendStr: string | null = null;
-  if (delta) {
-    if (delta.yesterday === 0 && delta.today === 0) trendStr = null;
-    else if (delta.yesterday === 0) trendStr = '+100%';
-    else {
-      const pct = ((delta.today - delta.yesterday) / delta.yesterday) * 100;
-      trendStr = (pct >= 0 ? '+' : '') + pct.toFixed(0) + '%';
-    }
-  }
-  return (
-    <div>
-      <h3 className="text-xs uppercase tracking-widest font-bold text-gray-400 mb-2">{title}</h3>
-      <div className="grid grid-cols-3 gap-4">
-        <MetricCard label="Today" value={today} accent="text-[#37352F]" delta={trendStr} />
-        <MetricCard label="Last 7 days" value={weekly} accent="text-blue-600" />
-        <MetricCard label="Last 30 days" value={monthly} accent="text-purple-600" />
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({ label, value, accent, delta }: { label: string; value: number | string; accent: string; delta?: string | null }) {
-  return (
-    <div className="bg-white border notion-border rounded-lg p-4">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-gray-500">{label}</span>
-        {delta && (
-          <span className={`text-xs font-medium ${delta.startsWith('-') ? 'text-red-600' : delta === '+0%' ? 'text-gray-400' : 'text-green-600'}`}>
-            {delta}
-          </span>
-        )}
-      </div>
-      <div className={`text-2xl font-bold ${accent}`}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </div>
-    </div>
-  );
-}
-
-function Sparkline({ data }: { data: Array<{ date: string; count: number }> }) {
-  const max = Math.max(1, ...data.map((d) => d.count));
-  return (
-    <div>
-      <div className="flex items-end gap-1 h-24">
-        {data.map((d, i) => (
-          <div key={i} className="flex-1 flex flex-col justify-end" title={`${d.date}: ${d.count}`}>
-            <div
-              className="bg-[#37352F] rounded-t opacity-80 hover:opacity-100 transition-all"
-              style={{ height: `${(d.count / max) * 100}%`, minHeight: d.count > 0 ? '3px' : '0' }}
+        {preset === 'custom' && (
+          <div className="flex items-center gap-2 text-sm pt-2 border-t notion-border">
+            <label className="text-xs text-gray-500">From:</label>
+            <input
+              type="date" value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              max={customTo || undefined}
+              className="bg-[#F7F7F5] border notion-border rounded px-2 py-1 text-xs"
+            />
+            <label className="text-xs text-gray-500 ml-2">To:</label>
+            <input
+              type="date" value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              min={customFrom || undefined}
+              className="bg-[#F7F7F5] border notion-border rounded px-2 py-1 text-xs"
             />
           </div>
-        ))}
+        )}
+        <div className="text-[11px] text-gray-400">
+          Showing data from <strong className="text-[#37352F]">{fromDate.toLocaleDateString()}</strong> to <strong className="text-[#37352F]">{toDate.toLocaleDateString()}</strong>
+          {data && ` · ${data.range_days} day${data.range_days === 1 ? '' : 's'}`}
+        </div>
       </div>
-      <div className="flex gap-1 text-[9px] text-gray-400 font-medium mt-1">
-        {data.map((d, i) => (
-          <div key={i} className="flex-1 text-center">
-            {i === 0 || i === data.length - 1 || i === Math.floor(data.length / 2)
-              ? new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-              : ''}
+
+      {loading || !data ? <Loader /> : (
+        <>
+          {/* Open-work banner */}
+          {(data.open_tickets > 0 || data.new_contact_messages > 0) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <div className="flex-1 text-sm">
+                <strong>You have unfinished work.</strong>
+                {data.open_tickets > 0 && ` ${data.open_tickets} open ticket${data.open_tickets === 1 ? '' : 's'}.`}
+                {data.new_contact_messages > 0 && ` ${data.new_contact_messages} new contact inquir${data.new_contact_messages === 1 ? 'y' : 'ies'}.`}
+              </div>
+            </div>
+          )}
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <KPIContainer title="Merchant signups" block={data.signups} accent="bg-blue-50 text-blue-700" />
+            <KPIContainer title="New customer cards" block={data.customers} accent="bg-purple-50 text-purple-700" />
+            <KPIContainer title="Stamping activity" block={data.activity} accent="bg-orange-50 text-orange-700" />
+            <KPIContainer title="Rewards redeemed" block={data.rewards} accent="bg-green-50 text-green-700" />
           </div>
-        ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** A KPI tile: total + delta vs prior window + daily distribution chart. */
+function KPIContainer({ title, block, accent }: { title: string; block: KPIBlock; accent: string }) {
+  let deltaPct: number | null = null;
+  if (block.prev === 0 && block.total === 0) deltaPct = null;
+  else if (block.prev === 0) deltaPct = 100;
+  else deltaPct = ((block.total - block.prev) / block.prev) * 100;
+
+  const max = Math.max(1, ...block.daily.map((d) => d.count));
+
+  return (
+    <div className="bg-white border notion-border rounded-lg p-5 space-y-3">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className={`inline-block text-[10px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded ${accent}`}>{title}</div>
+          <div className="text-3xl font-bold mt-2">{block.total.toLocaleString()}</div>
+        </div>
+        {deltaPct !== null && (
+          <div className={`text-xs font-medium ${
+            deltaPct >= 5 ? 'text-green-600'
+              : deltaPct <= -5 ? 'text-red-600'
+              : 'text-gray-400'
+          }`}>
+            {deltaPct >= 0 ? '+' : ''}{deltaPct.toFixed(0)}% vs prior
+          </div>
+        )}
+      </div>
+      <div>
+        <div className="flex items-end gap-0.5 h-16">
+          {block.daily.map((d, i) => (
+            <div key={i} className="flex-1 flex flex-col justify-end" title={`${d.date}: ${d.count}`}>
+              <div
+                className="bg-[#37352F] rounded-t opacity-80 hover:opacity-100 transition-all"
+                style={{ height: `${(d.count / max) * 100}%`, minHeight: d.count > 0 ? '2px' : '0' }}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-between text-[9px] text-gray-400 font-medium mt-1">
+          <span>{block.daily[0] ? new Date(block.daily[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
+          <span>{block.daily[block.daily.length - 1] ? new Date(block.daily[block.daily.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
+        </div>
+      </div>
+      <div className="text-xs text-gray-500 pt-2 border-t notion-border">
+        Prior period: <strong className="text-[#37352F]">{block.prev.toLocaleString()}</strong>
       </div>
     </div>
   );
+}
+
+/** Resolves a preset (or custom from/to) into actual Date objects. */
+function resolveRange(preset: RangePreset, customFrom: string, customTo: string): { fromDate: Date; toDate: Date; label: string } {
+  const now = new Date();
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  switch (preset) {
+    case 'today':
+      return { fromDate: startOfToday, toDate: endOfToday, label: 'today' };
+    case 'yesterday': {
+      const start = new Date(startOfToday); start.setDate(start.getDate() - 1);
+      const end = new Date(start); end.setHours(23, 59, 59, 999);
+      return { fromDate: start, toDate: end, label: 'yesterday' };
+    }
+    case '7d': {
+      const start = new Date(startOfToday); start.setDate(start.getDate() - 6);
+      return { fromDate: start, toDate: endOfToday, label: 'the last 7 days' };
+    }
+    case '30d': {
+      const start = new Date(startOfToday); start.setDate(start.getDate() - 29);
+      return { fromDate: start, toDate: endOfToday, label: 'the last 30 days' };
+    }
+    case 'this_month': {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      return { fromDate: start, toDate: endOfToday, label: 'this month' };
+    }
+    case 'last_month': {
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      return { fromDate: start, toDate: end, label: 'last month' };
+    }
+    case 'custom': {
+      const start = customFrom ? new Date(customFrom + 'T00:00:00') : (() => { const d = new Date(startOfToday); d.setDate(d.getDate() - 29); return d; })();
+      const end = customTo ? new Date(customTo + 'T23:59:59') : endOfToday;
+      return { fromDate: start, toDate: end, label: 'the selected range' };
+    }
+  }
 }
 
 // =====================================================================

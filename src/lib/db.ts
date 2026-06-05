@@ -61,6 +61,8 @@ interface ActivityRow {
   type: ActivityItem['type'];
   created_at: string;
   location_id: string | null;
+  source: string | null;
+  actor_user_id: string | null;
   // When the query joins to locations, supabase returns it as a nested
   // object. Optional because some queries don't join.
   locations?: { name: string } | null;
@@ -121,6 +123,8 @@ const toActivity = (r: ActivityRow): ActivityItem => ({
   timestamp: new Date(r.created_at),
   locationId: r.location_id,
   locationName: r.locations?.name ?? null,
+  source: (r.source as ActivityItem['source']) ?? null,
+  actorUserId: r.actor_user_id,
 });
 
 // ---------------------------------------------------------------------
@@ -309,7 +313,7 @@ export async function createCard(input: {
     throw error;
   }
   const card = toCard(data as CardRow);
-  await logActivity(card.campaignId, card.id, card.customerName, 'JOIN');
+  await logActivity(card.campaignId, card.id, card.customerName, 'JOIN', 'qr');
   return card;
 }
 
@@ -482,12 +486,19 @@ async function logActivity(
   cardId: string | null,
   customerName: string,
   type: ActivityItem['type'],
+  source: 'qr' | 'manual_dashboard' | 'admin' | 'webhook' = 'manual_dashboard',
 ): Promise<void> {
+  // Get the actor's auth.users.id from the current session (if any).
+  // Server-side functions pass their own actor via the source='webhook'
+  // path; in the browser, this is the logged-in merchant or customer.
+  const { data: { user } } = await supabase.auth.getUser();
   const { error } = await supabase.from('activities').insert({
     campaign_id: campaignId,
     card_id: cardId,
     customer_name: customerName,
     type,
+    source,
+    actor_user_id: user?.id ?? null,
   });
   if (error) {
     // Activity logging is best-effort. Don't fail the parent action over it.

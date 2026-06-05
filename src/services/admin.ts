@@ -19,6 +19,23 @@ export interface KPIBuckets {
   signups_sparkline: Array<{ date: string; count: number }>;
 }
 
+/** Shape returned by admin_kpi_range. Each metric has total / prev / daily. */
+export interface RangedKPIs {
+  range_days: number;
+  signups: KPIBlock;
+  customers: KPIBlock;
+  activity: KPIBlock;
+  rewards: KPIBlock;
+  open_tickets: number;
+  new_contact_messages: number;
+}
+
+export interface KPIBlock {
+  total: number;
+  prev: number;
+  daily: Array<{ date: string; count: number }>;
+}
+
 export type MerchantStatus = 'active' | 'frozen' | 'blocked' | 'deleted';
 
 export interface MerchantRow {
@@ -91,6 +108,15 @@ export async function fetchKPIs(): Promise<KPIBuckets | null> {
   const { data, error } = await supabase.rpc('admin_kpi_buckets');
   if (error) throw error;
   return data as KPIBuckets | null;
+}
+
+export async function fetchRangedKPIs(fromDate: Date, toDate: Date): Promise<RangedKPIs | null> {
+  const { data, error } = await supabase.rpc('admin_kpi_range', {
+    from_date: fromDate.toISOString(),
+    to_date: toDate.toISOString(),
+  });
+  if (error) throw error;
+  return data as RangedKPIs | null;
 }
 
 export async function listMerchants(searchTerm?: string, limit = 100): Promise<MerchantRow[]> {
