@@ -7,6 +7,7 @@ import { CustomerApp } from './components/CustomerApp';
 import { EmailConfirmed } from './components/EmailConfirmed';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { TermsOfService } from './components/legal/TermsOfService';
+import { DataProcessingAgreement } from './components/legal/DataProcessingAgreement';
 import { MyCardPage } from './components/MyCardPage';
 import { AdminPanel } from './components/AdminPanel';
 
@@ -65,6 +66,7 @@ export default function App() {
   const path = window.location.pathname;
   if (path === '/privacy') return <PrivacyPolicy />;
   if (path === '/terms') return <TermsOfService />;
+  if (path === '/dpa') return <DataProcessingAgreement />;
   if (path === '/admin') return <AdminPanel />;
   if (path === '/my-card') {
     return (

@@ -4,7 +4,7 @@ import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, Merch
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check,
+  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy,
 } from 'lucide-react';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
@@ -17,6 +17,7 @@ import { PosterSettings } from './PosterSettings';
 import { CustomerPrivacyNoticePanel } from './CustomerPrivacyNoticePanel';
 import { InsightsPanel } from './InsightsPanel';
 import { RevealableEmail } from './RevealableEmail';
+import { GetHelpPanel } from './GetHelpPanel';
 import { buildPosterHtml, type PosterSize } from '../services/posterGenerator';
 
 interface MerchantDashboardProps {
@@ -50,7 +51,7 @@ interface MerchantDashboardProps {
   onLogout: () => void;
 }
 
-type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'PREVIEW' | 'SETTINGS' | 'SHARE';
+type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
 
 const NOTION_COLORS = [
   { name: 'Default', hex: '#37352F' },
@@ -410,6 +411,7 @@ export function MerchantDashboard({
               ['PREVIEW', Eye, 'Preview Card'],
               ['SHARE', Share, 'Share & Promote'],
               ['SETTINGS', Settings, 'Settings'],
+              ['HELP', LifeBuoy, 'Get help'],
             ] as const).map(([id, Icon, label]) => (
               <button key={id} onClick={() => handleTabChange(id)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition ${
@@ -1136,6 +1138,8 @@ export function MerchantDashboard({
             </div>
           </div>
         )}
+
+        {activeTab === 'HELP' && <GetHelpPanel />}
       </main>
 
       {/* Mobile Bottom Nav */}
@@ -1156,7 +1160,7 @@ export function MerchantDashboard({
           ))}
           <button onClick={() => setShowMobileMoreMenu(true)}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
+              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <Menu className="w-6 h-6" />
             <span className="text-[10px] font-medium">More</span>
@@ -1175,6 +1179,7 @@ export function MerchantDashboard({
                 ['SHARE', Share, 'Share'],
                 ['PREVIEW', Eye, 'Preview'],
                 ['SETTINGS', Settings, 'Settings'],
+                ['HELP', LifeBuoy, 'Get help'],
               ] as const).map(([id, Icon, label]) => (
                 <button key={id} onClick={() => handleTabChange(id)}
                   className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${

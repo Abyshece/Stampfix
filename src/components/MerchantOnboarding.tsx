@@ -64,6 +64,8 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   // Consent state. termsAccepted blocks signup; marketingOptIn is purely
   // optional (default false per GDPR Article 7 — explicit opt-in only).
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [dpaAccepted, setDpaAccepted] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   // Turnstile (anti-bot) token. null until the widget verifies; the
   // submit button is gated on this so bots can't bypass the check by
@@ -100,8 +102,8 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const handleSignup = async () => {
     setError(null);
     if (!busName || !email || !password || !country) return;
-    if (!termsAccepted) {
-      setError('Please accept the Terms of Service and Privacy Policy to continue.');
+    if (!termsAccepted || !privacyAccepted || !dpaAccepted) {
+      setError('Please accept the Terms, Privacy Policy, and Data Processing Agreement to continue.');
       return;
     }
     if (!turnstileToken) {
@@ -459,35 +461,48 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
           {/* Consent block — GDPR Article 13 (information) + Article 7
               (explicit opt-in for marketing). Terms acceptance is required;
               marketing is genuinely optional. */}
-          <div className="space-y-3 pt-2">
-            <label className="flex gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#37352F] focus:ring-1 focus:ring-gray-300 cursor-pointer flex-shrink-0"
-              />
-              <span className="text-xs text-gray-600 leading-relaxed">
-                I agree to the{' '}
-                <a href="/terms" target="_blank" className="underline hover:text-[#37352F]">Terms of Service</a>{' '}
-                and acknowledge the{' '}
-                <a href="/privacy" target="_blank" className="underline hover:text-[#37352F]">Privacy Policy</a>.
-                {country === 'DE' && ' Data is processed in the EU and Canada under an EU adequacy decision.'}
-                <span className="text-red-500 ml-0.5">*</span>
-              </span>
-            </label>
-            <label className="flex gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={marketingOptIn}
-                onChange={(e) => setMarketingOptIn(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#37352F] focus:ring-1 focus:ring-gray-300 cursor-pointer flex-shrink-0"
-              />
-              <span className="text-xs text-gray-600 leading-relaxed">
-                Send me product updates, tips, and occasional news by email.
-                <span className="text-gray-400"> (optional, you can unsubscribe anytime)</span>
-              </span>
-            </label>
+          <div className="space-y-2.5 pt-2">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Legal</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const allOn = termsAccepted && privacyAccepted && dpaAccepted;
+                  setTermsAccepted(!allOn);
+                  setPrivacyAccepted(!allOn);
+                  setDpaAccepted(!allOn);
+                }}
+                className="text-[11px] text-gray-500 underline hover:text-[#37352F]"
+              >
+                {termsAccepted && privacyAccepted && dpaAccepted ? 'Uncheck all' : 'Accept all required'}
+              </button>
+            </div>
+            <ConsentCheckbox
+              checked={termsAccepted}
+              onChange={setTermsAccepted}
+              required
+              label={<>I agree to the <a href="/terms" target="_blank" className="underline">Terms of Service</a>.</>}
+            />
+            <ConsentCheckbox
+              checked={privacyAccepted}
+              onChange={setPrivacyAccepted}
+              required
+              label={<>I've read the <a href="/privacy" target="_blank" className="underline">Privacy Policy</a>.</>}
+            />
+            <ConsentCheckbox
+              checked={dpaAccepted}
+              onChange={setDpaAccepted}
+              required
+              label={
+                <>I accept the <a href="/dpa" target="_blank" className="underline">Data Processing Agreement</a>
+                {country === 'DE' && <span className="text-gray-500"> (required for GDPR compliance)</span>}.</>
+              }
+            />
+            <ConsentCheckbox
+              checked={marketingOptIn}
+              onChange={setMarketingOptIn}
+              label={<span className="text-gray-500">Send me product updates and tips by email (optional).</span>}
+            />
           </div>
 
           {/* Anti-bot challenge. Renders nothing if no Turnstile site key
@@ -555,4 +570,28 @@ export async function consumePendingCampaign(userId: string): Promise<boolean> {
     sessionStorage.removeItem('pending_campaign');
     return false;
   }
+}
+
+function ConsentCheckbox({
+  checked, onChange, label, required,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: React.ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <label className="flex gap-2.5 cursor-pointer group items-start">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#37352F] focus:ring-1 focus:ring-gray-300 cursor-pointer flex-shrink-0"
+      />
+      <span className="text-xs text-gray-600 leading-relaxed">
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
+      </span>
+    </label>
+  );
 }
