@@ -8,7 +8,7 @@ import { useAuth, signOut } from '../lib/auth';
 import {
   checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers,
   listTickets, listContactMessages,
-  setMerchantStatus, setMerchantPlan, setTicketStatus, setContactMessageStatus,
+  setMerchantStatus, setMerchantPlan, setMerchantNotes, setTicketStatus, setContactMessageStatus,
   type RangedKPIs, type KPIBlock, type MerchantRow, type CustomerRow, type TicketRow,
   type ContactMessage, type MerchantStatus,
 } from '../services/admin';
@@ -292,6 +292,7 @@ function B2BTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = async (s = '') => {
     setLoading(true);
@@ -323,7 +324,7 @@ function B2BTab() {
     <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-serif-display font-semibold mb-1">B2B Clients</h1>
-        <p className="text-gray-500 text-sm">All merchants. Search by code (STF-XXXX), email, or business name.</p>
+        <p className="text-gray-500 text-sm">All merchants. Click any row for full detail and admin notes.</p>
       </header>
 
       <form onSubmit={(e) => { e.preventDefault(); load(search.trim()); }} className="flex gap-2">
@@ -331,7 +332,7 @@ function B2BTab() {
           <Search className="w-4 h-4 text-gray-400" />
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="STF-0001 or email or business name..."
+            placeholder="STF-0001, email, business name, or registered company..."
             className="flex-1 px-2 py-2 bg-transparent outline-none text-sm"
           />
         </div>
@@ -346,80 +347,98 @@ function B2BTab() {
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
               <tr>
                 <th className="px-3 py-2 text-left">Code</th>
-                <th className="px-3 py-2 text-left">Business / email</th>
+                <th className="px-3 py-2 text-left">Business / contact</th>
                 <th className="px-2 py-2 text-left">Country</th>
                 <th className="px-2 py-2 text-left">Plan</th>
                 <th className="px-2 py-2 text-left">Status</th>
                 <th className="px-2 py-2 text-right">Customers</th>
-                <th className="px-2 py-2 text-right">Activity 7d</th>
-                <th className="px-2 py-2 text-left">Signed up</th>
+                <th className="px-2 py-2 text-right">MRR</th>
+                <th className="px-2 py-2 text-right">Total</th>
+                <th className="px-2 py-2 text-left">Last login</th>
                 <th className="px-2 py-2 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((m) => (
-                <tr key={m.id} className="border-t notion-border hover:bg-[#FBFBFA] align-top">
-                  <td className="px-3 py-3 font-mono text-xs">{m.merchant_code}</td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <div>
-                        <div className="font-medium truncate max-w-[200px]">{m.business_name || '—'}</div>
-                        <div className="text-xs text-gray-500 truncate max-w-[200px]">{m.email}</div>
-                      </div>
-                      {m.is_platform_admin && <span className="text-[10px] font-bold uppercase bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">Admin</span>}
-                    </div>
-                  </td>
-                  <td className="px-2 py-3 text-gray-500 text-xs">{m.country ?? '—'}</td>
-                  <td className="px-2 py-3">
-                    <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${
-                      m.plan === 'pro' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
-                    }`}>{m.plan.toUpperCase()}</span>
-                  </td>
-                  <td className="px-2 py-3">
-                    <StatusBadge status={m.status} />
-                  </td>
-                  <td className="px-2 py-3 text-right font-medium text-sm">{m.card_count}</td>
-                  <td className="px-2 py-3 text-right text-gray-500 text-sm">{m.recent_activity_count}</td>
-                  <td className="px-2 py-3 text-xs text-gray-500">{new Date(m.created_at).toLocaleDateString()}</td>
-                  <td className="px-2 py-3 text-center">
-                    <div className="inline-flex items-center gap-0.5">
-                      {busyId === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                        <>
-                          {/* Plan flip */}
-                          <IconButton
-                            title={m.plan === 'pro' ? 'Downgrade to Free' : 'Comp Pro'}
-                            onClick={() => handlePlanToggle(m)}
-                          >
-                            {m.plan === 'pro' ? <ArrowDownCircle className="w-4 h-4 text-gray-500" /> : <ArrowUpCircle className="w-4 h-4 text-amber-600" />}
-                          </IconButton>
-                          {/* Freeze (stop stamping) */}
-                          {m.status !== 'frozen' && (
-                            <IconButton title="Freeze (stop stamping)" onClick={() => handleStatus(m, 'frozen')}>
-                              <Snowflake className="w-4 h-4 text-blue-500" />
-                            </IconButton>
+              {rows.map((m) => {
+                const isOpen = expandedId === m.id;
+                return (
+                  <Fragment key={m.id}>
+                    <tr
+                      onClick={() => setExpandedId(isOpen ? null : m.id)}
+                      className="border-t notion-border hover:bg-[#FBFBFA] align-top cursor-pointer"
+                    >
+                      <td className="px-3 py-3 font-mono text-xs whitespace-nowrap">{m.merchant_code}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div>
+                            <div className="font-medium truncate max-w-[220px]">{m.business_name || '—'}</div>
+                            <div className="text-xs text-gray-500 truncate max-w-[220px]">{m.email}</div>
+                            {m.registered_company_name && (
+                              <div className="text-[10px] text-gray-400 truncate max-w-[220px]" title={m.registered_company_name}>
+                                {m.registered_company_name}
+                              </div>
+                            )}
+                          </div>
+                          {m.is_platform_admin && <span className="text-[10px] font-bold uppercase bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">Admin</span>}
+                          {m.admin_notes && <span title={m.admin_notes} className="text-[10px] text-gray-400">📝</span>}
+                        </div>
+                      </td>
+                      <td className="px-2 py-3 text-gray-500 text-xs">{m.country ?? '—'}</td>
+                      <td className="px-2 py-3">
+                        <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${
+                          m.plan === 'pro' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
+                        }`}>{m.plan.toUpperCase()}</span>
+                      </td>
+                      <td className="px-2 py-3"><StatusBadge status={m.status} /></td>
+                      <td className="px-2 py-3 text-right font-medium text-sm">{m.card_count}</td>
+                      <td className="px-2 py-3 text-right text-xs text-gray-600">{formatCents(m.estimated_mrr_cents, m.country)}</td>
+                      <td className="px-2 py-3 text-right text-xs text-gray-600">{formatCents(m.estimated_total_cents, m.country)}</td>
+                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
+                        {m.last_login_at ? relativeTime(new Date(m.last_login_at)) : 'Never'}
+                      </td>
+                      <td className="px-2 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="inline-flex items-center gap-0.5">
+                          {busyId === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                            <>
+                              <IconButton
+                                title={m.plan === 'pro' ? 'Downgrade to Free' : 'Comp Pro'}
+                                onClick={() => handlePlanToggle(m)}
+                              >
+                                {m.plan === 'pro' ? <ArrowDownCircle className="w-4 h-4 text-gray-500" /> : <ArrowUpCircle className="w-4 h-4 text-amber-600" />}
+                              </IconButton>
+                              {m.status !== 'frozen' && (
+                                <IconButton title="Freeze (stop stamping)" onClick={() => handleStatus(m, 'frozen')}>
+                                  <Snowflake className="w-4 h-4 text-blue-500" />
+                                </IconButton>
+                              )}
+                              {m.status !== 'blocked' && (
+                                <IconButton title="Block (account disabled)" onClick={() => handleStatus(m, 'blocked')}>
+                                  <Ban className="w-4 h-4 text-red-500" />
+                                </IconButton>
+                              )}
+                              {m.status !== 'active' && (
+                                <IconButton title="Reactivate" onClick={() => handleStatus(m, 'active')}>
+                                  <RotateCcw className="w-4 h-4 text-green-600" />
+                                </IconButton>
+                              )}
+                              <IconButton title="Delete account" onClick={() => handleStatus(m, 'deleted')}>
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                              </IconButton>
+                            </>
                           )}
-                          {/* Block */}
-                          {m.status !== 'blocked' && (
-                            <IconButton title="Block (account disabled)" onClick={() => handleStatus(m, 'blocked')}>
-                              <Ban className="w-4 h-4 text-red-500" />
-                            </IconButton>
-                          )}
-                          {/* Reactivate (only when not active) */}
-                          {m.status !== 'active' && (
-                            <IconButton title="Reactivate" onClick={() => handleStatus(m, 'active')}>
-                              <RotateCcw className="w-4 h-4 text-green-600" />
-                            </IconButton>
-                          )}
-                          {/* Delete */}
-                          <IconButton title="Delete account" onClick={() => handleStatus(m, 'deleted')}>
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </IconButton>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        </div>
+                      </td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="bg-[#F7F7F5]">
+                        <td colSpan={10} className="px-4 py-4">
+                          <MerchantDetailPanel merchant={m} onChanged={() => load(search)} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -428,9 +447,115 @@ function B2BTab() {
   );
 }
 
-// =====================================================================
-// B2B2C CLIENTS (customers)
-// =====================================================================
+/** Expanded detail panel showing comprehensive info + editable admin notes. */
+function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; onChanged: () => void }) {
+  const [notes, setNotes] = useState(merchant.admin_notes ?? '');
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await setMerchantNotes(merchant.id, notes.trim());
+      setSavedAt(Date.now());
+      onChanged();
+      setTimeout(() => setSavedAt(null), 2000);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Save failed');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+      {/* Identity */}
+      <div className="bg-white border notion-border rounded p-3 space-y-1.5">
+        <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Identity</div>
+        <DetailRow label="Code" value={<span className="font-mono">{merchant.merchant_code}</span>} />
+        <DetailRow label="Business" value={merchant.business_name || '—'} />
+        <DetailRow label="Registered" value={merchant.registered_company_name || <span className="text-gray-400 italic">Not set</span>} />
+        <DetailRow label="Email" value={merchant.email} />
+        <DetailRow label="Country" value={merchant.country ?? '—'} />
+      </div>
+      {/* Activity */}
+      <div className="bg-white border notion-border rounded p-3 space-y-1.5">
+        <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Activity</div>
+        <DetailRow label="Joined" value={new Date(merchant.created_at).toLocaleString()} />
+        <DetailRow label="Active since" value={
+          merchant.first_activity_at
+            ? new Date(merchant.first_activity_at).toLocaleString()
+            : <span className="text-gray-400 italic">No customer activity yet</span>
+        } />
+        <DetailRow label="Last login" value={
+          merchant.last_login_at
+            ? new Date(merchant.last_login_at).toLocaleString()
+            : <span className="text-gray-400 italic">Never</span>
+        } />
+        <DetailRow label="Customers (active)" value={merchant.card_count.toString()} />
+        <DetailRow label="Activity (7d)" value={merchant.recent_activity_count.toString()} />
+      </div>
+      {/* Billing */}
+      <div className="bg-white border notion-border rounded p-3 space-y-1.5">
+        <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Billing</div>
+        <DetailRow label="Plan" value={
+          <span className={`font-semibold ${merchant.plan === 'pro' ? 'text-amber-700' : 'text-gray-600'}`}>
+            {merchant.plan.toUpperCase()}
+          </span>
+        } />
+        <DetailRow label="Plan started" value={
+          merchant.plan_started_at
+            ? new Date(merchant.plan_started_at).toLocaleDateString()
+            : <span className="text-gray-400 italic">—</span>
+        } />
+        <DetailRow label="Est. MRR" value={formatCents(merchant.estimated_mrr_cents, merchant.country)} />
+        <DetailRow label="Est. total revenue" value={formatCents(merchant.estimated_total_cents, merchant.country)} />
+        <div className="pt-1 border-t notion-border text-[10px] text-gray-400 italic">
+          Revenue is an estimate. For exact figures, check Stripe.
+        </div>
+      </div>
+      {/* Admin notes */}
+      <div className="bg-white border notion-border rounded p-3 space-y-2 md:col-span-3">
+        <div className="flex items-center justify-between">
+          <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Admin notes (internal only)</div>
+          <div className="flex items-center gap-2">
+            {savedAt && <span className="text-[10px] text-green-600">✓ Saved</span>}
+            <button
+              onClick={save}
+              disabled={saving}
+              className="bg-[#37352F] text-white text-xs px-3 py-1 rounded hover:bg-opacity-90 disabled:opacity-50 flex items-center gap-1"
+            >
+              {saving && <Loader2 className="w-3 h-3 animate-spin" />}
+              Save notes
+            </button>
+          </div>
+        </div>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          placeholder="Internal notes — only platform admins can see this. e.g. 'Called Tuesday, follow up Thursday' or 'Comp Pro for 3 months, ends June 1'"
+          className="w-full bg-[#F7F7F5] border notion-border rounded px-2 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-[#37352F]/20"
+        />
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="text-gray-500 whitespace-nowrap">{label}</span>
+      <span className="text-gray-900 text-right truncate">{value}</span>
+    </div>
+  );
+}
+
+/** Format cents into a localized currency string based on merchant country. */
+function formatCents(cents: number, country: string | null): string {
+  if (!cents) return '—';
+  const amount = cents / 100;
+  if (country === 'CA') return `CA$${amount.toFixed(0)}`;
+  return `€${amount.toFixed(0)}`;
+}
 
 function B2B2CTab() {
   const [rows, setRows] = useState<CustomerRow[]>([]);

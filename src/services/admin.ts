@@ -43,6 +43,7 @@ export interface MerchantRow {
   merchant_code: string;
   email: string;
   business_name: string;
+  registered_company_name: string | null;
   country: string | null;
   plan: 'free' | 'pro';
   status: MerchantStatus;
@@ -50,6 +51,12 @@ export interface MerchantRow {
   created_at: string;
   card_count: number;
   recent_activity_count: number;
+  last_login_at: string | null;
+  first_activity_at: string | null;
+  plan_started_at: string | null;
+  estimated_mrr_cents: number;
+  estimated_total_cents: number;
+  admin_notes: string | null;
 }
 
 export interface CustomerCardDetail {
@@ -181,6 +188,14 @@ export async function setMerchantPlan(merchantId: string, plan: 'free' | 'pro'):
   const { error } = await supabase.rpc('admin_set_merchant_plan', {
     merchant_id_in: merchantId,
     new_plan: plan,
+  });
+  if (error) throw error;
+}
+
+export async function setMerchantNotes(merchantId: string, notes: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_merchant_notes', {
+    merchant_id_in: merchantId,
+    notes,
   });
   if (error) throw error;
 }
