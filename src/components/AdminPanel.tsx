@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search,
   LogOut, Loader2, Shield, ChevronRight,
@@ -438,6 +438,7 @@ function B2B2CTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [merchantFilter, setMerchantFilter] = useState<string>('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -462,7 +463,7 @@ function B2B2CTab() {
     <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-serif-display font-semibold mb-1">B2B2C Clients</h1>
-        <p className="text-gray-500 text-sm">Customers across the platform. Search by ID (SF00001), email, or name.</p>
+        <p className="text-gray-500 text-sm">Customers across the platform. Click a row to see card-by-card detail.</p>
       </header>
 
       <div className="flex gap-2 flex-wrap">
@@ -495,51 +496,99 @@ function B2B2CTab() {
           <table className="w-full text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
               <tr>
-                <th className="px-3 py-2 text-left">Customer ID</th>
+                <th className="px-3 py-2 text-left">ID</th>
                 <th className="px-3 py-2 text-left">Name</th>
                 <th className="px-3 py-2 text-left">Email</th>
                 <th className="px-2 py-2 text-left">Active since</th>
                 <th className="px-2 py-2 text-right">Cards</th>
+                <th className="px-3 py-2 text-left">Current campaigns</th>
                 <th className="px-2 py-2 text-right">Stamps</th>
                 <th className="px-2 py-2 text-right">Rewards</th>
                 <th className="px-2 py-2 text-left">Last stamp</th>
                 <th className="px-2 py-2 text-left">Last login</th>
-                <th className="px-2 py-2 text-left">Merchants</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((c) => (
-                <tr key={c.customer_id} className="border-t notion-border hover:bg-[#FBFBFA] align-top">
-                  <td className="px-3 py-3 font-mono text-xs whitespace-nowrap">
-                    {c.customer_code}
-                    {c.any_deletion_pending && (
-                      <span className="ml-1 inline-block w-1.5 h-1.5 bg-red-500 rounded-full align-middle" title="Deletion pending on at least one card" />
+              {rows.map((c) => {
+                const isOpen = expandedId === c.customer_id;
+                return (
+                  <Fragment key={c.customer_id}>
+                    <tr
+                      onClick={() => setExpandedId(isOpen ? null : c.customer_id)}
+                      className="border-t notion-border hover:bg-[#FBFBFA] align-top cursor-pointer"
+                    >
+                      <td className="px-3 py-3 font-mono text-xs whitespace-nowrap">
+                        {c.customer_code}
+                        {c.any_deletion_pending && (
+                          <span className="ml-1 inline-block w-1.5 h-1.5 bg-red-500 rounded-full align-middle" title="Deletion pending on at least one card" />
+                        )}
+                      </td>
+                      <td className="px-3 py-3 font-medium text-sm">{c.customer_name || '—'}</td>
+                      <td className="px-3 py-3 text-xs text-gray-600">{c.email || '—'}</td>
+                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
+                        {new Date(c.active_since).toLocaleDateString()}
+                      </td>
+                      <td className="px-2 py-3 text-right font-medium text-sm">{c.cards_in_wallet}</td>
+                      <td className="px-3 py-3 text-xs text-gray-600">
+                        {(c.cards_detail ?? []).slice(0, 2).map((d, i) => (
+                          <div key={i} className="truncate max-w-[220px]" title={`${d.merchant_name}: ${d.current_offer} (${d.current_stamps}/${d.max_stamps ?? '?'})`}>
+                            <span className="font-medium">{d.merchant_name}:</span>{' '}
+                            <span className="text-gray-500">{d.current_stamps}/{d.max_stamps ?? '?'}</span>
+                          </div>
+                        ))}
+                        {(c.cards_detail ?? []).length > 2 && (
+                          <div className="text-[10px] text-gray-400">+ {(c.cards_detail ?? []).length - 2} more</div>
+                        )}
+                      </td>
+                      <td className="px-2 py-3 text-right text-gray-500 text-sm">{c.total_stamps}</td>
+                      <td className="px-2 py-3 text-right text-gray-500 text-sm">{c.total_rewards_redeemed}</td>
+                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
+                        {c.last_stamp_at ? (
+                          <div>
+                            <div>{relativeTime(new Date(c.last_stamp_at))}</div>
+                            {c.last_stamp_merchant && <div className="text-[10px] text-gray-400 truncate max-w-[140px]">at {c.last_stamp_merchant}</div>}
+                          </div>
+                        ) : '—'}
+                      </td>
+                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
+                        {c.last_login_at ? relativeTime(new Date(c.last_login_at)) : 'Never'}
+                      </td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="bg-[#F7F7F5]">
+                        <td colSpan={10} className="px-4 py-4">
+                          <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Card-by-card detail</div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {(c.cards_detail ?? []).map((d) => (
+                              <div key={d.card_id} className="bg-white border notion-border rounded p-3 text-xs space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-semibold">{d.merchant_name}</span>
+                                  {d.deletion_pending && <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-[10px] uppercase">Pending deletion</span>}
+                                </div>
+                                <div className="text-gray-700">{d.current_offer}</div>
+                                {d.campaign_offer && d.campaign_offer !== d.current_offer && (
+                                  <div className="text-[10px] text-amber-600 italic" title="Merchant changed the offer since this customer joined. Auto-migrates on next reward redemption.">
+                                    Joined under: "{d.campaign_offer}"
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2 pt-1">
+                                  <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-[#37352F]" style={{ width: `${d.max_stamps ? (d.current_stamps / d.max_stamps) * 100 : 0}%` }} />
+                                  </div>
+                                  <span className="text-gray-500 whitespace-nowrap">{d.current_stamps}/{d.max_stamps ?? '?'}</span>
+                                </div>
+                                <div className="text-[10px] text-gray-400 pt-1">
+                                  Joined {new Date(d.joined_at).toLocaleDateString()} · {d.rewards_redeemed} reward{d.rewards_redeemed === 1 ? '' : 's'} redeemed
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td className="px-3 py-3 font-medium text-sm">{c.customer_name || '—'}</td>
-                  <td className="px-3 py-3 text-xs text-gray-600">{c.email || '—'}</td>
-                  <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
-                    {new Date(c.active_since).toLocaleDateString()}
-                  </td>
-                  <td className="px-2 py-3 text-right font-medium text-sm">{c.cards_in_wallet}</td>
-                  <td className="px-2 py-3 text-right text-gray-500 text-sm">{c.total_stamps}</td>
-                  <td className="px-2 py-3 text-right text-gray-500 text-sm">{c.total_rewards_redeemed}</td>
-                  <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
-                    {c.last_stamp_at ? (
-                      <div>
-                        <div>{relativeTime(new Date(c.last_stamp_at))}</div>
-                        {c.last_stamp_merchant && <div className="text-[10px] text-gray-400 truncate max-w-[140px]">at {c.last_stamp_merchant}</div>}
-                      </div>
-                    ) : '—'}
-                  </td>
-                  <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
-                    {c.last_login_at ? relativeTime(new Date(c.last_login_at)) : 'Never'}
-                  </td>
-                  <td className="px-2 py-3 text-xs text-gray-500 truncate max-w-[180px]" title={c.merchants_list}>
-                    {c.merchants_list}
-                  </td>
-                </tr>
-              ))}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -547,6 +596,7 @@ function B2B2CTab() {
     </div>
   );
 }
+
 
 function relativeTime(d: Date): string {
   const secs = Math.floor((Date.now() - d.getTime()) / 1000);

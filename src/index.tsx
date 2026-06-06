@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { initSentry, SentryErrorBoundary } from './lib/sentry';
+import { ToastProvider } from './components/ToastProvider';
 
 // Initialise Sentry before React mounts so any error during initial render
 // is captured. Safe no-op if VITE_SENTRY_DSN is not set.
@@ -59,7 +60,9 @@ function FatalError() {
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <SentryErrorBoundary fallback={<FatalError />}>
-      <App />
+      <ToastProvider>
+        <App />
+      </ToastProvider>
     </SentryErrorBoundary>
   </React.StrictMode>,
 );

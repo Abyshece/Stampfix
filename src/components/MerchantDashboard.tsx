@@ -18,6 +18,7 @@ import { CustomerPrivacyNoticePanel } from './CustomerPrivacyNoticePanel';
 import { InsightsPanel } from './InsightsPanel';
 import { RevealableEmail } from './RevealableEmail';
 import { GetHelpPanel } from './GetHelpPanel';
+import { useToast } from './ToastProvider';
 import { buildPosterHtml, type PosterSize } from '../services/posterGenerator';
 
 interface MerchantDashboardProps {
@@ -80,6 +81,7 @@ export function MerchantDashboard({
   onAddCustomer, onDeleteCustomer, onBlockCustomer, onMarkOnboardingStep, onLogout,
 }: MerchantDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('DASHBOARD');
+  const toast = useToast();
   const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
 
   // Buffered settings
@@ -248,6 +250,7 @@ export function MerchantDashboard({
   const handleSaveSettings = () => {
     onUpdateCampaign(tempSettings);
     setSettingsSaved(true);
+    toast.success('Settings saved');
     setTimeout(() => setSettingsSaved(false), 3000);
   };
 
@@ -302,13 +305,42 @@ export function MerchantDashboard({
     }
   };
 
+  /** Status filter for the Customers tab:
+   *    'active'  = ACTIVE cards (default)
+   *    'blocked' = BLOCKED cards (excluding those pending deletion)
+   *    'pending_deletion' = BLOCKED + deletion_requested_at set
+   *  No 'deleted' bucket because the cleanup job actually removes those rows.
+   */
+  const [customerStatusFilter, setCustomerStatusFilter] = useState<'active' | 'blocked' | 'pending_deletion'>('active');
+
   const filteredCards = useMemo(() => {
-    const q = customerSearch.toLowerCase();
-    if (!q) return cards;
-    return cards.filter(
-      (c) => c.customerName.toLowerCase().includes(q) || c.email.toLowerCase().includes(q),
-    );
-  }, [cards, customerSearch]);
+    const q = customerSearch.trim().toLowerCase();
+    return cards.filter((c) => {
+      // Status bucket
+      if (customerStatusFilter === 'active') {
+        if (c.status !== 'ACTIVE') return false;
+      } else if (customerStatusFilter === 'blocked') {
+        if (c.status !== 'BLOCKED') return false;
+        if (c.deletionRequestedAt) return false;
+      } else if (customerStatusFilter === 'pending_deletion') {
+        if (!c.deletionRequestedAt) return false;
+      }
+      // Search: by name OR customer code (intentionally NOT by email — staff
+      // shouldn't have to know customers' emails, and asking customers to
+      // dictate their email at a counter is awkward; the SF00XXX code is
+      // easier to read off a phone and faster to type).
+      if (!q) return true;
+      return c.customerName.toLowerCase().includes(q)
+        || (c.customerCode ?? '').toLowerCase().includes(q);
+    });
+  }, [cards, customerSearch, customerStatusFilter]);
+
+  // Counts per bucket so the chips can show "(N)" badges.
+  const bucketCounts = useMemo(() => ({
+    active: cards.filter((c) => c.status === 'ACTIVE').length,
+    blocked: cards.filter((c) => c.status === 'BLOCKED' && !c.deletionRequestedAt).length,
+    pending_deletion: cards.filter((c) => !!c.deletionRequestedAt).length,
+  }), [cards]);
 
   /** Per-location signup URL. The customer signup page reads ?location= and
    *  records it on their new card. The base ?campaign= alone still works
@@ -692,12 +724,12 @@ export function MerchantDashboard({
             <header className="flex justify-between items-end">
               <div>
                 <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Customers</h1>
-                <p className="text-gray-500 text-sm md:text-base">Database of all loyalty program members.</p>
+                <p className="text-gray-500 text-sm md:text-base">Search by name or customer ID (SF00XXX). Toggle to view blocked or pending-deletion accounts.</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative hidden md:block">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="text" placeholder="Search customers..." value={customerSearch}
+                  <input type="text" placeholder="Name or SF00001..." value={customerSearch}
                     onChange={(e) => setCustomerSearch(e.target.value)}
                     className="pl-9 pr-4 py-1.5 bg-white border notion-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 w-64" />
                 </div>
@@ -709,9 +741,32 @@ export function MerchantDashboard({
             </header>
             <div className="md:hidden mb-4 relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input type="text" placeholder="Search customers..." value={customerSearch}
+              <input type="text" placeholder="Name or SF00001..." value={customerSearch}
                 onChange={(e) => setCustomerSearch(e.target.value)}
                 className="pl-9 pr-4 py-2.5 bg-white border notion-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 w-full" />
+            </div>
+
+            {/* Status filter chips — Active | Blocked | Pending deletion */}
+            <div className="flex flex-wrap gap-2">
+              {([
+                ['active',           'Active',           bucketCounts.active,           'bg-green-50 text-green-700 border-green-200'],
+                ['blocked',          'Blocked',          bucketCounts.blocked,          'bg-red-50 text-red-700 border-red-200'],
+                ['pending_deletion', 'Pending deletion', bucketCounts.pending_deletion, 'bg-amber-50 text-amber-700 border-amber-200'],
+              ] as const).map(([id, label, count, activeStyle]) => {
+                const isActive = customerStatusFilter === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setCustomerStatusFilter(id)}
+                    className={`text-xs px-3 py-1.5 rounded-md border transition flex items-center gap-1.5 ${
+                      isActive ? activeStyle : 'bg-white notion-border hover:bg-[#F7F7F5] text-gray-600'
+                    }`}
+                  >
+                    <span className="font-medium">{label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/60' : 'bg-gray-100'}`}>{count}</span>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="border notion-border rounded-lg overflow-hidden bg-white">
@@ -720,11 +775,19 @@ export function MerchantDashboard({
                 {filteredCards.map((card) => (
                   <div key={card.id} className="p-4 flex items-center justify-between">
                     <div className="space-y-1">
-                      <div className="font-medium text-sm">{card.customerName}</div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm">{card.customerName}</span>
+                        <span className="text-[10px] font-mono text-gray-400">{card.customerCode ?? ''}</span>
+                      </div>
                       <div className="text-xs text-gray-500"><RevealableEmail email={card.email} /></div>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        card.status === 'BLOCKED' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
-                      }`}>{card.currentStamps} Stamps</span>
+                      <div className="flex gap-1 flex-wrap">
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          card.status === 'BLOCKED' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+                        }`}>{card.currentStamps} Stamps</span>
+                        {card.deletionRequestedAt && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 uppercase">Pending deletion</span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1">
                       {card.status !== 'BLOCKED' && (
@@ -740,7 +803,7 @@ export function MerchantDashboard({
                   </div>
                 ))}
                 {filteredCards.length === 0 && (
-                  <div className="p-8 text-center text-gray-400 italic text-sm">No customers found.</div>
+                  <div className="p-8 text-center text-gray-400 italic text-sm">{customerStatusFilter === "blocked" ? "No blocked customers." : customerStatusFilter === "pending_deletion" ? "No customers are pending deletion." : "No customers found."}</div>
                 )}
               </div>
 
@@ -748,8 +811,10 @@ export function MerchantDashboard({
               <table className="w-full text-sm text-left min-w-[600px] hidden md:table">
                 <thead className="bg-[#F7F7F5] text-gray-500 font-medium">
                   <tr>
+                    <th className="px-4 py-3 border-b notion-border w-24">ID</th>
                     <th className="px-4 py-3 border-b notion-border">Name</th>
                     <th className="px-4 py-3 border-b notion-border">Email</th>
+                    <th className="px-4 py-3 border-b notion-border">Campaign offer</th>
                     <th className="px-4 py-3 border-b notion-border">Progress</th>
                     <th className="px-4 py-3 border-b notion-border">Redeemed</th>
                     <th className="px-4 py-3 border-b notion-border">Status</th>
@@ -757,24 +822,42 @@ export function MerchantDashboard({
                   </tr>
                 </thead>
                 <tbody className="divide-y notion-border">
-                  {filteredCards.map((card) => (
+                  {filteredCards.map((card) => {
+                    // Each card holds a snapshot of the offer the customer
+                    // joined under. If the merchant has since changed the
+                    // campaign, existing customers keep their original
+                    // offer — we show the snapshot here, with a "(was)"
+                    // hint when it differs from the current campaign.
+                    const cardOffer = card.offerTitleSnapshot ?? campaign.offerTitle;
+                    const cardMax = card.maxStampsSnapshot ?? campaign.maxStamps;
+                    const isStale = !!card.offerTitleSnapshot && card.offerTitleSnapshot !== campaign.offerTitle;
+                    return (
                     <tr key={card.id} className="hover:bg-[#F7F7F5]">
+                      <td className="px-4 py-3 font-mono text-xs text-gray-500">{card.customerCode ?? '—'}</td>
                       <td className="px-4 py-3 font-medium">{card.customerName}</td>
                       <td className="px-4 py-3 text-gray-500"><RevealableEmail email={card.email || ''} /></td>
+                      <td className="px-4 py-3 text-xs">
+                        <div className="text-gray-700 truncate max-w-[180px]" title={cardOffer}>{cardOffer}</div>
+                        {isStale && (
+                          <div className="text-[10px] text-amber-600 mt-0.5" title="The merchant has changed the offer since this customer joined. They'll migrate to the new offer when they redeem.">(was — auto-migrates on redeem)</div>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                             <div className="h-full" style={{
-                              width: `${(card.currentStamps / campaign.maxStamps) * 100}%`,
+                              width: `${(card.currentStamps / cardMax) * 100}%`,
                               backgroundColor: card.status === 'BLOCKED' ? '#ccc' : campaign.primaryColor,
                             }} />
                           </div>
-                          <span className="text-xs text-gray-400">{card.currentStamps}</span>
+                          <span className="text-xs text-gray-400">{card.currentStamps}/{cardMax}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600 font-mono">{card.rewardsRedeemed}</td>
                       <td className="px-4 py-3">
-                        {card.status === 'BLOCKED' ? (
+                        {card.deletionRequestedAt ? (
+                          <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider" title="Customer requested deletion. Will be removed within 24 hours.">Pending deletion</span>
+                        ) : card.status === 'BLOCKED' ? (
                           <span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider">Blocked</span>
                         ) : card.currentStamps >= campaign.maxStamps ? (
                           <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-xs font-medium">Reward Ready</span>
@@ -805,9 +888,13 @@ export function MerchantDashboard({
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  );})}
                   {filteredCards.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 italic">No customers found.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400 italic">
+                      {customerStatusFilter === 'blocked' ? 'No blocked customers.'
+                        : customerStatusFilter === 'pending_deletion' ? 'No customers are pending deletion.'
+                        : 'No customers found.'}
+                    </td></tr>
                   )}
                 </tbody>
               </table>

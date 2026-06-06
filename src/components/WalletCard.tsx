@@ -204,10 +204,20 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
 
         {/* Footer / QR */}
         <div className="relative bg-gray-50 border-t border-gray-100 px-5 py-5 z-10 shrink-0">
-          <div className="mb-4 flex justify-between items-end">
+          <div className="mb-4 grid grid-cols-3 gap-2 items-end">
             <div>
               <label className="text-[9px] uppercase tracking-widest text-gray-400 font-bold block mb-1">Holder</label>
-              <div className="text-xs font-bold tracking-tight text-gray-900 truncate max-w-[120px]">{card.customerName}</div>
+              <div className="text-xs font-bold tracking-tight text-gray-900 truncate">{card.customerName}</div>
+            </div>
+            <div className="text-center">
+              <label className="text-[9px] uppercase tracking-widest text-gray-400 font-bold block mb-1">ID</label>
+              {/* SF00XXX code, always visible. Customers read this aloud to a
+                  cashier when the QR can't be scanned (broken phone, dim
+                  screen, scanner camera issue). Monospace + slight weight
+                  so it's easy to read off a small screen. */}
+              <div className="text-xs font-mono font-semibold tracking-wider text-gray-900">
+                {card.customerCode ?? '—'}
+              </div>
             </div>
             <div className="text-right">
               <label className="text-[9px] uppercase tracking-widest text-gray-400 font-bold block mb-1">Joined</label>

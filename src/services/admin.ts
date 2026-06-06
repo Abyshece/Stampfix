@@ -52,6 +52,18 @@ export interface MerchantRow {
   recent_activity_count: number;
 }
 
+export interface CustomerCardDetail {
+  card_id: string;
+  merchant_name: string;
+  campaign_offer: string | null;
+  current_offer: string;
+  current_stamps: number;
+  max_stamps: number | null;
+  rewards_redeemed: number;
+  joined_at: string;
+  deletion_pending: boolean;
+}
+
 export interface CustomerRow {
   customer_id: string;
   customer_code: string;
@@ -66,6 +78,7 @@ export interface CustomerRow {
   last_login_at: string | null;
   merchants_list: string;
   any_deletion_pending: boolean;
+  cards_detail: CustomerCardDetail[];
 }
 
 export interface TicketRow {

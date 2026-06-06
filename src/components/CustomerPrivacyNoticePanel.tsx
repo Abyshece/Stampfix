@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Shield, Loader2, Check } from 'lucide-react';
 import type { Campaign } from '../types';
 import { updateCampaign } from '../lib/db';
+import { useToast } from './ToastProvider';
 
 interface CustomerPrivacyNoticeProps {
   campaign: Campaign;
@@ -25,6 +26,7 @@ export function CustomerPrivacyNoticePanel({ campaign, onUpdated }: CustomerPriv
   const [text, setText] = useState(campaign.customerPrivacyNotice ?? '');
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const toast = useToast();
 
   const handleSave = async () => {
     setSaving(true);
@@ -34,9 +36,10 @@ export function CustomerPrivacyNoticePanel({ campaign, onUpdated }: CustomerPriv
       });
       onUpdated(updated);
       setSavedAt(Date.now());
+      toast.success('Privacy notice saved');
       setTimeout(() => setSavedAt(null), 3000);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Could not save');
+      toast.error(e instanceof Error ? e.message : 'Could not save');
     } finally {
       setSaving(false);
     }

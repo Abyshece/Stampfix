@@ -3,6 +3,7 @@ import { Palette, Check, Loader2 } from 'lucide-react';
 import type { Campaign } from '../types';
 import { updateCampaign } from '../lib/db';
 import { buildPosterHtml } from '../services/posterGenerator';
+import { useToast } from './ToastProvider';
 
 interface PosterSettingsProps {
   campaign: Campaign;
@@ -56,6 +57,7 @@ export function PosterSettings({ campaign, onUpdated }: PosterSettingsProps) {
 
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const toast = useToast();
 
   /** The computed value we'll save, derived from the current mode. */
   const computedValue: string | null = useMemo(() => {
@@ -73,9 +75,11 @@ export function PosterSettings({ campaign, onUpdated }: PosterSettingsProps) {
       const updated = await updateCampaign(campaign.id, { posterColor: computedValue });
       onUpdated(updated);
       setSavedAt(Date.now());
+      toast.success('Poster appearance saved');
       setTimeout(() => setSavedAt(null), 3000);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Could not save poster color');
+      const msg = e instanceof Error ? e.message : 'Could not save poster color';
+      toast.error(msg);
     } finally {
       setSaving(false);
     }

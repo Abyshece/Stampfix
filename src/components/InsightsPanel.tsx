@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Users, TrendingUp, Award, Calendar, MapPin, Activity as ActivityIcon,
-  ArrowUp, ArrowDown, Minus, Clock,
+  ArrowUp, ArrowDown, Minus, Clock, Sparkles,
 } from 'lucide-react';
 import type { ActivityItem, Campaign, Location, UserCard } from '../types';
 
@@ -34,6 +34,21 @@ interface InsightsPanelProps {
 export function InsightsPanel({ campaign, cards, activities, locations }: InsightsPanelProps) {
   const [range, setRange] = useState<DateRange>('30d');
   const [locFilter, setLocFilter] = useState<LocationFilter>('all');
+  // 'all' = no offer filter; otherwise an offer-title snapshot from cards.
+  // Lets the merchant see how a previous offer text performed even after
+  // they've changed it (each card preserves its snapshot at signup).
+  const [offerFilter, setOfferFilter] = useState<string>('all');
+
+  // Distinct offer-title snapshots seen across the merchant's cards.
+  // If a merchant has never changed their offer, there's just one
+  // entry and the filter is hidden (no value in showing it).
+  const uniqueOffers = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of cards) {
+      if (c.offerTitleSnapshot) set.add(c.offerTitleSnapshot);
+    }
+    return Array.from(set).sort();
+  }, [cards]);
 
   // --- Compute the time window from the selected range ---
   const { from, prevFrom, now } = useMemo(() => {
@@ -44,15 +59,23 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
     return { from, prevFrom, now };
   }, [range]);
 
-  // --- Filter activities to the selected window AND location ---
+  // Set of card IDs matching the chosen offer snapshot. Empty set
+  // means "no filter" — checked by `offerFilter === 'all'` below.
+  const matchingCardIds = useMemo(() => {
+    if (offerFilter === 'all') return null;
+    return new Set(cards.filter((c) => c.offerTitleSnapshot === offerFilter).map((c) => c.id));
+  }, [cards, offerFilter]);
+
+  // --- Filter activities to the selected window AND location AND offer ---
   const filtered = useMemo(() => {
     return activities.filter((a) => {
       const created = new Date(a.timestamp);
       if (created < from) return false;
       if (locFilter !== 'all' && a.locationId !== locFilter) return false;
+      if (matchingCardIds && (!a.cardId || !matchingCardIds.has(a.cardId))) return false;
       return true;
     });
-  }, [activities, from, locFilter]);
+  }, [activities, from, locFilter, matchingCardIds]);
 
   // --- Filter the prior window (for trend comparison) ---
   const filteredPrev = useMemo(() => {
@@ -60,15 +83,19 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
       const created = new Date(a.timestamp);
       if (created >= from || created < prevFrom) return false;
       if (locFilter !== 'all' && a.locationId !== locFilter) return false;
+      if (matchingCardIds && (!a.cardId || !matchingCardIds.has(a.cardId))) return false;
       return true;
     });
-  }, [activities, from, prevFrom, locFilter]);
+  }, [activities, from, prevFrom, locFilter, matchingCardIds]);
 
   // --- Filter cards by location for the breakdown ---
   const filteredCards = useMemo(() => {
-    if (locFilter === 'all') return cards;
-    return cards.filter((c) => c.joinedAtLocationId === locFilter);
-  }, [cards, locFilter]);
+    return cards.filter((c) => {
+      if (locFilter !== 'all' && c.joinedAtLocationId !== locFilter) return false;
+      if (offerFilter !== 'all' && c.offerTitleSnapshot !== offerFilter) return false;
+      return true;
+    });
+  }, [cards, locFilter, offerFilter]);
 
   // --- Counts (current period) ---
   const joins = filtered.filter((a) => a.type === 'JOIN').length;
@@ -151,7 +178,8 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
           <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Insights</h1>
           <p className="text-gray-500 text-sm md:text-base">
             How your loyalty program is performing
-            {locFilter === 'all' ? ' across all locations' : ` at ${locations.find((l) => l.id === locFilter)?.name ?? 'this location'}`}.
+            {locFilter === 'all' ? ' across all locations' : ` at ${locations.find((l) => l.id === locFilter)?.name ?? 'this location'}`}
+            {offerFilter !== 'all' && ` · offer "${offerFilter.length > 30 ? offerFilter.slice(0, 28) + '…' : offerFilter}"`}.
           </p>
         </div>
         {/* Filters */}
@@ -166,6 +194,18 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
               ...locations.filter((l) => !l.archived).map((l) => ({ value: l.id, label: l.name })),
             ]}
           />
+          {uniqueOffers.length > 1 && (
+            <FilterDropdown
+              icon={<Sparkles className="w-3.5 h-3.5" />}
+              label="Offer"
+              value={offerFilter}
+              onChange={setOfferFilter}
+              options={[
+                { value: 'all', label: 'All offers' },
+                ...uniqueOffers.map((o) => ({ value: o, label: o.length > 32 ? o.slice(0, 30) + '…' : o })),
+              ]}
+            />
+          )}
           <FilterDropdown
             icon={<Calendar className="w-3.5 h-3.5" />}
             label="Range"
