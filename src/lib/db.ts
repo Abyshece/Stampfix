@@ -597,3 +597,17 @@ export async function getMerchantBilling(merchantId: string): Promise<MerchantBi
     country: row.country,
   };
 }
+
+/**
+ * Self-service merchant account deletion (GDPR Article 17).
+ *
+ * Returns { success: true } on success, or { success: false, error, message }
+ * if blocked (e.g. subscription is still active). The merchant's row is
+ * soft-deleted to status='deleted'; full cascade cleanup happens
+ * asynchronously.
+ */
+export async function deleteMyAccount(): Promise<{ success: boolean; error?: string; message?: string }> {
+  const { data, error } = await supabase.rpc('delete_my_account');
+  if (error) throw error;
+  return data as { success: boolean; error?: string; message?: string };
+}

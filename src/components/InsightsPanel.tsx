@@ -39,15 +39,20 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
   // they've changed it (each card preserves its snapshot at signup).
   const [offerFilter, setOfferFilter] = useState<string>('all');
 
-  // Distinct offer-title snapshots seen across the merchant's cards.
-  // If a merchant has never changed their offer, there's just one
-  // entry and the filter is hidden (no value in showing it).
+  // Distinct offer-title snapshots seen across the merchant's cards,
+  // each with the earliest joined_at = when that offer first started.
+  // Sorted newest-first so the current offer is at the top of the list.
   const uniqueOffers = useMemo(() => {
-    const set = new Set<string>();
+    const byOffer = new Map<string, Date>();
     for (const c of cards) {
-      if (c.offerTitleSnapshot) set.add(c.offerTitleSnapshot);
+      if (!c.offerTitleSnapshot) continue;
+      const existing = byOffer.get(c.offerTitleSnapshot);
+      const joined = new Date(c.joinedAt);
+      if (!existing || joined < existing) byOffer.set(c.offerTitleSnapshot, joined);
     }
-    return Array.from(set).sort();
+    return Array.from(byOffer.entries())
+      .map(([offer, startedAt]) => ({ offer, startedAt }))
+      .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
   }, [cards]);
 
   // --- Compute the time window from the selected range ---
@@ -194,18 +199,21 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
               ...locations.filter((l) => !l.archived).map((l) => ({ value: l.id, label: l.name })),
             ]}
           />
-          {uniqueOffers.length > 1 && (
-            <FilterDropdown
-              icon={<Sparkles className="w-3.5 h-3.5" />}
-              label="Offer"
-              value={offerFilter}
-              onChange={setOfferFilter}
-              options={[
-                { value: 'all', label: 'All offers' },
-                ...uniqueOffers.map((o) => ({ value: o, label: o.length > 32 ? o.slice(0, 30) + '…' : o })),
-              ]}
-            />
-          )}
+          <FilterDropdown
+            icon={<Sparkles className="w-3.5 h-3.5" />}
+            label="Offer"
+            value={offerFilter}
+            onChange={setOfferFilter}
+            options={[
+              { value: 'all', label: uniqueOffers.length > 0 ? `All offers (${uniqueOffers.length})` : 'All offers' },
+              ...uniqueOffers.map(({ offer, startedAt }) => ({
+                value: offer,
+                // Show offer text + the date it first started so the
+                // merchant can identify old campaigns at a glance.
+                label: `${offer.length > 28 ? offer.slice(0, 26) + '…' : offer} · since ${startedAt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`,
+              })),
+            ]}
+          />
           <FilterDropdown
             icon={<Calendar className="w-3.5 h-3.5" />}
             label="Range"

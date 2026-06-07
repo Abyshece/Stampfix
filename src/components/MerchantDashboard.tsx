@@ -15,6 +15,7 @@ import { AccountBilling } from './AccountBilling';
 import { ComplianceSettings } from './ComplianceSettings';
 import { PosterSettings } from './PosterSettings';
 import { CustomerPrivacyNoticePanel } from './CustomerPrivacyNoticePanel';
+import { DangerZonePanel } from './DangerZonePanel';
 import { InsightsPanel } from './InsightsPanel';
 import { RevealableEmail } from './RevealableEmail';
 import { GetHelpPanel } from './GetHelpPanel';
@@ -1067,11 +1068,13 @@ export function MerchantDashboard({
               )}
             </header>
 
-            <AccountBilling
-              billing={billing}
-              country={country}
-              cards={cards}
-            />
+            <div id="billing-section">
+              <AccountBilling
+                billing={billing}
+                country={country}
+                cards={cards}
+              />
+            </div>
 
             <LocationsPanel
               locations={locations}
@@ -1090,6 +1093,14 @@ export function MerchantDashboard({
             <CustomerPrivacyNoticePanel
               campaign={campaign}
               onUpdated={(updated) => onUpdateCampaign({ customerPrivacyNotice: updated.customerPrivacyNotice })}
+            />
+
+            <DangerZonePanel
+              businessName={campaign.businessName}
+              billing={billing}
+              onGoToBilling={() => {
+                document.getElementById('billing-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
             />
 
             <div className="border notion-border rounded-lg p-6 space-y-8">
