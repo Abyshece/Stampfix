@@ -259,18 +259,28 @@ export function LandingPage({
           <div className="w-6 h-6 bg-[#37352F] rounded-sm flex items-center justify-center text-white text-xs font-bold">S</div>
           Stampfix
         </div>
-        <div className="flex items-center gap-3 text-sm font-medium">
+        <div className="flex items-center gap-2 md:gap-3 text-sm font-medium">
+          {/* Customer-facing entry to /my-card. A returning customer who
+              Googled "stampfix" and lands here needs an obvious way to
+              find their card. Subtle styling (text link) so it doesn't
+              compete with the primary merchant Log in CTA. */}
+          <a
+            href="/my-card"
+            className="text-gray-600 hover:text-[#37352F] px-2 py-2 md:px-3 transition whitespace-nowrap"
+          >
+            My loyalty card
+          </a>
           {isAuthenticated && onResumeMerchant ? (
             <button
               onClick={onResumeMerchant}
-              className="bg-[#37352F] text-white px-5 py-2.5 rounded-md font-medium hover:bg-[#2F2D28] transition shadow-sm"
+              className="bg-[#37352F] text-white px-3 py-2 md:px-5 md:py-2.5 rounded-md font-medium hover:bg-[#2F2D28] transition shadow-sm text-xs md:text-sm whitespace-nowrap"
             >
               Go to dashboard
             </button>
           ) : (
             <button
               onClick={openLoginModal}
-              className="bg-[#37352F] text-white px-5 py-2.5 rounded-md font-medium hover:bg-[#2F2D28] transition shadow-sm"
+              className="bg-[#37352F] text-white px-3 py-2 md:px-5 md:py-2.5 rounded-md font-medium hover:bg-[#2F2D28] transition shadow-sm text-xs md:text-sm whitespace-nowrap"
             >
               Log in
             </button>

@@ -508,15 +508,34 @@ export function MerchantDashboard({
 
         {/* --- DASHBOARD / SCANNER --- */}
         {activeTab === 'DASHBOARD' && (
-          <div className="space-y-8 relative">
-            <header>
-              <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Scan Terminal</h1>
-              <p className="text-gray-500 text-sm md:text-base">Ready to stamp. Point your device at a customer's card.</p>
-            </header>
+          <div className="flex flex-col h-[calc(100vh-7rem)] md:h-[calc(100vh-5rem)] md:space-y-3 relative">
+            {/* Compact header: title + inline location selector on the same row.
+                No description text, no big margins — this page exists for one
+                action (scan) and the merchant uses it dozens of times a day.
+                Total vertical footprint above the scanner: ~60px on mobile. */}
+            <div className="flex items-center justify-between gap-3 mb-2 md:mb-0 flex-shrink-0">
+              <h1 className="text-xl md:text-2xl font-serif-display font-semibold">Scan</h1>
+              {activeLocations.length > 0 && (
+                <div className="flex items-center gap-1.5 bg-white border notion-border rounded-md px-2.5 py-1.5 shadow-sm">
+                  <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <select
+                    value={activeLocationId ?? ''}
+                    onChange={(e) => onSetActiveLocation(e.target.value || null)}
+                    className="text-xs md:text-sm font-medium text-[#37352F] bg-transparent focus:outline-none cursor-pointer max-w-[140px] truncate"
+                  >
+                    {activeLocations.map((l) => (
+                      <option key={l.id} value={l.id}>{l.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
 
-            {/* Get Started checklist — disappears once all three milestones are hit */}
+            {/* Get Started checklist — disappears once all three milestones are hit.
+                Hidden on mobile to keep the Scan view non-scrollable; merchants
+                see it on desktop where there's room. */}
             {!(onboarding.poster_downloaded && onboarding.test_signup_done && onboarding.first_stamp_given) && (
-              <div className="bg-gradient-to-br from-[#F7F7F5] to-white border notion-border rounded-lg p-5 max-w-2xl">
+              <div className="hidden md:block bg-gradient-to-br from-[#F7F7F5] to-white border notion-border rounded-lg p-5 max-w-2xl flex-shrink-0">
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-semibold flex items-center gap-2">
@@ -560,14 +579,14 @@ export function MerchantDashboard({
               </div>
             )}
 
-            <div className="max-w-2xl">
+            <div className="flex-1 min-h-0 flex flex-col max-w-2xl w-full mx-auto md:mx-0">
               {/* Upgrade banner — sits above the scanner so it's seen the
                *  moment the merchant lands on Dashboard. Free plan only;
                *  hidden under 8/10 customers; warning at 8-9 (dismissible
                *  per session); hard block at 10 (not dismissible). */}
               {showBanner && cards.length >= 8 &&
                !(cards.length < 10 && warningDismissed) && (
-                <div className="mb-4">
+                <div className="hidden md:block mb-4 flex-shrink-0">
                   <UpgradeBanner
                     customerCount={cards.length}
                     country={country}
@@ -576,30 +595,9 @@ export function MerchantDashboard({
                   />
                 </div>
               )}
-              {/* Location picker — which branch is doing the stamping */}
-              {activeLocations.length > 0 && (
-                <div className="mb-4 flex items-center justify-between bg-white border notion-border rounded-lg px-4 py-3 shadow-sm">
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-gray-400" />
-                    <span className="text-gray-500">Stamping at</span>
-                    <select
-                      value={activeLocationId ?? ''}
-                      onChange={(e) => onSetActiveLocation(e.target.value || null)}
-                      className="font-medium text-[#37352F] bg-transparent focus:outline-none cursor-pointer"
-                    >
-                      {activeLocations.map((l) => (
-                        <option key={l.id} value={l.id}>{l.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {activeLocations.length > 1 && (
-                    <span className="text-[10px] uppercase tracking-wider text-gray-400">
-                      {activeLocations.length} locations
-                    </span>
-                  )}
-                </div>
-              )}
-              <div className="border notion-border rounded-xl bg-white shadow-sm p-4 flex flex-col justify-between min-h-[480px] relative overflow-hidden">
+              {/* Location picker — which branch is doing the stamping
+                  (Moved into the compact header row above; this block removed.) */}
+              <div className="flex-1 min-h-0 border notion-border rounded-xl bg-white shadow-sm p-3 md:p-4 flex flex-col relative overflow-hidden">
                 {scanResult && (
                   <div className="absolute inset-0 z-20 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
                     <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-sm border ${
@@ -618,11 +616,11 @@ export function MerchantDashboard({
                 )}
 
                 {isScannerOpen ? (
-                  <div className="relative flex-1 h-[360px] rounded-lg overflow-hidden">
+                  <div className="relative flex-1 min-h-0 rounded-lg overflow-hidden">
                     <QRScanner onScan={handleScan} onClose={() => setIsScannerOpen(false)} />
                   </div>
                 ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 bg-[#F7F7F5] rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-[#F0F0EE] transition cursor-pointer group touch-manipulation active:scale-[0.98]" onClick={() => setIsScannerOpen(true)}>
+                  <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center space-y-4 bg-[#F7F7F5] rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-[#F0F0EE] transition cursor-pointer group touch-manipulation active:scale-[0.98]" onClick={() => setIsScannerOpen(true)}>
                     <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm border notion-border group-hover:scale-105 transition duration-300">
                       <Camera className="w-8 h-8 text-gray-400 group-hover:text-[#37352F] transition" />
                     </div>

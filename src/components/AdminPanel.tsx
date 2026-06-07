@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search,
-  LogOut, Loader2, Shield, ChevronRight,
+  LogOut, Loader2, Shield, ChevronRight, Menu, X,
   Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
@@ -32,15 +32,66 @@ export function AdminPanel() {
   if (!user) return <NotLoggedIn />;
   if (!isAdmin) return <NotAuthorized email={user.email ?? null} />;
 
+  // Mobile drawer state. On md+ the sidebar is always visible; on
+  // smaller screens it slides in from the left when the hamburger
+  // is tapped. State auto-closes after picking a tab so the drawer
+  // doesn't linger over the content the admin wants to read.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const setTabAndCloseNav = (newTab: AdminTab) => {
+    setTab(newTab);
+    setMobileNavOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-[#FBFBFA] flex">
-      <aside className="w-60 bg-[#F7F7F5] border-r notion-border fixed inset-y-0 left-0 z-40 flex flex-col">
-        <div className="p-5 border-b notion-border">
-          <div className="flex items-center gap-2 mb-1">
-            <Shield className="w-4 h-4 text-amber-600" />
-            <span className="text-xs font-bold uppercase tracking-widest text-amber-700">Admin</span>
+    <div className="min-h-screen bg-[#FBFBFA]">
+      {/* Mobile top bar — hamburger + title. Hidden on md+ where the
+          fixed sidebar provides navigation. */}
+      <div className="md:hidden sticky top-0 z-30 bg-white border-b notion-border px-4 py-3 flex items-center justify-between">
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          className="p-1.5 -ml-1.5 hover:bg-[#F7F7F5] rounded transition"
+          aria-label="Open navigation"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-1.5">
+          <Shield className="w-3.5 h-3.5 text-amber-600" />
+          <span className="text-xs font-bold uppercase tracking-widest text-amber-700">Admin</span>
+        </div>
+        <div className="w-7" /> {/* spacer to center the title */}
+      </div>
+
+      {/* Mobile drawer backdrop */}
+      {mobileNavOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — fixed on desktop, drawer on mobile */}
+      <aside className={`
+        w-60 bg-[#F7F7F5] border-r notion-border fixed inset-y-0 left-0 z-50 flex flex-col
+        transition-transform duration-300
+        ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="p-5 border-b notion-border flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="w-4 h-4 text-amber-600" />
+              <span className="text-xs font-bold uppercase tracking-widest text-amber-700">Admin</span>
+            </div>
+            <div className="text-sm font-semibold">Stampfix Platform</div>
           </div>
-          <div className="text-sm font-semibold">Stampfix Platform</div>
+          {/* Close button (mobile only) */}
+          <button
+            onClick={() => setMobileNavOpen(false)}
+            className="md:hidden p-1 -mr-1 hover:bg-white rounded transition"
+            aria-label="Close navigation"
+          >
+            <X className="w-4 h-4 text-gray-400" />
+          </button>
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
@@ -54,7 +105,7 @@ export function AdminPanel() {
           ] as const).map(([id, Icon, label]) => (
             <button
               key={id}
-              onClick={() => setTab(id)}
+              onClick={() => setTabAndCloseNav(id)}
               className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-sm transition ${
                 tab === id ? 'bg-white text-[#37352F] shadow-sm font-medium' : 'text-gray-600 hover:bg-white/50'
               }`}
@@ -77,7 +128,9 @@ export function AdminPanel() {
         </div>
       </aside>
 
-      <main className="ml-60 flex-1 p-8 max-w-7xl">
+      {/* Main — no left margin on mobile, 240px on desktop. Reduced
+          padding on mobile so tables get more room. */}
+      <main className="md:ml-60 p-4 md:p-8 max-w-7xl">
         {tab === 'OVERVIEW' && <OverviewTab />}
         {tab === 'B2B' && <B2BTab />}
         {tab === 'B2B2C' && <B2B2CTab />}
@@ -123,7 +176,7 @@ function OverviewTab() {
       </header>
 
       {/* Date range picker — single source of truth for everything below */}
-      <div className="bg-white border notion-border rounded-lg p-4 space-y-3 sticky top-0 z-10">
+      <div className="bg-white border notion-border rounded-lg p-4 space-y-3 md:sticky md:top-0 z-10">
         <div className="flex flex-wrap gap-2 items-center">
           {([
             ['today', 'Today'],
@@ -342,7 +395,7 @@ function B2BTab() {
       </form>
 
       {loading ? <Loader /> : rows.length === 0 ? <Empty msg="No merchants found." /> : (
-        <div className="bg-white border notion-border rounded-lg overflow-hidden">
+        <div className="bg-white border notion-border rounded-lg overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
               <tr>
@@ -617,7 +670,7 @@ function B2B2CTab() {
       </div>
 
       {loading ? <Loader /> : rows.length === 0 ? <Empty msg="No customers match." /> : (
-        <div className="bg-white border notion-border rounded-lg overflow-hidden">
+        <div className="bg-white border notion-border rounded-lg overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
               <tr>
