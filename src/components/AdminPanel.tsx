@@ -19,6 +19,10 @@ export function AdminPanel() {
   const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [tab, setTab] = useState<AdminTab>('OVERVIEW');
+  // Mobile drawer state. Declared up here (before any early-returns)
+  // so hook order is stable on every render — React error #310 fires
+  // if a hook moves from "called" to "not called" across renders.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -31,12 +35,6 @@ export function AdminPanel() {
   }
   if (!user) return <NotLoggedIn />;
   if (!isAdmin) return <NotAuthorized email={user.email ?? null} />;
-
-  // Mobile drawer state. On md+ the sidebar is always visible; on
-  // smaller screens it slides in from the left when the hamburger
-  // is tapped. State auto-closes after picking a tab so the drawer
-  // doesn't linger over the content the admin wants to read.
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const setTabAndCloseNav = (newTab: AdminTab) => {
     setTab(newTab);
