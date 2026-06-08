@@ -82,68 +82,87 @@ function PhoneMockup() {
             <span>5G</span>
           </div>
 
-          {/* "My loyalty card" header */}
-          <div className="px-4 pt-4 pb-2">
+          {/* "My loyalty card" label */}
+          <div className="px-4 pt-2 pb-3">
             <div className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">My loyalty card</div>
-            <div className="text-sm font-serif-display font-semibold text-[#37352F]">Lucky Café</div>
           </div>
 
           {/* Card */}
-          <div className="px-3 flex-1 flex items-start justify-center pt-2">
+          <div className="px-3 flex-1 flex items-start justify-center">
             <SampleLoyaltyCard />
           </div>
 
-          {/* Bottom info chip */}
-          <div className="px-4 pb-5">
-            <div className="bg-white border border-gray-100 rounded-lg px-3 py-2 text-center shadow-sm">
-              <div className="text-[8px] uppercase tracking-widest text-gray-400 font-bold">Card ID</div>
-              <div className="text-xs font-mono font-semibold text-[#37352F]">SF00042</div>
-            </div>
-          </div>
+          {/* Bottom spacer to balance the layout */}
+          <div className="h-4" />
         </div>
       </div>
     </div>
   );
 }
 
-/** Sample loyalty card — mimics WalletCard's look, lighter weight. */
+/** Sample loyalty card — matches the actual WalletCard component design. */
 function SampleLoyaltyCard() {
-  const filled = 6;
-  const total = 8;
-  // Match the wallet card aspect ratio (roughly credit-card 1.586:1)
+  const filled = 3;
+  const total = 6;
   return (
-    <div className="w-full rounded-xl shadow-md overflow-hidden bg-white border border-gray-100">
-      {/* Header bar — café color */}
-      <div className="bg-gradient-to-br from-[#2d5a3d] to-[#1d3d28] text-white px-3 py-2.5">
-        <div className="text-[8px] uppercase tracking-widest opacity-70 font-bold">Buy 8 coffees</div>
-        <div className="text-[11px] font-semibold">Get 1 free</div>
+    <div className="w-full rounded-2xl shadow-md overflow-hidden bg-white border border-gray-100">
+      {/* Top row: logo + business name on left, stamp count on right */}
+      <div className="px-3 pt-3 pb-2 flex items-start justify-between">
+        <div className="flex items-center gap-1.5">
+          <div className="w-7 h-7 rounded-full bg-white border border-gray-100 flex items-center justify-center text-sm shadow-sm">
+            ☕
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#37352F]">Lucky Cafe</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[7px] uppercase tracking-widest text-gray-400 font-bold">Stamps</div>
+          <div className="text-base font-bold text-[#37352F] leading-tight">{filled}</div>
+        </div>
       </div>
 
-      {/* Stamps grid */}
-      <div className="p-3 grid grid-cols-4 gap-1.5">
+      {/* Stamps grid — 3 columns × 2 rows = 6 total */}
+      <div className="px-3 py-2 grid grid-cols-3 gap-2 place-items-center">
         {Array.from({ length: total }, (_, i) => {
           const isFilled = i < filled;
-          return (
-            <div key={i} className={`aspect-square rounded-full flex items-center justify-center text-[10px] font-bold border ${
-              isFilled
-                ? 'bg-[#2d5a3d] text-white border-[#2d5a3d]'
-                : 'bg-gray-50 text-gray-300 border-gray-200 border-dashed'
-            }`}>
-              {isFilled ? '☕' : ''}
+          return isFilled ? (
+            <div key={i} className="w-11 h-11 rounded-full bg-black flex items-center justify-center text-sm shadow-sm">
+              ☕
+            </div>
+          ) : (
+            <div key={i} className="w-11 h-11 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-300 font-semibold">
+              {i + 1}
             </div>
           );
         })}
       </div>
 
-      {/* Progress footer */}
-      <div className="px-3 pb-3">
-        <div className="flex justify-between items-end mb-1">
-          <span className="text-[8px] text-gray-400 uppercase tracking-wider font-bold">Holder</span>
-          <span className="text-[8px] text-gray-400 uppercase tracking-wider font-bold">Joined</span>
+      {/* Offer pill */}
+      <div className="px-3 pb-2.5 flex justify-center">
+        <div className="bg-gray-50 border border-gray-100 rounded-full px-3 py-1">
+          <span className="text-[8px] uppercase tracking-wider text-gray-500 font-semibold">Order 6 times, 1 mango la...</span>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-[10px] font-semibold text-[#37352F]">Anna L.</span>
-          <span className="text-[9px] text-gray-500 font-mono">Mar 12</span>
+      </div>
+
+      {/* Footer: Holder / ID / Joined columns */}
+      <div className="bg-gray-50 border-t border-gray-100 px-3 py-2.5 grid grid-cols-3 gap-1 items-end">
+        <div>
+          <div className="text-[7px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">Holder</div>
+          <div className="text-[9px] font-bold text-[#37352F] truncate">Anna L.</div>
+        </div>
+        <div className="text-center">
+          <div className="text-[7px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">ID</div>
+          <div className="text-[9px] font-mono font-semibold text-[#37352F]">SF00042</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[7px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">Joined</div>
+          <div className="text-[8px] font-mono text-gray-500">Mar 12</div>
+        </div>
+      </div>
+
+      {/* Mini QR placeholder */}
+      <div className="bg-gray-50 px-3 pb-3 flex justify-center">
+        <div className="w-14 h-14 bg-white border border-gray-200 rounded-md p-1 shadow-sm">
+          <div className="w-full h-full bg-[length:6px_6px] bg-[linear-gradient(45deg,#000_25%,transparent_25%,transparent_75%,#000_75%),linear-gradient(45deg,#000_25%,transparent_25%,transparent_75%,#000_75%)] bg-[position:0_0,3px_3px]" />
         </div>
       </div>
     </div>
