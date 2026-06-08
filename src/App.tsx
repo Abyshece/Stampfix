@@ -75,14 +75,52 @@ export default function App() {
         .select('id, status')
         .eq('id', user.id)
         .maybeSingle();
-      if (!data || data.status === 'deleted') {
-        // No merchant record (or soft-deleted) → kill the session.
-        await supabase.auth.signOut();
-        setHasMerchantRow(false);
-        setView('landing');
-      } else {
+
+      if (data && data.status !== 'deleted') {
+        // Healthy merchant row — proceed.
         setHasMerchantRow(true);
+        setOrphanCheckDone(true);
+        return;
       }
+
+      // No merchant row (or soft-deleted). Two cases:
+      //   (a) Brand-new signup whose trigger silently failed.
+      //       We can detect this from the auth.users metadata: if the
+      //       user signed up with role='merchant', they're meant to be
+      //       a merchant and we should create the row ourselves.
+      //   (b) Customer who logged in via /my-card. They have no
+      //       merchant metadata and we should sign them out of this view.
+      //
+      // Case (a) prevents the sign-in-loop bug: previously we just
+      // signed them out, but they'd sign back in and loop forever.
+      const meta = (user as { user_metadata?: Record<string, unknown> }).user_metadata ?? {};
+      const isMerchantSignup = meta.role === 'merchant';
+
+      if (isMerchantSignup && (!data || data.status !== 'deleted')) {
+        // Heal: create the missing merchant row from the auth metadata.
+        const businessName = (typeof meta.business_name === 'string' && meta.business_name) || 'My business';
+        const country = (typeof meta.country === 'string' ? meta.country : null);
+        const { error: insertErr } = await supabase
+          .from('merchants')
+          .insert({
+            id: user.id,
+            email: user.email ?? '',
+            business_name: businessName,
+            country,
+          });
+        if (!insertErr) {
+          setHasMerchantRow(true);
+          setOrphanCheckDone(true);
+          return;
+        }
+        // If even the heal failed, log and fall through to signout below
+        console.warn('[orphan-check] failed to heal merchant row:', insertErr);
+      }
+
+      // Case (b) or heal failed → sign out and return to landing.
+      await supabase.auth.signOut();
+      setHasMerchantRow(false);
+      setView('landing');
       setOrphanCheckDone(true);
     })();
   }, [user]);

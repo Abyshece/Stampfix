@@ -7,6 +7,7 @@ import { WalletCard } from './WalletCard';
 import type { Campaign, UserCard } from '../types';
 import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
+import { PasswordInput } from './PasswordInput';
 import { FeaturesSection } from './FeaturesSection';
 import { PromoBannerBar } from './PromoBannerBar';
 
@@ -145,10 +146,10 @@ export function LandingPage({
                           Forgot password?
                         </button>
                       </div>
-                      <input
-                        type="password"
+                      <PasswordInput
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={setPassword}
+                        autoComplete="current-password"
                         className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20 transition"
                         placeholder="••••••••"
                       />
