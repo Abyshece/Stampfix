@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth, signOut } from './lib/auth';
-import { isSupabaseConfigured } from './lib/supabase';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { LandingPage } from './components/LandingPage';
 import { MerchantApp } from './components/MerchantApp';
 import { CustomerApp } from './components/CustomerApp';
@@ -55,9 +55,41 @@ export default function App() {
   // If the user signs in, drop them on the merchant view — UNLESS we're
   // showing the post-confirmation success page, which deliberately wants
   // the user to click "Sign in" themselves.
+  //
+  // Also guard against the "ghost session" case: an auth.users row that
+  // no longer has a matching merchants row (e.g. account deleted by SQL).
+  // We detect that, sign the orphan session out, and stay on landing so
+  // the button correctly shows "Log in" instead of "Go to dashboard".
+  const [orphanCheckDone, setOrphanCheckDone] = useState(false);
+  // True only after we've confirmed the auth user has a real, non-deleted
+  // merchants row. Customers (signed in via /my-card) and orphaned sessions
+  // are both `false`. The "Go to dashboard" button gates on this flag so
+  // a customer never sees an incorrect "Go to dashboard" CTA that would
+  // dump them into the merchant signup flow.
+  const [hasMerchantRow, setHasMerchantRow] = useState(false);
   useEffect(() => {
-    if (user && !showConfirmed) setView('merchant');
-  }, [user, showConfirmed]);
+    if (!user) { setOrphanCheckDone(true); setHasMerchantRow(false); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('merchants')
+        .select('id, status')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!data || data.status === 'deleted') {
+        // No merchant record (or soft-deleted) → kill the session.
+        await supabase.auth.signOut();
+        setHasMerchantRow(false);
+        setView('landing');
+      } else {
+        setHasMerchantRow(true);
+      }
+      setOrphanCheckDone(true);
+    })();
+  }, [user]);
+
+  useEffect(() => {
+    if (user && orphanCheckDone && hasMerchantRow && !showConfirmed) setView('merchant');
+  }, [user, orphanCheckDone, hasMerchantRow, showConfirmed]);
 
   if (!isSupabaseConfigured) return <ConfigError />;
 
@@ -132,7 +164,7 @@ export default function App() {
   return (
     <>
       <LandingPage
-        isAuthenticated={Boolean(user)}
+        isAuthenticated={Boolean(user) && hasMerchantRow}
         onEnterMerchantFlow={() => setView('merchant')}
         onResumeMerchant={() => setView('merchant')}
       />
