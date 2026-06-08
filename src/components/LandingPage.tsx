@@ -7,6 +7,8 @@ import { WalletCard } from './WalletCard';
 import type { Campaign, UserCard } from '../types';
 import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
+import { FeaturesSection } from './FeaturesSection';
+import { PromoBannerBar } from './PromoBannerBar';
 
 interface LandingPageProps {
   onEnterMerchantFlow: () => void;
@@ -252,6 +254,10 @@ export function LandingPage({
           </div>
         </div>
       )}
+
+      {/* Promo banner — pulls from DB. Sits above the nav (which is sticky)
+          so the banner scrolls away with the page; only on first view. */}
+      <PromoBannerBar />
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border px-6 py-4 flex justify-between items-center">
@@ -516,6 +522,9 @@ export function LandingPage({
           <p className="mt-6 text-sm text-gray-400">No credit card required. Up and running in minutes.</p>
         </div>
       </section>
+
+      {/* Features section — 2-column with iPhone mockup */}
+      <FeaturesSection />
 
       {/* Contact form (lands in admin → Contact Inquiries) */}
       <ContactFormSection />

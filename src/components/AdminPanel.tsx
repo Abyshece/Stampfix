@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
-  LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search,
+  LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
   Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2,
 } from 'lucide-react';
@@ -12,8 +12,9 @@ import {
   type RangedKPIs, type KPIBlock, type MerchantRow, type CustomerRow, type TicketRow,
   type ContactMessage, type MerchantStatus,
 } from '../services/admin';
+import { OffersTab } from './OffersTab';
 
-type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT';
+type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS';
 
 export function AdminPanel() {
   const { user, loading: authLoading } = useAuth();
@@ -100,6 +101,7 @@ export function AdminPanel() {
             ['B2B_REPORTS', MessageSquare, 'B2B Reports'],
             ['B2B2C_REPORTS', MessageSquare, 'B2B2C Reports'],
             ['CONTACT', Mail, 'Contact Inquiries'],
+            ['OFFERS', Tag, 'Offers'],
           ] as const).map(([id, Icon, label]) => (
             <button
               key={id}
@@ -135,6 +137,7 @@ export function AdminPanel() {
         {tab === 'B2B_REPORTS' && <ReportsTab source="merchant" title="B2B Reports" subtitle="Tickets submitted by merchants." />}
         {tab === 'B2B2C_REPORTS' && <ReportsTab source="customer" title="B2B2C Reports" subtitle="Tickets submitted by end-customers." />}
         {tab === 'CONTACT' && <ContactTab />}
+        {tab === 'OFFERS' && <OffersTab />}
       </main>
     </div>
   );

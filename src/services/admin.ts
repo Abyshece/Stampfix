@@ -271,3 +271,77 @@ export async function submitTicket(input: {
   });
   if (error) throw error;
 }
+
+// =====================================================================
+// Promo banners
+// =====================================================================
+
+export interface PromoBanner {
+  id: string;
+  headline: string;
+  subtext: string | null;
+  coupon_code: string | null;
+  discount_percent: number | null;
+  cta_url: string | null;
+  is_active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  variant: 'red' | 'blue' | 'green' | 'amber';
+  created_at: string;
+  updated_at: string;
+}
+
+/** Admin-only: list ALL banners regardless of active state. */
+export async function adminListPromoBanners(): Promise<PromoBanner[]> {
+  const { data, error } = await supabase.rpc('admin_list_promo_banners');
+  if (error) throw error;
+  return (data ?? []) as PromoBanner[];
+}
+
+/** Public: list currently-visible banners (active + within date window). */
+export async function listActivePromoBanners(): Promise<PromoBanner[]> {
+  // RLS does the filtering server-side; we just need active=true rows.
+  const { data, error } = await supabase
+    .from('promo_banners')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) {
+    // Non-fatal; landing page works without banners
+    console.warn('[promo] could not load banners', error);
+    return [];
+  }
+  return (data ?? []) as PromoBanner[];
+}
+
+export async function upsertPromoBanner(input: {
+  id?: string | null;
+  headline: string;
+  subtext?: string | null;
+  coupon_code?: string | null;
+  discount_percent?: number | null;
+  cta_url?: string | null;
+  is_active: boolean;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  variant: 'red' | 'blue' | 'green' | 'amber';
+}): Promise<string> {
+  const { data, error } = await supabase.rpc('admin_upsert_promo_banner', {
+    banner_id: input.id ?? null,
+    headline_in: input.headline,
+    subtext_in: input.subtext ?? null,
+    coupon_code_in: input.coupon_code ?? null,
+    discount_percent_in: input.discount_percent ?? null,
+    cta_url_in: input.cta_url ?? null,
+    is_active_in: input.is_active,
+    starts_at_in: input.starts_at ?? null,
+    ends_at_in: input.ends_at ?? null,
+    variant_in: input.variant,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function deletePromoBanner(id: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_delete_promo_banner', { banner_id: id });
+  if (error) throw error;
+}
