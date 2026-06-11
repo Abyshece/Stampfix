@@ -110,12 +110,86 @@ export function PrivacyPolicy() {
         safeguards such as the European Commission’s Standard Contractual Clauses.
       </p>
 
-      <LegalH2>7. How long we keep it</LegalH2>
+      <LegalH2>7. How long we keep it (retention schedule)</LegalH2>
       <p>
-        We keep Merchant account data for as long as the account is active, and for a reasonable
-        period afterward to meet legal and tax obligations. Cardholder data is retained while the
-        Merchant’s loyalty program is active; when a Merchant deletes a Cardholder or closes their
-        account, the associated data is deleted, subject to any retention required by law.
+        We keep personal information only as long as needed for the purpose it was collected, plus
+        any period required by law. The table below sets out our retention periods by data category.
+        When the period ends, data is either deleted permanently or anonymised so it can no longer
+        identify you.
+      </p>
+      <div className="overflow-x-auto my-4">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-[#F7F7F5] text-left">
+              <th className="border notion-border px-3 py-2 font-semibold">Data category</th>
+              <th className="border notion-border px-3 py-2 font-semibold">Retention period</th>
+              <th className="border notion-border px-3 py-2 font-semibold">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="border notion-border px-3 py-2">Cardholder card data (active card)</td>
+              <td className="border notion-border px-3 py-2">While the card is active</td>
+              <td className="border notion-border px-3 py-2">Service provision</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Cardholder card data (deletion requested)</td>
+              <td className="border notion-border px-3 py-2">24-hour grace window, then permanent erasure</td>
+              <td className="border notion-border px-3 py-2">Allow mistake recovery; GDPR Art. 17</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Cardholder card data (Merchant closed account)</td>
+              <td className="border notion-border px-3 py-2">30 days, then permanent erasure</td>
+              <td className="border notion-border px-3 py-2">Merchant restore window</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Stamp / reward activity log</td>
+              <td className="border notion-border px-3 py-2">Linked to the card; deleted with the card</td>
+              <td className="border notion-border px-3 py-2">Dispute evidence; audit</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Merchant account data (active)</td>
+              <td className="border notion-border px-3 py-2">Until subscription cancelled</td>
+              <td className="border notion-border px-3 py-2">Service provision</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Merchant account data (cancelled)</td>
+              <td className="border notion-border px-3 py-2">30 days, then permanent erasure</td>
+              <td className="border notion-border px-3 py-2">Restore window</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Billing & invoice records</td>
+              <td className="border notion-border px-3 py-2"><strong>6 years</strong></td>
+              <td className="border notion-border px-3 py-2">Required by Canada Revenue Agency under Income Tax Act s.230</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Support tickets</td>
+              <td className="border notion-border px-3 py-2">2 years after resolution</td>
+              <td className="border notion-border px-3 py-2">Continuity for recurring issues</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Email delivery logs (Resend)</td>
+              <td className="border notion-border px-3 py-2">~30 days (vendor default)</td>
+              <td className="border notion-border px-3 py-2">Deliverability debugging</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Server access logs</td>
+              <td className="border notion-border px-3 py-2">Vendor default (Supabase, Vercel)</td>
+              <td className="border notion-border px-3 py-2">Security; incident response</td>
+            </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Database backups</td>
+              <td className="border notion-border px-3 py-2">7-30 days rolling</td>
+              <td className="border notion-border px-3 py-2">Disaster recovery</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Where data must be retained beyond the periods above to comply with a legal obligation
+        (e.g. tax law), we isolate it, restrict access, and use it only for that purpose. You can
+        request earlier deletion at any time by contacting us — we will honour the request except
+        where retention is legally required, in which case we will explain why.
       </p>
 
       <LegalH2>8. Your rights</LegalH2>
