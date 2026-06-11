@@ -21,7 +21,7 @@ export function DataProcessingAgreement() {
   return (
     <LegalPage title="Data Processing Agreement" lastUpdated="June 4, 2026">
       <p className="text-sm text-gray-500 italic">
-        This Data Processing Agreement ("DPA") forms part of the agreement between you (the "Controller", referred to as "you" or "the Merchant") and [PLACEHOLDER COMPANY NAME] ("Stampfix", "we", "the Processor") and applies whenever Stampfix processes Personal Data on the Merchant's behalf.
+        This Data Processing Agreement ("DPA") forms part of the agreement between you (the "Controller", referred to as "you" or "the Merchant") and 17999658 Canada Inc. (d/b/a Stampfix) ("Stampfix", "we", "the Processor") and applies whenever Stampfix processes Personal Data on the Merchant's behalf.
       </p>
 
       <h2>1. Definitions</h2>
@@ -100,12 +100,12 @@ export function DataProcessingAgreement() {
 
       <h2>12. Governing Law</h2>
       <p>
-        This DPA is governed by the laws of [PLACEHOLDER — British Columbia, Canada], with the GDPR taking precedence for processing of EU data subjects.
+        This DPA is governed by the laws of British Columbia, Canada, with the GDPR taking precedence for processing of EU data subjects.
       </p>
 
       <h2>13. Contact</h2>
       <p>
-        For DPA-related questions or data subject requests escalated to Stampfix as Processor, contact: [PLACEHOLDER — privacy@stampfix.app].
+        For DPA-related questions or data subject requests escalated to Stampfix as Processor, contact: privacy@stampfix.app.
       </p>
 
       <p className="text-sm text-gray-500 italic mt-8">
