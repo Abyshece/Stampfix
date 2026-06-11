@@ -7,6 +7,7 @@ import type { UserCard, Campaign } from '../types';
 import { WalletCard } from './WalletCard';
 import { Turnstile } from './Turnstile';
 import { verifyTurnstile } from '../services/turnstile';
+import { DownloadMyDataButton } from './DownloadMyDataButton';
 
 /**
  * Self-service page where any customer can look up their loyalty cards.
@@ -261,6 +262,16 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
             <strong>Tip:</strong> bookmark this page (<code className="bg-white px-1 rounded">stampfix.app/my-card</code>) to get back here anytime.
             {isIOS && ' On iPhone, tap Share → Add to Home Screen.'}
           </div>
+        </div>
+
+        {/* Data export — GDPR Art. 20 portability + PIPEDA Principle 9.
+            Subtle styling because most users won't ever click this, but
+            it must be available to anyone who asks for their data. */}
+        <div className="pt-2 border-t notion-border space-y-1.5">
+          <p className="text-xs text-gray-500">
+            Download a JSON copy of all your data on Stampfix.
+          </p>
+          <DownloadMyDataButton variant="customer" />
         </div>
       </div>
     </Shell>

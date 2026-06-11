@@ -16,6 +16,7 @@ import { ComplianceSettings } from './ComplianceSettings';
 import { PosterSettings } from './PosterSettings';
 import { CustomerPrivacyNoticePanel } from './CustomerPrivacyNoticePanel';
 import { DangerZonePanel } from './DangerZonePanel';
+import { DownloadMyDataButton } from './DownloadMyDataButton';
 import { InsightsPanel } from './InsightsPanel';
 import { RevealableEmail } from './RevealableEmail';
 import { GetHelpPanel } from './GetHelpPanel';
@@ -1094,6 +1095,17 @@ export function MerchantDashboard({
               campaign={campaign}
               onUpdated={(updated) => onUpdateCampaign({ customerPrivacyNotice: updated.customerPrivacyNotice })}
             />
+
+            {/* Data export — GDPR Art. 20 portability + PIPEDA Principle 9.
+                Lets the merchant download a full JSON snapshot of their
+                account, customers, and activity history. */}
+            <div className="bg-white rounded-lg border notion-border p-6 space-y-2">
+              <h3 className="text-base font-semibold">Your data</h3>
+              <p className="text-sm text-gray-500">
+                Download a complete JSON copy of your account, customers, locations, and activity log.
+              </p>
+              <DownloadMyDataButton variant="merchant" />
+            </div>
 
             <DangerZonePanel
               businessName={campaign.businessName}
