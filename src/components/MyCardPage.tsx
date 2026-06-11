@@ -247,6 +247,9 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
                 <div key={card.id} className="bg-white border notion-border rounded-xl p-4 shadow-sm space-y-3">
                   <WalletCard card={card} campaign={campaign} />
 
+                  {/* Edit profile row — GDPR Art. 16 rectification */}
+                  <EditProfileRow card={card} onRefresh={refresh} />
+
                   {/* Deletion status + request button */}
                   <DeletionRow card={card} onRefresh={refresh} />
                 </div>
@@ -395,6 +398,109 @@ function DeletionRow({ card, onRefresh }: { card: UserCard; onRefresh: () => voi
       >
         {busy ? 'Working...' : 'Request data deletion'}
       </button>
+    </div>
+  );
+}
+
+// ----- Edit profile row (GDPR Art. 16 rectification) ---------------------
+
+/**
+ * Lets a customer correct their name (and optionally age) on a specific
+ * card. Inline expand-collapse — most customers never need this so we
+ * keep it subtle. Email changes intentionally not supported here: that
+ * would require Supabase auth flow + re-confirmation. Customers who
+ * need to change email contact support.
+ */
+function EditProfileRow({ card, onRefresh }: { card: UserCard; onRefresh: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(card.customerName);
+  const [age, setAge] = useState<string>(card.age != null ? String(card.age) : '');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    setError(null);
+    if (!name.trim()) { setError('Name cannot be empty'); return; }
+    setBusy(true);
+    try {
+      const ageNum = age.trim() ? parseInt(age.trim(), 10) : null;
+      if (age.trim() && (isNaN(ageNum!) || ageNum! < 13 || ageNum! > 120)) {
+        throw new Error('Age must be between 13 and 120');
+      }
+      const { error: rpcErr } = await supabase.rpc('update_my_card_profile', {
+        card_id_in: card.id,
+        new_name: name.trim(),
+        new_age: ageNum,
+      });
+      if (rpcErr) throw rpcErr;
+      setEditing(false);
+      await onRefresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not update');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <div className="flex justify-end -mt-1">
+        <button
+          onClick={() => setEditing(true)}
+          className="text-[11px] text-gray-400 hover:text-[#37352F] underline transition"
+        >
+          Edit profile
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-[#F7F7F5] border notion-border rounded-md p-3 space-y-2 text-xs">
+      <div className="font-medium text-gray-700">Edit profile on this card</div>
+      <div className="space-y-1.5">
+        <label className="block">
+          <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Name</span>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-white border notion-border rounded px-2 py-1.5 text-sm mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
+            maxLength={100}
+          />
+        </label>
+        <label className="block">
+          <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Age (optional)</span>
+          <input
+            type="number"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            className="w-full bg-white border notion-border rounded px-2 py-1.5 text-sm mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
+            min={13}
+            max={120}
+          />
+        </label>
+      </div>
+      <p className="text-[10px] text-gray-400 leading-snug">
+        Need to change your email? Contact <a href="mailto:hello@stampfix.app" className="underline">hello@stampfix.app</a>.
+      </p>
+      {error && <div className="text-red-600 text-[11px]">{error}</div>}
+      <div className="flex gap-2 justify-end">
+        <button
+          onClick={() => { setEditing(false); setName(card.customerName); setAge(card.age != null ? String(card.age) : ''); setError(null); }}
+          disabled={busy}
+          className="text-[11px] px-2 py-1 rounded border notion-border bg-white hover:bg-[#F7F7F5]"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={busy}
+          className="text-[11px] px-3 py-1 rounded bg-[#37352F] text-white hover:bg-opacity-90 disabled:opacity-50"
+        >
+          {busy ? 'Saving...' : 'Save'}
+        </button>
+      </div>
     </div>
   );
 }
