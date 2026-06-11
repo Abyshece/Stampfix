@@ -16,7 +16,7 @@ export function TermsOfService() {
     <LegalPage title="Terms of Service" lastUpdated="28 May 2026">
       <p>
         These Terms of Service (“Terms”) govern your use of the Stampfix loyalty-card platform (the
-        “Service”) provided by <Placeholder>LEGAL ENTITY NAME</Placeholder> (“Stampfix”, “we”, “us”).
+        “Service”) provided by 17999658 Canada Inc. (d/b/a Stampfix) (“Stampfix”, “we”, “us”).
         By creating an account or using the Service, you agree to these Terms. If you are using the
         Service on behalf of a business, you confirm you have authority to bind that business.
       </p>
@@ -125,8 +125,8 @@ export function TermsOfService() {
 
       <LegalH2>13. Contact</LegalH2>
       <p>
-        Questions about these Terms? Email <Placeholder>SUPPORT CONTACT EMAIL</Placeholder> or write
-        to <Placeholder>REGISTERED ADDRESS, VANCOUVER, BC, CANADA</Placeholder>.
+        Questions about these Terms? Email hello@stampfix.app or write
+        to 28-16223 23A Ave, Surrey BC V3Z 6P4, Canada.
       </p>
 
       <p className="text-xs text-gray-400 pt-8 border-t notion-border mt-8">

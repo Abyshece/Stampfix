@@ -18,7 +18,7 @@ export function PrivacyPolicy() {
   return (
     <LegalPage title="Privacy Policy" lastUpdated="28 May 2026">
       <p>
-        This Privacy Policy explains how <Placeholder>LEGAL ENTITY NAME</Placeholder> (“Stampfix”,
+        This Privacy Policy explains how 17999658 Canada Inc. (d/b/a Stampfix) (“Stampfix”,
         “we”, “us”) collects, uses, and protects personal information when you use our digital
         loyalty-card platform at stampfix.app (the “Service”). We are committed to handling personal
         information in accordance with Canada’s Personal Information Protection and Electronic
@@ -31,9 +31,9 @@ export function PrivacyPolicy() {
         The data controller responsible for your personal information is:
       </p>
       <p>
-        <Placeholder>LEGAL ENTITY NAME</Placeholder><br />
-        <Placeholder>REGISTERED ADDRESS, VANCOUVER, BC, CANADA</Placeholder><br />
-        Email: <Placeholder>PRIVACY CONTACT EMAIL</Placeholder>
+        17999658 Canada Inc. (d/b/a Stampfix)<br />
+        28-16223 23A Ave, Surrey BC V3Z 6P4, Canada<br />
+        Email: privacy@stampfix.app
       </p>
       <p>
         For individuals in the European Union, our representative pursuant to Article 27 GDPR is:{' '}
@@ -130,7 +130,7 @@ export function PrivacyPolicy() {
         Cardholders should direct requests to the Merchant whose program they joined, as that
         Merchant is the controller of their data; we will assist the Merchant in responding. For
         Merchant account data, or to exercise any right directly, contact us at{' '}
-        <Placeholder>PRIVACY CONTACT EMAIL</Placeholder>.
+        privacy@stampfix.app.
       </p>
 
       <LegalH2>9. Security</LegalH2>
@@ -157,8 +157,8 @@ export function PrivacyPolicy() {
       <LegalH2>12. Contact</LegalH2>
       <p>
         Questions about this policy or your personal information? Email{' '}
-        <Placeholder>PRIVACY CONTACT EMAIL</Placeholder> or write to{' '}
-        <Placeholder>REGISTERED ADDRESS, VANCOUVER, BC, CANADA</Placeholder>.
+        privacy@stampfix.app or write to{' '}
+        28-16223 23A Ave, Surrey BC V3Z 6P4, Canada.
       </p>
 
       <p className="text-xs text-gray-400 pt-8 border-t notion-border mt-8">
