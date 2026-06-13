@@ -36,8 +36,18 @@ export function PrivacyPolicy() {
         Email: privacy@stampfix.app
       </p>
       <p>
-        For individuals in the European Union, our representative pursuant to Article 27 GDPR is:{' '}
-        <Placeholder>EU REPRESENTATIVE — TO BE APPOINTED</Placeholder>.
+        For individuals in the European Union, our representative pursuant to Article 27 GDPR is:
+      </p>
+      <p>
+        <strong>Abhishek Abhishek</strong><br />
+        Wilhelm-Dahl-Straße 21, Würzburg, Germany<br />
+        Email: abysheke@gmail.com
+      </p>
+      <p className="text-xs text-gray-500">
+        The EU Representative acts as a point of contact for EU data subjects and supervisory
+        authorities in accordance with Article 27(4) GDPR. Data subjects in the European Union
+        may address requests to either the Representative or directly to the Company at the
+        addresses above.
       </p>
 
       <LegalH2>2. The two roles we play</LegalH2>
