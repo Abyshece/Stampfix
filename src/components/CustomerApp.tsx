@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Loader2, LogOut } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
 import { useAuth, sendCustomerMagicLink, signOut } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 import { getCampaignById, getCardForCustomer, createCard } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { Turnstile } from './Turnstile';
@@ -80,12 +81,19 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
         }
         let existing = await getCardForCustomer(campaign.id, user.id);
         if (!existing) {
-          // Pull pending signup details from sessionStorage if present.
-          const pendingRaw = sessionStorage.getItem('pending_customer_signup');
+          // Resolve signup details. Three sources, in priority order:
+          //   1. sessionStorage (same-tab signup → magic link click)
+          //   2. pending_customer_signups table (cross-tab, survives
+          //      Gmail-app-opens-new-window flow)
+          //   3. Auth user email/metadata as last-resort fallback
           let name = user.email?.split('@')[0] ?? 'Customer';
           let age: number | null = null;
           let consentGiven = false;
           let marketing = false;
+          let pendingRowId: string | null = null;
+          let resolvedJoinedLocationId: string | null = joinedLocationId ?? null;
+
+          const pendingRaw = sessionStorage.getItem('pending_customer_signup');
           if (pendingRaw) {
             try {
               const p = JSON.parse(pendingRaw);
@@ -96,18 +104,45 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             } catch {
               // ignore
             }
+          } else if (user.email) {
+            // Cross-tab fallback: look up pending signup by email + campaign.
+            // RLS on the table is permissive enough that an authenticated user
+            // can read their own pending row.
+            const { data: pending } = await supabase
+              .from('pending_customer_signups')
+              .select('*')
+              .ilike('email', user.email)
+              .eq('campaign_id', campaign.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (pending) {
+              pendingRowId = pending.id;
+              name = `${pending.first_name ?? ''} ${pending.surname ?? ''}`.trim() || name;
+              age = pending.age ?? null;
+              consentGiven = pending.terms_accepted === true;
+              marketing = pending.marketing_opt_in === true;
+              if (!resolvedJoinedLocationId && pending.joined_location_id) {
+                resolvedJoinedLocationId = pending.joined_location_id;
+              }
+            }
           }
+
           existing = await createCard({
             campaignId: campaign.id,
             customerId: user.id,
             customerName: name,
             email: user.email ?? '',
             age,
-            joinedAtLocationId: joinedLocationId ?? null,
+            joinedAtLocationId: resolvedJoinedLocationId,
             customerConsentAt: consentGiven ? new Date().toISOString() : null,
             marketingOptIn: marketing,
           });
           sessionStorage.removeItem('pending_customer_signup');
+          // Consume the pending row so it doesn't linger after card creation
+          if (pendingRowId) {
+            await supabase.from('pending_customer_signups').delete().eq('id', pendingRowId);
+          }
         }
         if (mounted) setCard(existing);
       } catch (e) {
@@ -137,12 +172,37 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
         setIsSendingLink(false);
         return;
       }
-      // Stash form + consent flags so we can apply them after magic-link callback.
+      // Stash form + consent flags in BOTH sessionStorage (fast path for
+      // same-tab callback) and the pending_customer_signups table
+      // (cross-tab fallback for when the magic link opens in a new
+      // tab/window via Gmail app etc).
       sessionStorage.setItem('pending_customer_signup', JSON.stringify({
         ...formData,
         termsAccepted,
         marketingOptIn,
       }));
+
+      // DB persistence — upsert so re-submitting the form overwrites.
+      // Non-blocking: if this fails for any reason we still proceed with
+      // the magic-link flow; the sessionStorage path will likely cover
+      // same-tab usage. We log so we know if the cross-tab path is broken.
+      try {
+        const { error: pendingErr } = await supabase
+          .from('pending_customer_signups')
+          .upsert({
+            email: formData.email.toLowerCase(),
+            campaign_id: campaignId,
+            first_name: formData.firstName,
+            surname: formData.surname || null,
+            age: formData.age ? parseInt(formData.age) : null,
+            joined_location_id: joinedLocationId ?? null,
+            terms_accepted: termsAccepted,
+            marketing_opt_in: marketingOptIn,
+          }, { onConflict: 'email,campaign_id' });
+        if (pendingErr) console.warn('[signup] could not persist pending row:', pendingErr);
+      } catch (e) {
+        console.warn('[signup] pending persist threw:', e);
+      }
       await sendCustomerMagicLink(formData.email, campaignId);
       setLinkSent(true);
     } catch (e) {
