@@ -92,7 +92,10 @@ export async function sendCustomerMagicLink(email: string, campaignId: string): 
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${window.location.origin}/?campaign=${campaignId}`,
+      // Land on /my-card which has the auth callback flow working correctly.
+      // The card was pre-staged via pending_customer_signups; MyCardPage
+      // will look it up on first load and create the actual card row.
+      emailRedirectTo: `${window.location.origin}/my-card?campaign=${campaignId}`,
       data: { role: 'customer' },
     },
   });

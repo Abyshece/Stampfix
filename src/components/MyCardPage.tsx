@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Mail, Loader2, ArrowLeft, Smartphone, LogOut, Bookmark } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth, signOut } from '../lib/auth';
-import { listCardsForCustomer, getCampaignsByIds, requestCardDeletion, cancelCardDeletion } from '../lib/db';
+import { listCardsForCustomer, getCampaignsByIds, requestCardDeletion, cancelCardDeletion, createCard } from '../lib/db';
 import type { UserCard, Campaign } from '../types';
 import { WalletCard } from './WalletCard';
 import { Turnstile } from './Turnstile';
@@ -43,6 +43,53 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
     if (!user) return;
     setLoadingCards(true);
     try {
+      // Step 1: process any pending_customer_signups for this user's email.
+      // This is the bridge from the customer signup form to the actual card row.
+      // The signup form persists details here; we consume them on first /my-card load.
+      if (user.email) {
+        try {
+          const { data: pendings } = await supabase
+            .from('pending_customer_signups')
+            .select('*')
+            .ilike('email', user.email);
+          if (pendings && pendings.length > 0) {
+            for (const p of pendings) {
+              // Skip if a card for this user+campaign already exists
+              const { data: existing } = await supabase
+                .from('cards')
+                .select('id')
+                .eq('campaign_id', p.campaign_id)
+                .eq('customer_id', user.id)
+                .maybeSingle();
+              if (existing) {
+                // Already created — just clean up the pending row
+                await supabase.from('pending_customer_signups').delete().eq('id', p.id);
+                continue;
+              }
+              // Create the card from pending data
+              const fullName = `${p.first_name ?? ''} ${p.surname ?? ''}`.trim()
+                || user.email.split('@')[0];
+              await createCard({
+                campaignId: p.campaign_id,
+                customerId: user.id,
+                customerName: fullName,
+                email: user.email,
+                age: p.age ?? null,
+                joinedAtLocationId: p.joined_location_id ?? null,
+                customerConsentAt: p.terms_accepted ? new Date().toISOString() : null,
+                marketingOptIn: p.marketing_opt_in === true,
+              });
+              await supabase.from('pending_customer_signups').delete().eq('id', p.id);
+            }
+          }
+        } catch (e) {
+          // Non-fatal: still try to load whatever cards exist
+          console.warn('[my-card] pending signup processing failed:', e);
+        }
+      }
+      if (signal?.cancelled) return;
+
+      // Step 2: load all cards for this user (now including any just-created)
       const myCards = await listCardsForCustomer(user.id);
       if (signal?.cancelled) return;
       setCards(myCards);
