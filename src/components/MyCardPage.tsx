@@ -108,6 +108,29 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
     }
   };
 
+  // Capture magic-link errors that Supabase puts in the URL hash.
+  // e.g. #error=access_denied&error_code=otp_expired&error_description=...
+  // Without this, an expired/already-used link silently dumps the user
+  // on the sign-in form and they have no idea what happened.
+  const [linkError, setLinkError] = useState<string | null>(null);
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash || !hash.includes('error')) return;
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const code = params.get('error_code');
+    const desc = params.get('error_description');
+    if (code === 'otp_expired') {
+      setLinkError(
+        'That sign-in link has expired or was already used. ' +
+        'Enter your email below to get a fresh link.'
+      );
+    } else if (code) {
+      setLinkError(desc ? decodeURIComponent(desc.replace(/\+/g, ' ')) : code);
+    }
+    // Clean the hash so a page refresh doesn't keep showing the error
+    if (code) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }, []);
+
   useEffect(() => {
     if (!user) {
       setCards([]);
@@ -206,6 +229,11 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
     return (
       <Shell onExit={onExit}>
         <div className="space-y-6 py-2">
+          {linkError && (
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-amber-900">
+              {linkError}
+            </div>
+          )}
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-serif-display font-semibold">Find my loyalty card</h2>
             <p className="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
