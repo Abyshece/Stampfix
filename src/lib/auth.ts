@@ -21,21 +21,39 @@ export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>({
     session: null,
     user: null,
-    loading: false,
+    loading: true,
   });
 
   useEffect(() => {
     let mounted = true;
+    let settled = false;
 
-    // Best-effort initial hydrate. If this hangs forever we don't care:
-    // loading is already false, so the UI renders. The listener handles
-    // any subsequent session changes.
+    // Initial hydrate. We MUST wait for this before deciding the user
+    // is logged out — otherwise pages like /my-card flash the sign-in
+    // form during the brief window when Supabase is still processing
+    // a magic-link hash from the URL.
     supabase.auth.getSession()
       .then(({ data }) => {
-        if (!mounted || !data.session) return;
-        setState({ session: data.session, user: data.session.user, loading: false });
+        if (!mounted) return;
+        settled = true;
+        setState({
+          session: data.session,
+          user: data.session?.user ?? null,
+          loading: false,
+        });
       })
-      .catch(() => { /* swallow */ });
+      .catch(() => {
+        if (!mounted) return;
+        settled = true;
+        setState((s) => ({ ...s, loading: false }));
+      });
+
+    // Safety: if getSession never resolves (network failure etc), don't
+    // hang the UI forever. Force loading=false after 3s as a fallback.
+    const timeout = setTimeout(() => {
+      if (!mounted || settled) return;
+      setState((s) => ({ ...s, loading: false }));
+    }, 3000);
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
@@ -48,6 +66,7 @@ export function useAuth(): AuthState {
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
   }, []);
