@@ -131,12 +131,37 @@ export async function sendCustomerMagicLink(email: string, campaignId: string): 
  * it up automatically.
  */
 export async function verifyCustomerOtp(email: string, code: string): Promise<void> {
-  const { error } = await supabase.auth.verifyOtp({
-    email,
-    token: code,
-    type: 'email',
+  // A freshly-created user (first signup) gets an OTP that verifies with
+  // type 'signup'. A returning user gets one that verifies with type
+  // 'email'. We don't know which case we're in, so try 'email' first and
+  // fall back to 'signup' on failure. One of them will set the session.
+  let session = null;
+  let lastErr: unknown = null;
+
+  for (const otpType of ['email', 'signup'] as const) {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: code,
+        type: otpType,
+      });
+      if (error) { lastErr = error; continue; }
+      if (data.session) { session = data.session; break; }
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  if (!session) {
+    throw lastErr instanceof Error
+      ? lastErr
+      : new Error('That code is invalid or has expired. Request a new one.');
+  }
+
+  await supabase.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
   });
-  if (error) throw error;
 }
 
 export async function signOut(): Promise<void> {
