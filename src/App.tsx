@@ -69,6 +69,23 @@ export default function App() {
   const [hasMerchantRow, setHasMerchantRow] = useState(false);
   useEffect(() => {
     if (!user) { setOrphanCheckDone(true); setHasMerchantRow(false); return; }
+
+    // Customers must NOT go through the merchant orphan check. A customer
+    // legitimately has no merchant row — that's expected, not an orphan.
+    // Detect customers two ways: (1) they signed up with role='customer'
+    // in their auth metadata, or (2) we're currently in the customer flow
+    // (a ?campaign= URL or the /my-card page). In either case, skip
+    // straight through without touching the merchants table or signing
+    // them out.
+    const meta = (user as { user_metadata?: Record<string, unknown> }).user_metadata ?? {};
+    const isCustomer = meta.role === 'customer' || Boolean(campaignFromUrl)
+      || window.location.pathname === '/my-card';
+    if (isCustomer) {
+      setHasMerchantRow(false);
+      setOrphanCheckDone(true);
+      return;
+    }
+
     (async () => {
       const { data } = await supabase
         .from('merchants')
@@ -83,21 +100,12 @@ export default function App() {
         return;
       }
 
-      // No merchant row (or soft-deleted). Two cases:
-      //   (a) Brand-new signup whose trigger silently failed.
-      //       We can detect this from the auth.users metadata: if the
-      //       user signed up with role='merchant', they're meant to be
-      //       a merchant and we should create the row ourselves.
-      //   (b) Customer who logged in via /my-card. They have no
-      //       merchant metadata and we should sign them out of this view.
-      //
-      // Case (a) prevents the sign-in-loop bug: previously we just
-      // signed them out, but they'd sign back in and loop forever.
-      const meta = (user as { user_metadata?: Record<string, unknown> }).user_metadata ?? {};
+      // No merchant row (or soft-deleted). Brand-new merchant signup whose
+      // trigger silently failed → heal from auth metadata. (Customers were
+      // already handled and returned above.)
       const isMerchantSignup = meta.role === 'merchant';
 
       if (isMerchantSignup && (!data || data.status !== 'deleted')) {
-        // Heal: create the missing merchant row from the auth metadata.
         const businessName = (typeof meta.business_name === 'string' && meta.business_name) || 'My business';
         const country = (typeof meta.country === 'string' ? meta.country : null);
         const { error: insertErr } = await supabase
@@ -113,17 +121,16 @@ export default function App() {
           setOrphanCheckDone(true);
           return;
         }
-        // If even the heal failed, log and fall through to signout below
         console.warn('[orphan-check] failed to heal merchant row:', insertErr);
       }
 
-      // Case (b) or heal failed → sign out and return to landing.
+      // Heal failed → sign out and return to landing.
       await supabase.auth.signOut();
       setHasMerchantRow(false);
       setView('landing');
       setOrphanCheckDone(true);
     })();
-  }, [user]);
+  }, [user, campaignFromUrl]);
 
   useEffect(() => {
     if (user && orphanCheckDone && hasMerchantRow && !showConfirmed) setView('merchant');
