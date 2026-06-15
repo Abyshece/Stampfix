@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Loader2, LogOut } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
-import { useAuth, sendCustomerMagicLink, signOut } from '../lib/auth';
+import { useAuth, sendCustomerMagicLink, verifyCustomerOtp, signOut } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { getCampaignById, getCardForCustomer, createCard } from '../lib/db';
 import { WalletCard } from './WalletCard';
@@ -259,20 +259,19 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
     if (linkSent) {
       return (
         <div className="min-h-screen bg-white flex items-center justify-center p-6 text-[#37352F]">
-          <div className="max-w-sm w-full text-center space-y-6">
-            <div className="text-5xl">📬</div>
-            <h1 className="text-2xl font-serif-display font-semibold">Check your email</h1>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              We sent a sign-in link to <strong className="text-[#37352F]">{formData.email}</strong>.
-              Open the email on this device and tap the link to access your loyalty card.
-            </p>
-            <div className="bg-[#F7F7F5] border notion-border rounded-lg p-4 text-xs text-gray-500">
-              Tip: the link expires after 1 hour. You can close this tab — the link will open here.
+          <div className="max-w-sm w-full space-y-6">
+            <div className="text-center space-y-3">
+              <div className="text-5xl">📬</div>
+              <h1 className="text-2xl font-serif-display font-semibold">Enter your code</h1>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                We sent a 6-digit code to <strong className="text-[#37352F]">{formData.email}</strong>.
+                Type it below to finish creating your loyalty card.
+              </p>
             </div>
-            <button onClick={() => { setLinkSent(false); setFormData({ ...formData, email: '' }); }}
-              className="text-xs text-gray-500 hover:underline">
-              Used the wrong email?
-            </button>
+            <SignupOtpForm
+              email={formData.email}
+              onBack={() => { setLinkSent(false); setFormData({ ...formData, email: '' }); }}
+            />
           </div>
         </div>
       );
@@ -482,6 +481,64 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
           </p>
         </div>
       </main>
+    </div>
+  );
+}
+
+// ----- 6-digit OTP code entry form ---------------------------------------
+
+/**
+ * After the signup form is submitted we send a 6-digit OTP code (not a
+ * magic link) — Gmail's link-scanner consumes magic-link OTPs before
+ * the human clicks, breaking auth. Typed codes are scanner-proof.
+ */
+function SignupOtpForm({ email, onBack }: { email: string; onBack: () => void }) {
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const handleVerify = async () => {
+    const cleaned = code.replace(/\D/g, '');
+    if (cleaned.length !== 6) { setErr('Enter the 6-digit code from your email'); return; }
+    setErr(null);
+    setVerifying(true);
+    try {
+      await verifyCustomerOtp(email, cleaned);
+      // useAuth's onAuthStateChange picks up the new session and the
+      // page re-renders into the signed-in branch automatically.
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Invalid or expired code');
+      setVerifying(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        onKeyDown={(e) => { if (e.key === 'Enter' && code.length === 6) handleVerify(); }}
+        placeholder="123456"
+        autoFocus
+        maxLength={6}
+        className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 text-lg tracking-[0.5em] text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
+      />
+      {err && (
+        <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{err}</div>
+      )}
+      <button
+        onClick={handleVerify}
+        disabled={code.length !== 6 || verifying}
+        className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium text-sm hover:bg-opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify code'}
+      </button>
+      <button onClick={onBack} className="w-full text-xs text-gray-500 hover:underline">
+        Used the wrong email?
+      </button>
     </div>
   );
 }

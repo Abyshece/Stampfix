@@ -108,15 +108,33 @@ export async function signInMerchant(email: string, password: string): Promise<v
 }
 
 export async function sendCustomerMagicLink(email: string, campaignId: string): Promise<void> {
+  // Send a 6-digit OTP code instead of a clickable magic link.
+  // Why: Gmail's link-scanner opens magic links before the user does,
+  // consuming the one-time-token. By the time the human clicks it,
+  // Supabase returns "otp_expired" and the user is stuck. A typed code
+  // can't be pre-consumed by a scanner.
+  //
+  // The `shouldCreateUser` option is true (default) so first-time
+  // customers get an account on the same step as receiving the code.
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      // Land on /my-card which has the auth callback flow working correctly.
-      // The card was pre-staged via pending_customer_signups; MyCardPage
-      // will look it up on first load and create the actual card row.
-      emailRedirectTo: `${window.location.origin}/my-card?campaign=${campaignId}`,
-      data: { role: 'customer' },
+      data: { role: 'customer', signup_campaign_id: campaignId },
     },
+  });
+  if (error) throw error;
+}
+
+/**
+ * Verify the 6-digit code the user typed. On success, Supabase sets
+ * the session — the useAuth hook's onAuthStateChange listener picks
+ * it up automatically.
+ */
+export async function verifyCustomerOtp(email: string, code: string): Promise<void> {
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token: code,
+    type: 'email',
   });
   if (error) throw error;
 }

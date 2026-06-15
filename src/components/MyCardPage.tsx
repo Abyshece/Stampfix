@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Mail, Loader2, ArrowLeft, Smartphone, LogOut, Bookmark } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth, signOut } from '../lib/auth';
+import { useAuth, signOut, verifyCustomerOtp } from '../lib/auth';
 import { listCardsForCustomer, getCampaignsByIds, requestCardDeletion, cancelCardDeletion, createCard } from '../lib/db';
 import type { UserCard, Campaign } from '../types';
 import { WalletCard } from './WalletCard';
@@ -205,23 +205,22 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
     if (linkSent) {
       return (
         <Shell onExit={onExit}>
-          <div className="text-center space-y-5 py-8">
-            <div className="w-14 h-14 bg-blue-50 rounded-full mx-auto flex items-center justify-center">
-              <Mail className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-serif-display font-semibold">Check your email</h2>
+          <div className="space-y-5 py-4">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 bg-blue-50 rounded-full mx-auto flex items-center justify-center">
+                <Mail className="w-6 h-6 text-blue-600" />
+              </div>
+              <h2 className="text-2xl font-serif-display font-semibold">Enter your code</h2>
               <p className="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
-                We sent a sign-in link to <strong className="text-[#37352F]">{email}</strong>.
-                Tap it and you'll land right back here with your card.
+                We sent a 6-digit code to <strong className="text-[#37352F]">{email}</strong>.
+                Enter it below to access your loyalty cards.
               </p>
             </div>
-            <button
-              onClick={() => { setLinkSent(false); setEmail(''); }}
-              className="text-sm text-gray-500 hover:text-[#37352F] underline"
-            >
-              Use a different email
-            </button>
+            <OtpCodeForm
+              email={email}
+              onSuccess={() => { /* auth state change will trigger card load */ }}
+              onBack={() => { setLinkSent(false); setEmail(''); }}
+            />
           </div>
         </Shell>
       );
@@ -576,6 +575,68 @@ function EditProfileRow({ card, onRefresh }: { card: UserCard; onRefresh: () => 
           {busy ? 'Saving...' : 'Save'}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ----- OTP code entry form -----------------------------------------------
+
+/**
+ * 6-digit OTP code entry. Replaces the magic-link flow to avoid Gmail's
+ * link-scanner consuming OTPs before the user clicks. Code is typed in
+ * directly — scanners can't pre-consume what they can't see.
+ */
+function OtpCodeForm({
+  email, onSuccess, onBack,
+}: { email: string; onSuccess: () => void; onBack: () => void }) {
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const handleVerify = async () => {
+    const cleaned = code.replace(/\D/g, '');
+    if (cleaned.length !== 6) { setErr('Enter the 6-digit code from your email'); return; }
+    setErr(null);
+    setVerifying(true);
+    try {
+      await verifyCustomerOtp(email, cleaned);
+      onSuccess();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Invalid or expired code');
+      setVerifying(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        value={code}
+        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        onKeyDown={(e) => { if (e.key === 'Enter' && code.length === 6) handleVerify(); }}
+        placeholder="123456"
+        autoFocus
+        maxLength={6}
+        className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 text-lg tracking-[0.5em] text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
+      />
+      {err && (
+        <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{err}</div>
+      )}
+      <button
+        onClick={handleVerify}
+        disabled={code.length !== 6 || verifying}
+        className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium text-sm hover:bg-opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify code'}
+      </button>
+      <button
+        onClick={onBack}
+        className="w-full text-sm text-gray-500 hover:text-[#37352F] underline pt-1"
+      >
+        Use a different email
+      </button>
     </div>
   );
 }
