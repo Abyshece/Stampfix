@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Loader2, LogOut } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
-import { useAuth, sendCustomerMagicLink, verifyCustomerOtp, signOut } from '../lib/auth';
+import { useAuth, signUpOrInCustomer, signOut } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { getCampaignById, getCardForCustomer, createCard } from '../lib/db';
 import { WalletCard } from './WalletCard';
@@ -39,8 +39,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   // Magic-link form state
   const [formData, setFormData] = useState({ firstName: '', surname: '', email: '', age: '' });
   const [isSendingLink, setIsSendingLink] = useState(false);
-  const [linkSent, setLinkSent] = useState(false);
-  // Turnstile token gating the magic-link send.
+  // Turnstile token gating the signup submit.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   // Consent: required (terms + data processing) and optional (marketing).
   // Without termsAccepted = true, the submit button stays disabled.
@@ -173,19 +172,15 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
         return;
       }
       // Stash form + consent flags in BOTH sessionStorage (fast path for
-      // same-tab callback) and the pending_customer_signups table
-      // (cross-tab fallback for when the magic link opens in a new
-      // tab/window via Gmail app etc).
+      // Persist signup details so the card can be created with the right
+      // name/age/consent after auth. Both sessionStorage (same-tab) and
+      // the DB table (survives any reload) are written.
       sessionStorage.setItem('pending_customer_signup', JSON.stringify({
         ...formData,
         termsAccepted,
         marketingOptIn,
       }));
 
-      // DB persistence — upsert so re-submitting the form overwrites.
-      // Non-blocking: if this fails for any reason we still proceed with
-      // the magic-link flow; the sessionStorage path will likely cover
-      // same-tab usage. We log so we know if the cross-tab path is broken.
       try {
         const { error: pendingErr } = await supabase
           .from('pending_customer_signups')
@@ -203,10 +198,13 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
       } catch (e) {
         console.warn('[signup] pending persist threw:', e);
       }
-      await sendCustomerMagicLink(formData.email, campaignId);
-      setLinkSent(true);
+
+      // Frictionless: create the account (or sign in if returning) and log
+      // the customer in immediately. No email, no code. The component then
+      // re-renders into the signed-in branch, which creates/loads the card.
+      await signUpOrInCustomer(formData.email, campaignId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not send sign-in link');
+      setError(e instanceof Error ? e.message : 'Could not sign you in');
     } finally {
       setIsSendingLink(false);
     }
@@ -254,29 +252,8 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
     );
   }
 
-  // ----- Not authenticated: magic link form -----
+  // ----- Not authenticated: signup form -----
   if (!user) {
-    if (linkSent) {
-      return (
-        <div className="min-h-screen bg-white flex items-center justify-center p-6 text-[#37352F]">
-          <div className="max-w-sm w-full space-y-6">
-            <div className="text-center space-y-3">
-              <div className="text-5xl">📬</div>
-              <h1 className="text-2xl font-serif-display font-semibold">Enter your code</h1>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                We sent a 6-digit code to <strong className="text-[#37352F]">{formData.email}</strong>.
-                Type it below to finish creating your loyalty card.
-              </p>
-            </div>
-            <SignupOtpForm
-              email={formData.email}
-              onBack={() => { setLinkSent(false); setFormData({ ...formData, email: '' }); }}
-            />
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-[#37352F]">
         <button onClick={onExit} className="absolute top-6 left-6 text-gray-400 hover:text-gray-600">
@@ -386,11 +363,11 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
               className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-2 mt-2"
             >
               {isSendingLink ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                <>Send me a link <ArrowRight className="w-4 h-4" /></>
+                <>Join now <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
             <p className="text-[10px] text-gray-400 text-center">
-              We'll email you a single-use sign-in link. No password needed.
+              No password needed — you'll get your card right away.
             </p>
           </div>
         </div>
@@ -481,64 +458,6 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
           </p>
         </div>
       </main>
-    </div>
-  );
-}
-
-// ----- 6-digit OTP code entry form ---------------------------------------
-
-/**
- * After the signup form is submitted we send a 6-digit OTP code (not a
- * magic link) — Gmail's link-scanner consumes magic-link OTPs before
- * the human clicks, breaking auth. Typed codes are scanner-proof.
- */
-function SignupOtpForm({ email, onBack }: { email: string; onBack: () => void }) {
-  const [code, setCode] = useState('');
-  const [verifying, setVerifying] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  const handleVerify = async () => {
-    const cleaned = code.replace(/\D/g, '');
-    if (cleaned.length !== 6) { setErr('Enter the 6-digit code from your email'); return; }
-    setErr(null);
-    setVerifying(true);
-    try {
-      await verifyCustomerOtp(email, cleaned);
-      // useAuth's onAuthStateChange picks up the new session and the
-      // page re-renders into the signed-in branch automatically.
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Invalid or expired code');
-      setVerifying(false);
-    }
-  };
-
-  return (
-    <div className="space-y-3">
-      <input
-        type="text"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        value={code}
-        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-        onKeyDown={(e) => { if (e.key === 'Enter' && code.length === 6) handleVerify(); }}
-        placeholder="123456"
-        autoFocus
-        maxLength={6}
-        className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 text-lg tracking-[0.5em] text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
-      />
-      {err && (
-        <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{err}</div>
-      )}
-      <button
-        onClick={handleVerify}
-        disabled={code.length !== 6 || verifying}
-        className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium text-sm hover:bg-opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify code'}
-      </button>
-      <button onClick={onBack} className="w-full text-xs text-gray-500 hover:underline">
-        Used the wrong email?
-      </button>
     </div>
   );
 }

@@ -107,61 +107,69 @@ export async function signInMerchant(email: string, password: string): Promise<v
   if (error) throw error;
 }
 
-export async function sendCustomerMagicLink(email: string, campaignId: string): Promise<void> {
-  // Send a 6-digit OTP code instead of a clickable magic link.
-  // Why: Gmail's link-scanner opens magic links before the user does,
-  // consuming the one-time-token. By the time the human clicks it,
-  // Supabase returns "otp_expired" and the user is stuck. A typed code
-  // can't be pre-consumed by a scanner.
-  //
-  // The `shouldCreateUser` option is true (default) so first-time
-  // customers get an account on the same step as receiving the code.
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      data: { role: 'customer', signup_campaign_id: campaignId },
-    },
-  });
-  if (error) throw error;
+/**
+ * Frictionless customer auth — no email, no code.
+ *
+ * We derive a deterministic password from the email so the same customer
+ * always maps to the same credentials. First time → signUp creates the
+ * account and (with email-confirmation OFF in Supabase) returns a session
+ * immediately. Returning customer → signUp fails with "already
+ * registered", so we fall back to signInWithPassword using the same
+ * derived password. Either way the customer is logged in on the spot and
+ * lands on their card.
+ *
+ * Security note: this is intentionally low-friction for a loyalty-card
+ * use case. The derived password is not a secret the user manages; it's
+ * an implementation detail. The threat model (someone guessing another
+ * person's coffee-stamp balance) is low. We pepper the derivation with a
+ * constant so the password isn't literally the email.
+ */
+async function deriveCustomerPassword(email: string): Promise<string> {
+  const PEPPER = 'stampfix-customer-v1';
+  const enc = new TextEncoder();
+  const data = enc.encode(`${email.toLowerCase()}:${PEPPER}`);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  const bytes = Array.from(new Uint8Array(digest));
+  // base64-ish, plus guaranteed complexity so it passes any password policy
+  const b64 = btoa(String.fromCharCode(...bytes)).replace(/[^a-zA-Z0-9]/g, '');
+  return `Sf1!${b64.slice(0, 32)}`;
 }
 
-/**
- * Verify the 6-digit code the user typed. On success, Supabase sets
- * the session — the useAuth hook's onAuthStateChange listener picks
- * it up automatically.
- */
-export async function verifyCustomerOtp(email: string, code: string): Promise<void> {
-  // A freshly-created user (first signup) gets an OTP that verifies with
-  // type 'signup'. A returning user gets one that verifies with type
-  // 'email'. We don't know which case we're in, so try 'email' first and
-  // fall back to 'signup' on failure. One of them will set the session.
-  let session = null;
-  let lastErr: unknown = null;
+export async function signUpOrInCustomer(email: string, campaignId: string): Promise<void> {
+  const cleanEmail = email.trim().toLowerCase();
+  const password = await deriveCustomerPassword(cleanEmail);
 
-  for (const otpType of ['email', 'signup'] as const) {
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: otpType,
-      });
-      if (error) { lastErr = error; continue; }
-      if (data.session) { session = data.session; break; }
-    } catch (e) {
-      lastErr = e;
-    }
-  }
-
-  if (!session) {
-    throw lastErr instanceof Error
-      ? lastErr
-      : new Error('That code is invalid or has expired. Request a new one.');
-  }
-
-  await supabase.auth.setSession({
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
+  // Try to create the account first.
+  const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+    email: cleanEmail,
+    password,
+    options: { data: { role: 'customer', signup_campaign_id: campaignId } },
   });
+
+  if (!signUpErr && signUpData.session) {
+    // New customer, logged in immediately.
+    return;
+  }
+
+  // If signUp failed because the user already exists (returning customer),
+  // OR succeeded but didn't return a session, sign in with the derived
+  // password.
+  const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+    email: cleanEmail,
+    password,
+  });
+  if (signInErr) {
+    // Surface a friendly message. This can happen if a returning user
+    // originally signed up via the old magic-link flow (different/no
+    // password). They'll need the recovery path.
+    throw new Error(
+      'We couldn\'t sign you in automatically. If you signed up a while ago, ' +
+      'please contact the cafe or support@stampfix.app to recover your card.'
+    );
+  }
+  if (!signInData.session) {
+    throw new Error('Sign-in did not return a session. Please try again.');
+  }
 }
 
 export async function signOut(): Promise<void> {
