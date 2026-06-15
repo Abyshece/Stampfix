@@ -147,29 +147,44 @@ export async function signUpOrInCustomer(email: string, campaignId: string): Pro
   });
 
   if (!signUpErr && signUpData.session) {
-    // New customer, logged in immediately.
-    return;
+    return; // New customer, logged in immediately.
   }
 
-  // If signUp failed because the user already exists (returning customer),
-  // OR succeeded but didn't return a session, sign in with the derived
-  // password.
+  // Log the signup error so we can diagnose (visible in console).
+  if (signUpErr) {
+    console.warn('[auth] signUp failed:', signUpErr.status, signUpErr.message);
+  }
+
+  // signUp didn't give us a session. Two cases:
+  //  (a) user already exists → try signing in with the derived password
+  //  (b) signUp succeeded but email-confirmation is somehow still on →
+  //      also try signing in
   const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
     email: cleanEmail,
     password,
   });
+
+  if (!signInErr && signInData.session) {
+    return; // Returning customer (or just-created), logged in.
+  }
+
   if (signInErr) {
-    // Surface a friendly message. This can happen if a returning user
-    // originally signed up via the old magic-link flow (different/no
-    // password). They'll need the recovery path.
+    console.warn('[auth] signIn failed:', signInErr.status, signInErr.message);
+  }
+
+  // Both failed. Give a precise error depending on what we saw.
+  if (signUpErr?.message?.toLowerCase().includes('already registered') ||
+      signUpErr?.status === 422) {
     throw new Error(
-      'We couldn\'t sign you in automatically. If you signed up a while ago, ' +
-      'please contact the cafe or support@stampfix.app to recover your card.'
+      'This email is already registered but we couldn\'t sign you in. ' +
+      'It may have been created with a different sign-in method. ' +
+      'Please contact support@stampfix.app to recover your card.'
     );
   }
-  if (!signInData.session) {
-    throw new Error('Sign-in did not return a session. Please try again.');
-  }
+
+  // Surface the actual underlying error so it's not a silent failure.
+  const detail = signUpErr?.message || signInErr?.message || 'Unknown error';
+  throw new Error(`Could not sign you in: ${detail}`);
 }
 
 export async function signOut(): Promise<void> {
