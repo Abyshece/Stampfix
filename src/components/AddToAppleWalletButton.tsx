@@ -15,10 +15,11 @@ export function AddToAppleWalletButton({ cardId }: { cardId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Only show on iOS / iPadOS / Mac (Apple Wallet platforms).
-  const isApple = typeof navigator !== 'undefined'
-    && /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent);
-  if (!isApple) return null;
+  // TEMP: always render to confirm the build is live. Re-enable the
+  // iOS guard below once we've verified the button appears.
+  // const isApple = typeof navigator !== 'undefined'
+  //   && /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent);
+  // if (!isApple) return null;
 
   const handleAdd = async () => {
     setLoading(true);
