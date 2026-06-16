@@ -8,6 +8,7 @@ import { WalletCard } from './WalletCard';
 import { Turnstile } from './Turnstile';
 import { verifyTurnstile } from '../services/turnstile';
 import { DownloadMyDataButton } from './DownloadMyDataButton';
+import { AddToAppleWalletButton } from './AddToAppleWalletButton';
 
 /**
  * Self-service page where any customer can look up their loyalty cards.
@@ -292,6 +293,9 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
               return (
                 <div key={card.id} className="bg-white border notion-border rounded-xl p-4 shadow-sm space-y-3">
                   <WalletCard card={card} campaign={campaign} />
+
+                  {/* Add to Apple Wallet — only renders on Apple devices */}
+                  <AddToAppleWalletButton cardId={card.id} />
 
                   {/* Edit profile row — GDPR Art. 16 rectification */}
                   <EditProfileRow card={card} onRefresh={refresh} />
