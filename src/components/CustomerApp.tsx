@@ -5,6 +5,7 @@ import { useAuth, signUpOrInCustomer, signOut } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { getCampaignById, getCardForCustomer, createCard } from '../lib/db';
 import { WalletCard } from './WalletCard';
+import { AddToAppleWalletButton } from './AddToAppleWalletButton';
 import { Turnstile } from './Turnstile';
 import { verifyTurnstile } from '../services/turnstile';
 
@@ -425,12 +426,16 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
         <div className="text-center mb-8 space-y-2">
           <h1 className="text-3xl font-serif-display font-semibold">Your Digital Card</h1>
           <p className="text-gray-500 text-sm max-w-xs mx-auto">
-            Save to Google Wallet for quick access on Android.
+            Save your card to your phone's wallet for quick access.
           </p>
         </div>
 
         <div className="w-full max-w-[340px]">
           <WalletCard campaign={campaign} card={card} />
+        </div>
+
+        <div className="w-full max-w-[340px] mt-4">
+          <AddToAppleWalletButton cardId={card.id} />
         </div>
 
         <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-[340px] text-center">
