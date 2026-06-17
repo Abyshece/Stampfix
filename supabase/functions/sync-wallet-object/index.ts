@@ -158,7 +158,7 @@ function buildLoyaltyClass(campaign: Campaign) {
     programName: campaign.business_name,
     programLogo: {
       sourceUri: {
-        uri: 'https://storage.googleapis.com/wallet-lab-tools-codelab-artifacts-public/pass_google_logo.jpg',
+        uri: 'https://stampfix.app/wallet-assets/wallet-logo.png',
       },
     },
     reviewStatus: 'UNDER_REVIEW',
