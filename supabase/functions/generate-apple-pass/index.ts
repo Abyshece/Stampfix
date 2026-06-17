@@ -99,7 +99,15 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { cardId } = await req.json();
+    // Accept cardId from query string (GET, direct navigation — needed for
+    // iOS to receive the file with the right MIME type) or JSON body (POST).
+    let cardId: string | undefined;
+    if (req.method === 'GET') {
+      cardId = new URL(req.url).searchParams.get('cardId') ?? undefined;
+    } else {
+      const body = await req.json().catch(() => ({}));
+      cardId = body.cardId;
+    }
     if (!cardId) {
       return new Response(JSON.stringify({ error: 'cardId required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
