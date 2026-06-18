@@ -930,7 +930,7 @@ export function MerchantDashboard({
                       className="w-full accent-[#37352F] cursor-pointer" />
                   </div>
                   <div className="p-4 bg-gray-50 rounded text-xs text-gray-500 leading-relaxed border notion-border">
-                    Customers see this card in their Google Wallet on Android. Adjust the slider to preview different stamp counts.
+                    Customers see this card in Apple Wallet (iPhone) and Google Wallet (Android). Adjust the slider to preview different stamp counts.
                   </div>
                 </div>
               </div>
@@ -1020,7 +1020,7 @@ export function MerchantDashboard({
                   <ul className="text-sm text-gray-600 space-y-3 list-disc pl-4">
                     <li>Customers scan the QR code at your checkout.</li>
                     <li>They enter their email; we send them a magic sign-in link.</li>
-                    <li>They land on a page with their card and a "Save to Google Wallet" button.</li>
+                    <li>They land on a page with their card and a button to save it to Apple or Google Wallet.</li>
                     <li>You scan their card here on future visits to give stamps.</li>
                   </ul>
                 </div>
