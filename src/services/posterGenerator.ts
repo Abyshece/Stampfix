@@ -226,6 +226,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     font-size: 72px; font-weight: 900; line-height: 0.9;
     letter-spacing: -2px; text-transform: uppercase;
   }
+  .size-card .bc-noapp {
+    margin-top: 12px; font-size: 20px; font-weight: 600;
+    letter-spacing: 0.3px; opacity: 0.92;
+  }
   .size-card .bc-tagline {
     font-size: 17px; font-weight: 500; opacity: 0.9;
     line-height: 1.3; max-width: 320px;
@@ -523,6 +527,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
       <div>
         <div class="bc-biz">__BUSINESS_NAME__</div>
         <h1 class="bc-headline">SCAN<br>&amp; SAVE</h1>
+        <div class="bc-noapp">No app to download</div>
       </div>
       <div class="bc-tagline">
         Join our loyalty program — earn rewards every visit.
