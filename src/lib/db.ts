@@ -22,6 +22,7 @@ interface CampaignRow {
   logo_image: string | null;
   poster_color: string | null;
   customer_privacy_notice: string | null;
+  card_text_color: string | null;
 }
 
 interface LocationRow {
@@ -83,6 +84,7 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   logoImage: r.logo_image,
   posterColor: r.poster_color,
   customerPrivacyNotice: r.customer_privacy_notice,
+  cardTextColor: r.card_text_color ?? null,
 });
 
 const toLocation = (r: LocationRow): Location => ({
@@ -188,6 +190,7 @@ export async function updateCampaign(id: string, patch: Partial<Campaign>): Prom
   if (patch.logoImage !== undefined) dbPatch.logo_image = patch.logoImage;
   if (patch.posterColor !== undefined) dbPatch.poster_color = patch.posterColor;
   if (patch.customerPrivacyNotice !== undefined) dbPatch.customer_privacy_notice = patch.customerPrivacyNotice;
+  if (patch.cardTextColor !== undefined) dbPatch.card_text_color = patch.cardTextColor;
 
   const { data, error } = await supabase
     .from('campaigns')

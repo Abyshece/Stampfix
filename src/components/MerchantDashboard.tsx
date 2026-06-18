@@ -4,7 +4,7 @@ import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, Merch
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy,
+  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info,
 } from 'lucide-react';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
@@ -1156,6 +1156,35 @@ export function MerchantDashboard({
 
               <div className="border-t notion-border pt-6">
                 <h3 className="font-medium mb-4 flex items-center gap-2"><Palette className="w-4 h-4" /> Branding Studio</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Card Color</label>
+                    <div className="flex gap-2 items-center">
+                      <input type="color" value={tempSettings.backgroundColor || '#f0ece1'}
+                        onChange={(e) => setTempSettings({ ...tempSettings, backgroundColor: e.target.value })}
+                        className="h-9 w-12 shrink-0 rounded border notion-border bg-white cursor-pointer p-0.5" />
+                      <input type="text" value={tempSettings.backgroundColor || '#f0ece1'}
+                        onChange={(e) => setTempSettings({ ...tempSettings, backgroundColor: e.target.value })}
+                        className="flex-1 bg-[#F7F7F5] border notion-border rounded px-3 py-2 text-sm font-mono" />
+                    </div>
+                    <p className="text-[11px] text-gray-400">Background of the wallet card on Apple &amp; Google.</p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Text Color</label>
+                    <div className="flex gap-2 items-center">
+                      <input type="color" value={tempSettings.cardTextColor || '#1d3458'}
+                        onChange={(e) => setTempSettings({ ...tempSettings, cardTextColor: e.target.value })}
+                        className="h-9 w-12 shrink-0 rounded border notion-border bg-white cursor-pointer p-0.5" />
+                      <input type="text" value={tempSettings.cardTextColor || '#1d3458'}
+                        onChange={(e) => setTempSettings({ ...tempSettings, cardTextColor: e.target.value })}
+                        className="flex-1 bg-[#F7F7F5] border notion-border rounded px-3 py-2 text-sm font-mono" />
+                    </div>
+                    <div className="mt-1.5 flex items-start gap-2 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-[11px] text-red-700 leading-relaxed">
+                      <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                      <span>Applies to Apple Wallet only. Google Wallet (Android) picks the text color automatically for contrast, so this won't affect the Android card.</span>
+                    </div>
+                  </div>
+                </div>
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-gray-400 uppercase">Card Pattern</label>

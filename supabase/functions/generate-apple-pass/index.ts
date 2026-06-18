@@ -94,17 +94,36 @@ function sha1Hex(bytes: Uint8Array): string {
   return md.digest().toHex();
 }
 
+// Convert a #rrggbb (or #rgb) hex string into the rgb()/rgba() strings
+// Apple's pass.json expects. Falls back to black on malformed input.
+function hexToRgbParts(hex: string): [number, number, number] {
+  const h = (hex || '').replace('#', '').trim();
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  return [
+    parseInt(full.substring(0, 2), 16) || 0,
+    parseInt(full.substring(2, 4), 16) || 0,
+    parseInt(full.substring(4, 6), 16) || 0,
+  ];
+}
+function hexToRgb(hex: string): string {
+  const [r, g, b] = hexToRgbParts(hex);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+function hexToRgba(hex: string, alpha: number): string {
+  const [r, g, b] = hexToRgbParts(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // Build the stamp-progress strip as an SVG, then rasterize to PNG.
 // Draws `maxStamps` coffee-cup circles in a row: the first `filled` are
 // solid (collected), the rest are faint outlines (remaining) — mirroring
 // the web card. Charcoal background to match the pass.
 //
 // Strip @3x is 1125x432 per Apple's storeCard spec. We draw at that size.
-function buildStripSvg(filled: number, maxStamps: number): string {
+function buildStripSvg(filled: number, maxStamps: number, bg: string, text: string): string {
   const W = 1125, H = 432;
-  const bg = '#F0ECE1';
-  const solid = '#1D3458';
-  const faint = 'rgba(29,52,88,0.22)';
+  const solid = text;
+  const faint = hexToRgba(text, 0.22);
 
   // Two rows when more than 5 stamps (LAP style: 1-4 top, 5-8 bottom).
   const rows = maxStamps <= 5 ? 1 : 2;
@@ -188,7 +207,7 @@ Deno.serve(async (req) => {
 
     const { data: campaign } = await supabase
       .from('campaigns')
-      .select('business_name, offer_title, max_stamps, primary_color')
+      .select('business_name, offer_title, max_stamps, primary_color, background_color, card_text_color')
       .eq('id', card.campaign_id)
       .maybeSingle();
 
@@ -197,6 +216,8 @@ Deno.serve(async (req) => {
     const businessName = campaign?.business_name ?? 'Stampfix';
     const offerTitle = card.offer_title_snapshot ?? campaign?.offer_title ?? 'Loyalty card';
     const maxStamps = card.max_stamps_snapshot ?? campaign?.max_stamps ?? 8;
+    const cardBg = campaign?.background_color || '#f0ece1';
+    const cardText = campaign?.card_text_color || '#1d3458';
     const currentStamps = card.current_stamps ?? 0;
     const stampsLeft = Math.max(0, maxStamps - currentStamps);
 
@@ -208,9 +229,9 @@ Deno.serve(async (req) => {
       organizationName: businessName,
       description: `${businessName} loyalty card`,
       serialNumber: card.id,
-      backgroundColor: 'rgb(240, 236, 225)', // #f0ece1
-      foregroundColor: 'rgb(29, 52, 88)',    // #1d3458
-      labelColor: 'rgb(29, 52, 88)',         // #1d3458
+      backgroundColor: hexToRgb(cardBg),
+      foregroundColor: hexToRgb(cardText),
+      labelColor: hexToRgb(cardText),
       logoText: businessName,
       storeCard: {
         headerFields: [
@@ -255,7 +276,7 @@ Deno.serve(async (req) => {
     // any reason, we skip it — the pass still renders, just without the
     // strip — so a strip error never blocks adding the card.
     try {
-      const stripSvg = buildStripSvg(card.current_stamps ?? 0, maxStamps);
+      const stripSvg = buildStripSvg(card.current_stamps ?? 0, maxStamps, cardBg, cardText);
       const stripPng = await svgToPng(stripSvg);
       files['strip.png'] = stripPng;
       files['strip@2x.png'] = stripPng;
