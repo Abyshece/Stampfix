@@ -769,7 +769,7 @@ export function MerchantDashboard({
               })}
             </div>
 
-            <div className="border notion-border rounded-lg overflow-hidden bg-white">
+            <div className="border notion-border rounded-lg overflow-x-auto bg-white">
               {/* Mobile list */}
               <div className="md:hidden divide-y notion-border">
                 {filteredCards.map((card) => (
@@ -808,7 +808,7 @@ export function MerchantDashboard({
               </div>
 
               {/* Desktop table */}
-              <table className="w-full text-sm text-left min-w-[600px] hidden md:table">
+              <table className="w-full text-sm text-left min-w-[820px] hidden md:table">
                 <thead className="bg-[#F7F7F5] text-gray-500 font-medium">
                   <tr>
                     <th className="px-4 py-3 border-b notion-border w-24">ID</th>

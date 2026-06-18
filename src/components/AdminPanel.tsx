@@ -397,7 +397,7 @@ function B2BTab() {
 
       {loading ? <Loader /> : rows.length === 0 ? <Empty msg="No merchants found." /> : (
         <div className="bg-white border notion-border rounded-lg overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
               <tr>
                 <th className="px-3 py-2 text-left">Code</th>
@@ -672,7 +672,7 @@ function B2B2CTab() {
 
       {loading ? <Loader /> : rows.length === 0 ? <Empty msg="No customers match." /> : (
         <div className="bg-white border notion-border rounded-lg overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
               <tr>
                 <th className="px-3 py-2 text-left">ID</th>
