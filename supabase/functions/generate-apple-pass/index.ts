@@ -25,6 +25,7 @@
 // env (APPLE_PASS_CERT_PEM / APPLE_WWDR_PEM) if they ever change.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { Resvg, initWasm } from 'npm:@resvg/resvg-wasm@2.6.2';
 import forge from 'npm:node-forge@1.3.1';
 import JSZip from 'npm:jszip@3.10.1';
 
@@ -93,6 +94,60 @@ function sha1Hex(bytes: Uint8Array): string {
   return md.digest().toHex();
 }
 
+// Build the stamp-progress strip as an SVG, then rasterize to PNG.
+// Draws `maxStamps` coffee-cup circles in a row: the first `filled` are
+// solid (collected), the rest are faint outlines (remaining) — mirroring
+// the web card. Charcoal background to match the pass.
+//
+// Strip @3x is 1125x432 per Apple's storeCard spec. We draw at that size.
+function buildStripSvg(filled: number, maxStamps: number): string {
+  const W = 1125, H = 432;
+  const bg = '#F0ECE1';
+  const solid = '#1D3458';
+  const faint = 'rgba(29,52,88,0.22)';
+
+  // Two rows when more than 5 stamps (LAP style: 1-4 top, 5-8 bottom).
+  const rows = maxStamps <= 5 ? 1 : 2;
+  const perRow = Math.ceil(maxStamps / rows);
+  const gapX = W / (perRow + 1);
+  const rowH = H / (rows + 1);
+  const r = rows === 1 ? Math.max(34, Math.min(78, gapX * 0.40)) : 70;
+  const fontSize = (r * 0.95).toFixed(0);
+
+  let items = '';
+  for (let i = 0; i < maxStamps; i++) {
+    const row = Math.floor(i / perRow);
+    const col = i % perRow;
+    // Center the last row if it has fewer items than perRow.
+    const itemsThisRow = Math.min(perRow, maxStamps - row * perRow);
+    const rowGap = W / (itemsThisRow + 1);
+    const cx = rowGap * (col + 1);
+    const cy = rowH * (row + 1);
+    const isFilled = i < filled;
+    const num = i + 1;
+    items += `<circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="${r.toFixed(0)}" fill="${isFilled ? solid : 'none'}" stroke="${isFilled ? 'none' : faint}" stroke-width="5"/>`;
+    items += `<text x="${cx.toFixed(0)}" y="${cy.toFixed(0)}" font-family="Helvetica, Arial, sans-serif" font-size="${fontSize}" font-weight="700" fill="${isFilled ? bg : faint}" text-anchor="middle" dominant-baseline="central">${num}</text>`;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    <rect width="${W}" height="${H}" fill="${bg}"/>
+    ${items}
+  </svg>`;
+}
+
+let wasmReady = false;
+async function svgToPng(svg: string): Promise<Uint8Array> {
+  if (!wasmReady) {
+    // Fetch the wasm binary and initialise once per cold start.
+    const wasmResp = await fetch('https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm');
+    await initWasm(await wasmResp.arrayBuffer());
+    wasmReady = true;
+  }
+  const resvg = new Resvg(svg);
+  const rendered = resvg.render();
+  return rendered.asPng();
+}
+
 // ---- Main ---------------------------------------------------------------
 
 Deno.serve(async (req) => {
@@ -142,6 +197,8 @@ Deno.serve(async (req) => {
     const businessName = campaign?.business_name ?? 'Stampfix';
     const offerTitle = card.offer_title_snapshot ?? campaign?.offer_title ?? 'Loyalty card';
     const maxStamps = card.max_stamps_snapshot ?? campaign?.max_stamps ?? 8;
+    const currentStamps = card.current_stamps ?? 0;
+    const stampsLeft = Math.max(0, maxStamps - currentStamps);
 
     // ---- Build pass.json ----
     const passJson = {
@@ -151,14 +208,19 @@ Deno.serve(async (req) => {
       organizationName: businessName,
       description: `${businessName} loyalty card`,
       serialNumber: card.id,
-      backgroundColor: 'rgb(55, 53, 47)',
-      foregroundColor: 'rgb(255, 255, 255)',
-      labelColor: 'rgb(255, 255, 255)',
+      backgroundColor: 'rgb(240, 236, 225)', // #f0ece1
+      foregroundColor: 'rgb(29, 52, 88)',    // #1d3458
+      labelColor: 'rgb(29, 52, 88)',         // #1d3458
       logoText: businessName,
       storeCard: {
-        primaryFields: [
-          { key: 'stamps', label: 'STAMPS', value: `${card.current_stamps} / ${maxStamps}` },
+        headerFields: [
+          {
+            key: 'remaining',
+            label: 'STAMPS LEFT',
+            value: stampsLeft > 0 ? String(stampsLeft) : 'Ready',
+          },
         ],
+        primaryFields: [],
         secondaryFields: [
           { key: 'offer', label: 'REWARD', value: offerTitle },
         ],
@@ -179,10 +241,28 @@ Deno.serve(async (req) => {
     // Images: we fetch the public PNG assets from the app origin so we
     // don't have to embed binaries here. They must exist at these paths.
     const origin = env('PUBLIC_APP_ORIGIN', 'https://stampfix.app');
-    const imageNames = ['icon.png', 'icon@2x.png', 'logo.png', 'logo@2x.png'];
+    // NOTE: logo.png is intentionally NOT bundled. With no logo image,
+    // Apple renders `logoText` (the merchant's business name) alone in the
+    // top-left of the pass — which is what we want. icon.png is still
+    // required by Apple (used in notifications / lock screen).
+    const imageNames = ['icon.png', 'icon@2x.png'];
     const files: Record<string, Uint8Array> = {};
 
     files['pass.json'] = new TextEncoder().encode(JSON.stringify(passJson));
+
+    // Generate the dynamic stamp-progress strip (the row of coffee cups
+    // that fill in as stamps are collected). If rasterization fails for
+    // any reason, we skip it — the pass still renders, just without the
+    // strip — so a strip error never blocks adding the card.
+    try {
+      const stripSvg = buildStripSvg(card.current_stamps ?? 0, maxStamps);
+      const stripPng = await svgToPng(stripSvg);
+      files['strip.png'] = stripPng;
+      files['strip@2x.png'] = stripPng;
+      files['strip@3x.png'] = stripPng;
+    } catch (stripErr) {
+      console.error('[generate-apple-pass] strip generation failed:', stripErr);
+    }
 
     for (const name of imageNames) {
       try {
@@ -191,8 +271,8 @@ Deno.serve(async (req) => {
           files[name] = new Uint8Array(await res.arrayBuffer());
         }
       } catch (_) {
-        // Skip missing images; icon.png + logo.png are the only hard
-        // requirements and we surface an error below if icon is missing.
+        // Skip missing images; icon.png is the only hard requirement and
+        // we surface an error below if it's missing.
       }
     }
     if (!files['icon.png']) {
