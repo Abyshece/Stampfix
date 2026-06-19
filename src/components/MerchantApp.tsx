@@ -137,7 +137,8 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     async (cardId: string) => {
       if (!campaign) return;
       try {
-        const updated = await addStamp(cardId, campaign.maxStamps);
+        const card = cards.find((c) => c.id === cardId);
+        const updated = await addStamp(cardId, card?.maxStampsSnapshot ?? campaign.maxStamps);
         setCards((prev) => prev.map((c) => (c.id === cardId ? updated : c)));
         refreshActivities();
         // Fire-and-forget: push the new stamp count to Google Wallet so

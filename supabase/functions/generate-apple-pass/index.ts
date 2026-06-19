@@ -290,7 +290,6 @@ Deno.serve(async (req) => {
         primaryFields: [],
         secondaryFields: [
           { key: 'member', label: 'MEMBER', value: card.customer_name ?? '' },
-          { key: 'id', label: 'ID', value: card.customer_code ?? '', textAlignment: 'PKTextAlignmentRight' },
         ],
         auxiliaryFields: [
           { key: 'offer', label: 'REWARD', value: offerTitle, textAlignment: 'PKTextAlignmentCenter' },

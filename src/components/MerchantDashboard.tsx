@@ -160,7 +160,7 @@ export function MerchantDashboard({
       setScanResult({
         status: 'success',
         card: { ...target, currentStamps: newStamps },
-        message: newStamps >= campaign.maxStamps ? 'Reward Unlocked!' : 'Stamp Added',
+        message: newStamps >= (target.maxStampsSnapshot ?? campaign.maxStamps) ? 'Reward Unlocked!' : 'Stamp Added',
       });
       setManualId('');
     }
@@ -202,11 +202,12 @@ export function MerchantDashboard({
             currentStamps: result.card.currentStamps,
             rewardsRedeemed: result.card.rewardsRedeemed,
             status: result.card.status,
+            maxStampsSnapshot: cards.find((c) => c.id === result.card.id)?.maxStampsSnapshot ?? null,
             joinedAt: new Date(),
           },
           message: result.action === 'REDEEM'
             ? 'Reward Redeemed'
-            : result.card.currentStamps >= campaign.maxStamps
+            : result.card.currentStamps >= (cards.find((c) => c.id === result.card.id)?.maxStampsSnapshot ?? campaign.maxStamps)
               ? 'Reward Unlocked!'
               : 'Stamp Added',
         });
@@ -230,7 +231,7 @@ export function MerchantDashboard({
       setTimeout(() => setScanResult(null), 2500);
       return;
     }
-    if (target.currentStamps >= campaign.maxStamps) {
+    if (target.currentStamps >= (target.maxStampsSnapshot ?? campaign.maxStamps)) {
       onResetCard(target.id);
       setScanResult({
         status: 'success',
@@ -243,7 +244,7 @@ export function MerchantDashboard({
       setScanResult({
         status: 'success',
         card: { ...target, currentStamps: newStamps },
-        message: newStamps >= campaign.maxStamps ? 'Reward Unlocked!' : 'Stamp Added',
+        message: newStamps >= (target.maxStampsSnapshot ?? campaign.maxStamps) ? 'Reward Unlocked!' : 'Stamp Added',
       });
     }
     setTimeout(() => setScanResult(null), 2500);
@@ -611,7 +612,7 @@ export function MerchantDashboard({
                     {scanResult.card && (
                       <div className="text-center space-y-1">
                         <p className="text-gray-900 font-medium">{scanResult.card.customerName}</p>
-                        <p className="text-gray-500 text-sm">{scanResult.card.currentStamps} / {campaign.maxStamps} Stamps</p>
+                        <p className="text-gray-500 text-sm">{scanResult.card.currentStamps} / {scanResult.card.maxStampsSnapshot ?? campaign.maxStamps} Stamps</p>
                       </div>
                     )}
                   </div>
@@ -859,7 +860,7 @@ export function MerchantDashboard({
                           <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider" title="Customer requested deletion. Will be removed within 24 hours.">Pending deletion</span>
                         ) : card.status === 'BLOCKED' ? (
                           <span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider">Blocked</span>
-                        ) : card.currentStamps >= campaign.maxStamps ? (
+                        ) : card.currentStamps >= cardMax ? (
                           <span className="bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-xs font-medium">Reward Ready</span>
                         ) : (
                           <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">Collecting</span>
@@ -869,7 +870,7 @@ export function MerchantDashboard({
                         <div className="flex items-center gap-2">
                           {card.status !== 'BLOCKED' && (
                             <>
-                              {card.currentStamps >= campaign.maxStamps ? (
+                              {card.currentStamps >= cardMax ? (
                                 <button onClick={() => onResetCard(card.id)} className="text-green-600 hover:underline text-xs font-medium">Redeem</button>
                               ) : (
                                 <button onClick={() => onStampCard(card.id)} className="text-blue-600 hover:underline text-xs font-medium">+Stamp</button>
