@@ -42,6 +42,7 @@ export interface Campaign {
    *  exactly; Google Wallet auto-derives text color for contrast and
    *  ignores it. Falls back to #1d3458 when null. */
   cardTextColor?: string | null;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
   /** Merchant's own customer-facing privacy notice. Shown to customers
    *  at signup. If null, a generic Stampfix-pointing fallback is used. */
   customerPrivacyNotice?: string | null;

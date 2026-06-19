@@ -13,6 +13,7 @@ import {
   type ContactMessage, type MerchantStatus,
 } from '../services/admin';
 import { OffersTab } from './OffersTab';
+import { setMerchantApproval, getMerchantApproval } from '../lib/db';
 
 type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS';
 
@@ -504,6 +505,15 @@ function B2BTab() {
 /** Expanded detail panel showing comprehensive info + editable admin notes. */
 function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; onChanged: () => void }) {
   const [notes, setNotes] = useState(merchant.admin_notes ?? '');
+  const [approval, setApproval] = useState<'pending' | 'approved' | 'rejected' | null>(null);
+  const [approvalBusy, setApprovalBusy] = useState(false);
+  useEffect(() => { getMerchantApproval(merchant.id).then(setApproval).catch(() => {}); }, [merchant.id]);
+  const changeApproval = async (status: 'pending' | 'approved' | 'rejected') => {
+    setApprovalBusy(true);
+    try { await setMerchantApproval(merchant.id, status); setApproval(status); onChanged(); }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed to update approval'); }
+    finally { setApprovalBusy(false); }
+  };
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
@@ -546,6 +556,27 @@ function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; o
         } />
         <DetailRow label="Customers (active)" value={merchant.card_count.toString()} />
         <DetailRow label="Activity (7d)" value={merchant.recent_activity_count.toString()} />
+      </div>
+      {/* Account approval */}
+      <div className="bg-white border notion-border rounded p-3 space-y-2 md:col-span-3">
+        <div className="flex items-center justify-between">
+          <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Account approval</div>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
+            approval === 'approved' ? 'bg-green-100 text-green-700'
+              : approval === 'rejected' ? 'bg-red-100 text-red-700'
+              : 'bg-amber-100 text-amber-700'
+          }`}>{approval ?? 'pending'}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => changeApproval('approved')} disabled={approvalBusy || approval === 'approved'}
+            className="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 disabled:opacity-40">Approve</button>
+          <button onClick={() => changeApproval('rejected')} disabled={approvalBusy || approval === 'rejected'}
+            className="bg-red-600 text-white text-xs px-3 py-1.5 rounded hover:bg-red-700 disabled:opacity-40">Reject</button>
+          {approval && approval !== 'pending' && (
+            <button onClick={() => changeApproval('pending')} disabled={approvalBusy}
+              className="border notion-border text-xs px-3 py-1.5 rounded hover:bg-gray-50">Reset to pending</button>
+          )}
+        </div>
       </div>
       {/* Billing */}
       <div className="bg-white border notion-border rounded p-3 space-y-1.5">

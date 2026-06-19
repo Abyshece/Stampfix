@@ -4,7 +4,7 @@ import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, Merch
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info,
+  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle,
 } from 'lucide-react';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
@@ -133,6 +133,11 @@ export function MerchantDashboard({
 
   // Preview
   const [previewStamps, setPreviewStamps] = useState(3);
+  // Whether the merchant dismissed the green "approved" banner. Persisted
+  // per-campaign so it doesn't reappear after they close it.
+  const [approvalSeen, setApprovalSeen] = useState(() => {
+    try { return localStorage.getItem(`sf_approval_seen_${campaign.id}`) === '1'; } catch { return false; }
+  });
 
   // -------------------- Handlers --------------------
 
@@ -513,6 +518,39 @@ export function MerchantDashboard({
           <ChevronRight className="w-4 h-4" />
           <span className="text-[#37352F] font-medium capitalize">{activeTab.toLowerCase()}</span>
         </div>
+
+        {/* Account approval status banner */}
+        {campaign.approvalStatus === 'pending' && (
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800 m-0">
+              <span className="font-semibold">Your account is being reviewed.</span> We'll check your business within 24 hours and either approve or reject it. You can keep setting things up in the meantime.
+            </p>
+          </div>
+        )}
+        {campaign.approvalStatus === 'rejected' && (
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800 m-0">
+              <span className="font-semibold">Your application wasn't approved.</span> Please contact support if you believe this is a mistake.
+            </p>
+          </div>
+        )}
+        {campaign.approvalStatus === 'approved' && !approvalSeen && (
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-green-800 m-0 flex-1">
+              <span className="font-semibold">Your business has been approved!</span> You're all set — your loyalty program is live.
+            </p>
+            <button
+              onClick={() => { try { localStorage.setItem(`sf_approval_seen_${campaign.id}`, '1'); } catch { /* ignore */ } setApprovalSeen(true); }}
+              className="text-green-600 hover:text-green-800 flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* --- DASHBOARD / SCANNER --- */}
         {activeTab === 'DASHBOARD' && (

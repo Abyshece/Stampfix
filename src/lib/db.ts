@@ -23,6 +23,7 @@ interface CampaignRow {
   poster_color: string | null;
   customer_privacy_notice: string | null;
   card_text_color: string | null;
+  approval_status: string;
 }
 
 interface LocationRow {
@@ -85,6 +86,7 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   posterColor: r.poster_color,
   customerPrivacyNotice: r.customer_privacy_notice,
   cardTextColor: r.card_text_color ?? null,
+  approvalStatus: (r.approval_status as Campaign['approvalStatus']) ?? 'approved',
 });
 
 const toLocation = (r: LocationRow): Location => ({
@@ -173,6 +175,35 @@ export async function createCampaign(input: Omit<Campaign, 'id'>): Promise<Campa
     .single();
   if (error) throw error;
   return toCampaign(data as CampaignRow);
+}
+
+/**
+ * Sets a merchant's account approval status. The dashboard reads this off the
+ * merchant's campaign to show the review / approved banner. Keyed by the
+ * merchant's user id (campaigns.merchant_id).
+ */
+export async function setMerchantApproval(
+  merchantId: string,
+  status: 'pending' | 'approved' | 'rejected',
+): Promise<void> {
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ approval_status: status })
+    .eq('merchant_id', merchantId);
+  if (error) throw error;
+}
+
+/** Reads a merchant's current approval status (for the admin panel). */
+export async function getMerchantApproval(
+  merchantId: string,
+): Promise<'pending' | 'approved' | 'rejected' | null> {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .select('approval_status')
+    .eq('merchant_id', merchantId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.approval_status as 'pending' | 'approved' | 'rejected') ?? null;
 }
 
 export async function updateCampaign(id: string, patch: Partial<Campaign>): Promise<Campaign> {
