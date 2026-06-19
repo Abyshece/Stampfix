@@ -18,9 +18,9 @@ import { AddToAppleWalletButton } from './AddToAppleWalletButton';
  *   2. Magic link clicked -> redirected back here with a session
  *   3. Signed in -> shows all cards across every merchant they've joined
  *
- * Designed especially for iPhone customers who can't use Google Wallet
- * and need a reliable way to return to their loyalty card on repeat
- * visits. Bookmarking this URL == the iPhone equivalent of a wallet pass.
+ * A reliable way for any customer to return to their loyalty card on
+ * repeat visits, and a fallback if they haven't added the card to Apple
+ * Wallet or Google Wallet. Bookmarking this URL keeps the card one tap away.
  */
 export function MyCardPage({ onExit }: { onExit: () => void }) {
   const { user, loading: authLoading } = useAuth();

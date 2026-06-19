@@ -145,7 +145,7 @@ function PricingView({
           'Unlimited customer cards',
           'Multiple locations with per-branch analytics',
           'Rotating signed QR codes (anti-fraud)',
-          'Google Wallet support',
+          'Apple & Google Wallet support',
           'Priority email support',
           'Cancel anytime, no contract',
         ].map((feature) => (

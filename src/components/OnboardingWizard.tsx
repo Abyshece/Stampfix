@@ -235,7 +235,7 @@ function WelcomeStep({ businessName }: { businessName: string }) {
           </li>
           <li className="flex gap-3">
             <span className="font-bold text-[#37352F] flex-shrink-0">2.</span>
-            <span><strong>They get a digital card</strong> — saved to Google Wallet, no app to install.</span>
+            <span><strong>They get a digital card</strong> — saved to Apple or Google Wallet, no app to install.</span>
           </li>
           <li className="flex gap-3">
             <span className="font-bold text-[#37352F] flex-shrink-0">3.</span>
@@ -323,7 +323,7 @@ function TestStep({
           </li>
           <li className="flex gap-3">
             <span className="font-bold text-[#37352F] flex-shrink-0">3.</span>
-            <span>You'll see your loyalty card with the rotating QR code. On Android, try "Save to Google Wallet".</span>
+            <span>You'll see your loyalty card with the rotating QR code. On iPhone, tap "Add to Apple Wallet"; on Android, "Save to Google Wallet".</span>
           </li>
         </ol>
       </div>
@@ -374,7 +374,7 @@ function ScanTourStep() {
           </li>
           <li className="flex gap-3">
             <span className="font-bold text-[#37352F] flex-shrink-0">3.</span>
-            <span>The customer shows you their QR (from Google Wallet or the web). Point your camera at it.</span>
+            <span>The customer shows you their QR (from Apple Wallet, Google Wallet, or the web). Point your camera at it.</span>
           </li>
           <li className="flex gap-3">
             <span className="font-bold text-[#37352F] flex-shrink-0">4.</span>

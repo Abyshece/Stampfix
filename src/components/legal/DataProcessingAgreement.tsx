@@ -41,7 +41,7 @@ export function DataProcessingAgreement() {
 
       <h2>4. Nature and Purpose of Processing</h2>
       <p>
-        Stampfix processes Personal Data only to operate the loyalty program: tracking stamps, issuing rewards, sending transactional emails, providing analytics to the Merchant, and supporting customer wallet integrations (e.g. Google Wallet).
+        Stampfix processes Personal Data only to operate the loyalty program: tracking stamps, issuing rewards, sending transactional emails, providing analytics to the Merchant, and supporting customer wallet integrations (e.g. Apple Wallet and Google Wallet).
       </p>
 
       <h2>5. Types of Personal Data and Categories of Data Subjects</h2>

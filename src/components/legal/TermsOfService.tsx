@@ -76,7 +76,7 @@ export function TermsOfService() {
 
       <LegalH2>7. Third-party services</LegalH2>
       <p>
-        The Service integrates with third parties such as Google Wallet, Stripe, and email
+        The Service integrates with third parties such as Apple Wallet, Google Wallet, Stripe, and email
         providers. Your use of those features may be subject to the third party’s own terms, and we
         are not responsible for third-party services.
       </p>

@@ -309,7 +309,7 @@ export function LandingPage({
 
         <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
           Create a digital punch card in 30 seconds. No apps to download. <br className="hidden md:block" />
-          Just a simple link that lives in your customer's Google Wallet.
+          Just a simple link that lives in your customer's Apple or Google Wallet.
         </p>
 
         <div className="flex justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
@@ -456,9 +456,9 @@ export function LandingPage({
             <div className="w-12 h-12 bg-[#37352F] rounded-lg flex items-center justify-center text-white mb-4 shadow-md">
               <Smartphone className="w-6 h-6" />
             </div>
-            <h2 className="text-4xl font-serif-display font-semibold">Native to Google Wallet.<br /> No friction.</h2>
+            <h2 className="text-4xl font-serif-display font-semibold">Native to Apple &amp; Google Wallet.<br /> No friction.</h2>
             <p className="text-lg text-gray-500 leading-relaxed">
-              Customers don't want another app clogging their phone. Our passes live directly in Google Wallet on Android, using the tech already built into their device.
+              Customers don't want another app clogging their phone. Our passes live directly in Apple Wallet on iPhone and Google Wallet on Android, using the tech already built into their device.
             </p>
             <ul className="space-y-3 text-sm text-gray-600">
               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> One-tap install from QR code</li>
