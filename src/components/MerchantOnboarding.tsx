@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff, Info } from 'lucide-react';
 import { signUpMerchant, signInMerchant } from '../lib/auth';
 import { createCampaign, createLocation } from '../lib/db';
 import { supabase } from '../lib/supabase';
@@ -45,11 +45,27 @@ interface OnboardingProps {
  * insert). Otherwise we create immediately.
  */
 export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }: OnboardingProps) {
-  const [step, setStep] = useState<'FORM' | 'CHECK_EMAIL' | 'LOGIN'>(initialStep);
-  const [email, setEmail] = useState('');
+  const [step, setStep] = useState<'FORM' | 'CHECK_EMAIL' | 'LOGIN' | 'THANK_YOU'>(() => {
+    // Survive the remount caused by signing out right after signup, so the
+    // thank-you screen shows instead of bouncing back to the empty form.
+    try { if (sessionStorage.getItem('sf_just_registered') === '1') return 'THANK_YOU'; } catch { /* ignore */ }
+    return initialStep;
+  });
+  const clearRegFlags = () => {
+    try {
+      sessionStorage.removeItem('sf_just_registered');
+      sessionStorage.removeItem('sf_registered_email');
+      sessionStorage.removeItem('sf_registered_business');
+    } catch { /* ignore */ }
+  };
+  const [email, setEmail] = useState(() => {
+    try { return sessionStorage.getItem('sf_registered_email') ?? ''; } catch { return ''; }
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [busName, setBusName] = useState('');
+  const [busName, setBusName] = useState(() => {
+    try { return sessionStorage.getItem('sf_registered_business') ?? ''; } catch { return ''; }
+  });
   const [country, setCountry] = useState<'DE' | 'CA' | ''>('');
   const [offerTitle, setOfferTitle] = useState('Buy 6 coffee, get 1 free');
   const [logoText, setLogoText] = useState('');
@@ -137,9 +153,18 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
         );
         setStep('CHECK_EMAIL');
       } else {
-        // Session is live — create the campaign now.
+        // Session is live — create the campaign now (it starts as 'pending'
+        // review). Then sign out and show a thank-you screen so the merchant
+        // gets a clear "we're reviewing you" message and signs in fresh,
+        // rather than being dropped into an unreviewed dashboard.
         await createCampaignForCurrentUser();
-        onComplete();
+        try {
+          sessionStorage.setItem('sf_just_registered', '1');
+          sessionStorage.setItem('sf_registered_email', email);
+          sessionStorage.setItem('sf_registered_business', busName);
+        } catch { /* ignore */ }
+        await supabase.auth.signOut();
+        setStep('THANK_YOU');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
@@ -160,6 +185,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
     setLoading(true);
     try {
       await signInMerchant(email, password);
+      clearRegFlags();
       onComplete();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -167,6 +193,35 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
       setLoading(false);
     }
   };
+
+  // ----- THANK_YOU step (shown right after a successful signup) -----
+  if (step === 'THANK_YOU') {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-6 text-[#37352F]">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="w-16 h-16 bg-blue-50 rounded-full mx-auto flex items-center justify-center text-blue-600 border border-blue-100">
+            <Info className="w-8 h-8" />
+          </div>
+          <h1 className="text-3xl font-serif-display font-semibold">Thank you for registering!</h1>
+          <p className="text-gray-500 leading-relaxed">
+            Your business <strong className="text-[#37352F]">{busName || 'account'}</strong> has been registered.
+          </p>
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800 text-left flex items-start gap-2.5">
+            <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>
+              We'll review your business within <strong>24 hours</strong> and approve or reject it. You can sign in now and start setting things up — you'll see your approval status on the dashboard.
+            </span>
+          </div>
+          <button
+            onClick={() => { clearRegFlags(); handleSwitchToLogin(); }}
+            className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition"
+          >
+            Sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ----- CHECK_EMAIL step -----
   if (step === 'CHECK_EMAIL') {
@@ -246,7 +301,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
             </button>
           </form>
           <button
-            onClick={() => setStep('FORM')}
+            onClick={() => { clearRegFlags(); setStep('FORM'); }}
             className="w-full text-xs text-gray-500 hover:text-[#37352F] flex items-center justify-center gap-1"
           >
             <ArrowLeft className="w-3 h-3" /> Back to signup
