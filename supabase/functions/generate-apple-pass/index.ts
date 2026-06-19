@@ -115,23 +115,32 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 // Build the stamp-progress strip as an SVG, then rasterize to PNG.
-// Draws `maxStamps` coffee-cup circles in a row: the first `filled` are
-// solid (collected), the rest are faint outlines (remaining) — mirroring
-// the web card. Charcoal background to match the pass.
+// Draws `maxStamps` numbered circles: the first `filled` are solid
+// (collected) with the number in the card background colour so it reads
+// clearly; the rest are faint outlines (remaining) with a greyed number.
+// Two rows when there are more than 5 stamps, with a clear gap between rows.
 //
 // Strip @3x is 1125x432 per Apple's storeCard spec. We draw at that size.
-function buildStripSvg(filled: number, maxStamps: number, bg: string, text: string): string {
+// `fontFamily` MUST match a font loaded into resvg (see svgToPng) or the
+// numbers won't render at all.
+function buildStripSvg(filled: number, maxStamps: number, bg: string, text: string, fontFamily: string): string {
   const W = 1125, H = 432;
-  const solid = text;
-  const faint = hexToRgba(text, 0.22);
+  const solid = text;                       // filled circle fill
+  const faintNum = hexToRgba(text, 0.32);   // greyed number on an unstamped circle
+  const faintLine = hexToRgba(text, 0.28);  // outline on an unstamped circle
 
-  // Two rows when more than 5 stamps (LAP style: 1-4 top, 5-8 bottom).
+  // Two rows when more than 5 stamps (1-4 top, 5-8 bottom).
   const rows = maxStamps <= 5 ? 1 : 2;
   const perRow = Math.ceil(maxStamps / rows);
-  const gapX = W / (perRow + 1);
-  const rowH = H / (rows + 1);
-  const r = rows === 1 ? Math.max(34, Math.min(78, gapX * 0.40)) : 70;
-  const fontSize = (r * 0.95).toFixed(0);
+  // Smaller radius in 2-row mode to open up vertical room for a gap.
+  const r = rows === 1
+    ? Math.max(34, Math.min(78, (W / (perRow + 1)) * 0.40))
+    : 56;
+  const fontSize = (r * 0.92).toFixed(0);
+
+  // Row vertical centres. In 2-row mode push them apart (~70px gap between
+  // the rows at @3x); in 1-row mode centre vertically.
+  const rowCy = (row: number) => (rows === 1 ? H / 2 : row === 0 ? H * 0.29 : H * 0.71);
 
   let items = '';
   for (let i = 0; i < maxStamps; i++) {
@@ -141,28 +150,52 @@ function buildStripSvg(filled: number, maxStamps: number, bg: string, text: stri
     const itemsThisRow = Math.min(perRow, maxStamps - row * perRow);
     const rowGap = W / (itemsThisRow + 1);
     const cx = rowGap * (col + 1);
-    const cy = rowH * (row + 1);
+    const cy = rowCy(row);
     const isFilled = i < filled;
     const num = i + 1;
-    items += `<circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="${r.toFixed(0)}" fill="${isFilled ? solid : 'none'}" stroke="${isFilled ? 'none' : faint}" stroke-width="5"/>`;
-    items += `<text x="${cx.toFixed(0)}" y="${cy.toFixed(0)}" font-family="Helvetica, Arial, sans-serif" font-size="${fontSize}" font-weight="700" fill="${isFilled ? bg : faint}" text-anchor="middle" dominant-baseline="central">${num}</text>`;
+    items += `<circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="${r.toFixed(0)}" fill="${isFilled ? solid : 'none'}" stroke="${isFilled ? 'none' : faintLine}" stroke-width="5"/>`;
+    items += `<text x="${cx.toFixed(0)}" y="${cy.toFixed(0)}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="700" fill="${isFilled ? bg : faintNum}" text-anchor="middle" dominant-baseline="central">${num}</text>`;
   }
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-    <rect width="${W}" height="${H}" fill="${bg}"/>
-    ${items}
-  </svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="${bg}"/>${items}</svg>`;
 }
 
 let wasmReady = false;
-async function svgToPng(svg: string): Promise<Uint8Array> {
+let fontBuffer: Uint8Array | null = null;
+let fontTried = false;
+
+// Family name resvg uses for the strip numbers. Must match the family of the
+// TTF hosted at /wallet-assets/pass-font.ttf (Roboto-Bold.ttf => "Roboto").
+const STRIP_FONT_FAMILY = 'Roboto';
+
+// resvg has no system fonts in the serverless runtime, so without an explicit
+// font the strip's <text> (the numbers) silently won't render. Load a TTF
+// from the app's public assets once per cold start.
+async function loadStripFont(origin: string): Promise<Uint8Array | null> {
+  if (fontBuffer || fontTried) return fontBuffer;
+  fontTried = true;
+  try {
+    const res = await fetch(`${origin}/wallet-assets/pass-font.ttf`);
+    if (res.ok) fontBuffer = new Uint8Array(await res.arrayBuffer());
+    else console.error('[generate-apple-pass] pass-font.ttf not found:', res.status);
+  } catch (e) {
+    console.error('[generate-apple-pass] font fetch failed:', e);
+  }
+  return fontBuffer;
+}
+
+async function svgToPng(svg: string, origin: string): Promise<Uint8Array> {
   if (!wasmReady) {
     // Fetch the wasm binary and initialise once per cold start.
     const wasmResp = await fetch('https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm');
     await initWasm(await wasmResp.arrayBuffer());
     wasmReady = true;
   }
-  const resvg = new Resvg(svg);
+  const font = await loadStripFont(origin);
+  const opts = font
+    ? { font: { fontBuffers: [font], loadSystemFonts: false, defaultFontFamily: STRIP_FONT_FAMILY } }
+    : undefined;
+  const resvg = new Resvg(svg, opts);
   const rendered = resvg.render();
   return rendered.asPng();
 }
@@ -256,11 +289,11 @@ Deno.serve(async (req) => {
         ],
         primaryFields: [],
         secondaryFields: [
-          { key: 'offer', label: 'REWARD', value: offerTitle },
+          { key: 'member', label: 'MEMBER', value: card.customer_name ?? '' },
+          { key: 'id', label: 'ID', value: card.customer_code ?? '', textAlignment: 'PKTextAlignmentRight' },
         ],
         auxiliaryFields: [
-          { key: 'member', label: 'MEMBER', value: card.customer_name ?? '' },
-          { key: 'id', label: 'ID', value: card.customer_code ?? '' },
+          { key: 'offer', label: 'REWARD', value: offerTitle, textAlignment: 'PKTextAlignmentCenter' },
         ],
       },
       barcode: {
@@ -289,8 +322,8 @@ Deno.serve(async (req) => {
     // any reason, we skip it — the pass still renders, just without the
     // strip — so a strip error never blocks adding the card.
     try {
-      const stripSvg = buildStripSvg(card.current_stamps ?? 0, maxStamps, cardBg, cardText);
-      const stripPng = await svgToPng(stripSvg);
+      const stripSvg = buildStripSvg(card.current_stamps ?? 0, maxStamps, cardBg, cardText, STRIP_FONT_FAMILY);
+      const stripPng = await svgToPng(stripSvg, origin);
       files['strip.png'] = stripPng;
       files['strip@2x.png'] = stripPng;
       files['strip@3x.png'] = stripPng;
