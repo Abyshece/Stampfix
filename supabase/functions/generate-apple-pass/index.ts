@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
 
     const { data: card, error: cardErr } = await supabase
       .from('cards')
-      .select('id, customer_name, customer_code, current_stamps, rewards_redeemed, offer_title_snapshot, max_stamps_snapshot, campaign_id')
+      .select('id, customer_name, customer_code, current_stamps, rewards_redeemed, offer_title_snapshot, max_stamps_snapshot, campaign_id, apple_auth_token')
       .eq('id', cardId)
       .maybeSingle();
     if (cardErr || !card) {
@@ -221,6 +221,17 @@ Deno.serve(async (req) => {
     const currentStamps = card.current_stamps ?? 0;
     const stampsLeft = Math.max(0, maxStamps - currentStamps);
 
+    // Per-pass authentication token for the PassKit web service. Generated
+    // once and stored on the card; the web service validates the
+    // `Authorization: ApplePass <token>` header against it on every update
+    // call from the device.
+    let authToken = card.apple_auth_token as string | null;
+    if (!authToken) {
+      authToken = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+      await supabase.from('cards').update({ apple_auth_token: authToken }).eq('id', card.id);
+    }
+    const webServiceURL = `${env('SUPABASE_URL')}/functions/v1/apple-wallet-webservice`;
+
     // ---- Build pass.json ----
     const passJson = {
       formatVersion: 1,
@@ -233,6 +244,8 @@ Deno.serve(async (req) => {
       foregroundColor: hexToRgb(cardText),
       labelColor: hexToRgb(cardText),
       logoText: businessName,
+      webServiceURL,
+      authenticationToken: authToken,
       storeCard: {
         headerFields: [
           {

@@ -1156,7 +1156,7 @@ export function MerchantDashboard({
 
               <div className="border-t notion-border pt-6">
                 <h3 className="font-medium mb-4 flex items-center gap-2"><Palette className="w-4 h-4" /> Branding Studio</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase">Card Color</label>
                     <div className="flex gap-2 items-center">
@@ -1185,6 +1185,13 @@ export function MerchantDashboard({
                     </div>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setTempSettings({ ...tempSettings, backgroundColor: '#f0ece1', cardTextColor: '#1d3458' })}
+                  className="mb-6 inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#37352F] transition"
+                >
+                  <RotateCcw className="w-3 h-3" /> Reset to default colors
+                </button>
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-gray-400 uppercase">Card Pattern</label>
