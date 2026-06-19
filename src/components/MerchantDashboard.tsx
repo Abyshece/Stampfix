@@ -146,9 +146,14 @@ export function MerchantDashboard({
   };
 
   const handleManualStamp = () => {
-    if (!manualId) return;
+    const q = manualId.trim().toLowerCase();
+    if (!q) return;
     const target = cards.find(
-      (c) => c.id === manualId || c.email === manualId || c.id.startsWith(manualId),
+      (c) =>
+        (c.customerCode ?? '').toLowerCase() === q ||
+        c.id.toLowerCase() === q ||
+        (c.email ?? '').toLowerCase() === q ||
+        c.id.toLowerCase().startsWith(q),
     );
     if (!target) {
       setScanResult({ status: 'error', message: 'Customer not found' });
