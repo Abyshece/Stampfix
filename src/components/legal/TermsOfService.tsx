@@ -13,7 +13,7 @@ import { LegalPage, LegalH2, Placeholder } from './LegalPage';
  */
 export function TermsOfService() {
   return (
-    <LegalPage title="Terms of Service" lastUpdated="28 May 2026">
+    <LegalPage title="Terms of Service" lastUpdated="19 June 2026">
       <p>
         These Terms of Service (“Terms”) govern your use of the Stampfix loyalty-card platform (the
         “Service”) provided by 17999658 Canada Inc. (d/b/a Stampfix) (“Stampfix”, “we”, “us”).
@@ -99,7 +99,18 @@ export function TermsOfService() {
         certain limitations, so some of the above may not apply to you.
       </p>
 
-      <LegalH2>10. Termination</LegalH2>
+      <LegalH2>10. Indemnity</LegalH2>
+      <p>
+        You agree to defend, indemnify, and hold harmless Stampfix and its officers, directors,
+        employees, and service providers from and against any claims, liabilities, damages, losses,
+        and expenses (including reasonable legal fees) arising out of or relating to: (a) your use of
+        the Service; (b) the operation of your loyalty program, including the rewards you offer and
+        your communications with Cardholders; (c) any content or data you provide; (d) your breach of
+        these Terms; or (e) your violation of any applicable law, including data-protection law (such
+        as PIPEDA or the GDPR) and anti-spam law (such as Canada’s Anti-Spam Legislation, “CASL”).
+      </p>
+
+      <LegalH2>11. Termination</LegalH2>
       <p>
         You may stop using the Service and delete your account at any time. We may suspend or
         terminate access if you breach these Terms or if required to protect the Service or other
@@ -107,7 +118,7 @@ export function TermsOfService() {
         should survive (such as limitation of liability) will survive.
       </p>
 
-      <LegalH2>11. Governing law</LegalH2>
+      <LegalH2>12. Governing law</LegalH2>
       <p>
         These Terms are governed by the laws of the Province of British Columbia and the federal laws
         of Canada applicable there, without regard to conflict-of-laws rules. Mandatory consumer
@@ -116,14 +127,49 @@ export function TermsOfService() {
         your country of residence.
       </p>
 
-      <LegalH2>12. Changes to these Terms</LegalH2>
+      <LegalH2>13. Dispute resolution</LegalH2>
+      <p>
+        If a dispute arises out of or relating to these Terms or the Service, you agree to first try
+        to resolve it informally by contacting us at hello@stampfix.app; we will work in good faith
+        to resolve it within 30 days. If it is not resolved, the parties agree to submit the dispute
+        to confidential, binding arbitration seated in Vancouver, British Columbia, conducted in
+        English before a single arbitrator under the British Columbia Arbitration Act (SBC 2020,
+        c. 2), administered by the Vancouver International Arbitration Centre (VanIAC) or another
+        arbitral institution the parties agree on. Each party bears its own costs unless the
+        arbitrator orders otherwise. Nothing in this section prevents either party from seeking
+        urgent injunctive relief from a court of competent jurisdiction, and nothing here limits any
+        mandatory rights you may have under applicable consumer-protection law.
+      </p>
+
+      <LegalH2>14. General</LegalH2>
+      <p>
+        <strong>Severability.</strong> If any provision of these Terms is held invalid or
+        unenforceable, the remaining provisions continue in full force and effect.
+      </p>
+      <p>
+        <strong>Assignment.</strong> Stampfix may assign or transfer these Terms, in whole or in
+        part, including in connection with a merger, acquisition, or sale of assets. You may not
+        assign your rights or obligations without our prior written consent, and any attempted
+        assignment in breach of this section is void.
+      </p>
+      <p>
+        <strong>Waiver.</strong> Our failure to enforce any provision is not a waiver of our right to
+        enforce it later.
+      </p>
+      <p>
+        <strong>Entire agreement.</strong> These Terms, together with the Privacy Policy and the Data
+        Processing Agreement, constitute the entire agreement between you and Stampfix regarding the
+        Service and supersede all prior or contemporaneous agreements on that subject.
+      </p>
+
+      <LegalH2>15. Changes to these Terms</LegalH2>
       <p>
         We may update these Terms from time to time. We will post the updated version here and revise
         the “Last updated” date, and will notify Merchants of material changes by email. Continued
         use after changes take effect constitutes acceptance.
       </p>
 
-      <LegalH2>13. Contact</LegalH2>
+      <LegalH2>16. Contact</LegalH2>
       <p>
         Questions about these Terms? Email hello@stampfix.app or write
         to 28-16223 23A Ave, Surrey BC V3Z 6P4, Canada.
