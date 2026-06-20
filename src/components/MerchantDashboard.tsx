@@ -439,10 +439,7 @@ export function MerchantDashboard({
       {/* Sidebar */}
       <aside className="w-64 bg-[#F7F7F5] border-r notion-border hidden md:flex flex-col fixed inset-y-0 left-0 z-40">
         <div className="p-4 flex items-center gap-2 font-semibold text-sm border-b notion-border h-[60px]">
-          <div className="w-5 h-5 min-w-[20px] rounded text-white flex items-center justify-center text-xs"
-            style={{ backgroundColor: campaign.primaryColor }}>
-            {campaign.businessName.charAt(0)}
-          </div>
+          <svg viewBox="0 0 282 90" className="h-4 w-auto min-w-[20px] text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
           <span className="truncate">{campaign.businessName}</span>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
@@ -504,10 +501,7 @@ export function MerchantDashboard({
         {/* Mobile header */}
         <div className="md:hidden sticky top-0 z-10 bg-white/80 backdrop-blur-md flex justify-between items-center mb-6 py-4 border-b notion-border -mx-6 px-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded text-white flex items-center justify-center text-xs font-bold"
-              style={{ backgroundColor: campaign.primaryColor }}>
-              {campaign.businessName.charAt(0)}
-            </div>
+            <svg viewBox="0 0 282 90" className="h-5 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
             <span className="font-semibold text-sm truncate max-w-[150px]">{campaign.businessName}</span>
           </div>
           <button onClick={onLogout} className="text-gray-400 p-1"><LogOut className="w-5 h-5" /></button>
