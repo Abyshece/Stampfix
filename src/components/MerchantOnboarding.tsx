@@ -324,7 +324,10 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
           </button>
         )}
         <div className="mb-10 text-center">
-          <div className="w-16 h-16 bg-[#F7F7F5] rounded-lg mx-auto flex items-center justify-center mb-4 border notion-border text-3xl">☕️</div>
+          <div className="flex items-center justify-center gap-2.5 mb-4 font-semibold text-4xl text-[#37352F]">
+            <svg viewBox="0 0 282 90" className="h-9 w-auto" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
+            Stampfix
+          </div>
           <h2 className="text-3xl font-serif-display font-semibold mb-2">Create Workspace</h2>
           <p className="text-gray-500">Set up your loyalty card in under a minute.</p>
         </div>
