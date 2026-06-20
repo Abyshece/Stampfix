@@ -48,6 +48,21 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   // Background: caller override > merchant's stored poster_color > fall back to primary
   const posterBg = posterBgOverride ?? campaign.posterColor ?? campaign.primaryColor;
 
+  // Brand-mark colour: dark mark on light backgrounds, white on dark ones.
+  // Gradients / unknown formats assume a dark background (white mark).
+  const markHex = (() => {
+    const m = /^#?([0-9a-fA-F]{6})$/.exec(String(posterBg).trim());
+    if (!m) return '#FFFFFF';
+    const n = parseInt(m[1], 16);
+    const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+    return lum > 150 ? '#1A1A1A' : '#FFFFFF';
+  })();
+  const brandMark =
+    `<svg viewBox="0 0 282 90" style="height:11px;width:auto;vertical-align:middle;margin-right:5px;display:inline-block" fill="${markHex}">` +
+    `<rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/>` +
+    `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/>` +
+    `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>`;
+
   // Yellow stays as the accent across all themes; deep navy as the
   // starburst text color. We assume the merchant's background is dark
   // enough that white text + yellow accent work — the default and the
@@ -86,6 +101,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__QR_URL__',         qrUrl)
     .replaceAll('__STAMPS_GRID__',    buildStampsGrid(maxStamps, icon))
     .replaceAll('__OFFER_PILL__',     esc(condenseOfferForPill(offerTitle, maxStamps)))
+    .replaceAll('__BRAND_MARK__',     brandMark)
     .replaceAll('__SIZE__',           input.size);
 }
 
@@ -542,7 +558,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     <div class="bc-starburst">
       <div class="bc-starburst-inner">__STARBURST__</div>
     </div>
-    <div class="bc-powered">POWERED BY <strong>STAMPFIX.APP</strong></div>
+    <div class="bc-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
 
   <!-- ============= A5 PAMPHLET ============= -->
@@ -605,7 +621,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <div class="pm-starburst-inner">__STARBURST__</div>
       </div>
     </div>
-    <div class="pm-powered">POWERED BY <strong>STAMPFIX.APP</strong></div>
+    <div class="pm-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
 
   <!-- ============= A4 POSTER ============= -->
@@ -664,7 +680,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         </div>
       </div>
     </div>
-    <div class="ps-powered">POWERED BY <strong>STAMPFIX.APP</strong></div>
+    <div class="ps-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
 
 <script>

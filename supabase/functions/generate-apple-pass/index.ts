@@ -307,10 +307,9 @@ Deno.serve(async (req) => {
     // Images: we fetch the public PNG assets from the app origin so we
     // don't have to embed binaries here. They must exist at these paths.
     const origin = env('PUBLIC_APP_ORIGIN', 'https://stampfix.app');
-    // NOTE: logo.png is intentionally NOT bundled. With no logo image,
-    // Apple renders `logoText` (the merchant's business name) alone in the
-    // top-left of the pass — which is what we want. icon.png is still
-    // required by Apple (used in notifications / lock screen).
+    // logo.png (the Stampfix brand mark) is generated below and sits in the
+    // top-left, just left of `logoText` (the merchant's business name).
+    // icon.png is still required by Apple (notifications / lock screen).
     const imageNames = ['icon.png', 'icon@2x.png'];
     const files: Record<string, Uint8Array> = {};
 
@@ -328,6 +327,31 @@ Deno.serve(async (req) => {
       files['strip@3x.png'] = stripPng;
     } catch (stripErr) {
       console.error('[generate-apple-pass] strip generation failed:', stripErr);
+    }
+
+    // Stampfix brand mark in the top-left logo slot. Dark mark on light cards,
+    // white on dark cards. Canvas is padded so it stays compact next to the
+    // business name. Best-effort — a failure never blocks the pass.
+    try {
+      const lightCard = (() => {
+        const m = /^#?([0-9a-fA-F]{6})$/.exec(String(cardBg).trim());
+        if (!m) return true;
+        const n = parseInt(m[1], 16);
+        return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150;
+      })();
+      const logoFill = lightCard ? '#1A1A1A' : '#FFFFFF';
+      const logoSvg =
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 282 150" width="282" height="150">` +
+        `<g fill="${logoFill}" transform="translate(0 30)">` +
+        `<rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/>` +
+        `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/>` +
+        `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></g></svg>`;
+      const logoPng = await svgToPng(logoSvg, origin);
+      files['logo.png'] = logoPng;
+      files['logo@2x.png'] = logoPng;
+      files['logo@3x.png'] = logoPng;
+    } catch (logoErr) {
+      console.error('[generate-apple-pass] logo generation failed:', logoErr);
     }
 
     for (const name of imageNames) {

@@ -1,4 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <rect width="100" height="100" rx="22" fill="#37352F"/>
-  <text x="50" y="54" font-family="Georgia, 'Times New Roman', serif" font-size="60" font-weight="700" fill="#FFFFFF" text-anchor="middle" dominant-baseline="central">S</text>
+  <g fill="#ffffff" transform="translate(50 50) scale(0.27) translate(-141 -45)">
+    <rect x="8" y="12" width="66" height="66" rx="4"/>
+    <circle cx="140" cy="45" r="34"/>
+    <rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/>
+    <rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/>
+  </g>
 </svg>

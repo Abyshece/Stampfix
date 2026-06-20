@@ -263,7 +263,7 @@ export function LandingPage({
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2 font-semibold text-lg">
-          <div className="w-6 h-6 bg-[#37352F] rounded-sm flex items-center justify-center text-white text-xs font-bold">S</div>
+          <svg viewBox="0 0 282 90" className="h-6 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
           Stampfix
         </div>
         <div className="flex items-center gap-2 md:gap-3 text-sm font-medium">
@@ -534,7 +534,7 @@ export function LandingPage({
       <footer className="border-t notion-border bg-white py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
           <div className="flex items-center gap-2 font-semibold text-[#37352F] mb-4 md:mb-0">
-            <div className="w-5 h-5 bg-[#37352F] rounded-sm flex items-center justify-center text-white text-[10px] font-bold">S</div>
+            <svg viewBox="0 0 282 90" className="h-5 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
             Stampfix
           </div>
           <div className="flex gap-6">
