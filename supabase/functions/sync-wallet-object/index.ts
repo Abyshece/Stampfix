@@ -158,7 +158,7 @@ function buildLoyaltyClass(campaign: Campaign) {
     programName: campaign.business_name,
     programLogo: {
       sourceUri: {
-        uri: 'https://stampfix.app/wallet-assets/wallet-logo.png',
+        uri: 'https://stampfix.app/wallet-assets/wallet-logo-v2.png',
       },
     },
     reviewStatus: 'UNDER_REVIEW',

@@ -160,7 +160,7 @@ function buildLoyaltyClass(campaign: Campaign) {
     programLogo: {
       sourceUri: {
         // Generic placeholder logo - replace with your hosted logo when ready
-        uri: 'https://stampfix.app/wallet-assets/wallet-logo.png',
+        uri: 'https://stampfix.app/wallet-assets/wallet-logo-v2.png',
       },
     },
     reviewStatus: 'UNDER_REVIEW',

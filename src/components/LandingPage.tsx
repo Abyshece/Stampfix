@@ -118,7 +118,7 @@ export function LandingPage({
               {authMode === 'LOGIN' && (
                 <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="mb-8 text-center">
-                    <div className="w-12 h-12 bg-[#37352F] rounded-lg mx-auto flex items-center justify-center text-white font-bold text-xl mb-4 shadow-sm">S</div>
+                    <div className="w-12 h-12 bg-[#37352F] rounded-lg mx-auto flex items-center justify-center mb-4 shadow-sm"><svg viewBox="0 0 282 90" className="w-8 text-white" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg></div>
                     <h2 className="text-2xl font-serif-display font-semibold mb-2">Welcome back</h2>
                     <p className="text-gray-500 text-sm">Enter your details to access your workspace.</p>
                   </div>
