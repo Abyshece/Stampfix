@@ -6,15 +6,18 @@
 // request carries `Authorization: ApplePass <token>` which we validate
 // against the per-card token stored by generate-apple-pass.
 //
-// Apple appends "/v1/..." to webServiceURL, so the paths we handle are:
+// Apple appends "/v1/..." to webServiceURL, so the routes are:
 //   POST   /v1/devices/{deviceLibraryId}/registrations/{passTypeId}/{serial}
 //   DELETE /v1/devices/{deviceLibraryId}/registrations/{passTypeId}/{serial}
 //   GET    /v1/devices/{deviceLibraryId}/registrations/{passTypeId}?passesUpdatedSince=<tag>
 //   GET    /v1/passes/{passTypeId}/{serial}
 //   POST   /v1/log
 //
-// Deploy WITHOUT JWT verification (Apple calls it with its own ApplePass
-// token, not a Supabase JWT):
+// Routing locates the PassKit segments BY NAME (devices / registrations /
+// passes / log) so it works regardless of how Supabase presents the path
+// prefix. The fallback returns the raw path for debugging.
+//
+// Deploy WITHOUT JWT verification (Apple uses its own ApplePass token):
 //   supabase functions deploy apple-wallet-webservice --no-verify-jwt
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
@@ -39,12 +42,9 @@ Deno.serve(async (req) => {
   const supabase = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'));
   const passTypeId = env('APPLE_PASS_TYPE_ID', 'pass.app.stampfix.loyalty');
 
-  // Everything after ".../apple-wallet-webservice" — i.e. the "/v1/..." part.
-  const fullPath = new URL(req.url).pathname;
-  const marker = '/apple-wallet-webservice';
-  const sub = fullPath.includes(marker) ? fullPath.slice(fullPath.indexOf(marker) + marker.length) : fullPath;
-  const seg = sub.split('/').filter(Boolean); // e.g. ['v1','devices',deviceId,'registrations',passType,serial]
   const url = new URL(req.url);
+  const parts = url.pathname.split('/').filter(Boolean);
+  const lower = parts.map((p) => p.toLowerCase());
 
   // Validate the ApplePass token against the card's stored token.
   const validate = async (serial: string): Promise<boolean> => {
@@ -55,17 +55,18 @@ Deno.serve(async (req) => {
   };
 
   try {
-    // POST /v1/log — Apple posts diagnostic logs here.
-    if (req.method === 'POST' && seg[0] === 'v1' && seg[1] === 'log') {
+    // ---- POST /v1/log — Apple posts diagnostic logs here.
+    if (req.method === 'POST' && lower.includes('log') && !lower.includes('devices') && !lower.includes('passes')) {
       const body = await req.json().catch(() => ({}));
       console.log('[apple-wallet-webservice] device log:', JSON.stringify(body));
       return new Response('ok', { status: 200 });
     }
 
-    // ---- Device registration endpoints: /v1/devices/{device}/registrations/{passType}/{serial}
-    if (seg[0] === 'v1' && seg[1] === 'devices' && seg[3] === 'registrations') {
-      const deviceId = seg[2];
-      const serial = seg[5]; // undefined for the list endpoint (no serial)
+    // ---- /v1/devices/{device}/registrations/{passType}/{serial}
+    const devIdx = lower.indexOf('devices');
+    if (devIdx >= 0 && lower[devIdx + 2] === 'registrations') {
+      const deviceId = parts[devIdx + 1];
+      const serial = parts[devIdx + 4]; // undefined for the list endpoint (no serial)
 
       // POST — register this device for the pass.
       if (req.method === 'POST' && serial) {
@@ -130,9 +131,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ---- Get the latest pass: GET /v1/passes/{passType}/{serial}
-    if (req.method === 'GET' && seg[0] === 'v1' && seg[1] === 'passes') {
-      const serial = seg[3];
+    // ---- GET /v1/passes/{passType}/{serial}
+    const passIdx = lower.indexOf('passes');
+    if (req.method === 'GET' && passIdx >= 0) {
+      const serial = parts[passIdx + 2];
       if (!serial) return new Response('Not found', { status: 404 });
       if (!(await validate(serial))) return new Response('Unauthorized', { status: 401 });
 
@@ -165,7 +167,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response('Not found', { status: 404 });
+    // ---- Fallback: echo what we actually received so routing is debuggable.
+    return json(
+      { error: 'route_not_matched', method: req.method, pathname: url.pathname, parts, rawUrl: req.url },
+      404,
+    );
   } catch (e) {
     console.error('[apple-wallet-webservice]', e);
     return new Response('Internal error', { status: 500 });
