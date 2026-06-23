@@ -88,6 +88,24 @@ Deno.serve(async (req) => {
           serial_number: serial,
           push_token: pushToken,
         });
+
+        // Immediately sync the pass to current state. Covers brand-new cards
+        // that were stamped *before* the device finished registering — that
+        // stamp's own push had no device to reach, so we replay it here now
+        // that a device exists. Awaited so it runs before the function exits.
+        try {
+          await fetch(`${env('SUPABASE_URL')}/functions/v1/push-apple-update`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${env('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cardId: serial }),
+          });
+        } catch (e) {
+          console.error('[apple-wallet-webservice] post-register push failed:', e);
+        }
+
         return new Response(null, { status: existing ? 200 : 201 });
       }
 
