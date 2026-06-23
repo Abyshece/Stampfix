@@ -69,6 +69,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const [country, setCountry] = useState<'DE' | 'CA' | ''>('');
   const [offerTitle, setOfferTitle] = useState('Buy 6 coffee, get 1 free');
   const [logoText, setLogoText] = useState('');
+  const [phone, setPhone] = useState('');
   const [selectedColor, setSelectedColor] = useState(NOTION_COLORS[0].hex);
   const [selectedIcon, setSelectedIcon] = useState('☕️');
   const [maxStamps, setMaxStamps] = useState(8);
@@ -139,7 +140,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
         return;
       }
       const { needsEmailConfirmation } = await signUpMerchant(
-        email, password, busName, country, marketingOptIn,
+        email, password, busName, country, marketingOptIn, phone,
       );
       if (needsEmailConfirmation) {
         // Can't create the campaign yet (RLS needs a session). Save form
@@ -344,6 +345,21 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
                 className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
                 placeholder="merchant@example.com"
               />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">
+                Phone Number <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                placeholder="+49 170 1234567"
+              />
+              <p className="text-xs text-gray-500">
+                Strongly recommended — it's how we reach you fast for account recovery and any urgent issue affecting your loyalty program.
+              </p>
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Password</label>

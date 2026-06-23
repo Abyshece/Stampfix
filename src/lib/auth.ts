@@ -84,6 +84,7 @@ export async function signUpMerchant(
   businessName: string,
   country: 'DE' | 'CA',
   marketingOptIn: boolean,
+  phone?: string,
 ): Promise<{ needsEmailConfirmation: boolean }> {
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -94,6 +95,7 @@ export async function signUpMerchant(
         business_name: businessName,
         country,
         marketing_opt_in: marketingOptIn,
+        phone: phone?.trim() || null,
       },
       emailRedirectTo: `${window.location.origin}/?confirmed=1`,
     },
@@ -135,7 +137,7 @@ async function deriveCustomerPassword(email: string): Promise<string> {
   return `Sf1!${b64.slice(0, 32)}`;
 }
 
-export async function signUpOrInCustomer(email: string, campaignId: string): Promise<void> {
+export async function signUpOrInCustomer(email: string, campaignId: string, phone?: string): Promise<void> {
   const cleanEmail = email.trim().toLowerCase();
   const password = await deriveCustomerPassword(cleanEmail);
 
@@ -143,7 +145,7 @@ export async function signUpOrInCustomer(email: string, campaignId: string): Pro
   const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
     email: cleanEmail,
     password,
-    options: { data: { role: 'customer', signup_campaign_id: campaignId } },
+    options: { data: { role: 'customer', signup_campaign_id: campaignId, phone: phone?.trim() || null } },
   });
 
   if (!signUpErr && signUpData.session) {

@@ -38,7 +38,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   const [error, setError] = useState<string | null>(null);
 
   // Magic-link form state
-  const [formData, setFormData] = useState({ firstName: '', surname: '', email: '', age: '' });
+  const [formData, setFormData] = useState({ firstName: '', surname: '', email: '', age: '', phone: '' });
   const [isSendingLink, setIsSendingLink] = useState(false);
   // Turnstile token gating the signup submit.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -203,7 +203,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
       // Frictionless: create the account (or sign in if returning) and log
       // the customer in immediately. No email, no code. The component then
       // re-renders into the signed-in branch, which creates/loads the card.
-      await signUpOrInCustomer(formData.email, campaignId);
+      await signUpOrInCustomer(formData.email, campaignId, formData.phone);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not sign you in');
     } finally {
@@ -299,6 +299,19 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
                 className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
                 placeholder="jane@example.com"
               />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Phone Number (optional)</label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
+                placeholder="+49 170 1234567"
+              />
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                Recommended so {campaign.businessName} can reach you about your rewards and reach your card if you lose access to your email.
+              </p>
             </div>
             <div className="space-y-1">
               <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Age (optional)</label>
