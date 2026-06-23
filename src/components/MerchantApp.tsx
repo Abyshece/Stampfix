@@ -149,7 +149,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         alert(err instanceof Error ? err.message : 'Stamp failed');
       }
     },
-    [campaign, refreshActivities],
+    [campaign, refreshActivities, cards],
   );
 
   const handleResetCard = useCallback(

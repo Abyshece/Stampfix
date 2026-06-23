@@ -362,7 +362,12 @@ export async function addStamp(cardId: string, maxStamps: number): Promise<UserC
   if (fetchErr) throw fetchErr;
   const row = existing as CardRow;
   if (row.status === 'BLOCKED') throw new Error('Card is blocked');
-  if (row.current_stamps >= maxStamps) return toCard(row); // already full
+  // The card's frozen snapshot is the source of truth for its goal — never
+  // trust a maxStamps passed from the UI (it can be stale, or fall back to a
+  // since-changed campaign value). Use the argument only for legacy rows that
+  // predate the snapshot column.
+  const effectiveMax = row.max_stamps_snapshot ?? maxStamps;
+  if (row.current_stamps >= effectiveMax) return toCard(row); // already full
 
   const { data, error } = await supabase
     .from('cards')
