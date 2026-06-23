@@ -71,7 +71,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const [logoText, setLogoText] = useState('');
   const [selectedColor, setSelectedColor] = useState(NOTION_COLORS[0].hex);
   const [selectedIcon, setSelectedIcon] = useState('☕️');
-  const [maxStamps, setMaxStamps] = useState(6);
+  const [maxStamps, setMaxStamps] = useState(8);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   // Primary location name. Defaults to the business name so single-
   // location merchants don't have to think about it; multi-location ones
@@ -237,8 +237,8 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
             Click it to activate your workspace, then come back here and sign in.
           </p>
           <div className="bg-[#F7F7F5] border notion-border rounded-lg p-4 text-xs text-gray-500 text-left">
-            <strong>Heads up:</strong> Your workspace details ({busName}, {maxStamps} stamps,{' '}
-            {selectedIcon}) will be set up automatically the first time you sign in after confirming.
+            <strong>Heads up:</strong> Your workspace details ({busName}, {maxStamps} stamps)
+            will be set up automatically the first time you sign in after confirming.
           </div>
           <button
             onClick={handleSwitchToLogin}
@@ -414,73 +414,15 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Logo Text</label>
-                <input
-                  value={logoText}
-                  onChange={(e) => setLogoText(e.target.value)}
-                  className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-                  placeholder="ACME"
-                  maxLength={10}
-                />
-              </div>
-              <div className="space-y-1 relative">
-                <label className="text-sm font-medium">Stamp Icon</label>
-                <div className="flex gap-2">
-                  <input
-                    value={selectedIcon}
-                    onChange={(e) => setSelectedIcon(e.target.value)}
-                    className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 text-center"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                    className="px-3 bg-[#F7F7F5] border-b notion-border rounded hover:bg-gray-200 flex items-center justify-center text-gray-500"
-                  >
-                    <Smile className="w-4 h-4" />
-                  </button>
-                </div>
-                {showEmojiPicker && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)}></div>
-                    <div className="absolute top-full right-0 mt-2 z-50 bg-white border notion-border shadow-xl rounded-lg p-2 w-64 h-64 overflow-y-auto grid grid-cols-5 gap-1">
-                      {EMOJI_LIST.map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          onClick={() => {
-                            setSelectedIcon(emoji);
-                            setShowEmojiPicker(false);
-                          }}
-                          className="w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded transition"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">Card Color</label>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {NOTION_COLORS.map((c) => (
-                  <button
-                    key={c.hex}
-                    type="button"
-                    onClick={() => setSelectedColor(c.hex)}
-                    className={`w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center transition ${
-                      selectedColor === c.hex ? 'ring-2 ring-offset-2 ring-gray-900 scale-110' : 'hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: c.hex }}
-                    title={c.name}
-                  >
-                    {selectedColor === c.hex && <Check className="w-4 h-4 text-white drop-shadow-md" />}
-                  </button>
-                ))}
-              </div>
+              <label className="text-sm font-medium">Logo Text</label>
+              <input
+                value={logoText}
+                onChange={(e) => setLogoText(e.target.value)}
+                className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                placeholder="ACME"
+                maxLength={10}
+              />
             </div>
           </div>
 
@@ -501,7 +443,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
               </label>
               <input
                 type="range"
-                min={3}
+                min={4}
                 max={12}
                 step={1}
                 value={maxStamps}

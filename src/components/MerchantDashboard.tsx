@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'react-qr-code';
 import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, MerchantBilling } from '../types';
 import {
@@ -82,7 +82,14 @@ export function MerchantDashboard({
   onStampCard, onResetCard, onRedeemToken, onUpdateCampaign,
   onAddCustomer, onDeleteCustomer, onBlockCustomer, onMarkOnboardingStep, onLogout,
 }: MerchantDashboardProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('DASHBOARD');
+  const [activeTab, setActiveTab] = useState<Tab>(
+    () => (sessionStorage.getItem('sf_active_tab') as Tab) || 'DASHBOARD',
+  );
+  // Keep the open tab sticky so opening a poster (or any re-render) never
+  // bounces the merchant back to the dashboard.
+  useEffect(() => {
+    sessionStorage.setItem('sf_active_tab', activeTab);
+  }, [activeTab]);
   const toast = useToast();
   const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
 
@@ -1185,8 +1192,8 @@ export function MerchantDashboard({
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase">Max Stamps</label>
-                    <input type="number" min={3} max={20} value={tempSettings.maxStamps}
-                      onChange={(e) => setTempSettings({ ...tempSettings, maxStamps: parseInt(e.target.value) || 6 })}
+                    <input type="number" min={4} max={12} value={tempSettings.maxStamps}
+                      onChange={(e) => setTempSettings({ ...tempSettings, maxStamps: Math.max(4, Math.min(12, parseInt(e.target.value) || 4)) })}
                       className="w-full bg-[#F7F7F5] border notion-border rounded px-3 py-2 text-sm" />
                   </div>
                 </div>

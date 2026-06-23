@@ -23,6 +23,7 @@ import { syncWalletObject } from '../services/googleWallet';
 import { redeemStampToken } from '../services/stampToken';
 import { MerchantOnboarding, consumePendingCampaign } from './MerchantOnboarding';
 import { MerchantDashboard } from './MerchantDashboard';
+import { BrandLoading } from './BrandLoading';
 import { OnboardingWizard } from './OnboardingWizard';
 
 interface MerchantAppProps {
@@ -56,7 +57,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     if (id) localStorage.setItem('stampfix_active_location_id', id);
     else localStorage.removeItem('stampfix_active_location_id');
   }, []);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadAll = useCallback(async () => {
     if (!user) {
@@ -312,11 +313,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   }, [onLogout]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-gray-400">
-        <Loader2 className="w-6 h-6 animate-spin" />
-      </div>
-    );
+    return <BrandLoading />;
   }
 
   if (!campaign) {

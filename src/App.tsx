@@ -10,6 +10,7 @@ import { TermsOfService } from './components/legal/TermsOfService';
 import { DataProcessingAgreement } from './components/legal/DataProcessingAgreement';
 import { MyCardPage } from './components/MyCardPage';
 import { AdminPanel } from './components/AdminPanel';
+import { BrandLoading } from './components/BrandLoading';
 
 /**
  * Top-level routing.
@@ -23,7 +24,7 @@ import { AdminPanel } from './components/AdminPanel';
 type View = 'landing' | 'merchant';
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [campaignFromUrl, setCampaignFromUrl] = useState<string | null>(null);
   const [locationFromUrl, setLocationFromUrl] = useState<string | null>(null);
   const [showConfirmed, setShowConfirmed] = useState(false);
@@ -193,6 +194,13 @@ export default function App() {
         }}
       />
     );
+  }
+
+  // Resolve auth (and, for a signed-in user, the merchant orphan check)
+  // before choosing between the dashboard and the public landing page —
+  // otherwise we flash Landing/signup for a beat before settling.
+  if (authLoading || (user && !orphanCheckDone)) {
+    return <BrandLoading />;
   }
 
   // 3) Merchant flow (login form if signed out, dashboard if signed in).
