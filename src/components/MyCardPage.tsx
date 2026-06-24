@@ -30,9 +30,10 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
   const [error, setError] = useState<string | null>(null);
   // Turnstile token for anti-bot protection on the magic-link request.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  // True once we've emailed a sign-in link (fallback for accounts we can't
-  // sign in instantly).
+  // True once we've emailed a sign-in code (fallback for accounts we can't
+  // sign in instantly). otp holds the code the user types back in.
   const [linkSent, setLinkSent] = useState(false);
+  const [otp, setOtp] = useState('');
 
   // Card data (once logged in)
   const [cards, setCards] = useState<UserCard[]>([]);
@@ -195,6 +196,28 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
     }
   };
 
+  const handleVerifyOtp = async () => {
+    setError(null);
+    if (otp.length < 6) return;
+    setSending(true);
+    const cleanEmail = email.trim().toLowerCase();
+    try {
+      // The email delivers a 6-digit code. Verify it directly. Try the plain
+      // email-OTP type first, then the magic-link type, since projects differ
+      // in which one a sign-in code is issued under.
+      let res = await supabase.auth.verifyOtp({ email: cleanEmail, token: otp, type: 'email' });
+      if (res.error) {
+        res = await supabase.auth.verifyOtp({ email: cleanEmail, token: otp, type: 'magiclink' });
+      }
+      if (res.error) throw res.error;
+      // Auth state change re-renders into the signed-in branch.
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Invalid or expired code. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     setEmail('');
@@ -224,17 +247,40 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
             </div>
           )}
           {linkSent ? (
-            <div className="text-center space-y-3 py-8">
+            <div className="text-center space-y-4 py-6">
               <div className="w-12 h-12 mx-auto bg-[#37352F] rounded-full flex items-center justify-center">
                 <Mail className="w-6 h-6 text-white" />
               </div>
               <h2 className="text-2xl font-serif-display font-semibold">Check your email</h2>
               <p className="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
-                We sent a sign-in link to <strong className="text-[#37352F]">{email}</strong>.
-                Open it on this device to reach your loyalty card.
+                We sent a 6-digit sign-in code to <strong className="text-[#37352F]">{email}</strong>.
+                Enter it below to reach your loyalty card.
               </p>
+              <div className="space-y-3 max-w-[15rem] mx-auto">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="123456"
+                  autoFocus
+                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 text-center text-lg font-semibold tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleVerifyOtp(); }}
+                />
+                {error && (
+                  <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{error}</div>
+                )}
+                <button
+                  onClick={handleVerifyOtp}
+                  disabled={otp.length < 6 || sending}
+                  className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium text-sm hover:bg-opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Verify & sign in'}
+                </button>
+              </div>
               <button
-                onClick={() => { setLinkSent(false); setError(null); }}
+                onClick={() => { setLinkSent(false); setError(null); setOtp(''); }}
                 className="text-xs text-gray-400 hover:text-[#37352F] transition underline"
               >
                 Use a different email
