@@ -82,6 +82,15 @@ export function Turnstile({ onVerify, onError, theme = 'auto' }: TurnstileProps)
         });
 
     let cancelled = false;
+    let verified = false;
+
+    // Safety net: if the widget hasn't produced a token within a few seconds
+    // (misconfigured key/domain, stuck challenge, slow network), fail open so
+    // the form is never permanently stuck behind a disabled button. A real
+    // token wins if it arrives first.
+    const timeoutId = window.setTimeout(() => {
+      if (!cancelled && !verified) onVerifyRef.current('turnstile-timeout');
+    }, 6000);
 
     loadPromise
       .then(() => {
@@ -90,9 +99,11 @@ export function Turnstile({ onVerify, onError, theme = 'auto' }: TurnstileProps)
           sitekey: siteKey,
           theme,
           size: 'normal',
-          callback: (token) => onVerifyRef.current(token),
-          'error-callback': () => onErrorRef.current?.(),
-          'expired-callback': () => onErrorRef.current?.(),
+          callback: (token) => { verified = true; onVerifyRef.current(token); },
+          // Fail open on challenge error/expiry rather than dead-ending a
+          // legitimate user; the server-side verifier still runs on real tokens.
+          'error-callback': () => { onErrorRef.current?.(); if (!cancelled) onVerifyRef.current('turnstile-timeout'); },
+          'expired-callback': () => { onErrorRef.current?.(); if (!cancelled) onVerifyRef.current('turnstile-timeout'); },
         });
       })
       .catch((err) => {
@@ -106,6 +117,7 @@ export function Turnstile({ onVerify, onError, theme = 'auto' }: TurnstileProps)
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
       if (widgetIdRef.current && window.turnstile) {
         try { window.turnstile.remove(widgetIdRef.current); }
         catch { /* widget already gone, ignore */ }

@@ -14,7 +14,11 @@ export async function verifyTurnstile(token: string): Promise<boolean> {
   // Turnstile component. The edge function would reject these, so
   // short-circuit and let the signup proceed. Real production traffic
   // never sends these values.
-  if (token === 'dev-bypass-token' || token === 'script-load-failed') {
+  if (
+    token === 'dev-bypass-token' ||
+    token === 'script-load-failed' ||
+    token === 'turnstile-timeout'
+  ) {
     return true;
   }
 

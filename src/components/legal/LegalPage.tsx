@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { Logo } from '../Logo';
 
 interface LegalPageProps {
   title: string;
@@ -18,7 +19,7 @@ export function LegalPage({ title, lastUpdated, children }: LegalPageProps) {
       <header className="border-b notion-border sticky top-0 bg-white/90 backdrop-blur-sm z-10">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 font-semibold text-sm hover:opacity-70 transition">
-            <div className="w-6 h-6 bg-[#37352F] rounded-sm flex items-center justify-center text-white text-xs font-bold">S</div>
+            <Logo className="h-6 w-auto text-[#37352F]" />
             Stampfix
           </a>
           <a href="/" className="text-sm text-gray-500 hover:text-[#37352F] flex items-center gap-1 transition">

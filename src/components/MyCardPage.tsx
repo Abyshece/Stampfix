@@ -9,6 +9,7 @@ import { Turnstile } from './Turnstile';
 import { verifyTurnstile } from '../services/turnstile';
 import { DownloadMyDataButton } from './DownloadMyDataButton';
 import { AddToAppleWalletButton } from './AddToAppleWalletButton';
+import { Logo } from './Logo';
 
 /**
  * Self-service page where any customer can look up their loyalty cards.
@@ -151,18 +152,20 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
   const handleSendLink = async () => {
     setError(null);
     if (!email.trim()) return;
-    if (!turnstileToken) {
-      setError('Please complete the security check.');
-      return;
-    }
     setSending(true);
     try {
-      const ok = await verifyTurnstile(turnstileToken);
-      if (!ok) {
-        setError('Security check failed. Please try again.');
-        setTurnstileToken(null);
-        setSending(false);
-        return;
+      // Best-effort bot check. Never dead-end a real customer trying to reach
+      // their own card: only block if Turnstile actively rejects a real token.
+      // A missing or fail-open token still proceeds — the email + derived
+      // password is the real authentication gate.
+      if (turnstileToken) {
+        const ok = await verifyTurnstile(turnstileToken);
+        if (!ok) {
+          setError('Security check failed. Please try again.');
+          setTurnstileToken(null);
+          setSending(false);
+          return;
+        }
       }
       // Frictionless login: derive the customer's password and sign in
       // immediately. No email/code round-trip. If they have any cards,
@@ -231,7 +234,7 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
             />
             <button
               onClick={handleSendLink}
-              disabled={!email.trim() || !turnstileToken || sending}
+              disabled={!email.trim() || sending}
               className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium text-sm hover:bg-opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : (
@@ -341,7 +344,7 @@ function Shell({
       <header className="border-b notion-border sticky top-0 bg-white/95 backdrop-blur-sm z-10">
         <div className="max-w-md mx-auto px-5 py-3 flex items-center justify-between">
           <button onClick={onExit} className="flex items-center gap-2 text-sm hover:opacity-70 transition">
-            <div className="w-6 h-6 bg-[#37352F] rounded-sm flex items-center justify-center text-white text-xs font-bold font-serif-display">S</div>
+            <Logo className="h-6 w-auto text-[#37352F]" />
             <span className="font-semibold">Stampfix</span>
           </button>
           {onSignOut ? (
