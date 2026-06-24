@@ -57,6 +57,7 @@ export interface MerchantRow {
   estimated_mrr_cents: number;
   estimated_total_cents: number;
   admin_notes: string | null;
+  phone: string | null;
 }
 
 export interface CustomerCardDetail {
@@ -86,6 +87,7 @@ export interface CustomerRow {
   merchants_list: string;
   any_deletion_pending: boolean;
   cards_detail: CustomerCardDetail[];
+  phone: string | null;
 }
 
 export interface TicketRow {
@@ -139,13 +141,31 @@ export async function fetchRangedKPIs(fromDate: Date, toDate: Date): Promise<Ran
   return data as RangedKPIs | null;
 }
 
+/** Resolve signup phones (stored in auth user metadata) for a set of auth
+ *  user ids and write them onto the rows in place. Best-effort: on failure
+ *  the rows simply keep phone = null. */
+async function attachPhones(
+  rows: Array<{ phone?: string | null }>,
+  ids: string[],
+): Promise<void> {
+  if (ids.length === 0) return;
+  const { data, error } = await supabase.rpc('admin_user_phones', { ids });
+  if (error) { console.warn('[admin] phone lookup failed', error); return; }
+  const map = new Map<string, string | null>(
+    ((data ?? []) as Array<{ id: string; phone: string | null }>).map((p) => [p.id, p.phone]),
+  );
+  rows.forEach((row, i) => { row.phone = map.get(ids[i]) ?? null; });
+}
+
 export async function listMerchants(searchTerm?: string, limit = 100): Promise<MerchantRow[]> {
   const { data, error } = await supabase.rpc('admin_list_merchants', {
     search_term: searchTerm ?? null,
     limit_to: limit,
   });
   if (error) throw error;
-  return (data ?? []) as MerchantRow[];
+  const rows = (data ?? []) as MerchantRow[];
+  await attachPhones(rows, rows.map((r) => r.id));
+  return rows;
 }
 
 export async function listCustomers(
@@ -159,7 +179,9 @@ export async function listCustomers(
     limit_to: limit,
   });
   if (error) throw error;
-  return (data ?? []) as CustomerRow[];
+  const rows = (data ?? []) as CustomerRow[];
+  await attachPhones(rows, rows.map((r) => r.customer_id));
+  return rows;
 }
 
 export async function listTickets(

@@ -428,6 +428,7 @@ function B2BTab() {
                           <div>
                             <div className="font-medium truncate max-w-[220px]">{m.business_name || '—'}</div>
                             <div className="text-xs text-gray-500 truncate max-w-[220px]">{m.email}</div>
+                            {m.phone && <div className="text-xs text-gray-500 truncate max-w-[220px]">📞 {m.phone}</div>}
                             {m.registered_company_name && (
                               <div className="text-[10px] text-gray-400 truncate max-w-[220px]" title={m.registered_company_name}>
                                 {m.registered_company_name}
@@ -538,6 +539,7 @@ function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; o
         <DetailRow label="Business" value={merchant.business_name || '—'} />
         <DetailRow label="Registered" value={merchant.registered_company_name || <span className="text-gray-400 italic">Not set</span>} />
         <DetailRow label="Email" value={merchant.email} />
+        <DetailRow label="Phone" value={merchant.phone || <span className="text-gray-400 italic">Not provided</span>} />
         <DetailRow label="Country" value={merchant.country ?? '—'} />
       </div>
       {/* Activity */}
@@ -734,7 +736,10 @@ function B2B2CTab() {
                         )}
                       </td>
                       <td className="px-3 py-3 font-medium text-sm">{c.customer_name || '—'}</td>
-                      <td className="px-3 py-3 text-xs text-gray-600">{c.email || '—'}</td>
+                      <td className="px-3 py-3 text-xs text-gray-600">
+                        {c.email || '—'}
+                        {c.phone && <div className="text-gray-400">📞 {c.phone}</div>}
+                      </td>
                       <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
                         {new Date(c.active_since).toLocaleDateString()}
                       </td>

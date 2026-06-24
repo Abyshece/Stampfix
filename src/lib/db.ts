@@ -186,10 +186,10 @@ export async function setMerchantApproval(
   merchantId: string,
   status: 'pending' | 'approved' | 'rejected',
 ): Promise<void> {
-  const { error } = await supabase
-    .from('campaigns')
-    .update({ approval_status: status })
-    .eq('merchant_id', merchantId);
+  const { error } = await supabase.rpc('admin_set_merchant_approval', {
+    merchant_id_in: merchantId,
+    new_status: status,
+  });
   if (error) throw error;
 }
 
@@ -197,13 +197,11 @@ export async function setMerchantApproval(
 export async function getMerchantApproval(
   merchantId: string,
 ): Promise<'pending' | 'approved' | 'rejected' | null> {
-  const { data, error } = await supabase
-    .from('campaigns')
-    .select('approval_status')
-    .eq('merchant_id', merchantId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('admin_get_merchant_approval', {
+    merchant_id_in: merchantId,
+  });
   if (error) throw error;
-  return (data?.approval_status as 'pending' | 'approved' | 'rejected') ?? null;
+  return (data as 'pending' | 'approved' | 'rejected') ?? null;
 }
 
 export async function updateCampaign(id: string, patch: Partial<Campaign>): Promise<Campaign> {
