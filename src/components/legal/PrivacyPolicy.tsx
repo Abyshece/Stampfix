@@ -238,7 +238,18 @@ export function PrivacyPolicy() {
         the “Last updated” date. Material changes will be communicated to Merchants by email.
       </p>
 
-      <LegalH2>12. Contact</LegalH2>
+      <LegalH2>12. Cookies and similar technologies</LegalH2>
+      <p>
+        We use only strictly necessary cookies and local storage — the items required to make the
+        Service work. These keep you signed in (your authentication session) and protect the signup
+        and login forms against bots and abuse (Cloudflare Turnstile). We do <strong>not</strong> use
+        advertising, analytics, or cross-site tracking cookies, and we do not sell or share data for
+        behavioural advertising. Because we set only essential cookies, no cookie-consent banner is
+        required under the ePrivacy Directive and GDPR. You can clear cookies in your browser at any
+        time; doing so will sign you out.
+      </p>
+
+      <LegalH2>13. Contact</LegalH2>
       <p>
         Questions about this policy or your personal information? Email{' '}
         privacy@stampfix.app or write to{' '}

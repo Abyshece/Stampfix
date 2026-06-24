@@ -41,6 +41,8 @@ export function LegalPage({ title, lastUpdated, children }: LegalPageProps) {
           <div className="flex gap-6">
             <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>
             <a href="/terms" className="hover:text-[#37352F]">Terms</a>
+            <a href="/dpa" className="hover:text-[#37352F]">DPA</a>
+            <a href="/impressum" className="hover:text-[#37352F]">Impressum</a>
           </div>
         </div>
       </footer>

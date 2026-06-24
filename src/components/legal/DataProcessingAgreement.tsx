@@ -72,10 +72,13 @@ export function DataProcessingAgreement() {
         <li><strong>Resend</strong> — Transactional email delivery.</li>
         <li><strong>Stripe Inc.</strong> — Payment processing (Merchant subscription billing only; not customer data).</li>
         <li><strong>Google LLC</strong> — Google Wallet pass distribution (where the customer opts in).</li>
+        <li><strong>Apple Inc.</strong> — Apple Wallet pass distribution and push updates (where the customer opts in).</li>
         <li><strong>Cloudflare Inc.</strong> — DDoS protection and Turnstile bot detection.</li>
+        <li><strong>Functional Software, Inc. (Sentry)</strong> — Error monitoring and diagnostics.</li>
       </ul>
       <p>
-        Stampfix will give the Merchant 30 days' notice of any new sub-processor and the opportunity to object on reasonable grounds.
+        The current, canonical list of sub-processors — including each one's purpose, processing location, and transfer mechanism — is maintained at{' '}
+        <a href="/subprocessors" className="underline">stampfix.app/subprocessors</a>. Stampfix will give the Merchant 30 days' notice of any new sub-processor and the opportunity to object on reasonable grounds.
       </p>
 
       <h2>8. International Transfers</h2>

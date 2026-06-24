@@ -540,6 +540,7 @@ export function LandingPage({
           <div className="flex gap-6">
             <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>
             <a href="/terms" className="hover:text-[#37352F]">Terms</a>
+            <a href="/impressum" className="hover:text-[#37352F]">Impressum</a>
             <a href="#contact" className="hover:text-[#37352F]">Contact</a>
           </div>
           <div className="mt-4 md:mt-0">&copy; 2026 Stampfix Inc.</div>

@@ -8,6 +8,8 @@ import { EmailConfirmed } from './components/EmailConfirmed';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { TermsOfService } from './components/legal/TermsOfService';
 import { DataProcessingAgreement } from './components/legal/DataProcessingAgreement';
+import { Impressum } from './components/legal/Impressum';
+import { Subprocessors } from './components/legal/Subprocessors';
 import { MyCardPage } from './components/MyCardPage';
 import { AdminPanel } from './components/AdminPanel';
 import { BrandLoading } from './components/BrandLoading';
@@ -145,6 +147,8 @@ export default function App() {
   if (path === '/privacy') return <PrivacyPolicy />;
   if (path === '/terms') return <TermsOfService />;
   if (path === '/dpa') return <DataProcessingAgreement />;
+  if (path === '/impressum') return <Impressum />;
+  if (path === '/subprocessors') return <Subprocessors />;
   if (path === '/admin') return <AdminPanel />;
   if (path === '/my-card') {
     return (

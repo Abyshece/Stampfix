@@ -96,6 +96,10 @@ export async function signUpMerchant(
         country,
         marketing_opt_in: marketingOptIn,
         phone: phone?.trim() || null,
+        // Audit record of the Terms / Privacy / DPA acceptance that the signup
+        // form requires before this function is ever reached.
+        terms_accepted_at: new Date().toISOString(),
+        accepted_documents: ['terms', 'privacy', 'dpa'],
       },
       emailRedirectTo: `${window.location.origin}/?confirmed=1`,
     },
