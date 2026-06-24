@@ -4,8 +4,9 @@ import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, Merch
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle,
+  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield,
 } from 'lucide-react';
+import { useAuth } from '../lib/auth';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { LocationsPanel } from './LocationsPanel';
@@ -92,6 +93,9 @@ export function MerchantDashboard({
   }, [activeTab]);
   const toast = useToast();
   const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
+  // Show the Admin shortcut only for the platform owner's account.
+  const { user } = useAuth();
+  const isStampfixAdmin = (user?.email ?? '').toLowerCase() === 'abyshece@gmail.com';
 
   // Buffered settings
   const [tempSettings, setTempSettings] = useState<Campaign>(campaign);
@@ -469,6 +473,14 @@ export function MerchantDashboard({
                 <Icon className="w-4 h-4" /> {label}
               </button>
             ))}
+            {isStampfixAdmin && (
+              <button
+                onClick={() => { window.location.href = '/admin'; }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition hover:bg-[#EFEFEE] text-gray-600"
+              >
+                <Shield className="w-4 h-4" /> Admin
+              </button>
+            )}
           </div>
         </div>
 
@@ -1382,6 +1394,17 @@ export function MerchantDashboard({
                   <span className="text-xs font-medium">{label}</span>
                 </button>
               ))}
+              {isStampfixAdmin && (
+                <button
+                  onClick={() => { window.location.href = '/admin'; }}
+                  className="flex flex-col items-center gap-2 p-3 rounded-xl border bg-white border-transparent"
+                >
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 text-gray-600">
+                    <Shield className="w-6 h-6" />
+                  </div>
+                  <span className="text-xs font-medium">Admin</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
