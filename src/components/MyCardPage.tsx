@@ -30,6 +30,9 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
   const [error, setError] = useState<string | null>(null);
   // Turnstile token for anti-bot protection on the magic-link request.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // True once we've emailed a sign-in link (fallback for accounts we can't
+  // sign in instantly).
+  const [linkSent, setLinkSent] = useState(false);
 
   // Card data (once logged in)
   const [cards, setCards] = useState<UserCard[]>([]);
@@ -167,13 +170,24 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
           return;
         }
       }
-      // Frictionless login: derive the customer's password and sign in
-      // immediately. No email/code round-trip. If they have any cards,
-      // they'll appear once authenticated. (campaignId is not needed here
-      // since this is the cross-cafe "find my card" entry point — pass an
-      // empty string; it's only used as signup metadata for brand-new users.)
-      await signUpOrInCustomer(email.trim(), '');
-      // Auth state change re-renders into the signed-in branch.
+      try {
+        // Fast path: customers who joined through a program have a derived
+        // password, so we can sign them in instantly — no email round-trip.
+        await signUpOrInCustomer(email.trim(), '');
+        // Auth state change re-renders into the signed-in branch.
+      } catch {
+        // The account exists but instant sign-in doesn't apply (it was created
+        // with a real password — e.g. a merchant account — or needs email
+        // confirmation). Fall back to a real emailed sign-in link, which works
+        // regardless of how the account was created. This is what the form
+        // copy already promises.
+        const { error: otpErr } = await supabase.auth.signInWithOtp({
+          email: email.trim().toLowerCase(),
+          options: { emailRedirectTo: `${window.location.origin}/my-card` },
+        });
+        if (otpErr) throw otpErr;
+        setLinkSent(true);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not sign you in');
     } finally {
@@ -209,6 +223,25 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
               {linkError}
             </div>
           )}
+          {linkSent ? (
+            <div className="text-center space-y-3 py-8">
+              <div className="w-12 h-12 mx-auto bg-[#37352F] rounded-full flex items-center justify-center">
+                <Mail className="w-6 h-6 text-white" />
+              </div>
+              <h2 className="text-2xl font-serif-display font-semibold">Check your email</h2>
+              <p className="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
+                We sent a sign-in link to <strong className="text-[#37352F]">{email}</strong>.
+                Open it on this device to reach your loyalty card.
+              </p>
+              <button
+                onClick={() => { setLinkSent(false); setError(null); }}
+                className="text-xs text-gray-400 hover:text-[#37352F] transition underline"
+              >
+                Use a different email
+              </button>
+            </div>
+          ) : (
+          <>
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-serif-display font-semibold">Find my loyalty card</h2>
             <p className="text-sm text-gray-500 leading-relaxed max-w-sm mx-auto">
@@ -254,6 +287,8 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
           <p className="text-[11px] text-gray-400 text-center">
             Haven't signed up yet? Scan a merchant's QR poster to join their program.
           </p>
+          </>
+          )}
         </div>
       </Shell>
     );
