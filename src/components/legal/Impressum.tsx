@@ -35,7 +35,11 @@ export function Impressum() {
 
       <LegalH2>Vertreten durch / Represented by</LegalH2>
       <p>
-        <Placeholder>Authorized representative — full legal name &amp; role</Placeholder>
+        Abhishek Abhishek (Vertreter / Representative)<br />
+        28-16223 23A Ave<br />
+        Surrey, BC V3Z 6P4<br />
+        Kanada / Canada<br />
+        E-Mail: abyshece@gmail.com
       </p>
 
       <LegalH2>Kontakt / Contact</LegalH2>
