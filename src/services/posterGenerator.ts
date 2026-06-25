@@ -53,27 +53,30 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
   };
 
-  // Poster background: the art is built for white text + a yellow accent, so
-  // it MUST be dark. Honour an explicit dark colour (override or stored),
-  // otherwise fall back to charcoal so the text never washes out on a pale
-  // colour (this is what made the downloaded PDF look grey).
-  let posterBg = posterBgOverride ?? campaign.posterColor ?? campaign.primaryColor ?? '#37352F';
-  if (!isHex(posterBg) || lumOf(posterBg as string) > 165) posterBg = '#37352F';
+  // Poster background: clean white by default. Honour an explicit colour
+  // from the picker / campaign; otherwise white.
+  let posterBg = posterBgOverride ?? campaign.posterColor ?? campaign.primaryColor ?? '#FFFFFF';
+  if (!isHex(posterBg)) posterBg = '#FFFFFF';
 
-  // Dummy-card colour: the customer's real card colour (their brand colour),
-  // independent of the poster background. Soft coral as a friendly default.
+  // Adaptive theme: dark ink on a light background, white ink on a dark one.
+  const lightBg = lumOf(posterBg) > 150;
+  const ink = lightBg ? '#1A1A1A' : '#FFFFFF';
+  const inkSoft = lightBg ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)';
+  const vbrand = lightBg ? '#9B8B66' : '#FBBF24';
+
+  // Dummy-card colour: the customer's real card colour, or a creamy default.
   const cardBg = isHex(campaign.primaryColor)
     ? (campaign.primaryColor as string)
     : isHex(campaign.posterColor)
       ? (campaign.posterColor as string)
-      : '#F3C9C2';
+      : '#f0ece1';
   const cardInk = isHex(cardBg) && lumOf(cardBg) > 150 ? '#26314D' : '#FFFFFF';
 
   const markPaths =
     `<rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/>` +
     `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/>` +
     `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/>`;
-  const markHex = isHex(posterBg) && lumOf(posterBg) > 150 ? '#1A1A1A' : '#FFFFFF';
+  const markHex = lightBg ? '#1A1A1A' : '#FFFFFF';
   const brandMark =
     `<svg viewBox="0 0 282 90" style="height:11px;width:auto;vertical-align:middle;margin-right:5px;display:inline-block" fill="${markHex}">${markPaths}</svg>`;
   const cardMark =
@@ -122,6 +125,9 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__BUSINESS_NAME_RAW__', esc(businessNameRaw))
     .replaceAll('__CARD_BG__',        cardBg)
     .replaceAll('__CARD_INK__',       cardInk)
+    .replaceAll('__INK__',            ink)
+    .replaceAll('__INK_SOFT__',       inkSoft)
+    .replaceAll('__VBRAND__',         vbrand)
     .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
     .replaceAll('__SIZE__',           input.size);
 }
@@ -231,7 +237,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
 <style>
   /* Reset + sensible defaults */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Helvetica Neue', 'Segoe UI', Arial, sans-serif; background: #f5f5f5; }
+  body {
+    font-family: 'Helvetica Neue', 'Segoe UI', Arial, sans-serif; background: #f5f5f5;
+    --ink: __INK__; --ink-soft: __INK_SOFT__; --vbrand: __VBRAND__;
+  }
 
   /* Each format is its own page. Print rules use the matching @page. */
   @media print {
@@ -263,7 +272,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-card {
     width: 850px; height: 550px;
     background: __POSTER_BG__;
-    color: white; position: relative; overflow: hidden;
+    color: var(--ink); position: relative; overflow: hidden;
     display: flex; margin: 30px auto; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   }
   .size-card .bc-left {
@@ -325,9 +334,9 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-card .bc-powered {
     position: absolute; bottom: 16px; left: 40px;
     font-size: 11px; font-weight: 600;
-    color: rgba(255,255,255,0.6); letter-spacing: 1.5px; z-index: 3;
+    color: var(--ink-soft); letter-spacing: 1.5px; z-index: 3;
   }
-  .size-card .bc-powered strong { color: rgba(255,255,255,0.85); }
+  .size-card .bc-powered strong { color: var(--ink); }
 
   /* ============================
    *  A5 PAMPHLET (210x148mm landscape)
@@ -336,7 +345,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-pamphlet {
     width: 1123px; height: 794px;
     background: __POSTER_BG__;
-    color: white; position: relative; overflow: hidden; display: flex;
+    color: var(--ink); position: relative; overflow: hidden; display: flex;
     margin: 30px auto; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   }
   .size-pamphlet .pm-vbrand {
@@ -347,7 +356,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-pamphlet .pm-vbrand span {
     writing-mode: vertical-rl; transform: rotate(180deg);
     font-size: 14px; font-weight: 700; letter-spacing: 5px;
-    color: #FBBF24; text-transform: uppercase; white-space: nowrap;
+    color: var(--vbrand); text-transform: uppercase; white-space: nowrap;
   }
   .size-pamphlet .pm-left {
     width: 580px; padding: 60px 40px 80px 90px;
@@ -377,7 +386,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   }
   .size-pamphlet .pm-step .text { flex: 1; min-width: 0; }
   .size-pamphlet .pm-cb {
-    width: 26px; height: 26px; border: 2.5px solid white;
+    width: 26px; height: 26px; border: 2.5px solid var(--ink);
     border-radius: 5px; flex-shrink: 0;
   }
   .size-pamphlet .pm-stepi { width: 30px; font-size: 26px; text-align: center; flex-shrink: 0; }
@@ -405,9 +414,9 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-pamphlet .pm-powered {
     position: absolute; bottom: 24px; left: 90px;
     font-size: 12px; font-weight: 600;
-    color: rgba(255,255,255,0.55); letter-spacing: 2px; z-index: 3;
+    color: var(--ink-soft); letter-spacing: 2px; z-index: 3;
   }
-  .size-pamphlet .pm-powered strong { color: rgba(255,255,255,0.85); }
+  .size-pamphlet .pm-powered strong { color: var(--ink); }
 
   /* ============================
    *  A4 POSTER (210x297mm portrait)
@@ -416,7 +425,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-poster {
     width: 794px; height: 1123px;
     background: __POSTER_BG__;
-    color: white; position: relative; overflow: hidden;
+    color: var(--ink); position: relative; overflow: hidden;
     margin: 30px auto; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   }
   .size-poster .ps-vbrand {
@@ -427,7 +436,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-poster .ps-vbrand span {
     writing-mode: vertical-rl; transform: rotate(180deg);
     font-size: 16px; font-weight: 700; letter-spacing: 7px;
-    color: #FBBF24; text-transform: uppercase; white-space: nowrap;
+    color: var(--vbrand); text-transform: uppercase; white-space: nowrap;
   }
   .size-poster .ps-content {
     position: absolute; inset: 0;
@@ -459,7 +468,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   }
   .size-poster .ps-step .text { flex: 1; min-width: 0; }
   .size-poster .ps-cb {
-    width: 32px; height: 32px; border: 3px solid white;
+    width: 32px; height: 32px; border: 3px solid var(--ink);
     border-radius: 6px; flex-shrink: 0;
   }
   .size-poster .ps-stepi { width: 36px; font-size: 30px; text-align: center; flex-shrink: 0; }
@@ -482,9 +491,9 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-poster .ps-powered {
     position: absolute; bottom: 36px; left: 100px;
     font-size: 13px; font-weight: 600;
-    color: rgba(255,255,255,0.55); letter-spacing: 2.5px; z-index: 3;
+    color: var(--ink-soft); letter-spacing: 2.5px; z-index: 3;
   }
-  .size-poster .ps-powered strong { color: rgba(255,255,255,0.85); }
+  .size-poster .ps-powered strong { color: var(--ink); }
 
   /* ============================
    *  DUMMY LOYALTY CARD (shared by pamphlet + poster)
@@ -496,7 +505,8 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     background: __CARD_BG__; color: __CARD_INK__;
     border-radius: 22px; padding: 22px 24px; width: 100%;
     box-sizing: border-box;
-    box-shadow: 0 24px 50px rgba(0,0,0,0.38);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    border: 1px solid rgba(0,0,0,0.07);
     display: flex; flex-direction: column; gap: 18px;
   }
   .dummy-card .dc-top {
@@ -546,26 +556,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
    *  A white card on the coloured background with a yellow-framed QR
    *  so it's unmistakably the thing to scan.
    * ============================ */
-  .scan-cta {
-    background: #fff; border-radius: 16px; padding: 18px 20px;
-    box-shadow: 0 14px 34px rgba(0,0,0,0.30);
-    display: flex; flex-direction: column; align-items: center;
-    gap: 10px; text-align: center; width: fit-content;
-  }
-  .scan-cta .sc-big {
-    font-size: 20px; font-weight: 900; letter-spacing: 0.5px;
-    text-transform: uppercase; color: #111827; line-height: 1;
-  }
-  .scan-cta .sc-qr {
-    background: #fff; border: 4px solid #FBBF24;
-    border-radius: 10px; padding: 6px; line-height: 0;
-  }
-  .scan-cta .sc-qr img { display: block; width: 132px; height: 132px; }
-  .scan-cta .sc-sub {
-    font-size: 12px; font-weight: 600; color: #6B7280; max-width: 210px;
-  }
-  .size-poster .scan-cta .sc-big { font-size: 24px; }
-  .size-poster .scan-cta .sc-qr img { width: 140px; height: 140px; }
+  /* "Scan to join" — just the QR itself (no card, border or labels). */
+  .scan-cta { display: flex; justify-content: center; }
+  .scan-cta img { display: block; width: 168px; height: 168px; }
+  .size-poster .scan-cta img { width: 196px; height: 196px; }
 </style>
 </head>
 <body data-size="__SIZE__">
@@ -632,11 +626,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="dc-field dc-reward"><span>Reward</span><b>__OFFER_TITLE__</b></div>
         </div>
       </div>
-      <div class="scan-cta">
-        <div class="sc-big">Scan to join</div>
-        <div class="sc-qr"><img src="__QR_URL__" alt="Scan to join" /></div>
-        <div class="sc-sub">Point your phone camera here — no app needed</div>
-      </div>
+      <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
       <div class="pm-starburst">
         <div class="pm-starburst-inner">__STARBURST__</div>
       </div>
@@ -679,11 +669,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="dc-field dc-reward"><span>Reward</span><b>__OFFER_TITLE__</b></div>
         </div>
       </div>
-      <div class="scan-cta">
-        <div class="sc-big">Scan to join</div>
-        <div class="sc-qr"><img src="__QR_URL__" alt="Scan to join" /></div>
-        <div class="sc-sub">Point your phone camera here — no app needed</div>
-      </div>
+      <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
     </div>
     <div class="ps-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
