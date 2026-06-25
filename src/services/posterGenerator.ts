@@ -38,6 +38,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
 
   // ----- Resolve dynamic values from the campaign -----
   const businessName = (campaign.businessName || 'Your Business').toUpperCase();
+  const businessNameRaw = campaign.businessName || 'Your Business';
   // Use logoText (the merchant's 1-3 word tagline) for the vertical
   // brand strip if set, otherwise fall back to business name.
   const verticalBrand = (campaign.logoText || campaign.businessName || 'STAMPFIX').toUpperCase();
@@ -45,23 +46,38 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   const offerTitle = campaign.offerTitle || 'Collect stamps, get a reward';
   const maxStamps = campaign.maxStamps || 6;
 
-  // Background: caller override > merchant's stored poster_color > fall back to primary
-  const posterBg = posterBgOverride ?? campaign.posterColor ?? campaign.primaryColor;
+  // ----- Colour resolution -----
+  const isHex = (c: unknown) => /^#?([0-9a-fA-F]{6})$/.test(String(c).trim());
+  const lumOf = (c: string) => {
+    const n = parseInt(/^#?([0-9a-fA-F]{6})$/.exec(c.trim())![1], 16);
+    return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  };
 
-  // Brand-mark colour: dark mark on light backgrounds, white on dark ones.
-  // Gradients / unknown formats assume a dark background (white mark).
-  const markHex = (() => {
-    const m = /^#?([0-9a-fA-F]{6})$/.exec(String(posterBg).trim());
-    if (!m) return '#FFFFFF';
-    const n = parseInt(m[1], 16);
-    const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
-    return lum > 150 ? '#1A1A1A' : '#FFFFFF';
-  })();
-  const brandMark =
-    `<svg viewBox="0 0 282 90" style="height:11px;width:auto;vertical-align:middle;margin-right:5px;display:inline-block" fill="${markHex}">` +
+  // Poster background: the art is built for white text + a yellow accent, so
+  // it MUST be dark. Honour an explicit dark colour (override or stored),
+  // otherwise fall back to charcoal so the text never washes out on a pale
+  // colour (this is what made the downloaded PDF look grey).
+  let posterBg = posterBgOverride ?? campaign.posterColor ?? campaign.primaryColor ?? '#37352F';
+  if (!isHex(posterBg) || lumOf(posterBg as string) > 165) posterBg = '#37352F';
+
+  // Dummy-card colour: the customer's real card colour (their brand colour),
+  // independent of the poster background. Soft coral as a friendly default.
+  const cardBg = isHex(campaign.primaryColor)
+    ? (campaign.primaryColor as string)
+    : isHex(campaign.posterColor)
+      ? (campaign.posterColor as string)
+      : '#F3C9C2';
+  const cardInk = isHex(cardBg) && lumOf(cardBg) > 150 ? '#26314D' : '#FFFFFF';
+
+  const markPaths =
     `<rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/>` +
     `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/>` +
-    `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>`;
+    `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/>`;
+  const markHex = isHex(posterBg) && lumOf(posterBg) > 150 ? '#1A1A1A' : '#FFFFFF';
+  const brandMark =
+    `<svg viewBox="0 0 282 90" style="height:11px;width:auto;vertical-align:middle;margin-right:5px;display:inline-block" fill="${markHex}">${markPaths}</svg>`;
+  const cardMark =
+    `<svg viewBox="0 0 282 90" style="height:18px;width:auto;vertical-align:middle;display:inline-block" fill="${cardInk}">${markPaths}</svg>`;
 
   // Yellow stays as the accent across all themes; deep navy as the
   // starburst text color. We assume the merchant's background is dark
@@ -102,6 +118,11 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__STAMPS_GRID__',    buildStampsGrid(maxStamps, icon))
     .replaceAll('__OFFER_PILL__',     esc(condenseOfferForPill(offerTitle, maxStamps)))
     .replaceAll('__BRAND_MARK__',     brandMark)
+    .replaceAll('__CARD_MARK__',      cardMark)
+    .replaceAll('__BUSINESS_NAME_RAW__', esc(businessNameRaw))
+    .replaceAll('__CARD_BG__',        cardBg)
+    .replaceAll('__CARD_INK__',       cardInk)
+    .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
     .replaceAll('__SIZE__',           input.size);
 }
 
@@ -143,6 +164,22 @@ function buildStampsGrid(maxStamps: number, icon: string): string {
  * If the merchant writes something weird, the CSS clip-path still
  * contains it visually.
  */
+function buildDummyStamps(maxStamps: number): string {
+  const kinds = ['sq', 'ci', 'cx'];
+  const n = Math.max(1, maxStamps);
+  const offFrom = Math.max(1, n - 2); // leave the last ~2 unstamped, like a real in-use card
+  let out = '';
+  for (let i = 0; i < n; i++) {
+    const k = kinds[i % 3];
+    const off = i >= offFrom ? ' off' : '';
+    const inner = k === 'cx'
+      ? '<svg viewBox="0 0 40 40"><line x1="8" y1="8" x2="32" y2="32"/><line x1="32" y1="8" x2="8" y2="32"/></svg>'
+      : '';
+    out += `<div class="dc-shape ${k}${off}">${inner}</div>`;
+  }
+  return out;
+}
+
 function formatStarburst(offerTitle: string, _maxStamps: number): string {
   const words = offerTitle.toUpperCase().trim().split(/\s+/);
   if (words.length === 0) return 'JOIN';
@@ -338,7 +375,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     display: flex; align-items: center; gap: 14px;
     font-size: 20px; font-weight: 500;
   }
-  .size-pamphlet .pm-step .text { flex: 1; }
+  .size-pamphlet .pm-step .text { flex: 1; min-width: 0; }
   .size-pamphlet .pm-cb {
     width: 26px; height: 26px; border: 2.5px solid white;
     border-radius: 5px; flex-shrink: 0;
@@ -350,12 +387,12 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     align-items: center; justify-content: center;
   }
   .size-pamphlet .pm-starburst {
-    position: absolute; top: 50px; right: 30px;
-    width: 170px; height: 170px;
+    position: absolute; top: 14px; right: 16px;
+    width: 122px; height: 122px;
     background: #FBBF24; color: #1E3A8A;
     display: flex; align-items: center; justify-content: center;
-    text-align: center; font-size: 13px; font-weight: 900; line-height: 1.2;
-    padding: 28px; transform: rotate(12deg);
+    text-align: center; font-size: 10px; font-weight: 900; line-height: 1.15;
+    padding: 16px; transform: rotate(12deg);
     clip-path: polygon(
       50% 0%, 61% 14%, 75% 5%, 79% 22%, 95% 20%, 90% 38%,
       100% 50%, 90% 62%, 95% 80%, 79% 78%, 75% 95%, 61% 86%,
@@ -402,15 +439,15 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     text-transform: uppercase; margin-bottom: 16px; opacity: 0.95;
   }
   .size-poster .ps-headline {
-    font-size: 130px; font-weight: 900; line-height: 0.92;
-    letter-spacing: -4px; text-transform: uppercase; max-width: 420px;
+    font-size: 100px; font-weight: 900; line-height: 0.92;
+    letter-spacing: -3px; text-transform: uppercase; max-width: 380px;
   }
   .size-poster .ps-subheading {
     font-size: 20px; font-weight: 500; opacity: 0.85;
-    max-width: 320px; margin-top: 16px; line-height: 1.4;
+    max-width: 300px; margin-top: 16px; line-height: 1.4;
   }
   .size-poster .ps-signup {
-    margin-top: auto; width: 380px; max-width: 380px;
+    margin-top: auto; width: 326px; max-width: 326px;
   }
   .size-poster .ps-signup-h {
     font-size: 42px; font-weight: 800; text-transform: uppercase;
@@ -420,7 +457,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     display: flex; align-items: center; gap: 18px;
     margin-bottom: 22px; font-size: 24px; font-weight: 500; line-height: 1.3;
   }
-  .size-poster .ps-step .text { flex: 1; }
+  .size-poster .ps-step .text { flex: 1; min-width: 0; }
   .size-poster .ps-cb {
     width: 32px; height: 32px; border: 3px solid white;
     border-radius: 6px; flex-shrink: 0;
@@ -450,86 +487,57 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-poster .ps-powered strong { color: rgba(255,255,255,0.85); }
 
   /* ============================
-   *  PHONE MOCKUP (shared by pamphlet + poster)
+   *  DUMMY LOYALTY CARD (shared by pamphlet + poster)
+   *  A preview of the card the customer actually gets — replaces the
+   *  old phone mockup. Brand-coloured, with the square / circle / cross
+   *  stamp motif.
    * ============================ */
-  .phone-mockup {
-    background: #1f2937; border-radius: 38px; padding: 8px;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+  .dummy-card {
+    background: __CARD_BG__; color: __CARD_INK__;
+    border-radius: 22px; padding: 22px 24px; width: 100%;
+    box-sizing: border-box;
+    box-shadow: 0 24px 50px rgba(0,0,0,0.38);
+    display: flex; flex-direction: column; gap: 18px;
   }
-  .size-pamphlet .phone-mockup { width: 230px; height: 480px; transform: rotate(5deg); }
-  .size-poster .phone-mockup {
-    position: absolute; right: 50px; top: 320px;
-    width: 250px; height: 470px; transform: rotate(7deg); z-index: 6;
+  .dummy-card .dc-top {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
   }
-  .phone-screen {
-    background: white; height: 100%;
-    border-radius: 30px; overflow: hidden;
-    display: flex; flex-direction: column; color: #111;
-    background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
-    background-size: 12px 12px;
+  .dummy-card .dc-name {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 19px; font-weight: 800; letter-spacing: 0.2px; line-height: 1.1;
   }
-  .phc-header {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    padding: 16px 16px 6px;
+  .dummy-card .dc-sl { text-align: right; line-height: 1; flex-shrink: 0; }
+  .dummy-card .dc-sl span {
+    display: block; font-size: 9px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; opacity: 0.6; margin-bottom: 4px; white-space: nowrap;
   }
-  .phc-left { display: flex; align-items: center; gap: 8px; }
-  .phc-logo {
-    width: 28px; height: 28px; background: #f9fafb;
-    border: 1px solid #f3f4f6; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
+  .dummy-card .dc-sl b { font-size: 26px; font-weight: 800; }
+  .dummy-card .dc-stamps {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; justify-items: center; padding: 2px 0;
   }
-  .phc-biz {
-    font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
-    text-transform: uppercase; line-height: 1.1; max-width: 100px;
+  .dummy-card .dc-shape { width: 36px; height: 36px; }
+  .dummy-card .dc-shape.sq { background: currentColor; border-radius: 7px; }
+  .dummy-card .dc-shape.ci { background: currentColor; border-radius: 50%; }
+  .dummy-card .dc-shape.cx { display: flex; }
+  .dummy-card .dc-shape.cx svg { width: 100%; height: 100%; }
+  .dummy-card .dc-shape.cx svg line { stroke: currentColor; stroke-width: 7; stroke-linecap: round; }
+  .dummy-card .dc-shape.off { opacity: 0.22; }
+  .dummy-card .dc-bottom { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
+  .dummy-card .dc-field span {
+    display: block; font-size: 9px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; opacity: 0.6; margin-bottom: 3px;
   }
-  .phc-stamps-label {
-    font-size: 7px; color: #9ca3af; text-transform: uppercase;
-    font-weight: 700; letter-spacing: 1.5px; margin-bottom: 2px;
+  .dummy-card .dc-field b { font-size: 15px; font-weight: 700; line-height: 1.2; }
+  .dummy-card .dc-reward { text-align: right; max-width: 62%; }
+  .size-pamphlet .dummy-card { max-width: 358px; }
+
+  /* Right-hand rail on the poster: dummy card on top, scan QR below. */
+  .size-poster .ps-rail {
+    position: absolute; right: 44px; top: 312px; bottom: 58px; width: 326px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: space-between; z-index: 7;
   }
-  .phc-stamps { font-size: 18px; font-weight: 700; line-height: 1; }
-  .phc-stamps-area {
-    flex: 1; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; padding: 6px 16px;
-  }
-  .phc-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 18px; margin-bottom: 12px;
-  }
-  .stamp-bubble {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: #f9fafb; border: 1.5px solid #e5e7eb;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; color: #d1d5db; font-size: 14px;
-  }
-  .phc-pill {
-    font-size: 8px; color: #9ca3af; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 1.5px;
-    background: #f9fafb; padding: 4px 12px; border-radius: 999px;
-    border: 1px solid #f3f4f6; max-width: 200px; text-align: center;
-  }
-  .phc-footer {
-    background: #f9fafb; border-top: 1px solid #f3f4f6;
-    padding: 12px 16px;
-  }
-  .phc-footer-row {
-    display: flex; justify-content: space-between; align-items: flex-end;
-    margin-bottom: 10px;
-  }
-  .phc-flabel {
-    font-size: 6px; color: #9ca3af; text-transform: uppercase;
-    font-weight: 700; letter-spacing: 1.5px; margin-bottom: 2px;
-  }
-  .phc-fvalue { font-size: 9px; font-weight: 700; color: #111; }
-  .phc-fvalue.mono {
-    font-family: 'SF Mono', monospace; font-weight: 500;
-    color: #6b7280; font-size: 8px;
-  }
-  .phc-qr-frame {
-    background: white; padding: 5px; border-radius: 5px;
-    border: 1px solid #e5e7eb; width: fit-content; margin: 0 auto;
-  }
-  .phc-qr-frame img { width: 76px; height: 76px; display: block; }
 
   /* ============================
    *  PROMINENT "SCAN TO JOIN" CALL-TO-ACTION
@@ -558,9 +566,6 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   }
   .size-poster .scan-cta .sc-big { font-size: 24px; }
   .size-poster .scan-cta .sc-qr img { width: 140px; height: 140px; }
-  .size-poster .ps-scan {
-    position: absolute; right: 56px; bottom: 50px; z-index: 8;
-  }
 </style>
 </head>
 <body data-size="__SIZE__">
@@ -616,34 +621,15 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
       </div>
     </div>
     <div class="pm-right">
-      <div class="phone-mockup">
-        <div class="phone-screen">
-          <div class="phc-header">
-            <div class="phc-left">
-              <div class="phc-logo">__ICON__</div>
-              <div class="phc-biz">__BUSINESS_NAME__</div>
-            </div>
-            <div style="text-align: right;">
-              <div class="phc-stamps-label">Stamps</div>
-              <div class="phc-stamps">0</div>
-            </div>
-          </div>
-          <div class="phc-stamps-area">
-            <div class="phc-grid">__STAMPS_GRID__</div>
-            <div class="phc-pill">__OFFER_PILL__</div>
-          </div>
-          <div class="phc-footer">
-            <div class="phc-footer-row">
-              <div>
-                <div class="phc-flabel">Holder</div>
-                <div class="phc-fvalue">Alex</div>
-              </div>
-              <div style="text-align: right;">
-                <div class="phc-flabel">Joined</div>
-                <div class="phc-fvalue mono">today</div>
-              </div>
-            </div>
-          </div>
+      <div class="dummy-card">
+        <div class="dc-top">
+          <div class="dc-name">__CARD_MARK__<span>__BUSINESS_NAME_RAW__</span></div>
+          <div class="dc-sl"><span>Stamps left</span><b>2</b></div>
+        </div>
+        <div class="dc-stamps">__DUMMY_STAMPS__</div>
+        <div class="dc-bottom">
+          <div class="dc-field"><span>Member</span><b>Alex</b></div>
+          <div class="dc-field dc-reward"><span>Reward</span><b>__OFFER_TITLE__</b></div>
         </div>
       </div>
       <div class="scan-cta">
@@ -681,40 +667,23 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     <div class="ps-starburst">
       <div class="ps-starburst-inner">__STARBURST__</div>
     </div>
-    <div class="phone-mockup">
-      <div class="phone-screen">
-        <div class="phc-header">
-          <div class="phc-left">
-            <div class="phc-logo">__ICON__</div>
-            <div class="phc-biz">__BUSINESS_NAME__</div>
-          </div>
-          <div style="text-align: right;">
-            <div class="phc-stamps-label">Stamps</div>
-            <div class="phc-stamps">0</div>
-          </div>
+    <div class="ps-rail">
+      <div class="dummy-card">
+        <div class="dc-top">
+          <div class="dc-name">__CARD_MARK__<span>__BUSINESS_NAME_RAW__</span></div>
+          <div class="dc-sl"><span>Stamps left</span><b>2</b></div>
         </div>
-        <div class="phc-stamps-area">
-          <div class="phc-grid">__STAMPS_GRID__</div>
-          <div class="phc-pill">__OFFER_PILL__</div>
-        </div>
-        <div class="phc-footer">
-          <div class="phc-footer-row">
-            <div>
-              <div class="phc-flabel">Holder</div>
-              <div class="phc-fvalue">Alex</div>
-            </div>
-            <div style="text-align: right;">
-              <div class="phc-flabel">Joined</div>
-              <div class="phc-fvalue mono">today</div>
-            </div>
-          </div>
+        <div class="dc-stamps">__DUMMY_STAMPS__</div>
+        <div class="dc-bottom">
+          <div class="dc-field"><span>Member</span><b>Alex</b></div>
+          <div class="dc-field dc-reward"><span>Reward</span><b>__OFFER_TITLE__</b></div>
         </div>
       </div>
-    </div>
-    <div class="ps-scan scan-cta">
-      <div class="sc-big">Scan to join</div>
-      <div class="sc-qr"><img src="__QR_URL__" alt="Scan to join" /></div>
-      <div class="sc-sub">Point your phone camera here — no app needed</div>
+      <div class="scan-cta">
+        <div class="sc-big">Scan to join</div>
+        <div class="sc-qr"><img src="__QR_URL__" alt="Scan to join" /></div>
+        <div class="sc-sub">Point your phone camera here — no app needed</div>
+      </div>
     </div>
     <div class="ps-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
