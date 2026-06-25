@@ -346,7 +346,8 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-pamphlet .pm-stepi { width: 30px; font-size: 26px; text-align: center; flex-shrink: 0; }
   .size-pamphlet .pm-right {
     flex: 1; position: relative; padding-right: 50px;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; gap: 22px;
+    align-items: center; justify-content: center;
   }
   .size-pamphlet .pm-starburst {
     position: absolute; top: 50px; right: 30px;
@@ -455,10 +456,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     background: #1f2937; border-radius: 38px; padding: 8px;
     box-shadow: 0 30px 60px rgba(0,0,0,0.4);
   }
-  .size-pamphlet .phone-mockup { width: 280px; height: 580px; transform: rotate(6deg); }
+  .size-pamphlet .phone-mockup { width: 230px; height: 480px; transform: rotate(5deg); }
   .size-poster .phone-mockup {
     position: absolute; right: 50px; top: 320px;
-    width: 270px; height: 560px; transform: rotate(7deg); z-index: 6;
+    width: 250px; height: 470px; transform: rotate(7deg); z-index: 6;
   }
   .phone-screen {
     background: white; height: 100%;
@@ -529,6 +530,37 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     border: 1px solid #e5e7eb; width: fit-content; margin: 0 auto;
   }
   .phc-qr-frame img { width: 76px; height: 76px; display: block; }
+
+  /* ============================
+   *  PROMINENT "SCAN TO JOIN" CALL-TO-ACTION
+   *  The obvious scan target on the pamphlet + poster. (The in-phone
+   *  QR was only 76px and read as part of the card illustration.)
+   *  A white card on the coloured background with a yellow-framed QR
+   *  so it's unmistakably the thing to scan.
+   * ============================ */
+  .scan-cta {
+    background: #fff; border-radius: 16px; padding: 18px 20px;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.30);
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; text-align: center; width: fit-content;
+  }
+  .scan-cta .sc-big {
+    font-size: 20px; font-weight: 900; letter-spacing: 0.5px;
+    text-transform: uppercase; color: #111827; line-height: 1;
+  }
+  .scan-cta .sc-qr {
+    background: #fff; border: 4px solid #FBBF24;
+    border-radius: 10px; padding: 6px; line-height: 0;
+  }
+  .scan-cta .sc-qr img { display: block; width: 132px; height: 132px; }
+  .scan-cta .sc-sub {
+    font-size: 12px; font-weight: 600; color: #6B7280; max-width: 210px;
+  }
+  .size-poster .scan-cta .sc-big { font-size: 24px; }
+  .size-poster .scan-cta .sc-qr img { width: 140px; height: 140px; }
+  .size-poster .ps-scan {
+    position: absolute; right: 56px; bottom: 50px; z-index: 8;
+  }
 </style>
 </head>
 <body data-size="__SIZE__">
@@ -611,11 +643,13 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
                 <div class="phc-fvalue mono">today</div>
               </div>
             </div>
-            <div class="phc-qr-frame">
-              <img src="__QR_URL__" />
-            </div>
           </div>
         </div>
+      </div>
+      <div class="scan-cta">
+        <div class="sc-big">Scan to join</div>
+        <div class="sc-qr"><img src="__QR_URL__" alt="Scan to join" /></div>
+        <div class="sc-sub">Point your phone camera here — no app needed</div>
       </div>
       <div class="pm-starburst">
         <div class="pm-starburst-inner">__STARBURST__</div>
@@ -674,11 +708,13 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
               <div class="phc-fvalue mono">today</div>
             </div>
           </div>
-          <div class="phc-qr-frame">
-            <img src="__QR_URL__" />
-          </div>
         </div>
       </div>
+    </div>
+    <div class="ps-scan scan-cta">
+      <div class="sc-big">Scan to join</div>
+      <div class="sc-qr"><img src="__QR_URL__" alt="Scan to join" /></div>
+      <div class="sc-sub">Point your phone camera here — no app needed</div>
     </div>
     <div class="ps-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
