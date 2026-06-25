@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import QRCode from 'react-qr-code';
 import {
   X, ArrowRight, ArrowLeft, Check, Loader2, Printer, Smartphone, ScanLine, Sparkles,
 } from 'lucide-react';
 import type { Campaign, Location, OnboardingState } from '../types';
+import { buildPosterHtml } from '../services/posterGenerator';
 
 interface OnboardingWizardProps {
   campaign: Campaign;
@@ -68,45 +69,21 @@ export function OnboardingWizard({
     }
   };
 
-  const handleDownloadPoster = async () => {
-    // Trigger a print preview the same way the Share tab does, but
-    // inline here so the wizard owns the moment.
+  const handleDownloadPoster = async (color: string) => {
+    // Open the real designed pamphlet (same generator the Share tab uses),
+    // tinted with the colour the merchant picked.
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Please allow popups so we can open the printable poster.');
       return;
     }
-    const qrEl = document.getElementById('wizard-qr-code');
-    const qrHtml = qrEl?.outerHTML ?? '';
-    const locLine = primaryLocation
-      ? `<p class="loc-line">${primaryLocation.name}</p>`
-      : '';
-    printWindow.document.write(`
-      <html><head><title>${campaign.businessName} Poster</title>
-      <style>
-        @page { size: A4 portrait; margin: 0; }
-        body { font-family: -apple-system, sans-serif; margin: 0; height: 100vh;
-               display: flex; flex-direction: column; align-items: center;
-               justify-content: center; background: white; text-align: center; }
-        .poster-container { border: 8px solid #37352F; padding: 80px 100px;
-                            border-radius: 40px; max-width: 80%; box-sizing: border-box; }
-        h1 { font-size: 48px; color: #37352F; margin-bottom: 20px; font-weight: 800; line-height: 1.1; }
-        p.subtitle { font-size: 24px; color: #666; margin-top: 0; margin-bottom: 50px; }
-        .qr-box { margin: 30px auto; width: 350px; height: 350px; }
-        .qr-box svg { width: 100%; height: 100%; }
-        .footer-name { font-size: 32px; font-weight: 700; margin-top: 40px; color: #37352F; }
-        .loc-line { font-size: 22px; color: #888; margin-top: -20px; margin-bottom: 30px; }
-      </style></head><body>
-        <div class="poster-container">
-          <h1>Join ${campaign.businessName}</h1>
-          ${locLine}
-          <p class="subtitle">Scan to collect stamps &amp; rewards</p>
-          <div class="qr-box">${qrHtml}</div>
-          <div class="footer-name">${campaign.businessName}</div>
-        </div>
-        <script>window.onload = () => { setTimeout(() => window.print(), 500); };</script>
-      </body></html>
-    `);
+    const html = buildPosterHtml({
+      campaign,
+      location: primaryLocation,
+      size: 'pamphlet',
+      posterBgOverride: color,
+    });
+    printWindow.document.write(html);
     printWindow.document.close();
     // Mark the step done as soon as the merchant initiates the download.
     await onMarkStep({ poster_downloaded: true });
@@ -154,9 +131,8 @@ export function OnboardingWizard({
           {step === 0 && <WelcomeStep businessName={campaign.businessName} />}
           {step === 1 && (
             <PrintStep
-              joinUrl={joinUrl}
-              businessName={campaign.businessName}
-              locationName={primaryLocation?.name ?? null}
+              campaign={campaign}
+              location={primaryLocation}
               alreadyDone={!!initialState.poster_downloaded}
               onDownload={handleDownloadPoster}
             />
@@ -252,31 +228,86 @@ function WelcomeStep({ businessName }: { businessName: string }) {
   );
 }
 
+const POSTER_COLORS = ['#37352F', '#1D4ED8', '#047857', '#9D174D'];
+const PREVIEW_SCALE = 0.34;
+const PREVIEW_W = Math.round(1123 * PREVIEW_SCALE);
+const PREVIEW_H = Math.round(794 * PREVIEW_SCALE);
+// Strip the standalone-window chrome so only the pamphlet shows in the preview.
+const PREVIEW_CSS =
+  '.controls{display:none!important}' +
+  '.size-card,.size-poster{display:none!important}' +
+  '.size-pamphlet{margin:0!important;box-shadow:none!important;display:flex!important}' +
+  'body{margin:0!important;overflow:hidden!important;background:#fff!important}';
+
 function PrintStep({
-  joinUrl, businessName, locationName, alreadyDone, onDownload,
-}: { joinUrl: string; businessName: string; locationName: string | null; alreadyDone: boolean; onDownload: () => Promise<void> }) {
+  campaign, location, alreadyDone, onDownload,
+}: {
+  campaign: Campaign;
+  location: Location | null;
+  alreadyDone: boolean;
+  onDownload: (color: string) => Promise<void>;
+}) {
+  const [posterColor, setPosterColor] = useState(POSTER_COLORS[0]);
+
+  const previewHtml = useMemo(
+    () =>
+      buildPosterHtml({ campaign, location, size: 'pamphlet', posterBgOverride: posterColor })
+        .replace('</head>', `<style>${PREVIEW_CSS}</style></head>`),
+    [campaign, location, posterColor],
+  );
+
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
         <div className="w-12 h-12 bg-[#F7F7F5] rounded-full mx-auto flex items-center justify-center border notion-border mb-2">
           <Printer className="w-5 h-5 text-[#37352F]" />
         </div>
-        <h2 className="text-2xl font-serif-display font-semibold">Print your join QR</h2>
+        <h2 className="text-2xl font-serif-display font-semibold">Print your join poster</h2>
         <p className="text-gray-500 text-sm max-w-md mx-auto">
-          Customers scan this once to sign up. Put it by your till.
+          Put this by your till — customers scan the QR once to sign up. No app needed.
         </p>
       </div>
 
-      <div className="bg-white border notion-border rounded-lg p-6 flex flex-col items-center text-center space-y-4">
-        <div className="space-y-1">
-          <h3 className="font-semibold">Join {businessName}</h3>
-          {locationName && <p className="text-xs text-gray-500">{locationName}</p>}
+      <div className="bg-[#F7F7F5] border notion-border rounded-xl p-5 flex flex-col items-center space-y-4">
+        <div
+          className="rounded-lg overflow-hidden shadow-md bg-white"
+          style={{ width: PREVIEW_W, height: PREVIEW_H }}
+        >
+          <iframe
+            title="Pamphlet preview"
+            srcDoc={previewHtml}
+            scrolling="no"
+            style={{
+              width: 1123,
+              height: 794,
+              border: 0,
+              transform: `scale(${PREVIEW_SCALE})`,
+              transformOrigin: 'top left',
+              pointerEvents: 'none',
+            }}
+          />
         </div>
-        <div className="p-3 border-2 border-dashed border-gray-200 rounded-lg">
-          <QRCode value={joinUrl} size={140} />
+
+        <div className="flex items-center gap-2.5">
+          {POSTER_COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setPosterColor(c)}
+              aria-label={`Use ${c}`}
+              className={`w-8 h-8 rounded-full border-2 border-white shadow-sm transition ${
+                posterColor === c ? 'ring-2 ring-offset-2 ring-[#37352F] scale-110' : 'hover:scale-105'
+              }`}
+              style={{ backgroundColor: c }}
+            />
+          ))}
         </div>
+        <p className="text-xs text-gray-500 text-center max-w-xs">
+          You can change the colour anytime to match your branding in Settings → Share &amp; Promote.
+        </p>
+
         <button
-          onClick={onDownload}
+          onClick={() => onDownload(posterColor)}
           className="bg-[#37352F] text-white px-5 py-2.5 rounded-md font-medium text-sm hover:bg-opacity-90 transition flex items-center gap-2"
         >
           <Printer className="w-4 h-4" /> {alreadyDone ? 'Download again' : 'Download poster (PDF)'}
@@ -289,7 +320,7 @@ function PrintStep({
       </div>
 
       <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
-        <strong>Tip:</strong> If you have multiple locations, you can download a separate poster for each one later from Settings → Share & Promote.
+        <strong>Tip:</strong> Got multiple locations? Download a separate poster for each from Settings → Share &amp; Promote.
       </div>
     </div>
   );
