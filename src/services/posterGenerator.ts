@@ -53,13 +53,23 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
   };
 
-  // Poster background: clean white by default. Honour an explicit colour
-  // from the picker / campaign; otherwise white.
+  // Poster background: clean white by default. Honour an explicit colour —
+  // a solid hex OR a CSS gradient string (from the gradient picker) — from
+  // the override / campaign; otherwise white. (Gradients must NOT be hex-
+  // validated away, or the custom-gradient picker silently renders white.)
   let posterBg = posterBgOverride ?? campaign.posterColor ?? campaign.primaryColor ?? '#FFFFFF';
-  if (!isHex(posterBg)) posterBg = '#FFFFFF';
+  const isGradient = /gradient\(/i.test(String(posterBg));
+  if (!isGradient && !isHex(posterBg)) posterBg = '#FFFFFF';
 
   // Adaptive theme: dark ink on a light background, white ink on a dark one.
-  const lightBg = lumOf(posterBg) > 150;
+  // For a gradient, average its colour stops to decide which reads better.
+  const bgLum = isGradient
+    ? (() => {
+        const stops = String(posterBg).match(/#[0-9a-fA-F]{6}/g) ?? [];
+        return stops.length ? stops.reduce((a, h) => a + lumOf(h), 0) / stops.length : 80;
+      })()
+    : lumOf(posterBg);
+  const lightBg = bgLum > 150;
   const ink = lightBg ? '#1A1A1A' : '#FFFFFF';
   const inkSoft = lightBg ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)';
   const vbrand = lightBg ? '#9B8B66' : '#FBBF24';
