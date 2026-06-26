@@ -57,7 +57,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   // a solid hex OR a CSS gradient string (from the gradient picker) — from
   // the override / campaign; otherwise white. (Gradients must NOT be hex-
   // validated away, or the custom-gradient picker silently renders white.)
-  let posterBg = posterBgOverride ?? campaign.posterColor ?? campaign.primaryColor ?? '#FFFFFF';
+  let posterBg = posterBgOverride ?? campaign.posterColor ?? '#FFFFFF';
   const isGradient = /gradient\(/i.test(String(posterBg));
   if (!isGradient && !isHex(posterBg)) posterBg = '#FFFFFF';
 

@@ -42,12 +42,12 @@ export function PosterSettings({ campaign, onUpdated }: PosterSettingsProps) {
   const stored = campaign.posterColor;
 
   // Detect what kind of value is currently saved.
-  const initialMode: 'card' | 'preset' | 'gradient' =
-    !stored ? 'card'
+  const initialMode: 'white' | 'preset' | 'gradient' =
+    !stored ? 'white'
     : stored.startsWith('linear-gradient') ? 'gradient'
     : 'preset';
 
-  const [mode, setMode] = useState<'card' | 'preset' | 'gradient'>(initialMode);
+  const [mode, setMode] = useState<'white' | 'preset' | 'gradient'>(initialMode);
   const [presetValue, setPresetValue] = useState<string>(
     initialMode === 'preset' ? stored! : PRESETS[0].value,
   );
@@ -61,13 +61,15 @@ export function PosterSettings({ campaign, onUpdated }: PosterSettingsProps) {
 
   /** The computed value we'll save, derived from the current mode. */
   const computedValue: string | null = useMemo(() => {
-    if (mode === 'card') return null;
+    if (mode === 'white') return null;
     if (mode === 'preset') return presetValue;
     return `linear-gradient(${gradAngle}deg, ${gradFrom} 0%, ${gradTo} 100%)`;
   }, [mode, presetValue, gradFrom, gradTo, gradAngle]);
 
-  /** What the poster background actually IS right now (for live preview). */
-  const previewBg = computedValue ?? campaign.primaryColor;
+  /** What the poster background actually IS right now (white by default). */
+  const previewBg = computedValue ?? '#FFFFFF';
+  // Readable text colour for the preview (dark on light, white on dark).
+  const previewInk = pickInk(previewBg);
 
   const handleSave = async () => {
     setSaving(true);
@@ -114,8 +116,8 @@ export function PosterSettings({ campaign, onUpdated }: PosterSettingsProps) {
 
       {/* Live preview swatch — shows the user what they're saving */}
       <div
-        className="rounded-lg h-24 border notion-border flex items-center justify-center text-white font-serif-display text-2xl font-semibold tracking-wide shadow-inner"
-        style={{ background: previewBg }}
+        className="rounded-lg h-24 border notion-border flex items-center justify-center font-serif-display text-2xl font-semibold tracking-wide shadow-inner"
+        style={{ background: previewBg, color: previewInk }}
       >
         SCAN &amp; SAVE
       </div>
@@ -123,11 +125,11 @@ export function PosterSettings({ campaign, onUpdated }: PosterSettingsProps) {
       {/* Mode selector */}
       <div className="space-y-3">
         <ModeRow
-          active={mode === 'card'}
-          onClick={() => setMode('card')}
-          label="Match my card color"
-          hint={`Your loyalty card uses ${campaign.primaryColor}.`}
-          swatch={campaign.primaryColor}
+          active={mode === 'white'}
+          onClick={() => setMode('white')}
+          label="White (default)"
+          hint="Clean white background — recommended for print."
+          swatch="#FFFFFF"
         />
         <ModeRow
           active={mode === 'preset'}
@@ -295,6 +297,18 @@ function ColorPicker({
 // ---------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------
+
+/**
+ * Picks a readable text colour for a background — dark ink on light
+ * backgrounds, white on dark ones. For gradients it reads the first stop.
+ */
+function pickInk(bg: string): string {
+  const m = /#([0-9a-fA-F]{6})/.exec(bg || '');
+  if (!m) return '#1A1A1A';
+  const n = parseInt(m[1], 16);
+  const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return lum > 150 ? '#1A1A1A' : '#FFFFFF';
+}
 
 /**
  * Extracts the `from`, `to`, and `angle` from a stored gradient string.
