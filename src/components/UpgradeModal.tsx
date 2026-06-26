@@ -42,11 +42,12 @@ export function UpgradeModal({ country, onClose }: UpgradeModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isCA = country === 'CA';
-  const price = isCA ? 'CAD $28' : '€19.99';
-  const currencyNote = isCA
+  // Single CAD price for everyone — German merchants are charged in CAD and
+  // their bank handles the FX (Stripe presents the CAD amount).
+  const price = 'CAD $29.99';
+  const currencyNote = country === 'CA'
     ? 'Billed monthly in Canadian dollars.'
-    : 'Billed monthly in Euros. Includes VAT where applicable.';
+    : 'Billed monthly in Canadian dollars — your bank converts to your local currency.';
 
   const handleStartCheckout = async () => {
     setError(null);

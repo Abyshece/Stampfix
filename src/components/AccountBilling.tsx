@@ -39,8 +39,7 @@ export function AccountBilling({ billing, country, cards }: AccountBillingProps)
   const isPro = billing.plan === 'pro';
   const used = cards.length;
   const pct = Math.min(100, (used / FREE_TIER_CARD_LIMIT) * 100);
-  const isCA = country === 'CA';
-  const price = isCA ? 'CAD $28/mo' : '€19.99/mo';
+  const price = 'CAD $29.99/mo';
 
   return (
     <div className="bg-white rounded-lg border notion-border p-6 space-y-5">

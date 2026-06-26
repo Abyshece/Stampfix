@@ -31,7 +31,7 @@ export function UpgradeBanner({ customerCount, country, onUpgrade, onDismiss }: 
 
   // Price shown in the right currency for the merchant's country. Stripe
   // will charge the merchant's actual local price; this is informational.
-  const price = country === 'CA' ? 'CAD 28/mo' : '€19.99/mo';
+  const price = 'CAD $29.99/mo';
 
   if (atLimit) {
     return (
