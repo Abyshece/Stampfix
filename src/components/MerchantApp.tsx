@@ -312,6 +312,19 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     onLogout();
   }, [onLogout]);
 
+  // A merchant who just finished signup must always land on the thank-you /
+  // pending-review screen — never a flash of the loader, the dashboard, or a
+  // remounted empty form. Signup briefly creates a session (then signs out),
+  // which churns auth state and would otherwise race us into one of those.
+  // While the just-registered flag is set (cleared when they hit "Sign in" on
+  // the thank-you screen), hold on the onboarding component, whose own
+  // initializer reads the same flag and renders the THANK_YOU step.
+  let justRegistered = false;
+  try { justRegistered = sessionStorage.getItem('sf_just_registered') === '1'; } catch { /* ignore */ }
+  if (justRegistered) {
+    return <MerchantOnboarding onComplete={loadAll} initialStep="FORM" onBack={onLogout} />;
+  }
+
   if (loading) {
     return <BrandLoading />;
   }
