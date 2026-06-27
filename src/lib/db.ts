@@ -349,6 +349,17 @@ export async function createCard(input: {
   return card;
 }
 
+/** Tell the customer's wallet passes their card changed. push-apple-update
+ *  pushes to Apple Wallet (and bumps passkit_last_updated so pull-to-refresh
+ *  works); sync-wallet-object refreshes the Google Wallet object. Fire-and-
+ *  forget — a wallet hiccup must never break stamping. */
+function notifyWalletUpdate(cardId: string): void {
+  void supabase.functions.invoke('push-apple-update', { body: { cardId } })
+    .catch((e) => console.warn('push-apple-update failed:', e));
+  void supabase.functions.invoke('sync-wallet-object', { body: { cardId } })
+    .catch((e) => console.warn('sync-wallet-object failed:', e));
+}
+
 export async function addStamp(cardId: string, maxStamps: number): Promise<UserCard> {
   // Fetch current state to compute next value (Postgres doesn't have an
   // atomic "increment if less than" — for v1 we accept the read-modify-write).
@@ -376,6 +387,7 @@ export async function addStamp(cardId: string, maxStamps: number): Promise<UserC
   if (error) throw error;
   const updated = toCard(data as CardRow);
   await logActivity(updated.campaignId, updated.id, updated.customerName, 'STAMP');
+  notifyWalletUpdate(updated.id);
   return updated;
 }
 
@@ -401,6 +413,7 @@ export async function redeemReward(cardId: string): Promise<UserCard> {
   if (error) throw error;
   const updated = toCard(data as CardRow);
   await logActivity(updated.campaignId, updated.id, updated.customerName, 'REDEEM');
+  notifyWalletUpdate(updated.id);
   return updated;
 }
 
