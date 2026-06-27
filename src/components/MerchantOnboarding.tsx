@@ -154,16 +154,21 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
         );
         setStep('CHECK_EMAIL');
       } else {
-        // Session is live — create the campaign now (it starts as 'pending'
-        // review). Then sign out and show a thank-you screen so the merchant
-        // gets a clear "we're reviewing you" message and signs in fresh,
-        // rather than being dropped into an unreviewed dashboard.
-        await createCampaignForCurrentUser();
+        // Session is live. Set the post-signup flag FIRST. The app's auth
+        // listener re-renders the moment this session appears and unmounts
+        // this component; the step initializer reads this flag on remount to
+        // restore the thank-you screen. Setting it only after the awaits
+        // below meant the remount found no flag and bounced the merchant back
+        // to the empty signup form (which looked like the page reloading).
         try {
           sessionStorage.setItem('sf_just_registered', '1');
           sessionStorage.setItem('sf_registered_email', email);
           sessionStorage.setItem('sf_registered_business', busName);
         } catch { /* ignore */ }
+        // Create the campaign (starts as 'pending' review), then sign out so
+        // the merchant sees the thank-you message and signs in fresh, rather
+        // than being dropped into an unreviewed dashboard.
+        await createCampaignForCurrentUser();
         await supabase.auth.signOut();
         setStep('THANK_YOU');
       }
