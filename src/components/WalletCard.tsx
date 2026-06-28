@@ -180,15 +180,44 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
               return (
                 <div key={num} className="flex flex-col items-center justify-center">
                   <div className={`relative ${layout.size} flex items-center justify-center transition-all duration-300`}>
-                    {isStamped ? (
-                      <div className={`w-full h-full rounded-full bg-black text-white flex items-center justify-center shadow-md animate-in zoom-in duration-300 ${layout.icon}`}>
-                        <div className="font-bold">{effectiveIcon || <span>✔</span>}</div>
-                      </div>
-                    ) : (
-                      <div className={`w-full h-full rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center font-bold text-gray-300 ${layout.text}`}>
-                        {num}
-                      </div>
-                    )}
+                    {/* Brand-mark stamp motif (square / circle / cross), cycled by
+                        position to match the Apple Wallet pass exactly. Collected =
+                        solid; remaining = faint outline (square/circle) or faint
+                        fill (cross). No emoji, no numbers. */}
+                    <svg
+                      viewBox="0 0 100 100"
+                      className={`w-full h-full ${isStamped ? 'animate-in zoom-in duration-300' : ''}`}
+                      aria-hidden="true"
+                    >
+                      {(() => {
+                        const shape = (num - 1) % 3;
+                        const on = isStamped;
+                        const solid = '#111827';
+                        const faint = '#e5e7eb';
+                        const sw = 7;
+                        if (shape === 0) {
+                          return (
+                            <rect x="20" y="20" width="60" height="60" rx="12"
+                              fill={on ? solid : 'none'}
+                              stroke={on ? 'none' : faint} strokeWidth={sw} />
+                          );
+                        }
+                        if (shape === 1) {
+                          return (
+                            <circle cx="50" cy="50" r="32"
+                              fill={on ? solid : 'none'}
+                              stroke={on ? 'none' : faint} strokeWidth={sw} />
+                          );
+                        }
+                        const fill = on ? solid : faint;
+                        return (
+                          <g>
+                            <rect x="13" y="40" width="74" height="20" rx="10" fill={fill} transform="rotate(45 50 50)" />
+                            <rect x="13" y="40" width="74" height="20" rx="10" fill={fill} transform="rotate(-45 50 50)" />
+                          </g>
+                        );
+                      })()}
+                    </svg>
                   </div>
                 </div>
               );
