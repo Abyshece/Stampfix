@@ -155,13 +155,15 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
         {/* Header */}
         <div className="relative p-5 pb-2 flex justify-between items-start z-10 shrink-0">
           <div className="flex items-center gap-3">
-            {campaign.logoImage ? (
-              <img src={campaign.logoImage} alt="Logo" className="w-10 h-10 object-contain rounded-full bg-gray-50 border border-gray-100" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center text-lg shadow-sm text-black">
-                {effectiveIcon || '🏷️'}
-              </div>
-            )}
+                        {/* Fixed Stampfix brand mark — the same square/circle/cross logo the
+                Apple Wallet pass renders in its top-left slot. Replaces the
+                per-merchant emoji so every card carries Stampfix branding. */}
+            <svg viewBox="0 0 290 90" className="h-5 w-auto shrink-0" fill="#111827" aria-hidden="true">
+              <rect x="8" y="12" width="66" height="66" rx="4" />
+              <circle cx="140" cy="45" r="34" />
+              <rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)" />
+              <rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)" />
+            </svg>
             <h2 className="text-xs font-bold uppercase tracking-widest max-w-[140px] leading-tight text-gray-900">
               {campaign.businessName}
             </h2>
