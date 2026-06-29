@@ -145,6 +145,8 @@ export function MerchantDashboard({
 
   // Preview
   const [previewStamps, setPreviewStamps] = useState(3);
+  // Which share URL was just copied — shows a "Copied!" confirmation on that button.
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   // Whether the merchant dismissed the green "approved" banner. Persisted
   // per-campaign so it doesn't reappear after they close it.
   const [approvalSeen, setApprovalSeen] = useState(() => {
@@ -1069,8 +1071,19 @@ export function MerchantDashboard({
                             Poster
                           </button>
                         </div>
-                        <button onClick={() => navigator.clipboard.writeText(url)} className="w-full bg-white border notion-border text-[#37352F] py-2 rounded-md font-medium text-sm hover:bg-gray-50 transition">
-                          Copy Link
+                        <button
+                          onClick={async () => {
+                            try { await navigator.clipboard.writeText(url); } catch { /* clipboard may be blocked */ }
+                            setCopiedUrl(url);
+                            setTimeout(() => setCopiedUrl((c) => (c === url ? null : c)), 2000);
+                          }}
+                          className={`w-full border py-2 rounded-md font-medium text-sm transition flex items-center justify-center gap-1.5 ${
+                            copiedUrl === url
+                              ? 'bg-green-50 border-green-200 text-green-700'
+                              : 'bg-white notion-border text-[#37352F] hover:bg-gray-50'
+                          }`}
+                        >
+                          {copiedUrl === url ? (<><Check className="w-4 h-4" /> Copied!</>) : 'Copy Link'}
                         </button>
                       </div>
                       <div className="text-[10px] text-gray-400 break-all">{url}</div>
