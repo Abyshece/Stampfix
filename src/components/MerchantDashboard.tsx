@@ -850,9 +850,15 @@ export function MerchantDashboard({
                     </div>
                     <div className="flex items-center gap-1">
                       {card.status !== 'BLOCKED' && (
-                        <button onClick={() => onStampCard(card.id)} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                          <Plus className="w-4 h-4" />
-                        </button>
+                        card.currentStamps >= (card.maxStampsSnapshot ?? campaign.maxStamps) ? (
+                          <button onClick={() => onResetCard(card.id)} className="px-3 h-8 rounded-full bg-green-50 text-green-600 text-xs font-semibold flex items-center justify-center">
+                            Redeem
+                          </button>
+                        ) : (
+                          <button onClick={() => onStampCard(card.id)} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        )
                       )}
                       <button onClick={() => setConfirmAction({ type: 'BLOCK', cardId: card.id, name: card.customerName })}
                         className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center">
