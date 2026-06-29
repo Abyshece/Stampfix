@@ -222,6 +222,30 @@ Deno.serve(async (req) => {
     return json(500, { error: 'Could not apply stamp' });
   }
 
+  // Tell the customer's wallet passes the card changed. push-apple-update
+  // sends the Apple Wallet push AND bumps passkit_last_updated (so manual
+  // pull-to-refresh works too); sync-wallet-object refreshes the Google
+  // Wallet object. Awaited so the calls dispatch before this serverless
+  // function exits, but best-effort — a wallet failure never fails the stamp.
+  try {
+    const walletHeaders = {
+      'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+    const walletBody = JSON.stringify({ cardId });
+    const walletResults = await Promise.allSettled([
+      fetch(`${SUPABASE_URL}/functions/v1/push-apple-update`, { method: 'POST', headers: walletHeaders, body: walletBody }),
+      fetch(`${SUPABASE_URL}/functions/v1/sync-wallet-object`, { method: 'POST', headers: walletHeaders, body: walletBody }),
+    ]);
+    walletResults.forEach((res, i) => {
+      if (res.status === 'rejected') {
+        console.error(`[redeem-stamp-token] wallet notify ${i === 0 ? 'apple' : 'google'} failed:`, res.reason);
+      }
+    });
+  } catch (walletErr) {
+    console.error('[redeem-stamp-token] wallet notify dispatch failed:', walletErr);
+  }
+
   // Log the activity. Best-effort. Records the location if the merchant's
   // scanner is operating as a specific branch.
   // source='qr' because this path is only reached via QR scan + token; the

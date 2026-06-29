@@ -6,11 +6,11 @@ import {
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import {
-  checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers,
+  checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers, fetchStripeMrr,
   listTickets, listContactMessages,
   setMerchantStatus, setMerchantPlan, setMerchantNotes, setTicketStatus, setContactMessageStatus,
   type RangedKPIs, type KPIBlock, type MerchantRow, type CustomerRow, type TicketRow,
-  type ContactMessage, type MerchantStatus,
+  type ContactMessage, type MerchantStatus, type StripeMrr,
 } from '../services/admin';
 import { OffersTab } from './OffersTab';
 import { setMerchantApproval, getMerchantApproval } from '../lib/db';
@@ -348,6 +348,7 @@ function B2BTab() {
   const [search, setSearch] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [stripeMrr, setStripeMrr] = useState<StripeMrr | null>(null);
 
   const load = async (s = '') => {
     setLoading(true);
@@ -355,7 +356,7 @@ function B2BTab() {
     catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(''); }, []);
+  useEffect(() => { load(''); fetchStripeMrr().then(setStripeMrr).catch(() => {}); }, []);
 
   const handleStatus = async (m: MerchantRow, target: MerchantStatus) => {
     const action = target === 'deleted' ? 'PERMANENTLY DELETE' : target;
@@ -381,6 +382,23 @@ function B2BTab() {
         <h1 className="text-3xl font-serif-display font-semibold mb-1">B2B Clients</h1>
         <p className="text-gray-500 text-sm">All merchants. Click any row for full detail and admin notes.</p>
       </header>
+
+      {stripeMrr && (
+        <div className="bg-white border notion-border rounded-lg p-4 flex items-center justify-between">
+          <div>
+            <div className="text-[11px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">Live MRR · from Stripe</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {((stripeMrr.currency || 'cad').toUpperCase() === 'EUR' ? '€' : 'CA$')}{(stripeMrr.mrr_cents / 100).toFixed(2)}
+              <span className="text-sm font-normal text-gray-400"> /mo</span>
+            </div>
+            <div className="text-[11px] text-gray-400 mt-0.5">Exact, from active Stripe subscriptions (excludes comped merchants).</div>
+          </div>
+          <div className="text-right">
+            <div className="text-[11px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">Active subs</div>
+            <div className="text-2xl font-bold text-gray-900">{stripeMrr.active_subscriptions}</div>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={(e) => { e.preventDefault(); load(search.trim()); }} className="flex gap-2">
         <div className="flex-1 flex items-center bg-white border notion-border rounded-md px-3">

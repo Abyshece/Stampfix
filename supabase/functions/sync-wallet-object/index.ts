@@ -265,12 +265,23 @@ Deno.serve(async (req) => {
   if (!authHeader?.startsWith('Bearer ')) {
     return json(401, { error: 'Missing Authorization header' });
   }
+  const bearer = authHeader.slice('Bearer '.length).trim();
+  const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-  const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-  });
-  const { data: { user }, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !user) return json(401, { error: 'Not authenticated' });
+  // The DB wallet trigger calls this server-to-server with the service-role
+  // key (no user session). Treat that as trusted and read with a service-role
+  // client. Every other caller must present a valid signed-in user JWT and is
+  // read through their own RLS context (unchanged behaviour).
+  let userClient;
+  if (SERVICE_ROLE_KEY && bearer === SERVICE_ROLE_KEY) {
+    userClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  } else {
+    userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !user) return json(401, { error: 'Not authenticated' });
+  }
 
   let body: { cardId?: string };
   try {

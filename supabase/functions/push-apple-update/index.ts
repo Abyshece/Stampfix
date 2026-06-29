@@ -87,6 +87,9 @@ Deno.serve(async (req) => {
           'apns-topic': topic,
           'apns-push-type': 'background',
           'apns-priority': '5',
+          // Store-and-retry for 24h if the device is briefly offline/asleep,
+          // instead of APNs dropping the push after a single attempt.
+          'apns-expiration': String(Math.floor(Date.now() / 1000) + 86400),
         },
         body: '{}',
       });

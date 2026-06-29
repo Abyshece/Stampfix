@@ -7,6 +7,7 @@ import {
   RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { markApprovalBannerSeen } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { LocationsPanel } from './LocationsPanel';
@@ -147,6 +148,7 @@ export function MerchantDashboard({
   // Whether the merchant dismissed the green "approved" banner. Persisted
   // per-campaign so it doesn't reappear after they close it.
   const [approvalSeen, setApprovalSeen] = useState(() => {
+    if (campaign.approvalBannerSeen) return true;
     try { return localStorage.getItem(`sf_approval_seen_${campaign.id}`) === '1'; } catch { return false; }
   });
 
@@ -556,7 +558,7 @@ export function MerchantDashboard({
               <span className="font-semibold">Your business has been approved!</span> You're all set — your loyalty program is live.
             </p>
             <button
-              onClick={() => { try { localStorage.setItem(`sf_approval_seen_${campaign.id}`, '1'); } catch { /* ignore */ } setApprovalSeen(true); }}
+              onClick={() => { markApprovalBannerSeen(campaign.id); try { localStorage.setItem(`sf_approval_seen_${campaign.id}`, '1'); } catch { /* ignore */ } setApprovalSeen(true); }}
               className="text-green-600 hover:text-green-800 flex-shrink-0"
               aria-label="Dismiss"
             >
@@ -1204,9 +1206,11 @@ export function MerchantDashboard({
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase">Max Stamps</label>
-                    <input type="number" min={4} max={12} value={tempSettings.maxStamps}
-                      onChange={(e) => setTempSettings({ ...tempSettings, maxStamps: Math.max(4, Math.min(12, parseInt(e.target.value) || 4)) })}
-                      className="w-full bg-[#F7F7F5] border notion-border rounded px-3 py-2 text-sm" />
+                    <select value={tempSettings.maxStamps}
+                      onChange={(e) => setTempSettings({ ...tempSettings, maxStamps: parseInt(e.target.value) })}
+                      className="w-full bg-[#F7F7F5] border notion-border rounded px-3 py-2 text-sm">
+                      {[4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
                   </div>
                 </div>
               </div>

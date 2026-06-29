@@ -538,6 +538,8 @@ export function LandingPage({
             Stampfix
           </div>
           <div className="flex gap-6">
+            <a href="/faq" className="hover:text-[#37352F]">FAQ</a>
+            <a href="/wallet-guide" className="hover:text-[#37352F]">Update your card</a>
             <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>
             <a href="/terms" className="hover:text-[#37352F]">Terms</a>
             <a href="/impressum" className="hover:text-[#37352F]">Impressum</a>

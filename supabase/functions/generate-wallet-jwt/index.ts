@@ -174,6 +174,7 @@ function buildLoyaltyClass(campaign: Campaign) {
 
 /** Build a LoyaltyObject payload for a specific card. */
 function buildLoyaltyObject(campaign: Campaign, card: Card) {
+  const rewardReady = (card.current_stamps ?? 0) >= campaign.max_stamps;
   return {
     id: objectIdFor(card.id),
     classId: classIdFor(campaign.id),
@@ -194,7 +195,11 @@ function buildLoyaltyObject(campaign: Campaign, card: Card) {
       alternateText: card.id.slice(0, 8),
     },
     textModulesData: [
-      { id: 'offer', header: 'Current offer', body: campaign.offer_title },
+      {
+        id: 'offer',
+        header: rewardReady ? 'Reward ready' : 'Current offer',
+        body: rewardReady ? '🎉 Free reward unlocked — show this to redeem!' : campaign.offer_title,
+      },
     ],
   };
 }

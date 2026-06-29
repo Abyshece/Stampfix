@@ -24,6 +24,7 @@ interface CampaignRow {
   customer_privacy_notice: string | null;
   card_text_color: string | null;
   approval_status: string;
+  approval_banner_seen: boolean;
 }
 
 interface LocationRow {
@@ -87,6 +88,7 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   customerPrivacyNotice: r.customer_privacy_notice,
   cardTextColor: r.card_text_color ?? null,
   approvalStatus: (r.approval_status as Campaign['approvalStatus']) ?? 'approved',
+  approvalBannerSeen: r.approval_banner_seen ?? false,
 });
 
 const toLocation = (r: LocationRow): Location => ({
@@ -153,6 +155,16 @@ export async function getCampaignById(id: string): Promise<Campaign | null> {
     .maybeSingle();
   if (error) throw error;
   return data ? toCampaign(data as CampaignRow) : null;
+}
+
+/** Persist the merchant's dismissal of the "approved" banner so it never
+ *  reappears on future logins (localStorage was per-device and transient). */
+export async function markApprovalBannerSeen(campaignId: string): Promise<void> {
+  const { error } = await supabase
+    .from('campaigns')
+    .update({ approval_banner_seen: true })
+    .eq('id', campaignId);
+  if (error) console.warn('[markApprovalBannerSeen]', error.message);
 }
 
 export async function createCampaign(input: Omit<Campaign, 'id'>): Promise<Campaign> {

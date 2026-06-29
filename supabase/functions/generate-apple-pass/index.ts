@@ -115,19 +115,20 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 // Build the stamp-progress strip as an SVG, then rasterize to PNG.
-// Draws `maxStamps` numbered circles: the first `filled` are solid
-// (collected) with the number in the card background colour so it reads
-// clearly; the rest are faint outlines (remaining) with a greyed number.
+// Draws `maxStamps` brand-mark stamp icons that cycle through the Stampfix
+// motif — rounded square, circle, cross — matching the in-app loyalty card.
+// The first `filled` are solid (collected); the rest are a faint outline
+// (square/circle) or faint fill (cross).
 // Two rows when there are more than 5 stamps, with a clear gap between rows.
 //
 // Strip @3x is 1125x432 per Apple's storeCard spec. We draw at that size.
-// `fontFamily` MUST match a font loaded into resvg (see svgToPng) or the
-// numbers won't render at all.
-function buildStripSvg(filled: number, maxStamps: number, bg: string, text: string, fontFamily: string): string {
+// No <text> is drawn, so the strip needs no font.
+function buildStripSvg(filled: number, maxStamps: number, bg: string, text: string, _fontFamily: string): string {
   const W = 1125, H = 432;
-  const solid = text;                       // filled circle fill
-  const faintNum = hexToRgba(text, 0.32);   // greyed number on an unstamped circle
-  const faintLine = hexToRgba(text, 0.28);  // outline on an unstamped circle
+  const solid = text;                       // collected-stamp fill (card ink)
+  const faintFill = hexToRgba(text, 0.30);  // faint fill for an uncollected cross
+  const faintLine = hexToRgba(text, 0.28);  // outline for an uncollected square/circle
+  const SW = 6;                             // outline width for uncollected shapes
 
   // Two rows when more than 5 stamps (1-4 top, 5-8 bottom).
   const rows = maxStamps <= 5 ? 1 : 2;
@@ -136,11 +137,34 @@ function buildStripSvg(filled: number, maxStamps: number, bg: string, text: stri
   const r = rows === 1
     ? Math.max(34, Math.min(78, (W / (perRow + 1)) * 0.40))
     : 56;
-  const fontSize = (r * 0.92).toFixed(0);
 
-  // Row vertical centres. In 2-row mode push them apart (~70px gap between
-  // the rows at @3x); in 1-row mode centre vertically.
+  // Row vertical centres. In 2-row mode push them apart; in 1-row mode centre.
   const rowCy = (row: number) => (rows === 1 ? H / 2 : row === 0 ? H * 0.29 : H * 0.71);
+
+  // One stamp shape centred at (cx, cy), sized to the circle radius r. The
+  // three motif shapes cycle by index so the strip reads as a repeating set.
+  const shape = (kind: number, cx: number, cy: number, on: boolean): string => {
+    const X = cx.toFixed(0), Y = cy.toFixed(0);
+    if (kind === 0) {
+      // rounded square
+      const s = r * 1.78;
+      const sx = (cx - s / 2).toFixed(0), sy = (cy - s / 2).toFixed(0);
+      const side = s.toFixed(0), rx = (s * 0.16).toFixed(0);
+      return `<rect x="${sx}" y="${sy}" width="${side}" height="${side}" rx="${rx}" fill="${on ? solid : 'none'}" stroke="${on ? 'none' : faintLine}" stroke-width="${SW}"/>`;
+    }
+    if (kind === 1) {
+      // circle
+      return `<circle cx="${X}" cy="${Y}" r="${r.toFixed(0)}" fill="${on ? solid : 'none'}" stroke="${on ? 'none' : faintLine}" stroke-width="${SW}"/>`;
+    }
+    // cross — two rounded bars forming an X (a stroke shape, so it takes a
+    // faint fill rather than an outline when uncollected).
+    const L = r * 2.0, t = r * 0.46;
+    const bx = (cx - L / 2).toFixed(0), by = (cy - t / 2).toFixed(0);
+    const len = L.toFixed(0), th = t.toFixed(0), rx = (t / 2).toFixed(0);
+    const fill = on ? solid : faintFill;
+    const bar = (deg: number) => `<rect x="${bx}" y="${by}" width="${len}" height="${th}" rx="${rx}" fill="${fill}" transform="rotate(${deg} ${X} ${Y})"/>`;
+    return bar(45) + bar(-45);
+  };
 
   let items = '';
   for (let i = 0; i < maxStamps; i++) {
@@ -151,10 +175,7 @@ function buildStripSvg(filled: number, maxStamps: number, bg: string, text: stri
     const rowGap = W / (itemsThisRow + 1);
     const cx = rowGap * (col + 1);
     const cy = rowCy(row);
-    const isFilled = i < filled;
-    const num = i + 1;
-    items += `<circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="${r.toFixed(0)}" fill="${isFilled ? solid : 'none'}" stroke="${isFilled ? 'none' : faintLine}" stroke-width="5"/>`;
-    items += `<text x="${cx.toFixed(0)}" y="${cy.toFixed(0)}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="700" fill="${isFilled ? bg : faintNum}" text-anchor="middle" dominant-baseline="central">${num}</text>`;
+    items += shape(i % 3, cx, cy, i < filled);
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="${bg}"/>${items}</svg>`;
@@ -284,7 +305,11 @@ Deno.serve(async (req) => {
           {
             key: 'remaining',
             label: 'STAMPS LEFT',
-            value: stampsLeft > 0 ? String(stampsLeft) : 'Ready',
+            value: String(stampsLeft),
+            // Shows a lock-screen notification when the count changes on an
+            // automatic update (%@ = the new value). Without this, auto-updates
+            // apply silently and are invisible to the customer.
+            changeMessage: '%@ stamps left',
           },
         ],
         primaryFields: [],
@@ -292,7 +317,15 @@ Deno.serve(async (req) => {
           { key: 'member', label: 'MEMBER', value: card.customer_name ?? '' },
         ],
         auxiliaryFields: [
-          { key: 'offer', label: 'REWARD', value: offerTitle, textAlignment: 'PKTextAlignmentCenter' },
+          {
+            key: 'offer',
+            label: 'REWARD',
+            // When the card is full, flip the reward to a clear call-to-action
+            // (and notify via changeMessage) instead of still showing the offer.
+            value: stampsLeft === 0 ? 'Redeem your free reward now' : offerTitle,
+            changeMessage: '%@',
+            textAlignment: 'PKTextAlignmentCenter',
+          },
         ],
       },
       barcode: {

@@ -57,16 +57,32 @@ export async function getSaveToWalletUrl(card: UserCard, campaign: Campaign): Pr
  * returns `synced: false` with reason `wallet_not_configured`. Again fine.
  */
 export async function syncWalletObject(cardId: string): Promise<void> {
-  try {
-    const { error } = await supabase.functions.invoke('sync-wallet-object', {
-      body: { cardId },
-    });
-    if (error) {
-      // eslint-disable-next-line no-console
-      console.warn('[wallet-sync] failed:', error.message);
-    }
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.warn('[wallet-sync] threw:', e);
-  }
+  // Refresh BOTH of the customer's saved passes whenever their card changes
+  // (stamp / redeem / block). Google: patch the loyalty object. Apple: send a
+  // background push — which also bumps passkit_last_updated, so manual
+  // pull-to-refresh works too. Both run in parallel and are best-effort; a
+  // wallet hiccup must never block the merchant action. Callers fire this
+  // without awaiting, so wallet latency never holds up the UI.
+  await Promise.all([
+    supabase.functions
+      .invoke('sync-wallet-object', { body: { cardId } })
+      .then(({ error }) => {
+        // eslint-disable-next-line no-console
+        if (error) console.warn('[wallet-sync] google failed:', error.message);
+      })
+      .catch((e) => {
+        // eslint-disable-next-line no-console
+        console.warn('[wallet-sync] google threw:', e);
+      }),
+    supabase.functions
+      .invoke('push-apple-update', { body: { cardId } })
+      .then(({ error }) => {
+        // eslint-disable-next-line no-console
+        if (error) console.warn('[wallet-sync] apple failed:', error.message);
+      })
+      .catch((e) => {
+        // eslint-disable-next-line no-console
+        console.warn('[wallet-sync] apple threw:', e);
+      }),
+  ]);
 }

@@ -162,7 +162,7 @@ export function PosterSettings({ campaign, onUpdated }: PosterSettingsProps) {
           hint="Pick any two colors and an angle."
         >
           {mode === 'gradient' && (
-            <div className="grid grid-cols-2 gap-3 pt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
               <ColorPicker label="From" value={gradFrom} onChange={setGradFrom} />
               <ColorPicker label="To"   value={gradTo}   onChange={setGradTo} />
               <div className="col-span-2 space-y-1">
@@ -275,7 +275,7 @@ function ColorPicker({
   return (
     <div className="space-y-1">
       <label className="text-xs font-medium text-gray-600">{label}</label>
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center min-w-0">
         <input
           type="color"
           value={value}
@@ -286,7 +286,7 @@ function ColorPicker({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 bg-white border notion-border rounded-md px-2 py-1.5 text-xs font-mono uppercase"
+          className="flex-1 min-w-0 bg-white border notion-border rounded-md px-2 py-1.5 text-xs font-mono uppercase"
           maxLength={7}
         />
       </div>

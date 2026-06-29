@@ -43,6 +43,8 @@ export interface Campaign {
    *  ignores it. Falls back to #1d3458 when null. */
   cardTextColor?: string | null;
   approvalStatus?: 'pending' | 'approved' | 'rejected';
+  /** Whether the merchant has dismissed the one-time approval banner. */
+  approvalBannerSeen?: boolean;
   /** Merchant's own customer-facing privacy notice. Shown to customers
    *  at signup. If null, a generic Stampfix-pointing fallback is used. */
   customerPrivacyNotice?: string | null;

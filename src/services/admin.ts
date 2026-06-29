@@ -126,6 +126,24 @@ export async function checkIsAdmin(): Promise<boolean> {
   return data === true;
 }
 
+export interface StripeMrr {
+  mrr_cents: number;
+  currency: string;
+  active_subscriptions: number;
+}
+
+/**
+ * Exact current MRR straight from Stripe (active + trialing subscriptions,
+ * monthly-normalised, discounts applied). This is the revenue source of truth:
+ * comped merchants and discounts are excluded, unlike the plan-based per-merchant
+ * estimate. Admin-only edge function.
+ */
+export async function fetchStripeMrr(): Promise<StripeMrr | null> {
+  const { data, error } = await supabase.functions.invoke('get-stripe-mrr');
+  if (error) { console.warn('[admin] stripe mrr', error); return null; }
+  return data as StripeMrr;
+}
+
 export async function fetchKPIs(): Promise<KPIBuckets | null> {
   const { data, error } = await supabase.rpc('admin_kpi_buckets');
   if (error) throw error;
