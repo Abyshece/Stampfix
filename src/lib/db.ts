@@ -357,7 +357,9 @@ export async function createCard(input: {
     throw error;
   }
   const card = toCard(data as CardRow);
-  await logActivity(card.campaignId, card.id, card.customerName, 'JOIN', 'qr');
+  // JOIN activity is logged server-side by the trg_log_card_join trigger on
+  // cards insert (SECURITY DEFINER), so it works even for customer self-signups
+  // where the client session can't write to activities under RLS.
   return card;
 }
 

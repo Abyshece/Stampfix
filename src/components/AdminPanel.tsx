@@ -427,6 +427,7 @@ function B2BTab() {
                 <th className="px-2 py-2 text-right">Customers</th>
                 <th className="px-2 py-2 text-right">MRR</th>
                 <th className="px-2 py-2 text-right">Total</th>
+                <th className="px-2 py-2 text-left">Joined on</th>
                 <th className="px-2 py-2 text-left">Last login</th>
                 <th className="px-2 py-2 text-center">Actions</th>
               </tr>
@@ -467,6 +468,7 @@ function B2BTab() {
                       <td className="px-2 py-3 text-right font-medium text-sm">{m.card_count}</td>
                       <td className="px-2 py-3 text-right text-xs text-gray-600">{formatCents(m.estimated_mrr_cents, m.country)}</td>
                       <td className="px-2 py-3 text-right text-xs text-gray-600">{formatCents(m.estimated_total_cents, m.country)}</td>
+                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">{new Date(m.created_at).toLocaleDateString()}</td>
                       <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
                         {m.last_login_at ? relativeTime(new Date(m.last_login_at)) : 'Never'}
                       </td>
@@ -505,7 +507,7 @@ function B2BTab() {
                     </tr>
                     {isOpen && (
                       <tr className="bg-[#F7F7F5]">
-                        <td colSpan={10} className="px-4 py-4">
+                        <td colSpan={11} className="px-4 py-4">
                           <MerchantDetailPanel merchant={m} onChanged={() => load(search)} />
                         </td>
                       </tr>
@@ -729,7 +731,7 @@ function B2B2CTab() {
                 <th className="px-3 py-2 text-left">ID</th>
                 <th className="px-3 py-2 text-left">Name</th>
                 <th className="px-3 py-2 text-left">Email</th>
-                <th className="px-2 py-2 text-left">Active since</th>
+                <th className="px-2 py-2 text-left">Joined on</th>
                 <th className="px-2 py-2 text-right">Cards</th>
                 <th className="px-3 py-2 text-left">Current campaigns</th>
                 <th className="px-2 py-2 text-right">Stamps</th>

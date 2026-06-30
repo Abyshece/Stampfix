@@ -841,6 +841,7 @@ export function MerchantDashboard({
                         <span className="text-[10px] font-mono text-gray-400">{card.customerCode ?? ''}</span>
                       </div>
                       <div className="text-xs text-gray-500"><RevealableEmail email={card.email} /></div>
+                      <div className="text-[11px] text-gray-400">Joined {card.joinedAt.toLocaleDateString()}</div>
                       <div className="flex gap-1 flex-wrap">
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                           card.status === 'BLOCKED' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
@@ -881,6 +882,7 @@ export function MerchantDashboard({
                     <th className="px-4 py-3 border-b notion-border w-24">ID</th>
                     <th className="px-4 py-3 border-b notion-border">Name</th>
                     <th className="px-4 py-3 border-b notion-border">Email</th>
+                    <th className="px-4 py-3 border-b notion-border">Joined on</th>
                     <th className="px-4 py-3 border-b notion-border">Campaign offer</th>
                     <th className="px-4 py-3 border-b notion-border">Progress</th>
                     <th className="px-4 py-3 border-b notion-border">Redeemed</th>
@@ -903,6 +905,7 @@ export function MerchantDashboard({
                       <td className="px-4 py-3 font-mono text-xs text-gray-500">{card.customerCode ?? '—'}</td>
                       <td className="px-4 py-3 font-medium">{card.customerName}</td>
                       <td className="px-4 py-3 text-gray-500"><RevealableEmail email={card.email || ''} /></td>
+                      <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{card.joinedAt.toLocaleDateString()}</td>
                       <td className="px-4 py-3 text-xs">
                         <div className="text-gray-700 truncate max-w-[180px]" title={cardOffer}>{cardOffer}</div>
                         {isStale && (
@@ -957,7 +960,7 @@ export function MerchantDashboard({
                     </tr>
                   );})}
                   {filteredCards.length === 0 && (
-                    <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400 italic">
+                    <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 italic">
                       {customerStatusFilter === 'blocked' ? 'No blocked customers.'
                         : customerStatusFilter === 'pending_deletion' ? 'No customers are pending deletion.'
                         : 'No customers found.'}
