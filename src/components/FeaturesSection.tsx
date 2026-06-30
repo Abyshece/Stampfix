@@ -18,7 +18,7 @@ export function FeaturesSection() {
     { icon: BarChart3,   text: 'Detailed dashboard with per-location and per-offer analytics' },
     { icon: Palette,     text: 'Brand it your way — choose colors, logo, and offer text' },
     { icon: Layers,      text: 'Run multiple offers and migrate customers automatically' },
-    { icon: Wallet,      text: 'Web wallet for iPhone users today; Apple Wallet integration coming soon' },
+    { icon: Wallet,      text: 'Works with Apple Wallet and Google Wallet — no app to download' },
     { icon: Building2,   text: 'Multi-location ready — one account, every branch tracked separately' },
     // Extras I'd add — features Stampfix has that you didn't mention:
     { icon: Mail,        text: 'Automatic one-stamp-away emails bring customers back' },
