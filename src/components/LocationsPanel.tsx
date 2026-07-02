@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Plus, Archive, Loader2, X, Edit2, Check } from 'lucide-react';
+import { MapPin, Plus, Archive, Loader2, X, Edit2, Check, Lock } from 'lucide-react';
 import type { Location } from '../types';
 
 interface LocationsPanelProps {
@@ -7,6 +7,9 @@ interface LocationsPanelProps {
   activeLocationId: string | null;
   onAdd: (name: string, address?: string) => Promise<void>;
   onUpdate: (locationId: string, patch: { name?: string; address?: string; archived?: boolean }) => Promise<void>;
+  /** Free plan is capped at one active location; Pro is unlimited. */
+  isPro: boolean;
+  onUpgrade: () => void;
 }
 
 /**
@@ -17,7 +20,7 @@ interface LocationsPanelProps {
  * Archiving (not hard deletion) is intentional: old activities still
  * reference the location, so we keep the row but hide it from pickers.
  */
-export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate }: LocationsPanelProps) {
+export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate, isPro, onUpgrade }: LocationsPanelProps) {
   const [addingName, setAddingName] = useState('');
   const [addingAddress, setAddingAddress] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -98,12 +101,23 @@ export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate }:
           </p>
         </div>
         {!isAdding && (
-          <button
-            onClick={() => setIsAdding(true)}
-            className="text-sm bg-[#37352F] text-white px-3 py-1.5 rounded-md font-medium hover:bg-opacity-90 transition flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" /> Add location
-          </button>
+          isPro || active.length === 0 ? (
+            <button
+              onClick={() => setIsAdding(true)}
+              className="text-sm bg-[#37352F] text-white px-3 py-1.5 rounded-md font-medium hover:bg-opacity-90 transition flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" /> Add location
+            </button>
+          ) : (
+            <button
+              onClick={onUpgrade}
+              title="Multiple locations is a Pro feature"
+              className="text-sm bg-white border notion-border text-gray-600 px-3 py-1.5 rounded-md font-medium hover:border-[#37352F] transition flex items-center gap-1.5"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-500" /> Add location
+              <span className="text-[9px] uppercase tracking-wider text-amber-600 font-bold">Pro</span>
+            </button>
+          )
         )}
       </div>
 

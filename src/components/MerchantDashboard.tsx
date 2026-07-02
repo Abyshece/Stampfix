@@ -11,6 +11,7 @@ import { markApprovalBannerSeen } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { LocationsPanel } from './LocationsPanel';
+import { ProLockOverlay } from './ProLockOverlay';
 import { UpgradeBanner } from './UpgradeBanner';
 import { UpgradeModal } from './UpgradeModal';
 import { AccountBilling } from './AccountBilling';
@@ -134,6 +135,7 @@ export function MerchantDashboard({
 
   // Show banner only for free-plan merchants. Pro is unlimited so no nudges.
   const showBanner = billing.plan === 'free';
+  const isPro = billing.plan === 'pro';
 
   // Customer list state
   const [customerSearch, setCustomerSearch] = useState('');
@@ -1184,6 +1186,8 @@ export function MerchantDashboard({
               activeLocationId={activeLocationId}
               onAdd={onAddLocation}
               onUpdate={onUpdateLocation}
+              isPro={isPro}
+              onUpgrade={() => setShowUpgradeModal(true)}
             />
 
             <ComplianceSettings merchantId={campaign.merchantId} />
@@ -1191,6 +1195,8 @@ export function MerchantDashboard({
             <PosterSettings
               campaign={campaign}
               onUpdated={(updated) => onUpdateCampaign({ posterColor: updated.posterColor })}
+              isPro={isPro}
+              onUpgrade={() => setShowUpgradeModal(true)}
             />
 
             <CustomerPrivacyNoticePanel
@@ -1260,6 +1266,7 @@ export function MerchantDashboard({
 
               <div className="border-t notion-border pt-6">
                 <h3 className="font-medium mb-4 flex items-center gap-2"><Palette className="w-4 h-4" /> Branding Studio</h3>
+                <ProLockOverlay locked={!isPro} title="Card colour & custom branding are Pro features" onUpgrade={() => setShowUpgradeModal(true)}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-400 uppercase">Card Color</label>
@@ -1362,6 +1369,7 @@ export function MerchantDashboard({
                     </div>
                   </div>
                 </div>
+                </ProLockOverlay>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t notion-border">
