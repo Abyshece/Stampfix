@@ -580,13 +580,15 @@ export type OnboardingKey =
   | 'poster_downloaded'
   | 'test_signup_done'
   | 'first_stamp_given'
-  | 'wizard_dismissed';
+  | 'wizard_dismissed'
+  | 'checklist_dismissed';
 
 export interface OnboardingState {
   poster_downloaded?: boolean;
   test_signup_done?: boolean;
   first_stamp_given?: boolean;
   wizard_dismissed?: boolean;
+  checklist_dismissed?: boolean;
 }
 
 export async function getOnboardingState(merchantId: string): Promise<OnboardingState> {

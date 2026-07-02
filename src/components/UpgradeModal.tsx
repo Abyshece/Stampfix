@@ -143,10 +143,11 @@ function PricingView({
 
       <div className="px-8 py-8 space-y-3">
         {[
-          'Unlimited customer cards',
-          'Multiple locations with per-branch analytics',
-          'Rotating signed QR codes (anti-fraud)',
-          'Apple & Google Wallet support',
+          'Unlimited customers — unlimited Apple & Google Wallet cards',
+          'Custom branding for posters, business cards & pamphlets',
+          'Run one campaign across multiple locations',
+          'Run multiple campaigns at a single location',
+          'Control your card colour & the text shown in Apple Wallet / Maps',
           'Priority email support',
           'Cancel anytime, no contract',
         ].map((feature) => (

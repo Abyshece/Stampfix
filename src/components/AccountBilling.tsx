@@ -130,8 +130,11 @@ export function AccountBilling({ billing, country, cards }: AccountBillingProps)
         <div className="bg-[#F7F7F5] border notion-border rounded-md p-4 space-y-2.5">
           <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Pro features — {price}</p>
           {[
-            'Unlimited customer cards',
-            'Multiple locations',
+            'Unlimited Apple & Google Wallet cards',
+            'Custom branding for posters & business cards',
+            'One campaign across multiple locations',
+            'Multiple campaigns per location',
+            'Control card colour & Apple Wallet text',
             'Priority email support',
             'Cancel anytime',
           ].map((feat) => (

@@ -4,7 +4,7 @@ import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, Merch
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield,
+  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { markApprovalBannerSeen } from '../lib/db';
@@ -474,7 +474,11 @@ export function MerchantDashboard({
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition ${
                   activeTab === id ? 'bg-[#EFEFEE] font-medium' : 'hover:bg-[#EFEFEE] text-gray-600'
                 }`}>
-                <Icon className="w-4 h-4" /> {label}
+                <Icon className="w-4 h-4" />
+                <span className="flex-1 text-left truncate">{label}</span>
+                {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP') && (
+                  <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                )}
               </button>
             ))}
             {isStampfixAdmin && (
@@ -597,7 +601,7 @@ export function MerchantDashboard({
             {/* Get Started checklist — disappears once all three milestones are hit.
                 Hidden on mobile to keep the Scan view non-scrollable; merchants
                 see it on desktop where there's room. */}
-            {!(onboarding.poster_downloaded && onboarding.test_signup_done && onboarding.first_stamp_given) && (
+            {!onboarding.checklist_dismissed && !(onboarding.poster_downloaded && onboarding.test_signup_done && onboarding.first_stamp_given) && (
               <div className="hidden md:block bg-gradient-to-br from-[#F7F7F5] to-white border notion-border rounded-lg p-5 max-w-2xl flex-shrink-0">
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -608,9 +612,17 @@ export function MerchantDashboard({
                       Three small steps to your first stamp.
                     </p>
                   </div>
-                  <span className="text-xs font-medium text-gray-500">
-                    {Number(!!onboarding.poster_downloaded) + Number(!!onboarding.test_signup_done) + Number(!!onboarding.first_stamp_given)} / 3
-                  </span>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className="text-xs font-medium text-gray-500">
+                      {Number(!!onboarding.poster_downloaded) + Number(!!onboarding.test_signup_done) + Number(!!onboarding.first_stamp_given)} / 3
+                    </span>
+                    <button
+                      onClick={() => onMarkOnboardingStep({ checklist_dismissed: true })}
+                      className="text-[11px] text-gray-400 hover:text-[#37352F] transition"
+                    >
+                      Skip for now
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <ChecklistItem
@@ -974,12 +986,21 @@ export function MerchantDashboard({
 
         {/* --- ANALYTICS --- */}
         {activeTab === 'ANALYTICS' && (
-          <InsightsPanel
-            campaign={campaign}
-            cards={cards}
-            activities={activities}
-            locations={locations}
-          />
+          billing.plan === 'pro' ? (
+            <InsightsPanel
+              campaign={campaign}
+              cards={cards}
+              activities={activities}
+              locations={locations}
+            />
+          ) : (
+            <ProFeatureLock
+              title="Insights is a Pro feature"
+              description="See which branches and rewards actually drive repeat visits, with per-location and per-offer analytics."
+              bullets={['Repeat-visit & retention trends', 'Per-location performance', 'Per-offer breakdowns']}
+              onUpgrade={() => setShowUpgradeModal(true)}
+            />
+          )
         )}
 
         {/* --- PREVIEW --- */}
@@ -1366,7 +1387,18 @@ export function MerchantDashboard({
           </div>
         )}
 
-        {activeTab === 'HELP' && <GetHelpPanel />}
+        {activeTab === 'HELP' && (
+          billing.plan === 'pro' ? (
+            <GetHelpPanel />
+          ) : (
+            <ProFeatureLock
+              title="Priority support is a Pro feature"
+              description="Pro merchants get priority email support — real help from us, fast, whenever you need it."
+              bullets={['Priority email support', 'Setup & wallet troubleshooting', 'A direct line to the team']}
+              onUpgrade={() => setShowUpgradeModal(true)}
+            />
+          )
+        )}
       </main>
 
       {/* Mobile Bottom Nav */}
@@ -1497,6 +1529,39 @@ function ActivityBars({ activities }: { activities: ActivityItem[] }) {
           <span className="text-xs text-gray-400 font-medium">{d.label}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Full-panel lock shown in place of a Pro-only section (Insights, Get
+ * help) when the merchant is on the free plan. One-tap upgrade opens the
+ * same UpgradeModal used everywhere else.
+ */
+function ProFeatureLock({
+  title, description, bullets, onUpgrade,
+}: { title: string; description: string; bullets: string[]; onUpgrade: () => void }) {
+  return (
+    <div className="max-w-md mx-auto mt-10 md:mt-20 text-center px-6">
+      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 border border-amber-200 flex items-center justify-center mx-auto mb-4">
+        <Lock className="w-6 h-6 text-amber-600" />
+      </div>
+      <h2 className="text-xl font-serif-display font-semibold mb-2">{title}</h2>
+      <p className="text-sm text-gray-500 mb-5">{description}</p>
+      <div className="bg-[#F7F7F5] border notion-border rounded-lg p-4 text-left space-y-2 mb-6">
+        {bullets.map((b) => (
+          <div key={b} className="flex items-center gap-2 text-sm">
+            <Check className="w-3.5 h-3.5 text-green-600 flex-shrink-0" strokeWidth={3} />
+            <span>{b}</span>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={onUpgrade}
+        className="inline-flex items-center gap-2 bg-[#37352F] text-white px-5 py-2.5 rounded-lg font-medium text-sm hover:bg-opacity-90 transition"
+      >
+        <Sparkles className="w-4 h-4" /> Upgrade to Pro
+      </button>
     </div>
   );
 }

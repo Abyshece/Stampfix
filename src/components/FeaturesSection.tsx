@@ -64,27 +64,28 @@ export function FeaturesSection() {
   );
 }
 
-/** Pure-CSS iPhone-style frame with a sample loyalty card inside. */
+/** Pure-CSS iPhone-style frame showing the current Apple Wallet pass design. */
 function PhoneMockup() {
   return (
     <div className="relative" style={{ width: 280, maxWidth: '100%' }}>
       {/* Device body */}
       <div className="relative bg-[#1a1a1a] rounded-[40px] p-2.5 shadow-2xl" style={{ aspectRatio: '9 / 19' }}>
-        {/* Screen */}
-        <div className="bg-[#F7F7F5] rounded-[32px] w-full h-full overflow-hidden relative flex flex-col">
+        {/* Screen — iOS-style light grey, like the Wallet pass view */}
+        <div className="bg-[#ECECEE] rounded-[32px] w-full h-full overflow-hidden relative flex flex-col">
           {/* Notch */}
           <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-5 bg-[#1a1a1a] rounded-full z-10" />
 
           {/* Status bar */}
-          <div className="pt-2.5 px-5 pb-3 flex justify-between items-center text-[10px] font-semibold text-[#37352F] z-0">
+          <div className="pt-2.5 px-5 pb-2 flex justify-between items-center text-[10px] font-semibold text-[#37352F] z-0">
             <span>9:41</span>
             <span className="opacity-0">notch</span>
             <span>5G</span>
           </div>
 
-          {/* "My loyalty card" label */}
-          <div className="px-4 pt-2 pb-3">
-            <div className="text-[9px] uppercase tracking-widest text-gray-400 font-bold">My loyalty card</div>
+          {/* Wallet chrome — close + more, like the real pass screen */}
+          <div className="px-4 pt-1 pb-3 flex justify-between items-center">
+            <div className="w-5 h-5 rounded-full bg-white shadow-sm" />
+            <div className="w-8 h-5 rounded-full bg-white shadow-sm" />
           </div>
 
           {/* Card */}
@@ -92,79 +93,88 @@ function PhoneMockup() {
             <SampleLoyaltyCard />
           </div>
 
-          {/* Bottom spacer to balance the layout */}
-          <div className="h-4" />
+          <div className="h-3" />
         </div>
       </div>
     </div>
   );
 }
 
-/** Sample loyalty card — matches the actual WalletCard component design. */
+const CARD_BG = '#EFB1AB';
+const INK = '#2D3142';
+
+/** Sample loyalty card — matches the live Apple/Google Wallet pass design. */
 function SampleLoyaltyCard() {
-  const filled = 3;
-  const total = 6;
+  const total = 8;
+  const collected = 3; // a little progress so the card looks alive
   return (
-    <div className="w-full rounded-2xl shadow-md overflow-hidden bg-white border border-gray-100">
-      {/* Top row: logo + business name on left, stamp count on right */}
-      <div className="px-3 pt-3 pb-2 flex items-start justify-between">
-        <div className="flex items-center gap-1.5">
-          <div className="w-7 h-7 rounded-full bg-white border border-gray-100 flex items-center justify-center text-sm shadow-sm">
-            ☕
-          </div>
-          <div className="text-[10px] font-bold uppercase tracking-wider text-[#37352F]">Lucky Cafe</div>
+    <div className="w-full rounded-2xl shadow-md overflow-hidden" style={{ backgroundColor: CARD_BG }}>
+      {/* Header: brand mark + business name | stamps left */}
+      <div className="px-4 pt-4 pb-3 flex items-start justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <BrandMark />
+          <span className="text-[13px] font-bold truncate" style={{ color: INK }}>Stampfix Cafe</span>
         </div>
-        <div className="text-right">
-          <div className="text-[7px] uppercase tracking-widest text-gray-400 font-bold">Stamps</div>
-          <div className="text-base font-bold text-[#37352F] leading-tight">{filled}</div>
+        <div className="text-right flex-shrink-0">
+          <div className="text-[7px] font-bold uppercase tracking-widest" style={{ color: INK, opacity: 0.65 }}>Stamps left</div>
+          <div className="text-lg font-bold leading-none mt-0.5" style={{ color: INK }}>{total - collected}</div>
         </div>
       </div>
 
-      {/* Stamps grid — 3 columns × 2 rows = 6 total */}
-      <div className="px-3 py-2 grid grid-cols-3 gap-2 place-items-center">
-        {Array.from({ length: total }, (_, i) => {
-          const isFilled = i < filled;
-          return isFilled ? (
-            <div key={i} className="w-11 h-11 rounded-full bg-black flex items-center justify-center text-sm shadow-sm">
-              ☕
-            </div>
-          ) : (
-            <div key={i} className="w-11 h-11 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-xs text-gray-300 font-semibold">
-              {i + 1}
-            </div>
-          );
-        })}
+      {/* Stamp grid — 4 cols x 2 rows = 8, shapes cycle square / circle / cross */}
+      <div className="px-4 py-1 grid grid-cols-4 gap-y-3 place-items-center">
+        {Array.from({ length: total }, (_, i) => (
+          <StampShape key={i} kind={i % 3} filled={i < collected} />
+        ))}
       </div>
 
-      {/* Offer pill */}
-      <div className="px-3 pb-2.5 flex justify-center">
-        <div className="bg-gray-50 border border-gray-100 rounded-full px-3 py-1">
-          <span className="text-[8px] uppercase tracking-wider text-gray-500 font-semibold">Order 6 times, 1 mango la...</span>
+      {/* Member / Reward */}
+      <div className="px-4 pt-3 pb-1 grid grid-cols-2 gap-2">
+        <div className="min-w-0">
+          <div className="text-[7px] font-bold uppercase tracking-widest mb-0.5" style={{ color: INK, opacity: 0.65 }}>Member</div>
+          <div className="text-[11px] font-semibold truncate" style={{ color: INK }}>Anna L.</div>
+        </div>
+        <div className="min-w-0">
+          <div className="text-[7px] font-bold uppercase tracking-widest mb-0.5" style={{ color: INK, opacity: 0.65 }}>Reward</div>
+          <div className="text-[11px] font-semibold leading-tight" style={{ color: INK }}>Buy 8 coffee, get 1 free</div>
         </div>
       </div>
 
-      {/* Footer: Holder / ID / Joined columns */}
-      <div className="bg-gray-50 border-t border-gray-100 px-3 py-2.5 grid grid-cols-3 gap-1 items-end">
-        <div>
-          <div className="text-[7px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">Holder</div>
-          <div className="text-[9px] font-bold text-[#37352F] truncate">Anna L.</div>
-        </div>
-        <div className="text-center">
-          <div className="text-[7px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">ID</div>
-          <div className="text-[9px] font-mono font-semibold text-[#37352F]">SF00042</div>
-        </div>
-        <div className="text-right">
-          <div className="text-[7px] uppercase tracking-widest text-gray-400 font-bold mb-0.5">Joined</div>
-          <div className="text-[8px] font-mono text-gray-500">Mar 12</div>
-        </div>
-      </div>
-
-      {/* Mini QR placeholder */}
-      <div className="bg-gray-50 px-3 pb-3 flex justify-center">
-        <div className="w-14 h-14 bg-white border border-gray-200 rounded-md p-1 shadow-sm">
-          <div className="w-full h-full bg-[length:6px_6px] bg-[linear-gradient(45deg,#000_25%,transparent_25%,transparent_75%,#000_75%),linear-gradient(45deg,#000_25%,transparent_25%,transparent_75%,#000_75%)] bg-[position:0_0,3px_3px]" />
+      {/* QR + member id */}
+      <div className="px-4 pt-3 pb-4 flex justify-center">
+        <div className="bg-white rounded-lg p-2 shadow-sm">
+          <div className="w-16 h-16 bg-[length:5px_5px] bg-[linear-gradient(45deg,#000_25%,transparent_25%,transparent_75%,#000_75%),linear-gradient(45deg,#000_25%,transparent_25%,transparent_75%,#000_75%)] bg-[position:0_0,2.5px_2.5px]" />
+          <div className="text-[8px] font-mono text-center mt-1 text-[#37352F]">SF00042</div>
         </div>
       </div>
     </div>
+  );
+}
+
+/** The Stampfix brand mark: filled square, filled circle, cross. */
+function BrandMark() {
+  return (
+    <div className="flex items-center gap-1 flex-shrink-0">
+      <span className="block w-3 h-3 rounded-[2px]" style={{ backgroundColor: INK }} />
+      <span className="block w-3 h-3 rounded-full" style={{ backgroundColor: INK }} />
+      <Cross className="w-3 h-3" />
+    </div>
+  );
+}
+
+/** One stamp slot. kind 0=square 1=circle 2=cross. Faded when not yet collected. */
+function StampShape({ kind, filled }: { kind: number; filled: boolean }) {
+  const op = filled ? 1 : 0.18;
+  if (kind === 0) return <span className="block w-7 h-7 rounded-[4px]" style={{ backgroundColor: INK, opacity: op }} />;
+  if (kind === 1) return <span className="block w-7 h-7 rounded-full" style={{ backgroundColor: INK, opacity: op }} />;
+  return <Cross className="w-7 h-7" opacity={op} />;
+}
+
+function Cross({ className, opacity = 1 }: { className?: string; opacity?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} style={{ opacity }} fill="none" stroke={INK} strokeWidth={4} strokeLinecap="round">
+      <line x1="5" y1="5" x2="19" y2="19" />
+      <line x1="19" y1="5" x2="5" y2="19" />
+    </svg>
   );
 }

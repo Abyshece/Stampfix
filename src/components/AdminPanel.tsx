@@ -813,7 +813,7 @@ function B2B2CTab() {
                                   <span className="text-gray-500 whitespace-nowrap">{d.current_stamps}/{d.max_stamps ?? '?'}</span>
                                 </div>
                                 <div className="text-[10px] text-gray-400 pt-1">
-                                  Joined {new Date(d.joined_at).toLocaleDateString()} · {d.rewards_redeemed} reward{d.rewards_redeemed === 1 ? '' : 's'} redeemed
+                                  {(() => { const jd = d.joined_at ? new Date(d.joined_at) : null; const ok = jd && !Number.isNaN(jd.getTime()); const r = d.rewards_redeemed ?? 0; return `${ok ? `Joined ${jd!.toLocaleDateString()} · ` : ''}${r} reward${r === 1 ? '' : 's'} redeemed`; })()}
                                 </div>
                               </div>
                             ))}
