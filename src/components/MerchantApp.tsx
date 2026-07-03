@@ -68,14 +68,11 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     }
     setLoading(true);
     try {
-      console.log('[merchant] loading campaign for user', user.id);
       let c = await getCampaignByMerchant(user.id);
-      console.log('[merchant] got campaign:', c);
       // If the user just confirmed their email, they may have a pending
       // campaign config in sessionStorage from the signup form.
       if (!c) {
         const consumed = await consumePendingCampaign(user.id);
-        console.log('[merchant] consumed pending campaign?', consumed);
         if (consumed) c = await getCampaignByMerchant(user.id);
       }
       setCampaign(c);
