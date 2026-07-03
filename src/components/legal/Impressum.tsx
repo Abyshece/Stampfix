@@ -1,4 +1,4 @@
-import { LegalPage, LegalH2, Placeholder } from './LegalPage';
+import { LegalPage, LegalH2 } from './LegalPage';
 
 /**
  * Impressum / Legal Notice — legally required under § 5 DDG (German Digital
@@ -6,13 +6,8 @@ import { LegalPage, LegalH2, Placeholder } from './LegalPage';
  * Germany. Stampfix is operated by a Canadian company; the mandatory provider
  * details are disclosed here.
  *
- * PLACEHOLDERS to fill before launch:
- *  - Authorized representative (full legal name of the director representing
- *    the company)
- *  - Telephone number
- *  - Company register / registering authority
- *  - VAT identification number (USt-IdNr), if registered for EU VAT
- *  - Responsible-for-content person (§ 18 Abs. 2 MStV), if different
+ * Provider details completed for launch. Optional refinement: add the German
+ * postal code (PLZ) to the Würzburg address for completeness.
  *
  * Not legal advice — have counsel review before public launch.
  */
@@ -36,42 +31,52 @@ export function Impressum() {
       <LegalH2>Vertreten durch / Represented by</LegalH2>
       <p>
         Abhishek Abhishek (Vertreter / Representative)<br />
-        28-16223 23A Ave<br />
-        Surrey, BC V3Z 6P4<br />
-        Kanada / Canada<br />
-        E-Mail: abyshece@gmail.com
+        Wilhelm-Dahl-Straße 21<br />
+        Würzburg, Deutschland / Germany<br />
+        E-Mail: hello@stampfix.app
       </p>
 
       <LegalH2>Kontakt / Contact</LegalH2>
       <p>
         E-Mail: hello@stampfix.app<br />
-        Telefon / Phone: <Placeholder>phone number</Placeholder>
+        Telefon / Phone: +49 176 47335005
       </p>
 
       <LegalH2>Registereintrag / Company register</LegalH2>
       <p>
         Registernummer / Corporation number: 17999658<br />
-        Registergericht / Registering authority:{' '}
-        <Placeholder>e.g. Corporations Canada / BC Registries — confirm</Placeholder>
+        Registergericht / Registering authority: Corporations Canada
       </p>
 
       <LegalH2>Umsatzsteuer-ID / VAT ID</LegalH2>
       <p>
         Umsatzsteuer-Identifikationsnummer gemäß § 27 a UStG / VAT identification number:{' '}
-        <Placeholder>USt-IdNr if registered — otherwise state “not VAT-registered”</Placeholder>
+        Nicht umsatzsteuerlich registriert / Not VAT-registered
       </p>
 
       <LegalH2>Vertretung in der EU / EU representative (Art. 27 GDPR)</LegalH2>
       <p>
-        Als außerhalb der EU ansässiges Unternehmen benennt Stampfix einen Vertreter in der Union
-        gemäß Art. 27 DSGVO. / As a company established outside the EU, Stampfix appoints a
-        representative in the Union under Article 27 GDPR. Details and contact are set out in our{' '}
+        Als außerhalb der EU ansässiges Unternehmen hat Stampfix gemäß Art. 27 DSGVO einen
+        Vertreter in der Union benannt. / As a company established outside the EU, Stampfix has
+        appointed a representative in the Union under Article 27 GDPR:
+      </p>
+      <p>
+        Abhishek Abhishek<br />
+        Wilhelm-Dahl-Straße 21<br />
+        Würzburg, Deutschland / Germany<br />
+        E-Mail: hello@stampfix.app
+      </p>
+      <p>
+        Weitere Angaben finden Sie in unserer{' '}
+        <a href="/privacy" className="underline">Datenschutzerklärung</a>. / Further details are set out in our{' '}
         <a href="/privacy" className="underline">Privacy Policy</a>.
       </p>
 
       <LegalH2>Verantwortlich für den Inhalt / Responsible for content (§ 18 Abs. 2 MStV)</LegalH2>
       <p>
-        <Placeholder>Responsible person — name &amp; address (may be the same as above)</Placeholder>
+        Abhishek Abhishek<br />
+        Wilhelm-Dahl-Straße 21<br />
+        Würzburg, Deutschland / Germany
       </p>
 
       <LegalH2>EU-Streitschlichtung / EU dispute resolution</LegalH2>
