@@ -267,6 +267,10 @@ export function LandingPage({
           Stampfix
         </div>
         <div className="flex items-center gap-2 md:gap-3 text-sm font-medium">
+          <a href="/features" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Features</a>
+          <a href="/use-cases" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Use cases</a>
+          <a href="/blog" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Blog</a>
+          <a href="/about" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">About</a>
           {/* Customer-facing entry to /my-card. A returning customer who
               Googled "stampfix" and lands here needs an obvious way to
               find their card. Subtle styling (text link) so it doesn't
@@ -303,8 +307,8 @@ export function LandingPage({
         </div>
 
         <h1 className="text-5xl md:text-7xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-          Loyalty programs <br />
-          <span className="text-gray-400">shouldn't be complicated.</span>
+          No apps. No paper. <br />
+          <span className="text-gray-400">Just loyalty.</span>
         </h1>
 
         <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">

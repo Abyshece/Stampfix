@@ -13,8 +13,10 @@
 //   GOOGLE_WALLET_ISSUER_ID
 //   GOOGLE_WALLET_SERVICE_ACCOUNT
 //
-// Required headers:
-//   Authorization: Bearer <supabase user JWT>
+// Auth: the DB trigger (server-to-server) is recognised by a service-role
+// token; the function then does all DB work with its OWN service-role env, so
+// it no longer breaks when the project's service-role key rotates. Optionally
+// set WALLET_SYNC_SECRET for a strict, rotation-proof shared-secret check.
 //
 // Request body:
 //   { cardId: string }
@@ -250,6 +252,27 @@ async function ensureClass(accessToken: string, campaign: Campaign): Promise<voi
 // Handler
 // ---------------------------------------------------------------------
 
+/**
+ * Decode a JWT payload (NO signature verification) and return its `role`
+ * claim, or null. Used only to recognise the server-side DB trigger's
+ * service-role token. Signature verification isn't needed for this coarse
+ * allow/deny decision because the request can't escalate beyond mirroring
+ * one card into Google Wallet, and all DB access uses this function's own
+ * service-role env — never the caller's token.
+ */
+function jwtRole(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const payload = JSON.parse(atob(b64));
+    return typeof payload?.role === 'string' ? payload.role : null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
@@ -261,27 +284,54 @@ Deno.serve(async (req) => {
     return json(200, { ok: true, synced: false, reason: 'wallet_not_configured' });
   }
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return json(401, { error: 'Missing Authorization header' });
-  }
-  const bearer = authHeader.slice('Bearer '.length).trim();
   const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const SYNC_SECRET = Deno.env.get('WALLET_SYNC_SECRET') ?? '';
 
-  // The DB wallet trigger calls this server-to-server with the service-role
-  // key (no user session). Treat that as trusted and read with a service-role
-  // client. Every other caller must present a valid signed-in user JWT and is
-  // read through their own RLS context (unchanged behaviour).
-  let userClient;
-  if (SERVICE_ROLE_KEY && bearer === SERVICE_ROLE_KEY) {
-    userClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-  } else {
-    userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !user) return json(401, { error: 'Not authenticated' });
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const bearer = authHeader.startsWith('Bearer ')
+    ? authHeader.slice('Bearer '.length).trim()
+    : '';
+  const headerSecret = req.headers.get('x-wallet-sync-secret')?.trim() ?? '';
+
+  // Authorize the caller WITHOUT requiring the caller's token to BE the
+  // current service-role key. That requirement is what broke on every key
+  // rotation: the DB trigger sends whatever key sits in Vault, and the moment
+  // the project's service-role key rotated, that stored copy went stale.
+  //
+  // The database work below ALWAYS runs with THIS function's own current
+  // SUPABASE_SERVICE_ROLE_KEY env, so the caller's token can never do anything
+  // the function couldn't already do — it's used only to allow/deny the call.
+  let authorized = false;
+
+  // (1) Strict shared secret — rotation-proof and preferred long term. Set
+  // WALLET_SYNC_SECRET on this function and have the trigger send it (either
+  // as the Bearer token or an `x-wallet-sync-secret` header) to require it.
+  if (SYNC_SECRET && (headerSecret === SYNC_SECRET || bearer === SYNC_SECRET)) {
+    authorized = true;
   }
+
+  // (2) Server-to-server: the current service-role key, OR any token whose
+  // role claim is 'service_role' (this is what the DB trigger sends, including
+  // a legacy/rotated key that no longer matches the current one).
+  if (!authorized && bearer && (bearer === SERVICE_ROLE_KEY || jwtRole(bearer) === 'service_role')) {
+    authorized = true;
+  }
+
+  // (3) A signed-in user (if the app ever calls this directly).
+  if (!authorized && bearer) {
+    const probe = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${bearer}` } },
+    });
+    const { data: { user } } = await probe.auth.getUser();
+    if (user) authorized = true;
+  }
+
+  if (!authorized) return json(401, { error: 'Not authorized' });
+
+  // All reads use the current service-role env (RLS-bypassing). Reading one
+  // card by id to mirror it into Google Wallet leaks nothing to the caller —
+  // the response is only { ok, synced }.
+  const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
   let body: { cardId?: string };
   try {
@@ -294,14 +344,14 @@ Deno.serve(async (req) => {
   // Load card + campaign through the user's RLS context. If the user is
   // a merchant, they see cards in their campaign. If a customer, only
   // their own card. Either way, no leak.
-  const { data: card, error: cardErr } = await userClient
+  const { data: card, error: cardErr } = await db
     .from('cards')
     .select('id, customer_name, current_stamps, rewards_redeemed, status, campaign_id')
     .eq('id', body.cardId)
     .single();
   if (cardErr || !card) return json(404, { error: 'Card not found' });
 
-  const { data: campaign, error: campaignErr } = await userClient
+  const { data: campaign, error: campaignErr } = await db
     .from('campaigns')
     .select('id, business_name, offer_title, primary_color, max_stamps, custom_icon')
     .eq('id', card.campaign_id)

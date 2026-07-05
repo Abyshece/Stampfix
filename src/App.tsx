@@ -12,6 +12,10 @@ import { Impressum } from './components/legal/Impressum';
 import { Subprocessors } from './components/legal/Subprocessors';
 import { Faq } from './components/Faq';
 import { AppleWalletGuide } from './components/AppleWalletGuide';
+import { AboutPage } from './components/marketing/AboutPage';
+import { FeaturesPage } from './components/marketing/FeaturesPage';
+import { UseCasesPage } from './components/marketing/UseCasesPage';
+import { BlogPage } from './components/marketing/BlogPage';
 import { MyCardPage } from './components/MyCardPage';
 import { AdminPanel } from './components/AdminPanel';
 import { BrandLoading } from './components/BrandLoading';
@@ -153,6 +157,10 @@ export default function App() {
   if (path === '/subprocessors') return <Subprocessors />;
   if (path === '/faq') return <Faq />;
   if (path === '/wallet-guide') return <AppleWalletGuide />;
+  if (path === '/about') return <AboutPage />;
+  if (path === '/features') return <FeaturesPage />;
+  if (path === '/use-cases') return <UseCasesPage />;
+  if (path === '/blog' || path.startsWith('/blog/')) return <BlogPage />;
   if (path === '/admin') return <AdminPanel />;
   if (path === '/my-card') {
     return (
