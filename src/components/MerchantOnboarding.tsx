@@ -67,7 +67,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
     try { return sessionStorage.getItem('sf_registered_business') ?? ''; } catch { return ''; }
   });
   const [country, setCountry] = useState<'DE' | 'CA' | ''>('');
-  const [offerTitle, setOfferTitle] = useState('Buy 6 coffee, get 1 free');
+  const [offerTitle, setOfferTitle] = useState('Buy 6, get 1 free');
   const [logoText, setLogoText] = useState('');
   const [phone, setPhone] = useState('');
   const [selectedColor, setSelectedColor] = useState(NOTION_COLORS[0].hex);

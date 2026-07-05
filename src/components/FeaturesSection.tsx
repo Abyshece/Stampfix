@@ -136,7 +136,7 @@ function SampleLoyaltyCard() {
         </div>
         <div className="min-w-0">
           <div className="text-[7px] font-bold uppercase tracking-widest mb-0.5" style={{ color: INK, opacity: 0.65 }}>Reward</div>
-          <div className="text-[11px] font-semibold leading-tight" style={{ color: INK }}>Buy 8 coffee, get 1 free</div>
+          <div className="text-[11px] font-semibold leading-tight" style={{ color: INK }}>Buy 8, get 1 free</div>
         </div>
       </div>
 

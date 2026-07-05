@@ -9,11 +9,11 @@ const STEPS = [
 
 const FEATURES = [
   { icon: Wallet, title: 'Apple & Google Wallet, natively', body: 'Customers already have Wallet installed for their credit cards and boarding passes. Your loyalty card slots right in — no new app, ever.' },
-  { icon: BellRing, title: 'Location-based reminders', body: 'Because the card lives in their native wallet, it can nudge their lock screen when they\u2019re near your shop: \u201cYou\u2019re one stamp away from a free coffee.\u201d' },
+  { icon: BellRing, title: 'Location-based reminders', body: 'Because the card lives in their native wallet, it can nudge their lock screen when they\u2019re near your shop: \u201cYou\u2019re one stamp away from your reward.\u201d' },
   { icon: RefreshCw, title: 'Dynamic, real-time updates', body: 'Add a stamp and the card in their wallet updates on its own. They always see exactly how close they are to the reward.' },
   { icon: BarChart3, title: 'A merchant dashboard', body: 'Know your customers by name, not just by face. See your best regulars, visit frequency, and retention at a glance.' },
   { icon: ShieldCheck, title: 'Fraud-proof stamps', body: 'Digital, signed stamps end the era of hole-punchers bought online to game your paper cards.' },
-  { icon: Smartphone, title: 'Zero-download onboarding', body: 'A QR scan beats an app install every time. Higher participation, no App Store friction, no cold coffee at the register.' },
+  { icon: Smartphone, title: 'Zero-download onboarding', body: 'A QR scan beats an app install every time. Higher participation, no App Store friction, no hold-ups at the register.' },
 ];
 
 export function FeaturesPage() {
@@ -72,7 +72,7 @@ export function FeaturesPage() {
 
       <section className="max-w-4xl mx-auto px-6 py-14">
         <div className="bg-[#37352F] rounded-3xl px-8 py-14 text-center text-white">
-          <h2 className="text-3xl md:text-4xl font-serif-display font-medium mb-4 leading-tight">We handle the tech. You handle the coffee.</h2>
+          <h2 className="text-3xl md:text-4xl font-serif-display font-medium mb-4 leading-tight">We handle the tech. You handle the counter.</h2>
           <p className="text-white/70 mb-8 max-w-lg mx-auto">Premium customer retention, minimal monthly cost. No setup fees, no app development.</p>
           <StartButton label="Start your free trial" className="px-6 py-3 !bg-white !text-[#37352F] hover:!bg-gray-100" />
         </div>

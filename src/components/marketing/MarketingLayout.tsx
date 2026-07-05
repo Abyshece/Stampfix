@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Logo } from '../Logo';
+import { MobileNav } from '../MobileNav';
 
 const NAV_LINKS = [
   { href: '/features', label: 'Features' },
@@ -58,6 +59,16 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
           <div className="flex items-center gap-2">
             <a href="/" className="text-gray-600 hover:text-[#37352F] px-2 py-2 text-sm transition whitespace-nowrap hidden sm:inline">Log in</a>
             <StartButton className="px-4 py-2 text-sm" />
+            <MobileNav
+              links={[
+                { href: '/my-card', label: 'My loyalty card' },
+                { href: '/features', label: 'Features' },
+                { href: '/use-cases', label: 'Use cases' },
+                { href: '/blog', label: 'Blog' },
+                { href: '/about', label: 'About' },
+                { href: '/', label: 'Log in' },
+              ]}
+            />
           </div>
         </div>
       </nav>

@@ -44,7 +44,7 @@ export function AboutPage() {
         <h2 className="text-2xl font-serif-display font-semibold text-[#37352F]">Born from frustration</h2>
         <p>
           Every good product starts with an everyday annoyance. We were tired of losing paper punch cards when
-          we were one stamp away from a free coffee. We were just as tired of being asked to download a 50&nbsp;MB
+          we were one stamp away from the reward. We were just as tired of being asked to download a 50&nbsp;MB
           app to get a discount on a sandwich.
         </p>
         <p>
@@ -79,7 +79,7 @@ export function AboutPage() {
             </p>
             <p className="text-sm text-gray-500 mt-4 leading-relaxed">
               Give local shops the exact same digital-wallet technology the big chains use — for the price of a
-              few cups of coffee a month.
+              few lunches a month.
             </p>
           </div>
         </div>
@@ -89,7 +89,7 @@ export function AboutPage() {
       <section className="max-w-2xl mx-auto px-6 py-10 space-y-5 text-[15px] leading-relaxed text-gray-700">
         <h2 className="text-2xl font-serif-display font-semibold text-[#37352F]">Why we&rsquo;re building this</h2>
         <p>
-          For years, big-box retailers and coffee chains have owned customer loyalty — because they could afford
+          For years, big-box retailers and national chains have owned customer loyalty — because they could afford
           million-dollar apps. Everyone else was left with the paper punch card. We think independent businesses
           are the heartbeat of a community, and they deserve the same tools.
         </p>

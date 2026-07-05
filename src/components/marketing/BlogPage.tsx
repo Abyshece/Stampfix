@@ -39,7 +39,7 @@ const POSTS: Post[] = [
     body: (
       <>
         <Lead>Customer loyalty is broken. It has become a choice between two bad options: paper cards that get lost in the wash, or clunky apps customers refuse to download.</Lead>
-        <P>Look inside your wallet right now. Odds are there&rsquo;s a half-stamped paper card from a coffee shop you visited three months ago. Maybe five of them. Now look at your phone — how many times has a cashier asked you to &ldquo;download our app&rdquo; just to earn a point, while your coffee went cold?</P>
+        <P>Look inside your wallet right now. Odds are there&rsquo;s a half-stamped paper card from a shop you visited three months ago. Maybe five of them. Now look at your phone — how many times has a cashier asked you to &ldquo;download our app&rdquo; just to earn a point, while your order went cold?</P>
         <P>Independent merchants desperately need a way to build loyalty and keep customers. But forcing a customer to jump through hoops is the fastest way to lose them. So we asked: what if loyalty required zero friction? Join, get a stamp, and save your progress in under five seconds — without ever opening the App Store.</P>
         <H2>You finally get customer data</H2>
         <P>When you hand out a paper card, the customer walks out a ghost. You don&rsquo;t know their name, how often they visit, or what they buy. Stampfix captures that from the first stamp, so you can see your best regulars and run promotions that land.</P>

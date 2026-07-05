@@ -2,7 +2,7 @@ import { MarketingLayout, Eyebrow, StartButton } from './MarketingLayout';
 import { Coffee, Scissors, Truck, ShoppingBag } from 'lucide-react';
 
 const CASES = [
-  { icon: Coffee, tag: 'Cafés & coffee shops', focus: 'Speed', title: 'Keep the morning line moving.', body: 'Three-second stamping means no cold coffee and no queue backing up while someone fumbles with an app. Scan, stamp, next.' },
+  { icon: Coffee, tag: 'Cafés & bakeries', focus: 'Speed', title: 'Keep the morning line moving.', body: 'Three-second stamping keeps the line moving, no waiting while someone fumbles with an app. Scan, stamp, next.' },
   { icon: Scissors, tag: 'Salons & spas', focus: 'High-value retention', title: 'Reward your most loyal clients.', body: 'When each visit is worth a lot, keeping a regular matters more than chasing a new booking. Give your best clients a reason to always come back to you.' },
   { icon: Truck, tag: 'Food trucks', focus: 'Portability', title: 'No clunky POS integrations.', body: 'Your loyalty program runs from your phone. Park anywhere, stamp anywhere — the card follows the customer, not the register.' },
   { icon: ShoppingBag, tag: 'Local retail', focus: 'Repeat visits', title: 'Turn browsers into regulars.', body: 'A card sitting in their wallet next to Apple Pay is a standing invitation to come back — and a nudge when they walk past your door.' },

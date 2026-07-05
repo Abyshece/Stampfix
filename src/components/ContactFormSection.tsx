@@ -114,7 +114,7 @@ export function ContactFormSection() {
             <Field label="Business name (optional)">
               <input
                 type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="Your coffee shop, salon, etc."
+                placeholder="Your shop, salon, restaurant, etc."
                 className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
               />
             </Field>

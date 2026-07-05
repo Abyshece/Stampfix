@@ -20,11 +20,13 @@ interface LandingPageProps {
 type AuthMode = 'LOGIN' | 'FORGOT_PASSWORD' | 'RESET_SENT';
 
 // Demo data for the phone mockup
+import { MobileNav } from './MobileNav';
+
 const DEMO_CAMPAIGN: Campaign = {
   id: 'demo',
   merchantId: 'demo',
   businessName: 'Urban Brew',
-  offerTitle: 'Buy 6 coffees, get 1 free',
+  offerTitle: 'Buy 6, get 1 free',
   maxStamps: 6,
   primaryColor: '#37352F',
   backgroundColor: '#FFFFFF',
@@ -277,7 +279,7 @@ export function LandingPage({
               compete with the primary merchant Log in CTA. */}
           <a
             href="/my-card"
-            className="text-gray-600 hover:text-[#37352F] px-2 py-2 md:px-3 transition whitespace-nowrap"
+            className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 py-2 md:px-3 transition whitespace-nowrap"
           >
             My loyalty card
           </a>
@@ -296,6 +298,15 @@ export function LandingPage({
               Log in
             </button>
           )}
+          <MobileNav
+            links={[
+              { href: '/my-card', label: 'My loyalty card' },
+              { href: '/features', label: 'Features' },
+              { href: '/use-cases', label: 'Use cases' },
+              { href: '/blog', label: 'Blog' },
+              { href: '/about', label: 'About' },
+            ]}
+          />
         </div>
       </nav>
 
@@ -541,7 +552,7 @@ export function LandingPage({
             <svg viewBox="0 0 282 90" className="h-5 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
             Stampfix
           </div>
-          <div className="flex gap-6">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
             <a href="/faq" className="hover:text-[#37352F]">FAQ</a>
             <a href="/wallet-guide" className="hover:text-[#37352F]">Update your card</a>
             <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>

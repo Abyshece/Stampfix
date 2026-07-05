@@ -34,7 +34,7 @@ export function Faq() {
 
       <LegalH2>How do I set up Stampfix for my business?</LegalH2>
       <p>
-        Create a free account, set your reward (for example, "Buy 6 coffees, get 1 free")
+        Create a free account, set your reward (for example, "Buy 6, get 1 free")
         and the number of stamps, then share your card link or print a poster. You can be
         live in a few minutes.
       </p>
