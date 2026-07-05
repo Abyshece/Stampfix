@@ -271,6 +271,7 @@ export function LandingPage({
         <div className="flex items-center gap-2 md:gap-3 text-sm font-medium">
           <a href="/features" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Features</a>
           <a href="/use-cases" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Use cases</a>
+          <a href="/savings" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Savings</a>
           <a href="/blog" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Blog</a>
           <a href="/about" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">About</a>
           {/* Customer-facing entry to /my-card. A returning customer who
@@ -303,6 +304,7 @@ export function LandingPage({
               { href: '/my-card', label: 'My loyalty card' },
               { href: '/features', label: 'Features' },
               { href: '/use-cases', label: 'Use cases' },
+              { href: '/savings', label: 'Savings' },
               { href: '/blog', label: 'Blog' },
               { href: '/about', label: 'About' },
             ]}
@@ -520,6 +522,39 @@ export function LandingPage({
               <div className="text-6xl font-serif-display text-gray-100 mb-6 font-bold select-none">3</div>
               <h3 className="text-xl font-bold mb-3">Scan & Reward</h3>
               <p className="text-gray-500 leading-relaxed">Use any phone or tablet to scan customer cards. No expensive hardware needed.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Budget pitch band */}
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-[#F7F7F5] border notion-border px-3 py-1 rounded-full text-xs font-medium text-gray-500 mb-6">
+            Built for independent merchants
+          </div>
+          <h2 className="text-3xl md:text-5xl font-serif-display font-medium mb-5 leading-tight">
+            Enterprise-grade loyalty,<br />on a local-business budget.
+          </h2>
+          <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8 leading-relaxed">
+            No setup fees. No app development. No expensive hardware. Just a flat monthly price with
+            unlimited customers &mdash; for less than you&rsquo;d spend on a few lunches.
+          </p>
+          <a href="/savings" className="inline-flex items-center gap-2 bg-white border notion-border text-[#37352F] px-5 py-2.5 rounded-lg font-medium hover:border-[#37352F] transition">
+            See what paper cards cost you <ArrowRight className="w-4 h-4" />
+          </a>
+          <div className="grid sm:grid-cols-3 gap-4 mt-12 max-w-2xl mx-auto text-left">
+            <div className="bg-white border notion-border rounded-xl p-5">
+              <div className="text-2xl font-serif-display font-semibold text-[#37352F]">$0</div>
+              <div className="text-sm text-gray-500 mt-1">Setup &amp; hardware</div>
+            </div>
+            <div className="bg-white border notion-border rounded-xl p-5">
+              <div className="text-2xl font-serif-display font-semibold text-[#37352F]">Unlimited</div>
+              <div className="text-sm text-gray-500 mt-1">Customers &amp; cards</div>
+            </div>
+            <div className="bg-white border notion-border rounded-xl p-5">
+              <div className="text-2xl font-serif-display font-semibold text-[#37352F]">Cancel anytime</div>
+              <div className="text-sm text-gray-500 mt-1">No contract</div>
             </div>
           </div>
         </div>

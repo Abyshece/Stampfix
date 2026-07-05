@@ -16,6 +16,7 @@ import { AboutPage } from './components/marketing/AboutPage';
 import { FeaturesPage } from './components/marketing/FeaturesPage';
 import { UseCasesPage } from './components/marketing/UseCasesPage';
 import { BlogPage } from './components/marketing/BlogPage';
+import { RoiCalculator } from './components/marketing/RoiCalculator';
 import { MyCardPage } from './components/MyCardPage';
 import { AdminPanel } from './components/AdminPanel';
 import { BrandLoading } from './components/BrandLoading';
@@ -38,7 +39,13 @@ export default function App() {
   const [showConfirmed, setShowConfirmed] = useState(false);
   const [showUpgraded, setShowUpgraded] = useState(false);
   const [cameFromConfirmation, setCameFromConfirmation] = useState(false);
-  const [view, setView] = useState<View>('landing');
+  const [view, setView] = useState<View>(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get('signup') === '1' || p.get('login') === '1' ? 'merchant' : 'landing';
+  });
+  const [enterOnLogin] = useState<boolean>(
+    () => new URLSearchParams(window.location.search).get('login') === '1',
+  );
 
   // Read URL params once on mount.
   useEffect(() => {
@@ -54,6 +61,10 @@ export default function App() {
       // Auto-dismiss the toast after 6 seconds.
       const t = setTimeout(() => setShowUpgraded(false), 6000);
       return () => clearTimeout(t);
+    }
+    if (params.get('signup') === '1' || params.get('login') === '1') {
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
     }
     const campaign = params.get('campaign');
     if (campaign) setCampaignFromUrl(campaign);
@@ -161,6 +172,7 @@ export default function App() {
   if (path === '/features') return <FeaturesPage />;
   if (path === '/use-cases') return <UseCasesPage />;
   if (path === '/blog' || path.startsWith('/blog/')) return <BlogPage />;
+  if (path === '/savings') return <RoiCalculator />;
   if (path === '/admin') return <AdminPanel />;
   if (path === '/my-card') {
     return (
@@ -223,7 +235,7 @@ export default function App() {
   if (view === 'merchant') {
     return (
       <>
-        <MerchantApp onLogout={() => setView('landing')} startOnLogin={cameFromConfirmation} />
+        <MerchantApp onLogout={() => setView('landing')} startOnLogin={cameFromConfirmation || enterOnLogin} />
         {showUpgraded && <UpgradeSuccessToast onClose={() => setShowUpgraded(false)} />}
       </>
     );
