@@ -323,8 +323,9 @@ export async function createCard(input: {
     .from('campaigns')
     .select('offer_title, max_stamps, custom_icon')
     .eq('id', input.campaignId)
-    .single();
+    .maybeSingle();
   if (campErr) throw campErr;
+  if (!campaign) throw new Error('This loyalty program is no longer available.');
 
   const { data, error } = await supabase
     .from('cards')
@@ -367,12 +368,10 @@ export async function createCard(input: {
  *  pushes to Apple Wallet (and bumps passkit_last_updated so pull-to-refresh
  *  works); sync-wallet-object refreshes the Google Wallet object. Fire-and-
  *  forget — a wallet hiccup must never break stamping. */
-function notifyWalletUpdate(cardId: string): void {
-  void supabase.functions.invoke('push-apple-update', { body: { cardId } })
-    .catch((e) => console.warn('push-apple-update failed:', e));
-  void supabase.functions.invoke('sync-wallet-object', { body: { cardId } })
-    .catch((e) => console.warn('sync-wallet-object failed:', e));
-}
+// Apple + Google Wallet passes are refreshed by the server-side DB trigger
+// `trg_wallet_on_card_change`, which fires on every cards UPDATE — including
+// admin-initiated changes. We deliberately do NOT invoke the wallet functions
+// from the client too; doing so tripled the edge-function calls per stamp.
 
 export async function addStamp(cardId: string, maxStamps: number): Promise<UserCard> {
   // Fetch current state to compute next value (Postgres doesn't have an
@@ -381,8 +380,9 @@ export async function addStamp(cardId: string, maxStamps: number): Promise<UserC
     .from('cards')
     .select('*')
     .eq('id', cardId)
-    .single();
+    .maybeSingle();
   if (fetchErr) throw fetchErr;
+  if (!existing) throw new Error('Card not found.');
   const row = existing as CardRow;
   if (row.status === 'BLOCKED') throw new Error('Card is blocked');
   // The card's frozen snapshot is the source of truth for its goal — never
@@ -401,7 +401,6 @@ export async function addStamp(cardId: string, maxStamps: number): Promise<UserC
   if (error) throw error;
   const updated = toCard(data as CardRow);
   await logActivity(updated.campaignId, updated.id, updated.customerName, 'STAMP');
-  notifyWalletUpdate(updated.id);
   return updated;
 }
 
@@ -410,8 +409,9 @@ export async function redeemReward(cardId: string): Promise<UserCard> {
     .from('cards')
     .select('*')
     .eq('id', cardId)
-    .single();
+    .maybeSingle();
   if (fetchErr) throw fetchErr;
+  if (!existing) throw new Error('Card not found.');
   const row = existing as CardRow;
   if (row.status === 'BLOCKED') throw new Error('Card is blocked');
 
@@ -427,7 +427,6 @@ export async function redeemReward(cardId: string): Promise<UserCard> {
   if (error) throw error;
   const updated = toCard(data as CardRow);
   await logActivity(updated.campaignId, updated.id, updated.customerName, 'REDEEM');
-  notifyWalletUpdate(updated.id);
   return updated;
 }
 

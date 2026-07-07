@@ -19,7 +19,6 @@ import {
   setOnboardingFlag,
   getMerchantBilling,
 } from '../lib/db';
-import { syncWalletObject } from '../services/googleWallet';
 import { redeemStampToken } from '../services/stampToken';
 import { MerchantOnboarding, consumePendingCampaign } from './MerchantOnboarding';
 import { MerchantDashboard } from './MerchantDashboard';
@@ -139,10 +138,6 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         const updated = await addStamp(cardId, card?.maxStampsSnapshot ?? campaign.maxStamps);
         setCards((prev) => prev.map((c) => (c.id === cardId ? updated : c)));
         refreshActivities();
-        // Fire-and-forget: push the new stamp count to Google Wallet so
-        // any pass the customer has already saved updates on their device.
-        // No await — we don't want wallet latency to hold up the UI.
-        syncWalletObject(cardId);
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Stamp failed');
       }
@@ -156,7 +151,6 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         const updated = await redeemReward(cardId);
         setCards((prev) => prev.map((c) => (c.id === cardId ? updated : c)));
         refreshActivities();
-        syncWalletObject(cardId);
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Reset failed');
       }
@@ -173,8 +167,6 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         const updated = await setCardStatus(cardId, newStatus);
         setCards((prev) => prev.map((c) => (c.id === cardId ? updated : c)));
         refreshActivities();
-        // Sync the pass state — blocked passes show INACTIVE in Wallet.
-        syncWalletObject(cardId);
       } catch (err) {
         alert(err instanceof Error ? err.message : 'Status update failed');
       }
@@ -255,7 +247,6 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         ),
       );
       refreshActivities();
-      syncWalletObject(result.card.id);
       // Onboarding: a successful stamp counts as the first-stamp milestone.
       if (!onboarding.first_stamp_given) {
         handleMarkOnboardingStep({ first_stamp_given: true });
