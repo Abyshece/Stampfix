@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
-  LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag,
+  LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
   Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2,
 } from 'lucide-react';
@@ -11,11 +11,13 @@ import {
   setMerchantStatus, setMerchantPlan, setMerchantNotes, setTicketStatus, setContactMessageStatus,
   type RangedKPIs, type KPIBlock, type MerchantRow, type CustomerRow, type TicketRow,
   type ContactMessage, type MerchantStatus, type StripeMrr,
+  fetchActivityLog, fetchWalletErrors, fetchRecentSignups, fetchJobRuns,
+  type ActivityLogRow, type WalletErrorRow, type SignupRow, type JobRunRow,
 } from '../services/admin';
 import { OffersTab } from './OffersTab';
 import { setMerchantApproval, getMerchantApproval } from '../lib/db';
 
-type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS';
+type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'LOGS';
 
 export function AdminPanel() {
   const { user, loading: authLoading } = useAuth();
@@ -103,6 +105,7 @@ export function AdminPanel() {
             ['B2B2C_REPORTS', MessageSquare, 'B2B2C Reports'],
             ['CONTACT', Mail, 'Contact Inquiries'],
             ['OFFERS', Tag, 'Offers'],
+            ['LOGS', Activity, 'Logs'],
           ] as const).map(([id, Icon, label]) => (
             <button
               key={id}
@@ -138,6 +141,7 @@ export function AdminPanel() {
         {tab === 'B2B_REPORTS' && <ReportsTab source="merchant" title="B2B Reports" subtitle="Tickets submitted by merchants." />}
         {tab === 'B2B2C_REPORTS' && <ReportsTab source="customer" title="B2B2C Reports" subtitle="Tickets submitted by end-customers." />}
         {tab === 'CONTACT' && <ContactTab />}
+        {tab === 'LOGS' && <LogsTab />}
         {tab === 'OFFERS' && <OffersTab />}
       </main>
     </div>
@@ -1140,6 +1144,204 @@ function NotAuthorized({ email }: { email: string | null }) {
         <p className="text-sm text-gray-500">You're signed in as <strong className="text-[#37352F]">{email}</strong> but this account isn't a platform admin.</p>
         <a href="/" className="inline-block bg-[#37352F] text-white px-4 py-2 rounded-md text-sm font-medium">Back to main site</a>
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Logs — read-only monitoring across activity, wallet errors,
+// signups and scheduled-job runs. All data comes from existing
+// tables via admin RPCs (see stampfix_admin_logs.sql).
+// ============================================================
+type LogSub = 'ACTIVITY' | 'WALLET' | 'SIGNUPS' | 'JOBS';
+
+const ACTIVITY_TYPES = ['', 'STAMP', 'REDEEM', 'JOIN', 'BLOCK', 'UNBLOCK'] as const;
+
+function typeBadge(type: string): string {
+  switch (type) {
+    case 'STAMP': return 'bg-green-50 text-green-700 border-green-200';
+    case 'REDEEM': return 'bg-blue-50 text-blue-700 border-blue-200';
+    case 'JOIN': return 'bg-purple-50 text-purple-700 border-purple-200';
+    case 'BLOCK': return 'bg-red-50 text-red-700 border-red-200';
+    default: return 'bg-gray-50 text-gray-600 border-gray-200';
+  }
+}
+
+function fmtTime(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString();
+}
+
+function LogsTab() {
+  const [sub, setSub] = useState<LogSub>('ACTIVITY');
+  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [refreshTick, setRefreshTick] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const [activity, setActivity] = useState<ActivityLogRow[]>([]);
+  const [walletErrors, setWalletErrors] = useState<WalletErrorRow[]>([]);
+  const [signups, setSignups] = useState<SignupRow[]>([]);
+  const [jobs, setJobs] = useState<JobRunRow[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setErr(null);
+      try {
+        if (sub === 'ACTIVITY') { const d = await fetchActivityLog(200, typeFilter || null); if (!cancelled) setActivity(d); }
+        else if (sub === 'WALLET') { const d = await fetchWalletErrors(150); if (!cancelled) setWalletErrors(d); }
+        else if (sub === 'SIGNUPS') { const d = await fetchRecentSignups(150); if (!cancelled) setSignups(d); }
+        else { const d = await fetchJobRuns(80); if (!cancelled) setJobs(d); }
+      } catch (e) {
+        if (!cancelled) setErr(e instanceof Error ? e.message : 'Failed to load');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [sub, typeFilter, refreshTick]);
+
+  const SUBS: [LogSub, string][] = [
+    ['ACTIVITY', 'Activity'],
+    ['WALLET', 'Wallet errors'],
+    ['SIGNUPS', 'New signups'],
+    ['JOBS', 'System jobs'],
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <h1 className="text-2xl font-serif-display font-semibold">Logs</h1>
+        <button
+          onClick={() => setRefreshTick((t) => t + 1)}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-[#37352F] border notion-border rounded-md px-3 py-1.5 transition"
+        >
+          <RotateCcw className="w-3.5 h-3.5" /> Refresh
+        </button>
+      </div>
+      <p className="text-sm text-gray-500 mb-5">Everything worth watching, in one place. Read-only.</p>
+
+      {/* sub-tabs */}
+      <div className="flex flex-wrap gap-1.5 mb-4 border-b notion-border">
+        {SUBS.map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setSub(id)}
+            className={`px-3 py-2 text-sm rounded-t-md -mb-px border-b-2 transition ${
+              sub === id ? 'border-[#37352F] text-[#37352F] font-medium' : 'border-transparent text-gray-500 hover:text-[#37352F]'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* activity type filter */}
+      {sub === 'ACTIVITY' && (
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {ACTIVITY_TYPES.map((t) => (
+            <button
+              key={t || 'ALL'}
+              onClick={() => setTypeFilter(t)}
+              className={`text-xs px-2.5 py-1 rounded-full border transition ${
+                typeFilter === t ? 'bg-[#37352F] text-white border-[#37352F]' : 'bg-white text-gray-600 notion-border hover:border-[#37352F]'
+              }`}
+            >
+              {t || 'All'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {err && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md px-4 py-3 mb-4">{err}</div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-gray-400 text-sm py-10 justify-center">
+          <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+        </div>
+      ) : (
+        <div className="border notion-border rounded-lg overflow-x-auto">
+          {sub === 'ACTIVITY' && (
+            <table className="w-full text-sm">
+              <thead className="bg-[#F7F7F5] text-gray-500 text-left text-xs uppercase tracking-wider">
+                <tr><th className="px-3 py-2">Time</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Customer</th><th className="px-3 py-2">Business</th><th className="px-3 py-2">Source</th></tr>
+              </thead>
+              <tbody className="divide-y notion-border">
+                {activity.length === 0 && <tr><td colSpan={5} className="px-3 py-8 text-center text-gray-400">No activity yet.</td></tr>}
+                {activity.map((r, i) => (
+                  <tr key={i} className="hover:bg-[#FBFBFA]">
+                    <td className="px-3 py-2 whitespace-nowrap text-gray-500">{fmtTime(r.created_at)}</td>
+                    <td className="px-3 py-2"><span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${typeBadge(r.type)}`}>{r.type}</span></td>
+                    <td className="px-3 py-2">{r.customer_name ?? '—'}</td>
+                    <td className="px-3 py-2 text-gray-600">{r.business_name ?? '—'}</td>
+                    <td className="px-3 py-2 text-gray-400">{r.source ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {sub === 'WALLET' && (
+            <table className="w-full text-sm">
+              <thead className="bg-[#F7F7F5] text-gray-500 text-left text-xs uppercase tracking-wider">
+                <tr><th className="px-3 py-2">Time</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Detail</th></tr>
+              </thead>
+              <tbody className="divide-y notion-border">
+                {walletErrors.length === 0 && <tr><td colSpan={3} className="px-3 py-8 text-center text-gray-400">No wallet/edge errors in the recent window. 🎉</td></tr>}
+                {walletErrors.map((r, i) => (
+                  <tr key={i} className="hover:bg-[#FBFBFA]">
+                    <td className="px-3 py-2 whitespace-nowrap text-gray-500">{fmtTime(r.created)}</td>
+                    <td className="px-3 py-2"><span className="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-red-50 text-red-700 border-red-200">{r.status_code ?? 'ERR'}</span></td>
+                    <td className="px-3 py-2 font-mono text-xs text-gray-600 break-all">{r.detail ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {sub === 'SIGNUPS' && (
+            <table className="w-full text-sm">
+              <thead className="bg-[#F7F7F5] text-gray-500 text-left text-xs uppercase tracking-wider">
+                <tr><th className="px-3 py-2">Joined</th><th className="px-3 py-2">Business</th><th className="px-3 py-2">Email</th><th className="px-3 py-2">Plan</th></tr>
+              </thead>
+              <tbody className="divide-y notion-border">
+                {signups.length === 0 && <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">No signups yet.</td></tr>}
+                {signups.map((r, i) => (
+                  <tr key={i} className="hover:bg-[#FBFBFA]">
+                    <td className="px-3 py-2 whitespace-nowrap text-gray-500">{fmtTime(r.created_at)}</td>
+                    <td className="px-3 py-2">{r.business_name ?? '—'}</td>
+                    <td className="px-3 py-2 text-gray-600">{r.email ?? '—'}</td>
+                    <td className="px-3 py-2"><span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${r.plan === 'pro' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>{r.plan}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {sub === 'JOBS' && (
+            <table className="w-full text-sm">
+              <thead className="bg-[#F7F7F5] text-gray-500 text-left text-xs uppercase tracking-wider">
+                <tr><th className="px-3 py-2">Time</th><th className="px-3 py-2">Job</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Result</th></tr>
+              </thead>
+              <tbody className="divide-y notion-border">
+                {jobs.length === 0 && <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">No job runs yet (or pg_cron not enabled).</td></tr>}
+                {jobs.map((r, i) => (
+                  <tr key={i} className="hover:bg-[#FBFBFA]">
+                    <td className="px-3 py-2 whitespace-nowrap text-gray-500">{fmtTime(r.start_time)}</td>
+                    <td className="px-3 py-2 font-mono text-xs">{r.jobname ?? '—'}</td>
+                    <td className="px-3 py-2"><span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${r.status === 'succeeded' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>{r.status ?? '—'}</span></td>
+                    <td className="px-3 py-2 text-gray-500 text-xs break-all">{r.return_message ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 }

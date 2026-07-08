@@ -385,3 +385,51 @@ export async function deletePromoBanner(id: string): Promise<void> {
   const { error } = await supabase.rpc('admin_delete_promo_banner', { banner_id: id });
   if (error) throw error;
 }
+
+// ---- Logs (admin monitoring tab) ----
+export interface ActivityLogRow {
+  created_at: string;
+  type: string;
+  customer_name: string | null;
+  source: string | null;
+  campaign_id: string | null;
+  business_name: string | null;
+}
+export interface WalletErrorRow {
+  created: string;
+  status_code: number | null;
+  detail: string | null;
+}
+export interface SignupRow {
+  created_at: string;
+  business_name: string | null;
+  email: string | null;
+  plan: string;
+}
+export interface JobRunRow {
+  jobname: string | null;
+  status: string | null;
+  return_message: string | null;
+  start_time: string;
+}
+
+export async function fetchActivityLog(limit = 150, type?: string | null): Promise<ActivityLogRow[]> {
+  const { data, error } = await supabase.rpc('admin_activity_log', { p_limit: limit, p_type: type ?? null });
+  if (error) throw error;
+  return (data as ActivityLogRow[]) ?? [];
+}
+export async function fetchWalletErrors(limit = 100): Promise<WalletErrorRow[]> {
+  const { data, error } = await supabase.rpc('admin_wallet_errors', { p_limit: limit });
+  if (error) throw error;
+  return (data as WalletErrorRow[]) ?? [];
+}
+export async function fetchRecentSignups(limit = 100): Promise<SignupRow[]> {
+  const { data, error } = await supabase.rpc('admin_recent_signups', { p_limit: limit });
+  if (error) throw error;
+  return (data as SignupRow[]) ?? [];
+}
+export async function fetchJobRuns(limit = 50): Promise<JobRunRow[]> {
+  const { data, error } = await supabase.rpc('admin_job_runs', { p_limit: limit });
+  if (error) throw error;
+  return (data as JobRunRow[]) ?? [];
+}
