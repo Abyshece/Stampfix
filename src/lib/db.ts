@@ -23,6 +23,7 @@ interface CampaignRow {
   poster_color: string | null;
   customer_privacy_notice: string | null;
   card_text_color: string | null;
+  logo_color: string | null;
   approval_status: string;
   approval_banner_seen: boolean;
 }
@@ -87,6 +88,7 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   posterColor: r.poster_color,
   customerPrivacyNotice: r.customer_privacy_notice,
   cardTextColor: r.card_text_color ?? null,
+  logoColor: r.logo_color ?? null,
   approvalStatus: (r.approval_status as Campaign['approvalStatus']) ?? 'approved',
   approvalBannerSeen: r.approval_banner_seen ?? false,
 });
@@ -232,6 +234,7 @@ export async function updateCampaign(id: string, patch: Partial<Campaign>): Prom
   if (patch.posterColor !== undefined) dbPatch.poster_color = patch.posterColor;
   if (patch.customerPrivacyNotice !== undefined) dbPatch.customer_privacy_notice = patch.customerPrivacyNotice;
   if (patch.cardTextColor !== undefined) dbPatch.card_text_color = patch.cardTextColor;
+  if (patch.logoColor !== undefined) dbPatch.logo_color = patch.logoColor;
 
   const { data, error } = await supabase
     .from('campaigns')

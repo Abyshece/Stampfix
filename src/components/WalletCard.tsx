@@ -3,6 +3,7 @@ import QRCode from 'react-qr-code';
 import type { Campaign, UserCard } from '../types';
 import { getSaveToWalletUrl } from '../services/googleWallet';
 import { issueStampToken } from '../services/stampToken';
+import { effectiveLogoColor } from '../lib/colors';
 import { Loader2, X, ShieldAlert } from 'lucide-react';
 
 interface WalletCardProps {
@@ -158,7 +159,7 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
                         {/* Fixed Stampfix brand mark — the same square/circle/cross logo the
                 Apple Wallet pass renders in its top-left slot. Replaces the
                 per-merchant emoji so every card carries Stampfix branding. */}
-            <svg viewBox="0 0 290 90" className="h-5 w-auto shrink-0" fill="#111827" aria-hidden="true">
+            <svg viewBox="0 0 290 90" className="h-5 w-auto shrink-0" fill={effectiveLogoColor(campaign.logoColor, campaign.backgroundColor)} aria-hidden="true">
               <rect x="8" y="12" width="66" height="66" rx="4" />
               <circle cx="140" cy="45" r="34" />
               <rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)" />

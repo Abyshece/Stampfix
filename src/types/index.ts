@@ -42,6 +42,8 @@ export interface Campaign {
    *  exactly; Google Wallet auto-derives text color for contrast and
    *  ignores it. Falls back to #1d3458 when null. */
   cardTextColor?: string | null;
+  /** Brand-mark (logo) colour override. Null = auto (dark on light card, white on dark). */
+  logoColor?: string | null;
   approvalStatus?: 'pending' | 'approved' | 'rejected';
   /** Whether the merchant has dismissed the one-time approval banner. */
   approvalBannerSeen?: boolean;

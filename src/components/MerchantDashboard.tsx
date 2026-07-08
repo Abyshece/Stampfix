@@ -12,6 +12,7 @@ import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { LocationsPanel } from './LocationsPanel';
 import { ProLockOverlay } from './ProLockOverlay';
+import { isDarkColor } from '../lib/colors';
 import { UpgradeBanner } from './UpgradeBanner';
 import { UpgradeModal } from './UpgradeModal';
 import { AccountBilling } from './AccountBilling';
@@ -1294,6 +1295,33 @@ export function MerchantDashboard({
                       <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                       <span>Applies to Apple Wallet only. Google Wallet (Android) picks the text color automatically for contrast, so this won't affect the Android card.</span>
                     </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-400 uppercase">Logo Color</label>
+                    <div className="flex gap-2 items-center">
+                      <input type="color"
+                        value={tempSettings.logoColor || (isDarkColor(tempSettings.backgroundColor || '#f0ece1') ? '#FFFFFF' : '#111827')}
+                        onChange={(e) => setTempSettings({ ...tempSettings, logoColor: e.target.value })}
+                        className="h-9 w-12 shrink-0 rounded border notion-border bg-white cursor-pointer p-0.5" />
+                      <input type="text"
+                        value={tempSettings.logoColor || (isDarkColor(tempSettings.backgroundColor || '#f0ece1') ? '#FFFFFF' : '#111827')}
+                        onChange={(e) => setTempSettings({ ...tempSettings, logoColor: e.target.value })}
+                        className="flex-1 bg-[#F7F7F5] border notion-border rounded px-3 py-2 text-sm font-mono" />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTempSettings({ ...tempSettings, logoColor: null })}
+                      className="inline-flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-[#37352F] transition"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Back to default color (black)
+                    </button>
+                    {!tempSettings.logoColor && isDarkColor(tempSettings.backgroundColor || '#f0ece1') && (
+                      <div className="mt-1.5 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 text-[11px] text-amber-700 leading-relaxed">
+                        <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                        <span>Colour automatically switched to a light logo because your card colour is dark.</span>
+                      </div>
+                    )}
+                    <p className="text-[11px] text-gray-400">The square / circle / cross mark on your card.</p>
                   </div>
                 </div>
                 <button

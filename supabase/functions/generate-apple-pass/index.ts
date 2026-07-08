@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
 
     const { data: campaign } = await supabase
       .from('campaigns')
-      .select('business_name, offer_title, max_stamps, primary_color, background_color, card_text_color')
+      .select('business_name, offer_title, max_stamps, primary_color, background_color, card_text_color, logo_color')
       .eq('id', card.campaign_id)
       .maybeSingle();
 
@@ -372,7 +372,7 @@ Deno.serve(async (req) => {
         const n = parseInt(m[1], 16);
         return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150;
       })();
-      const logoFill = lightCard ? '#1A1A1A' : '#FFFFFF';
+      const logoFill = campaign?.logo_color || (lightCard ? '#1A1A1A' : '#FFFFFF');
       const logoSvg =
         `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 282 150" width="282" height="150">` +
         `<g fill="${logoFill}" transform="translate(0 30)">` +
