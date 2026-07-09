@@ -62,7 +62,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
             <StartButton className="px-4 py-2 text-sm" />
             <MobileNav
               links={[
-                { href: '/my-card', label: 'My loyalty card' },
+                { href: '/find-card', label: 'Lost your card? Download it here' },
                 { href: '/features', label: 'Features' },
                 { href: '/use-cases', label: 'Use cases' },
                 { href: '/savings', label: 'Savings' },

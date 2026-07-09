@@ -17,6 +17,7 @@ const FeaturesPage = lazy(() => import('./components/marketing/FeaturesPage').th
 const UseCasesPage = lazy(() => import('./components/marketing/UseCasesPage').then((m) => ({ default: m.UseCasesPage })));
 const BlogPage = lazy(() => import('./components/marketing/BlogPage').then((m) => ({ default: m.BlogPage })));
 const RoiCalculator = lazy(() => import('./components/marketing/RoiCalculator').then((m) => ({ default: m.RoiCalculator })));
+const CardRecovery = lazy(() => import('./components/CardRecovery').then((m) => ({ default: m.CardRecovery })));
 import { MyCardPage } from './components/MyCardPage';
 const AdminPanel = lazy(() => import('./components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
 import { BrandLoading } from './components/BrandLoading';
@@ -173,6 +174,7 @@ export default function App() {
   if (path === '/use-cases') return <Suspense fallback={<BrandLoading />}><UseCasesPage /></Suspense>;
   if (path === '/blog' || path.startsWith('/blog/')) return <Suspense fallback={<BrandLoading />}><BlogPage /></Suspense>;
   if (path === '/savings') return <Suspense fallback={<BrandLoading />}><RoiCalculator /></Suspense>;
+  if (path === '/find-card') return <Suspense fallback={<BrandLoading />}><CardRecovery /></Suspense>;
   if (path === '/admin') return <Suspense fallback={<BrandLoading />}><AdminPanel /></Suspense>;
   if (path === '/my-card') {
     return (

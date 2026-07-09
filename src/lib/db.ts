@@ -679,3 +679,19 @@ export async function deleteMyAccount(): Promise<{ success: boolean; error?: str
   if (error) throw error;
   return data as { success: boolean; error?: string; message?: string };
 }
+
+/**
+ * Recover a customer's card(s) with their phone + the 6-digit code they set at
+ * signup. The RPC verifies both server-side (code is bcrypt-hashed) and returns
+ * the full card + campaign rows, which we map through the same helpers used
+ * everywhere else so the shapes stay identical.
+ */
+export async function recoverCards(
+  phone: string,
+  code: string,
+): Promise<{ card: UserCard; campaign: Campaign }[]> {
+  const { data, error } = await supabase.rpc('recover_cards', { p_phone: phone, p_code: code });
+  if (error) throw error;
+  const rows = (data as Array<{ card: CardRow; campaign: CampaignRow }>) ?? [];
+  return rows.map((r) => ({ card: toCard(r.card), campaign: toCampaign(r.campaign) }));
+}

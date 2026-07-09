@@ -91,6 +91,8 @@ export function LandingPage({
     }
   };
 
+  const [showLoginChoice, setShowLoginChoice] = useState(false);
+
   const openLoginModal = () => {
     setAuthMode('LOGIN');
     setEmail('');
@@ -101,6 +103,33 @@ export function LandingPage({
 
   return (
     <div className="min-h-screen bg-white text-[#37352F] font-sans selection:bg-[#37352F] selection:text-white">
+      {/* Login type chooser */}
+      {showLoginChoice && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onClick={() => setShowLoginChoice(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-serif-display font-semibold mb-1">Log in</h3>
+            <p className="text-sm text-gray-500 mb-5">Which kind of account?</p>
+            <div className="space-y-3">
+              <button
+                onClick={() => { setShowLoginChoice(false); openLoginModal(); }}
+                className="w-full text-left border notion-border rounded-lg p-4 hover:border-[#37352F] transition"
+              >
+                <div className="font-medium">Merchant login</div>
+                <div className="text-sm text-gray-500">Manage your loyalty program and dashboard.</div>
+              </button>
+              <a
+                href="/find-card"
+                className="block text-left border notion-border rounded-lg p-4 hover:border-[#37352F] transition"
+              >
+                <div className="font-medium">Customer login</div>
+                <div className="text-sm text-gray-500">Find and re-download your stamp card.</div>
+              </a>
+            </div>
+            <button onClick={() => setShowLoginChoice(false)} className="mt-4 text-sm text-gray-400 hover:text-[#37352F] transition">Cancel</button>
+          </div>
+        </div>
+      )}
+
       {/* Login Modal */}
       {isLoginOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -279,10 +308,10 @@ export function LandingPage({
               find their card. Subtle styling (text link) so it doesn't
               compete with the primary merchant Log in CTA. */}
           <a
-            href="/my-card"
+            href="/find-card"
             className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 py-2 md:px-3 transition whitespace-nowrap"
           >
-            My loyalty card
+            Lost your card?
           </a>
           {isAuthenticated && onResumeMerchant ? (
             <button
@@ -293,7 +322,7 @@ export function LandingPage({
             </button>
           ) : (
             <button
-              onClick={openLoginModal}
+              onClick={() => setShowLoginChoice(true)}
               className="bg-[#37352F] text-white px-3 py-2 md:px-5 md:py-2.5 rounded-md font-medium hover:bg-[#2F2D28] transition shadow-sm text-xs md:text-sm whitespace-nowrap"
             >
               Log in
@@ -301,7 +330,7 @@ export function LandingPage({
           )}
           <MobileNav
             links={[
-              { href: '/my-card', label: 'My loyalty card' },
+              { href: '/find-card', label: 'Lost your card? Download it here' },
               { href: '/features', label: 'Features' },
               { href: '/use-cases', label: 'Use cases' },
               { href: '/savings', label: 'Savings' },
