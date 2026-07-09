@@ -322,7 +322,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value.replace(/\D/g, '').slice(0, 6) })}
                 className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 font-mono tracking-[0.3em] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
-                placeholder="\u2022\u2022\u2022\u2022\u2022\u2022"
+                placeholder="••••••"
               />
               <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 text-[11px] text-blue-700 leading-relaxed">
                 <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
