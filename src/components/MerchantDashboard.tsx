@@ -1561,7 +1561,9 @@ export function MerchantDashboard({
 
         {/* --- SETTINGS --- */}
         {activeTab === 'STAFF' && (
-          <StaffPanel campaignId={campaign.id} onSwitchStaff={() => setShowStaffGate(true)} />
+          <ProLockOverlay locked={!isPro} title="Staff management is a Pro feature" onUpgrade={() => setShowUpgradeModal(true)}>
+            <StaffPanel campaignId={campaign.id} onSwitchStaff={() => setShowStaffGate(true)} />
+          </ProLockOverlay>
         )}
 
         {activeTab === 'VALUE' && (
@@ -1633,7 +1635,9 @@ export function MerchantDashboard({
               })()}
 
             {settingsSection === 'links' && (
-              <LinksSettings campaign={campaign} onUpdated={(updated) => onUpdateCampaign({ socialLinks: updated.socialLinks })} />
+              <ProLockOverlay locked={!isPro} title="Card links are a Pro feature" onUpgrade={() => setShowUpgradeModal(true)}>
+                <LinksSettings campaign={campaign} onUpdated={(updated) => onUpdateCampaign({ socialLinks: updated.socialLinks })} />
+              </ProLockOverlay>
             )}
 
             {settingsSection === 'account' && (
