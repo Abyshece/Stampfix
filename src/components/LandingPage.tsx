@@ -3,8 +3,7 @@ import {
   ArrowRight, ScanLine, X, Loader2, ArrowLeft, Mail, CheckCircle,
   BarChart3, Users, Zap, Smartphone, QrCode,
 } from 'lucide-react';
-import { WalletCard } from './WalletCard';
-import type { Campaign, UserCard } from '../types';
+import { HeroCardLoop } from './HeroCardLoop';
 import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
 import { PasswordInput } from './PasswordInput';
@@ -23,32 +22,6 @@ type AuthMode = 'LOGIN' | 'FORGOT_PASSWORD' | 'RESET_SENT';
 
 // Demo data for the phone mockup
 import { MobileNav } from './MobileNav';
-
-const DEMO_CAMPAIGN: Campaign = {
-  id: 'demo',
-  merchantId: 'demo',
-  businessName: 'Urban Brew',
-  offerTitle: 'Buy 6, get 1 free',
-  maxStamps: 6,
-  primaryColor: '#37352F',
-  backgroundColor: '#FFFFFF',
-  logoText: 'UB',
-  description: 'Demo',
-  cardPattern: 'dots',
-  customIcon: '☕️',
-};
-
-const DEMO_CARD: UserCard = {
-  id: 'demo-card',
-  campaignId: 'demo',
-  customerName: 'Alex Smith',
-  email: 'alex@example.com',
-  age: 25,
-  currentStamps: 4,
-  rewardsRedeemed: 0,
-  joinedAt: new Date(),
-  status: 'ACTIVE',
-};
 
 export function LandingPage({
   onEnterMerchantFlow,
@@ -376,73 +349,10 @@ export function LandingPage({
           </button>
         </div>
 
-        {/* Hero visual */}
-        <div className="mt-20 relative max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-gradient-to-r from-pink-100/50 via-purple-100/50 to-blue-100/50 blur-3xl rounded-full -z-10"></div>
-
-          <div className="relative grid grid-cols-1 md:grid-cols-12 gap-8 items-end">
-            <div className="md:col-span-8 bg-white rounded-xl shadow-2xl border notion-border overflow-hidden">
-              <div className="h-8 bg-[#F7F7F5] border-b notion-border flex items-center px-4 gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-400/50"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-400/50"></div>
-                <div className="w-3 h-3 rounded-full bg-green-400/50"></div>
-              </div>
-              <div className="p-6">
-                <div className="flex justify-between items-end mb-8">
-                  <div>
-                    <div className="h-2 w-24 bg-gray-100 rounded mb-2"></div>
-                    <div className="h-6 w-48 bg-gray-900 rounded opacity-10"></div>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="h-8 w-8 rounded bg-gray-100"></div>
-                    <div className="h-8 w-8 rounded bg-gray-100"></div>
-                  </div>
-                </div>
-                <div className="flex items-end gap-2 h-48 w-full pb-4 border-b border-gray-100 px-2">
-                  {[40, 65, 45, 80, 55, 90, 70, 85, 60, 75, 50, 95].map((h, i) => (
-                    <div key={i} className="flex-1 bg-[#37352F] opacity-90 rounded-t-sm hover:opacity-100 transition duration-300" style={{ height: `${h}%` }}></div>
-                  ))}
-                </div>
-                <div className="flex justify-between mt-4">
-                  <div className="h-16 w-32 bg-[#F7F7F5] rounded border notion-border p-3">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 mb-2"></div>
-                    <div className="h-2 w-16 bg-gray-200 rounded"></div>
-                  </div>
-                  <div className="h-16 w-32 bg-[#F7F7F5] rounded border notion-border p-3">
-                    <div className="w-6 h-6 rounded-full bg-green-100 mb-2"></div>
-                    <div className="h-2 w-16 bg-gray-200 rounded"></div>
-                  </div>
-                  <div className="h-16 w-32 bg-[#F7F7F5] rounded border notion-border p-3">
-                    <div className="w-6 h-6 rounded-full bg-orange-100 mb-2"></div>
-                    <div className="h-2 w-16 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="hidden md:block md:col-span-4 -mb-12 relative z-10 transform rotate-[-2deg] hover:rotate-0 transition duration-500">
-              <div className="bg-black p-3 rounded-[3rem] shadow-2xl border-[4px] border-gray-800">
-                <div className="bg-white rounded-[2.2rem] overflow-hidden h-[450px] relative border border-gray-200 flex flex-col items-center">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-black rounded-b-xl z-20"></div>
-                  <div className="w-full h-10 bg-white flex justify-between items-center px-6 pt-2 text-[10px] font-bold text-gray-900 z-10">
-                    <span>9:41</span>
-                    <div className="flex gap-1">
-                      <div className="w-4 h-2.5 bg-gray-900 rounded-[1px]"></div>
-                      <div className="w-0.5 h-2.5 bg-gray-300"></div>
-                    </div>
-                  </div>
-                  <div className="w-full px-2 pt-2 pb-0 flex-1 overflow-hidden bg-gray-50 flex flex-col items-center">
-                    <div className="transform scale-[0.70] origin-top w-full -mt-2">
-                      <WalletCard campaign={DEMO_CAMPAIGN} card={DEMO_CARD} disableSave staticQR />
-                    </div>
-                  </div>
-                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-32 h-1 bg-black rounded-full z-20"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
+
+      {/* Hero visual — live wallet cards on a straight looping rail */}
+      <HeroCardLoop />
 
       {/* Social proof */}
       <section className="border-y notion-border bg-[#F7F7F5]/50 py-16">
