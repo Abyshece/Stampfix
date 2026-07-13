@@ -324,7 +324,7 @@ export function LandingPage({
       </nav>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-24 pb-16 text-center">
+      <section className="max-w-6xl mx-auto px-6 pt-10 pb-2 text-center">
         <div className="inline-flex items-center gap-2 bg-[#F7F7F5] border notion-border px-3 py-1 rounded-full text-xs font-medium text-gray-500 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Zap className="w-3 h-3 text-yellow-500 fill-yellow-500" />
           Lightning fast setup & onboarding

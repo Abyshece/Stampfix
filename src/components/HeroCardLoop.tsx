@@ -144,6 +144,12 @@ export function HeroCardLoop() {
     measure();
     window.addEventListener('resize', measure);
 
+    // Cards sit slightly below centre so the click-lift has headroom to rise
+    // into without the strip's overflow clipping the top of the card.
+    const REST_DROP = 24;   // px below centre at rest
+    const LIFT = 48;        // px the card rises when picked
+    const LIFT_SCALE = 0.05;
+
     // Per-card spring state for the click-lift, and an eased dim for the rest.
     const lift = CARDS.map(() => ({ x: 0, v: 0 }));
     const dim = CARDS.map(() => 0);
@@ -179,8 +185,8 @@ export function HeroCardLoop() {
 
         // Straight horizontal path: x is the ONLY travel. y moves only on lift.
         const x = s * gap;
-        const y = -66 * L.x * scale;
-        const sc = scale * (1 + 0.08 * L.x);
+        const y = (REST_DROP - LIFT * L.x) * scale;
+        const sc = scale * (1 + LIFT_SCALE * L.x);
 
         el.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), 0) scale(${sc})`;
         el.style.zIndex = String(100 + Math.round(L.x * 900));
@@ -205,7 +211,7 @@ export function HeroCardLoop() {
 
   return (
     <section
-      className="relative mt-16 h-[400px] md:h-[500px] overflow-hidden"
+      className="relative h-[360px] md:h-[470px] overflow-hidden"
       onMouseEnter={() => { hoverRef.current = true; }}
       onMouseLeave={() => { hoverRef.current = false; }}
       onClick={() => setPicked(null)}
