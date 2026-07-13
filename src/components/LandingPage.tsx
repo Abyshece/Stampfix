@@ -458,20 +458,6 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-32 px-6 text-center">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-4xl md:text-5xl font-serif-display font-medium mb-8">Ready to grow your community?</h2>
-          <button
-            onClick={onEnterMerchantFlow}
-            className="bg-[#37352F] text-white px-8 py-4 rounded-lg font-medium text-lg flex items-center justify-center gap-2 hover:bg-[#2F2D28] transition shadow-lg mx-auto"
-          >
-            Create Workspace for Free <ArrowRight className="w-5 h-5" />
-          </button>
-          <p className="mt-6 text-sm text-gray-400">No credit card required. Up and running in minutes.</p>
-        </div>
-      </section>
-
       {/* Features section — 2-column with iPhone mockup */}
       <FeaturesSection />
 
