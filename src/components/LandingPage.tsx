@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ArrowRight, ScanLine, X, Loader2, ArrowLeft, Mail, CheckCircle,
   BarChart3, Users, Zap, Smartphone, QrCode,
@@ -14,6 +14,8 @@ import { PromoBannerBar } from './PromoBannerBar';
 interface LandingPageProps {
   onEnterMerchantFlow: () => void;
   isAuthenticated?: boolean;
+  /** When true (arriving via ?login=1), auto-open the merchant/customer chooser. */
+  autoOpenLoginChoice?: boolean;
   onResumeMerchant?: () => void;
 }
 
@@ -52,6 +54,7 @@ export function LandingPage({
   onEnterMerchantFlow,
   isAuthenticated,
   onResumeMerchant,
+  autoOpenLoginChoice,
 }: LandingPageProps) {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('LOGIN');
@@ -93,6 +96,12 @@ export function LandingPage({
 
   const [showLoginChoice, setShowLoginChoice] = useState(false);
 
+  // Generic "Log in" entry points (e.g. the marketing-site nav via ?login=1)
+  // open the merchant/customer chooser instead of jumping straight to merchant login.
+  useEffect(() => {
+    if (autoOpenLoginChoice) setShowLoginChoice(true);
+  }, [autoOpenLoginChoice]);
+
   const openLoginModal = () => {
     setAuthMode('LOGIN');
     setEmail('');
@@ -105,7 +114,7 @@ export function LandingPage({
     <div className="min-h-screen bg-white text-[#37352F] font-sans selection:bg-[#37352F] selection:text-white">
       {/* Login type chooser */}
       {showLoginChoice && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4" onClick={() => setShowLoginChoice(false)}>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowLoginChoice(false)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-serif-display font-semibold mb-1">Log in</h3>
             <p className="text-sm text-gray-500 mb-5">Which kind of account?</p>

@@ -42,7 +42,7 @@ export default function App() {
   const [cameFromConfirmation, setCameFromConfirmation] = useState(false);
   const [view, setView] = useState<View>(() => {
     const p = new URLSearchParams(window.location.search);
-    return p.get('signup') === '1' || p.get('login') === '1' ? 'merchant' : 'landing';
+    return p.get('signup') === '1' ? 'merchant' : 'landing';
   });
   const [enterOnLogin] = useState<boolean>(
     () => new URLSearchParams(window.location.search).get('login') === '1',
@@ -237,7 +237,7 @@ export default function App() {
   if (view === 'merchant') {
     return (
       <>
-        <Suspense fallback={<BrandLoading />}><MerchantApp onLogout={() => setView('landing')} startOnLogin={cameFromConfirmation || enterOnLogin} /></Suspense>
+        <Suspense fallback={<BrandLoading />}><MerchantApp onLogout={() => setView('landing')} startOnLogin={cameFromConfirmation} /></Suspense>
         {showUpgraded && <UpgradeSuccessToast onClose={() => setShowUpgraded(false)} />}
       </>
     );
@@ -250,6 +250,7 @@ export default function App() {
         isAuthenticated={Boolean(user) && hasMerchantRow}
         onEnterMerchantFlow={() => setView('merchant')}
         onResumeMerchant={() => setView('merchant')}
+        autoOpenLoginChoice={enterOnLogin}
       />
       {showUpgraded && <UpgradeSuccessToast onClose={() => setShowUpgraded(false)} />}
     </>
