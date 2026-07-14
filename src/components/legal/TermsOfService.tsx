@@ -38,10 +38,10 @@ export function TermsOfService() {
       <LegalH2>3. Plans, fees, and billing</LegalH2>
       <p>
         The Service is currently offered free of charge up to 10 Cardholders per Merchant. Beyond
-        that limit, continued use requires a paid subscription of EUR 19.99 per month (or the
-        equivalent in Canadian dollars), billed through our payment provider, Stripe. Prices are
-        exclusive of applicable taxes (such as German VAT or Canadian GST/HST), which will be added
-        where required.
+        that limit, continued use requires a paid subscription: EUR 19.99 per month incl. USt. for
+        Merchants in Germany, or CA$29.99 per month for Merchants in Canada (plus applicable
+        GST/HST). Subscriptions are billed monthly through our payment provider, Stripe, and can be
+        cancelled at any time from your dashboard.
       </p>
       <p>
         Subscriptions renew automatically until cancelled. You may cancel at any time; cancellation
