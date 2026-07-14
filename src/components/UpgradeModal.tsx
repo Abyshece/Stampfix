@@ -4,6 +4,8 @@ import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe
 import { X, Check, Sparkles, Loader2 } from 'lucide-react';
 import { createCheckoutSession } from '../services/billing';
 
+import { proPrice } from '../lib/pricing';
+
 interface UpgradeModalProps {
   country?: 'DE' | 'CA' | null;
   onClose: () => void;
@@ -42,12 +44,11 @@ export function UpgradeModal({ country, onClose }: UpgradeModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Single CAD price for everyone — German merchants are charged in CAD and
-  // their bank handles the FX (Stripe presents the CAD amount).
-  const price = 'CAD $29.99';
-  const currencyNote = country === 'CA'
-    ? 'Billed monthly in Canadian dollars.'
-    : 'Billed monthly in Canadian dollars — your bank converts to your local currency.';
+  // Price shown in the currency the merchant is actually billed (see
+  // create-checkout-session): CA → CAD, DE → EUR (incl. USt.).
+  const pricing = proPrice(country);
+  const price = pricing.amount;
+  const currencyNote = pricing.note;
 
   const handleStartCheckout = async () => {
     setError(null);

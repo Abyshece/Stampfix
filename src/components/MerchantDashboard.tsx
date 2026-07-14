@@ -1163,7 +1163,7 @@ export function MerchantDashboard({
 
         {/* --- SETTINGS --- */}
         {activeTab === 'VALUE' && (
-          <MerchantValueCalculator monthly={29.99} businessName={campaign.businessName} />
+          <MerchantValueCalculator country={country ?? null} businessName={campaign.businessName} />
         )}
 
         {activeTab === 'SETTINGS' && (

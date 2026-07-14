@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Coffee, TrendingUp } from 'lucide-react';
+import { proMonthly, type MerchantCountry } from '../lib/pricing';
 
 /**
  * Merchant-facing "Payback" page (Workspace → Payback).
@@ -8,17 +9,15 @@ import { Coffee, TrendingUp } from 'lucide-react';
  * bring — and how fast the Stampfix subscription pays for itself. Fully
  * self-contained: three sliders + live results, no external data.
  *
- * Figures are estimates. The visit-uplift slider is the honest lever: industry
- * benchmarks put loyalty-member visit frequency ~20–30% higher than non-members.
+ * Currency + subscription price follow the merchant's country (DE → EUR incl.
+ * USt., else CAD). Figures are estimates; the visit-uplift slider is the honest
+ * lever — loyalty members typically visit ~20–30% more often than non-members.
  */
 
 interface Props {
-  monthly: number;        // subscription price per month, e.g. 29.99
+  country: MerchantCountry;
   businessName?: string;
 }
-
-const CUR = 'CA$';
-const money = (n: number) => CUR + Math.round(n).toLocaleString('en-CA');
 
 function Slider({
   label, value, min, max, step, onChange, format,
@@ -43,7 +42,10 @@ function Slider({
   );
 }
 
-export function MerchantValueCalculator({ monthly, businessName }: Props) {
+export function MerchantValueCalculator({ country, businessName }: Props) {
+  const { amount: monthly, symbol, vat } = proMonthly(country);
+  const money = (n: number) => symbol + Math.round(n).toLocaleString('en-CA');
+
   const [regulars, setRegulars] = useState(120);
   const [spend, setSpend] = useState(6);
   const [extraVisits, setExtraVisits] = useState(2);
@@ -54,7 +56,7 @@ export function MerchantValueCalculator({ monthly, businessName }: Props) {
   const netAnnual = Math.max(0, extraAnnual - subAnnual);
   const roi = extraMonthly > 0 ? extraAnnual / subAnnual : 0;
 
-  // "Almost free" framing (task 4)
+  // "Almost free" framing
   const coffees = Math.max(1, Math.round(monthly / spend));
   const paybackCustomers = Math.max(1, Math.ceil(monthly / Math.max(1, extraVisits * spend)));
 
@@ -120,7 +122,7 @@ export function MerchantValueCalculator({ monthly, businessName }: Props) {
         <div>
           <h3 className="font-semibold text-[#37352F]">Basically pays for itself</h3>
           <p className="text-gray-600 text-sm mt-1 leading-relaxed">
-            At {money(monthly)}/month, Stampfix costs about the price of{' '}
+            At {money(monthly)}/month{vat ? ' (incl. USt.)' : ''}, Stampfix costs about the price of{' '}
             <span className="font-semibold text-[#37352F]">{coffees} {coffees === 1 ? 'coffee' : 'coffees'}</span>
             {' '}— covered by just{' '}
             <span className="font-semibold text-[#37352F]">{paybackCustomers} returning {paybackCustomers === 1 ? 'regular' : 'regulars'}</span>

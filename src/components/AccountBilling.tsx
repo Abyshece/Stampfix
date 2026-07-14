@@ -5,6 +5,8 @@ import { FREE_TIER_CARD_LIMIT } from '../types';
 import { UpgradeModal } from './UpgradeModal';
 import { openBillingPortal } from '../services/billing';
 
+import { proPrice } from '../lib/pricing';
+
 interface AccountBillingProps {
   billing: MerchantBilling;
   country?: 'DE' | 'CA' | null;
@@ -39,7 +41,7 @@ export function AccountBilling({ billing, country, cards }: AccountBillingProps)
   const isPro = billing.plan === 'pro';
   const used = cards.length;
   const pct = Math.min(100, (used / FREE_TIER_CARD_LIMIT) * 100);
-  const price = 'CAD $29.99/mo';
+  const price = proPrice(country).perMonth;
 
   return (
     <div className="bg-white rounded-lg border notion-border p-6 space-y-5">

@@ -1,6 +1,8 @@
 import { Sparkles, AlertTriangle, ArrowRight, X } from 'lucide-react';
 import { FREE_TIER_CARD_LIMIT } from '../types';
 
+import { proPrice } from '../lib/pricing';
+
 interface UpgradeBannerProps {
   customerCount: number;
   /** Country drives the currency in the banner copy. */
@@ -29,9 +31,7 @@ export function UpgradeBanner({ customerCount, country, onUpgrade, onDismiss }: 
   if (customerCount < 8) return null;
   const atLimit = customerCount >= FREE_TIER_CARD_LIMIT;
 
-  // Price shown in the right currency for the merchant's country. Stripe
-  // will charge the merchant's actual local price; this is informational.
-  const price = 'CAD $29.99/mo';
+  const price = proPrice(country).perMonth;
 
   if (atLimit) {
     return (
