@@ -11,6 +11,7 @@ import { markApprovalBannerSeen } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { LocationsPanel } from './LocationsPanel';
+import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { ProLockOverlay } from './ProLockOverlay';
 import { isDarkColor } from '../lib/colors';
 import { UpgradeBanner } from './UpgradeBanner';
@@ -58,7 +59,7 @@ interface MerchantDashboardProps {
   onLogout: () => void;
 }
 
-type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
+type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'VALUE' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
 
 const NOTION_COLORS = [
   { name: 'Default', hex: '#37352F' },
@@ -458,7 +459,7 @@ export function MerchantDashboard({
       <aside className="w-64 bg-[#F7F7F5] border-r notion-border hidden md:flex flex-col fixed inset-y-0 left-0 z-40">
         <div className="p-4 flex items-center gap-2 font-semibold text-sm border-b notion-border h-[60px]">
           <svg viewBox="0 0 282 90" className="h-4 w-auto min-w-[20px] text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
-          <span className="truncate">{campaign.businessName}</span>
+          <button type="button" onClick={() => handleTabChange('DASHBOARD')} className="truncate text-left hover:underline focus:outline-none focus-visible:underline" title="Go to scanner">{campaign.businessName}</button>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
           <div className="px-3 mb-2">
@@ -468,6 +469,7 @@ export function MerchantDashboard({
               ['CUSTOMERS', Users, 'Customers'],
               ['ACTIVITY', History, 'Activity'],
               ['ANALYTICS', BarChart3, 'Insights'],
+              ['VALUE', TrendingUp, 'Payback'],
               ['PREVIEW', Eye, 'Preview Card'],
               ['SHARE', Share, 'Share & Promote'],
               ['SETTINGS', Settings, 'Settings'],
@@ -532,7 +534,7 @@ export function MerchantDashboard({
         <div className="md:hidden sticky top-0 z-10 bg-white/80 backdrop-blur-md flex justify-between items-center mb-6 py-4 border-b notion-border -mx-6 px-6">
           <div className="flex items-center gap-2">
             <svg viewBox="0 0 282 90" className="h-5 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
-            <span className="font-semibold text-sm truncate max-w-[150px]">{campaign.businessName}</span>
+            <button type="button" onClick={() => handleTabChange('DASHBOARD')} className="font-semibold text-sm truncate max-w-[150px] text-left hover:underline focus:outline-none" title="Go to scanner">{campaign.businessName}</button>
           </div>
           <button onClick={onLogout} className="text-gray-400 p-1"><LogOut className="w-5 h-5" /></button>
         </div>
@@ -1160,6 +1162,10 @@ export function MerchantDashboard({
         )}
 
         {/* --- SETTINGS --- */}
+        {activeTab === 'VALUE' && (
+          <MerchantValueCalculator monthly={29.99} businessName={campaign.businessName} />
+        )}
+
         {activeTab === 'SETTINGS' && (
           <div className="space-y-8">
             <header className="flex justify-between items-start">
@@ -1455,7 +1461,7 @@ export function MerchantDashboard({
           ))}
           <button onClick={() => setShowMobileMoreMenu(true)}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
+              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <Menu className="w-6 h-6" />
             <span className="text-[10px] font-medium">More</span>
@@ -1471,6 +1477,7 @@ export function MerchantDashboard({
             <div className="grid grid-cols-4 gap-4 mb-4">
               {([
                 ['ACTIVITY', History, 'Activity'],
+                ['VALUE', TrendingUp, 'Payback'],
                 ['SHARE', Share, 'Share'],
                 ['PREVIEW', Eye, 'Preview'],
                 ['SETTINGS', Settings, 'Settings'],

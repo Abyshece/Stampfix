@@ -13,6 +13,7 @@ import {
   type ContactMessage, type MerchantStatus, type StripeMrr,
   fetchActivityLog, fetchWalletErrors, fetchRecentSignups, fetchJobRuns,
   type ActivityLogRow, type WalletErrorRow, type SignupRow, type JobRunRow,
+  isReadOnlyAdminEmail,
 } from '../services/admin';
 import { OffersTab } from './OffersTab';
 import { setMerchantApproval, getMerchantApproval } from '../lib/db';
@@ -40,6 +41,8 @@ export function AdminPanel() {
   if (!user) return <NotLoggedIn />;
   if (!isAdmin) return <NotAuthorized email={user.email ?? null} />;
 
+  const readOnly = isReadOnlyAdminEmail(user.email);
+
   const setTabAndCloseNav = (newTab: AdminTab) => {
     setTab(newTab);
     setMobileNavOpen(false);
@@ -47,6 +50,11 @@ export function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-[#FBFBFA]">
+      {readOnly && (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs sm:text-sm px-4 py-2 text-center">
+          View-only access — you can browse everything, but changes are disabled.
+        </div>
+      )}
       {/* Mobile top bar — hamburger + title. Hidden on md+ where the
           fixed sidebar provides navigation. */}
       <div className="md:hidden sticky top-0 z-30 bg-white border-b notion-border px-4 py-3 flex items-center justify-between">

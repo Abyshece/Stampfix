@@ -120,6 +120,25 @@ export interface ContactMessage {
   created_at: string;
 }
 
+/**
+ * View-only admins can open the panel and read everything, but every mutating
+ * admin action is blocked here — the single point all admin writes funnel
+ * through. Pairs with the DB is_platform_admin flag (which grants read access).
+ */
+const READ_ONLY_ADMINS = new Set<string>(['ai4miketomar@gmail.com']);
+
+async function assertNotReadOnly(): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const email = (data.session?.user?.email ?? '').toLowerCase();
+  if (READ_ONLY_ADMINS.has(email)) {
+    throw new Error('You have view-only admin access \u2014 this action is disabled.');
+  }
+}
+
+export function isReadOnlyAdminEmail(email: string | null | undefined): boolean {
+  return READ_ONLY_ADMINS.has((email ?? '').toLowerCase());
+}
+
 export async function checkIsAdmin(): Promise<boolean> {
   const { data, error } = await supabase.rpc('is_platform_admin');
   if (error) { console.warn('[admin]', error); return false; }
@@ -217,6 +236,7 @@ export async function listTickets(
 }
 
 export async function setMerchantStatus(merchantId: string, status: MerchantStatus): Promise<void> {
+  await assertNotReadOnly();
   const { error } = await supabase.rpc('admin_set_merchant_status', {
     merchant_id_in: merchantId,
     new_status: status,
@@ -225,6 +245,7 @@ export async function setMerchantStatus(merchantId: string, status: MerchantStat
 }
 
 export async function setMerchantPlan(merchantId: string, plan: 'free' | 'pro'): Promise<void> {
+  await assertNotReadOnly();
   const { error } = await supabase.rpc('admin_set_merchant_plan', {
     merchant_id_in: merchantId,
     new_plan: plan,
@@ -233,6 +254,7 @@ export async function setMerchantPlan(merchantId: string, plan: 'free' | 'pro'):
 }
 
 export async function setMerchantNotes(merchantId: string, notes: string): Promise<void> {
+  await assertNotReadOnly();
   const { error } = await supabase.rpc('admin_set_merchant_notes', {
     merchant_id_in: merchantId,
     notes,
@@ -245,6 +267,7 @@ export async function setTicketStatus(
   status: 'open' | 'in_progress' | 'resolved' | 'dismissed',
   notes?: string,
 ): Promise<void> {
+  await assertNotReadOnly();
   const { error } = await supabase.rpc('admin_set_ticket_status', {
     ticket_id_in: ticketId,
     new_status: status,
@@ -263,6 +286,7 @@ export async function listContactMessages(statusFilter?: string | null, limit = 
 }
 
 export async function setContactMessageStatus(messageId: string, status: 'new' | 'replied' | 'archived'): Promise<void> {
+  await assertNotReadOnly();
   const { error } = await supabase.rpc('admin_set_contact_message_status', {
     message_id: messageId,
     new_status: status,
@@ -365,6 +389,7 @@ export async function upsertPromoBanner(input: {
   ends_at?: string | null;
   variant: 'red' | 'blue' | 'green' | 'amber';
 }): Promise<string> {
+  await assertNotReadOnly();
   const { data, error } = await supabase.rpc('admin_upsert_promo_banner', {
     banner_id: input.id ?? null,
     headline_in: input.headline,
@@ -382,6 +407,7 @@ export async function upsertPromoBanner(input: {
 }
 
 export async function deletePromoBanner(id: string): Promise<void> {
+  await assertNotReadOnly();
   const { error } = await supabase.rpc('admin_delete_promo_banner', { banner_id: id });
   if (error) throw error;
 }
