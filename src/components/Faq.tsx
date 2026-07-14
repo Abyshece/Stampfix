@@ -41,8 +41,8 @@ export function Faq() {
 
       <LegalH2>What does it cost?</LegalH2>
       <p>
-        Stampfix is free to start. The Pro plan is CA$29.99/month. You can upgrade or cancel
-        any time from your dashboard.
+        Stampfix is free to start. The Pro plan is CA$29.99/month in Canada, or €19.99/month
+        incl. USt. in Germany. You can upgrade or cancel any time from your dashboard.
       </p>
 
       <LegalH2>Which wallets are supported?</LegalH2>

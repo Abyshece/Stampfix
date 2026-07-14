@@ -12,8 +12,8 @@
 //
 // Required secrets:
 //   STRIPE_SECRET_KEY      - server-only Stripe key (sk_test_... or sk_live_...)
-//   STRIPE_PRICE_ID_EUR    - price ID for the EUR €19.99/mo plan
-//   STRIPE_PRICE_ID_CAD    - price ID for the CAD $28/mo plan
+//   STRIPE_PRICE_ID_EUR    - price ID for the EUR €19.99/mo plan (tax-inclusive, incl. USt.)
+//   STRIPE_PRICE_ID_CAD    - price ID for the CAD $29.99/mo plan
 //   PUBLIC_APP_ORIGIN      - where to send the user after payment
 //
 // Request: no body required. Reads the merchant from the auth context.
