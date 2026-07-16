@@ -397,7 +397,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
                 value={busName}
                 onChange={(e) => setBusName(e.target.value)}
                 className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-                placeholder="e.g. Acme Coffee Co."
+                placeholder="e.g. Bella's Salon"
               />
             </div>
             <div className="space-y-1">

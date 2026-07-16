@@ -120,10 +120,10 @@ export function ComplianceSettings({ merchantId }: { merchantId: string }) {
 
       <Field
         label="Legal entity name"
-        hint="Full registered name (e.g. 'Acme Coffee GmbH' or 'Acme Coffee Ltd.')"
+        hint="Full registered name (e.g. 'Acme GmbH' or 'Acme Ltd.')"
         value={data.legal_entity_name}
         onChange={(v) => setData({ ...data, legal_entity_name: v })}
-        placeholder="Acme Coffee GmbH"
+        placeholder="Acme GmbH"
       />
 
       <Field
