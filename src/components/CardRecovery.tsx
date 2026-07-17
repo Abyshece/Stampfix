@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Info } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
 import { recoverCards } from '../lib/db';
 import { WalletCard } from './WalletCard';
@@ -73,6 +73,10 @@ export function CardRecovery() {
                   className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 font-mono tracking-[0.3em] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
                   placeholder="••••••"
                 />
+                <div className="flex gap-2 items-start text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-2.5 mt-1.5">
+                  <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-500" />
+                  <span>You chose this code yourself when you first saved your card &mdash; it wasn&rsquo;t emailed or texted to you. Try the 6 digits you picked at sign-up.</span>
+                </div>
               </div>
               {error && <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2.5 rounded">{error}</div>}
               <button
