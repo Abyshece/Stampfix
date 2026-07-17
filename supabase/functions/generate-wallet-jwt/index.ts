@@ -200,6 +200,16 @@ function buildLoyaltyObject(campaign: Campaign, card: Card) {
         header: rewardReady ? 'Reward ready' : 'Current offer',
         body: rewardReady ? '🎉 Free reward unlocked — show this to redeem!' : campaign.offer_title,
       },
+      {
+        id: 'updated',
+        header: 'Last updated',
+        body: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      },
+      {
+        id: 'howto',
+        header: 'Keep your card up to date',
+        body: 'Your card updates automatically. To refresh it yourself, open the pass in Google Wallet, tap the \u22ee menu (top-right) and choose refresh.',
+      },
     ],
   };
 }

@@ -13,7 +13,7 @@ import QRCode from 'react-qr-code';
  * and cost nothing to download. Colours mirror the real Apple Wallet passes.
  */
 
-interface CardSpec {
+export interface CardSpec {
   bg: string;      // pass background
   mark: string;    // Stampfix brand mark
   text: string;    // text + stamp colour
@@ -66,7 +66,7 @@ function Stamp({ index, filled, color }: { index: number; filled: boolean; color
 }
 
 /** A single wallet pass, drawn to match the real Apple Wallet card. */
-function WalletPass({ spec }: { spec: CardSpec }) {
+export function WalletPass({ spec }: { spec: CardSpec }) {
   const left = MAX_STAMPS - spec.stamps;
 
   return (

@@ -327,6 +327,22 @@ Deno.serve(async (req) => {
             textAlignment: 'PKTextAlignmentCenter',
           },
         ],
+        // Shown on the back of the pass (tap the ••• button). Wallet renders the
+        // date in the customer's own time zone via dateStyle/timeStyle.
+        backFields: [
+          {
+            key: 'updated',
+            label: 'Last updated',
+            value: new Date().toISOString(),
+            dateStyle: 'PKDateStyleMedium',
+            timeStyle: 'PKDateStyleShort',
+          },
+          {
+            key: 'howto',
+            label: 'Keep your card up to date',
+            value: 'Your card updates automatically. To refresh it yourself: tap \u2022\u2022\u2022 (top-right) \u203a Pass Details, then pull down.',
+          },
+        ],
       },
       barcode: {
         format: 'PKBarcodeFormatQR',

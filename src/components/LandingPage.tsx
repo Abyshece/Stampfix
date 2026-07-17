@@ -4,6 +4,7 @@ import {
   BarChart3, Users, Zap, Smartphone, QrCode,
 } from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
+import { WalletFanVisual, InsightsVisual } from './FeatureVisuals';
 import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
 import { PasswordInput } from './PasswordInput';
@@ -375,30 +376,8 @@ export function LandingPage({
       {/* Features */}
       <section className="py-24 max-w-5xl mx-auto px-6 space-y-32">
         <div className="grid md:grid-cols-2 gap-16 items-center">
-          <div className="order-2 md:order-1 relative group">
-            <div className="absolute -inset-2 bg-gradient-to-r from-gray-100 to-gray-50 rounded-xl transform rotate-1 group-hover:rotate-2 transition duration-300"></div>
-            <div className="relative bg-white border notion-border rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-4 mb-6 border-b notion-border pb-4">
-                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-gray-900">Customer Database</div>
-                  <div className="text-xs text-gray-500">Real-time sync</div>
-                </div>
-              </div>
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-[#F7F7F5] rounded border notion-border">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-200"></div>
-                      <div className="h-3 w-24 bg-gray-300 rounded"></div>
-                    </div>
-                    <div className="h-2 w-12 bg-green-200 rounded-full"></div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="order-2 md:order-1">
+            <InsightsVisual />
           </div>
           <div className="order-1 md:order-2 space-y-6">
             <div className="w-12 h-12 bg-[#37352F] rounded-lg flex items-center justify-center text-white mb-4 shadow-md">
@@ -431,19 +410,8 @@ export function LandingPage({
               <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> Updates sync automatically</li>
             </ul>
           </div>
-          <div className="relative group">
-            <div className="absolute -inset-2 bg-gradient-to-l from-gray-100 to-gray-50 rounded-xl transform -rotate-1 group-hover:-rotate-2 transition duration-300"></div>
-            <div className="relative bg-[#222] rounded-xl p-8 text-white shadow-xl flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6 backdrop-blur-md">
-                <ScanLine className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-2xl font-semibold mb-2">Scan to Join</div>
-              <div className="text-white/60 text-sm mb-8">Point camera at code</div>
-
-              <div className="bg-white p-4 rounded-lg">
-                <QrCode className="w-32 h-32 text-black" />
-              </div>
-            </div>
+          <div>
+            <WalletFanVisual />
           </div>
         </div>
       </section>
