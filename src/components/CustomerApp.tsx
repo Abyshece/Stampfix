@@ -1,3 +1,4 @@
+import { PhoneField } from './PhoneField';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Loader2, LogOut, Info } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
@@ -304,13 +305,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             </div>
             <div className="space-y-1">
               <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Phone Number</label>
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
-                placeholder="+49 170 1234567"
-              />
+              <PhoneField onChange={(v) => setFormData({ ...formData, phone: v })} />
               <p className="text-[11px] text-gray-500 leading-relaxed">
                 Recommended so {campaign.businessName} can reach you about your rewards and reach your card if you lose access to your email.
               </p>

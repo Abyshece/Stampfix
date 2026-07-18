@@ -1,3 +1,4 @@
+import { PhoneField } from './PhoneField';
 import { useState } from 'react';
 import { ArrowLeft, Loader2, Info } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
@@ -56,13 +57,7 @@ export function CardRecovery() {
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Phone number</label>
-                <input
-                  type="tel" value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
-                  placeholder="+49 170 1234567"
-                />
+                <PhoneField onChange={setPhone} onEnter={submit} />
               </div>
               <div className="space-y-1">
                 <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">6-digit code</label>

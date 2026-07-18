@@ -115,8 +115,8 @@ function PhoneMockup() {
   );
 }
 
-const CARD_BG = '#EFB1AB';
-const INK = '#2D3142';
+const CARD_BG = '#F7CE46';
+const INK = '#1A1A1A';
 
 /** Sample loyalty card — matches the live Apple/Google Wallet pass design. */
 function SampleLoyaltyCard() {

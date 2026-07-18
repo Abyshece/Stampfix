@@ -1,3 +1,4 @@
+import { PhoneField } from './PhoneField';
 import { useState } from 'react';
 import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff, Info } from 'lucide-react';
 import { signUpMerchant, signInMerchant } from '../lib/auth';
@@ -72,7 +73,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const [phone, setPhone] = useState('');
   const [selectedColor, setSelectedColor] = useState(NOTION_COLORS[0].hex);
   const [selectedIcon, setSelectedIcon] = useState('☕️');
-  const [maxStamps, setMaxStamps] = useState(8);
+  const [maxStamps, setMaxStamps] = useState(0);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   // Primary location name. Defaults to the business name so single-
   // location merchants don't have to think about it; multi-location ones
@@ -119,6 +120,10 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const handleSignup = async () => {
     setError(null);
     if (!busName || !email || !password || !country) return;
+    if (!maxStamps || maxStamps < 1) {
+      setError('Please set how many stamps a customer needs to earn the reward (at least 1).');
+      return;
+    }
     if (!termsAccepted || !privacyAccepted || !dpaAccepted) {
       setError('Please accept the Terms, Privacy Policy, and Data Processing Agreement to continue.');
       return;
@@ -355,13 +360,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
               <label className="text-sm font-medium">
                 Phone Number <span className="text-gray-400 font-normal">(optional)</span>
               </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-                placeholder="+49 170 1234567"
-              />
+              <PhoneField onChange={setPhone} />
               <p className="text-xs text-gray-500">
                 Strongly recommended — it's how we reach you fast for account recovery and any urgent issue affecting your loyalty program.
               </p>
@@ -456,21 +455,28 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
                 value={offerTitle}
                 onChange={(e) => setOfferTitle(e.target.value)}
                 className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                placeholder="e.g. Buy 8, get 1 free"
               />
+              <div className="flex gap-2 items-start text-[11px] text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-2 mt-1.5">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-blue-500" />
+                <span>Describe the reward in your customers&rsquo; words. e.g. <b>&ldquo;Buy 8 coffees, get 1 free&rdquo;</b> or <b>&ldquo;Order 6 times, get a dessert on us.&rdquo;</b></span>
+              </div>
             </div>
             <div className="space-y-1">
-              <label className="text-sm font-medium">
-                Stamps: <span className="font-bold">{maxStamps}</span>
-              </label>
+              <label className="text-sm font-medium">Number of stamps to earn a reward</label>
               <input
-                type="range"
-                min={4}
-                max={12}
-                step={1}
-                value={maxStamps}
-                onChange={(e) => setMaxStamps(parseInt(e.target.value))}
-                className="w-full accent-[#37352F] cursor-pointer"
+                type="number"
+                min={1}
+                max={20}
+                value={maxStamps === 0 ? '' : maxStamps}
+                onChange={(e) => setMaxStamps(parseInt(e.target.value) || 0)}
+                className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                placeholder="e.g. 8"
               />
+              <div className="flex gap-2 items-start text-[11px] text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-2 mt-1.5">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-blue-500" />
+                <span>How many stamps a customer collects before the reward unlocks. e.g. <b>8</b> means they buy 8 and the 9th is free.</span>
+              </div>
             </div>
           </div>
 
