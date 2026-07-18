@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { MarketingLayout, Eyebrow, StartButton } from './MarketingLayout';
 
 const STAMPFIX_MONTHLY = 29.99;      // CA$29.99 / month, flat
+
+const ROI_WASH =
+  'radial-gradient(closest-side, #75FBFD, transparent) 20% 20%/55% 62% no-repeat,' +
+  'radial-gradient(closest-side, #510AF5, transparent) 62% 12%/55% 62% no-repeat,' +
+  'radial-gradient(closest-side, #EA33B6, transparent) 82% 72%/55% 62% no-repeat,' +
+  'radial-gradient(closest-side, #F0A479, transparent) 22% 78%/55% 62% no-repeat';
+const ROI_LINEAR = 'linear-gradient(90deg,#75FBFD,#1132F5,#510AF5,#EA33B6,#EA3323,#F0A479,#F7CE46,#75FBFD)';
 const LOST_RATE = 0.3;               // ~30% of paper cards get lost or forgotten
 const RECOVER_RATE = 0.2;            // of those, a fifth would have come back once more
 
@@ -87,14 +94,25 @@ export function RoiCalculator() {
 
           {/* Results */}
           <div className="space-y-4">
-            <div className="bg-[#37352F] rounded-2xl p-7 text-white">
-              <div className="text-sm text-white/60 mb-1">You could save about</div>
-              <div className="text-5xl font-serif-display font-medium tabular-nums leading-none">
-                {money(totalSaving)}<span className="text-2xl text-white/50">/yr</span>
+            <div className="relative overflow-hidden bg-white border notion-border rounded-2xl p-7 shadow-md">
+              <div className="pointer-events-none absolute inset-0 opacity-50 blur-3xl" style={{ background: ROI_WASH }} />
+              <div className="absolute top-0 inset-x-0 h-1.5" style={{ background: ROI_LINEAR, backgroundSize: '200% 100%', animation: 'sf-grad 7s ease-in-out infinite' }} />
+              <div className="relative">
+                <div className="text-sm text-gray-500 mb-1">You could save about</div>
+                <div className="flex items-baseline gap-1.5">
+                  <span
+                    className="text-5xl font-serif-display font-medium tabular-nums leading-none"
+                    style={{ background: ROI_LINEAR, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}
+                  >
+                    {money(totalSaving)}
+                  </span>
+                  <span className="text-2xl font-serif-display text-gray-400">/yr</span>
+                </div>
+                <div className="mt-6">
+                  <StartButton label="Start your free trial" className="px-5 py-2.5 text-sm" />
+                </div>
               </div>
-              <div className="mt-6">
-                <StartButton label="Start your free trial" className="px-5 py-2.5 text-sm !bg-white !text-[#37352F] hover:!bg-gray-100" />
-              </div>
+              <style>{`@keyframes sf-grad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`}</style>
             </div>
 
             <div className="border notion-border rounded-2xl p-7 space-y-4">
