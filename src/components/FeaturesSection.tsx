@@ -1,4 +1,5 @@
-import { Check, Smartphone, Zap, BarChart3, Palette, Layers, Globe, Wallet, Building2, Shield, Mail, MapPin } from 'lucide-react';
+import { Smartphone, Zap, BarChart3, Palette, Layers, Globe, Wallet, Building2, Shield, Mail, MapPin } from 'lucide-react';
+import { useInView } from './FeatureVisuals';
 
 /**
  * Features section for the marketing site. Two-column on desktop:
@@ -11,20 +12,22 @@ import { Check, Smartphone, Zap, BarChart3, Palette, Layers, Globe, Wallet, Buil
  * the bundle small and rendering crisp at any resolution.
  */
 export function FeaturesSection() {
+  // Each feature gets a colour chip drawn from the wallet-card palette, so the
+  // list reads as colourful as the cards themselves.
   const features = [
-    { icon: Zap,         text: 'No extra scanner hardware — your phone is the terminal' },
-    { icon: Smartphone,  text: 'Set up your first loyalty card in 2-3 minutes' },
-    { icon: Globe,       text: 'No app for customers to download — works in any browser' },
-    { icon: BarChart3,   text: 'Detailed dashboard with per-location and per-offer analytics' },
-    { icon: Palette,     text: 'Brand it your way — choose colors, logo, and offer text' },
-    { icon: Layers,      text: 'Run multiple offers and migrate customers automatically' },
-    { icon: Wallet,      text: 'Works with Apple Wallet and Google Wallet — no app to download' },
-    { icon: Building2,   text: 'Multi-location ready — one account, every branch tracked separately' },
-    // Extras I'd add — features Stampfix has that you didn't mention:
-    { icon: Mail,        text: 'Automatic one-stamp-away emails bring customers back' },
-    { icon: Shield,      text: 'GDPR-compliant by default with consent flow + data deletion' },
-    { icon: MapPin,      text: 'Print-ready posters in 3 sizes (business card, A5, A4)' },
+    { icon: Zap,         c: '#75FBFD', fg: '#223355', text: 'No extra scanner hardware — your phone is the terminal' },
+    { icon: Smartphone,  c: '#EA3323', fg: '#FFFFFF', text: 'Set up your first loyalty card in 2-3 minutes' },
+    { icon: Globe,       c: '#510AF5', fg: '#FCFF54', text: 'No app for customers to download — works in any browser' },
+    { icon: BarChart3,   c: '#F7CE46', fg: '#1A1A1A', text: 'Detailed dashboard with per-location and per-offer analytics' },
+    { icon: Palette,     c: '#EA33B6', fg: '#FFFFFF', text: 'Brand it your way — choose colors, logo, and offer text' },
+    { icon: Layers,      c: '#1132F5', fg: '#FFFFFF', text: 'Run multiple offers and migrate customers automatically' },
+    { icon: Wallet,      c: '#F0A479', fg: '#1A1A1A', text: 'Works with Apple Wallet and Google Wallet — no app to download' },
+    { icon: Building2,   c: '#75FBE2', fg: '#223355', text: 'Multi-location ready — one account, every branch tracked separately' },
+    { icon: Mail,        c: '#ABC2C2', fg: '#223355', text: 'Automatic one-stamp-away emails bring customers back' },
+    { icon: Shield,      c: '#37352F', fg: '#FFFFFF', text: 'GDPR-compliant by default with consent flow + data deletion' },
+    { icon: MapPin,      c: '#EFECE2', fg: '#1A1A1A', text: 'Print-ready posters in 3 sizes (business card, A5, A4)' },
   ];
+  const { ref: listRef, inView } = useInView<HTMLDivElement>(0.15);
 
   return (
     <section className="bg-white py-16 md:py-24 px-6">
@@ -41,11 +44,22 @@ export function FeaturesSection() {
 
         <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
           {/* Left — feature checklist */}
-          <div className="space-y-3">
+          <div ref={listRef} className="space-y-3">
             {features.map((f, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-full bg-[#37352F] text-white flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Check className="w-4 h-4" strokeWidth={3} />
+              <div
+                key={i}
+                className="flex items-start gap-3 transition-all duration-500 ease-out"
+                style={{
+                  opacity: inView ? 1 : 0,
+                  transform: inView ? 'translateX(0)' : 'translateX(-16px)',
+                  transitionDelay: `${i * 55}ms`,
+                }}
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm"
+                  style={{ background: f.c, color: f.fg }}
+                >
+                  <f.icon className="w-4 h-4" strokeWidth={2.5} />
                 </div>
                 <div className="flex-1 pt-0.5">
                   <span className="text-sm md:text-base text-[#37352F] leading-relaxed">{f.text}</span>

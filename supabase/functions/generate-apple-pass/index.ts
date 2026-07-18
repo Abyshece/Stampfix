@@ -348,7 +348,9 @@ Deno.serve(async (req) => {
         format: 'PKBarcodeFormatQR',
         message: card.id,
         messageEncoding: 'iso-8859-1',
-        altText: card.customer_code ?? '',
+        // Small text rendered directly under the QR — the true bottom of the
+        // pass. Shows the member code plus when the card was last updated.
+        altText: `${card.customer_code ?? ''} \u00b7 Updated ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`,
       },
     };
 

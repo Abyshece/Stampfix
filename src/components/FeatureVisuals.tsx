@@ -8,7 +8,7 @@ import { WalletPass, type CardSpec } from './HeroCardLoop';
  */
 
 /** Fire once when the element scrolls into view (drives the bar-grow animation). */
-function useInView<T extends HTMLElement>(threshold = 0.3) {
+export function useInView<T extends HTMLElement>(threshold = 0.3) {
   const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
@@ -101,6 +101,40 @@ export function InsightsVisual() {
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────── "Launch in 3 steps" cards
+import { Palette as PaletteIcon, QrCode as QrIcon, ScanLine as ScanIcon } from 'lucide-react';
+
+const STEP_STYLE: Record<string, { bg: string; fg: string; Icon: typeof PaletteIcon }> = {
+  design: { bg: '#75FBFD', fg: '#223355', Icon: PaletteIcon },
+  qr:     { bg: '#510AF5', fg: '#FCFF54', Icon: QrIcon },
+  scan:   { bg: '#EA3323', fg: '#FFFFFF', Icon: ScanIcon },
+};
+
+export function StepCard({ n, title, text, kind }: { n: number; title: string; text: string; kind: 'design' | 'qr' | 'scan' }) {
+  const { ref, inView } = useInView<HTMLDivElement>(0.2);
+  const { bg, fg, Icon } = STEP_STYLE[kind];
+  return (
+    <div
+      ref={ref}
+      className="bg-white p-8 rounded-xl border notion-border shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-500 ease-out"
+      style={{
+        opacity: inView ? 1 : 0,
+        transform: inView ? 'translateY(0)' : 'translateY(20px)',
+        transitionDelay: `${(n - 1) * 130}ms`,
+      }}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm" style={{ background: bg, color: fg }}>
+          <Icon className="w-7 h-7" strokeWidth={2.2} />
+        </div>
+        <div className="text-6xl font-serif-display text-gray-100 font-bold select-none leading-none">{n}</div>
+      </div>
+      <h3 className="text-xl font-bold mb-3">{title}</h3>
+      <p className="text-gray-500 leading-relaxed">{text}</p>
     </div>
   );
 }

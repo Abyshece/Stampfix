@@ -4,7 +4,7 @@ import {
   BarChart3, Users, Zap, Smartphone, QrCode,
 } from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
-import { WalletFanVisual, InsightsVisual } from './FeatureVisuals';
+import { WalletFanVisual, InsightsVisual, StepCard } from './FeatureVisuals';
 import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
 import { PasswordInput } from './PasswordInput';
@@ -424,21 +424,9 @@ export function LandingPage({
             <p className="text-gray-500">No developer required.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white p-8 rounded-xl border notion-border shadow-sm hover:shadow-md transition">
-              <div className="text-6xl font-serif-display text-gray-100 mb-6 font-bold select-none">1</div>
-              <h3 className="text-xl font-bold mb-3">Design your card</h3>
-              <p className="text-gray-500 leading-relaxed">Customize your colors, logo, and rewards in minutes.</p>
-            </div>
-            <div className="bg-white p-8 rounded-xl border notion-border shadow-sm hover:shadow-md transition">
-              <div className="text-6xl font-serif-display text-gray-100 mb-6 font-bold select-none">2</div>
-              <h3 className="text-xl font-bold mb-3">Print your QR</h3>
-              <p className="text-gray-500 leading-relaxed">Download your unique poster. Place it at your checkout counter or on tables.</p>
-            </div>
-            <div className="bg-white p-8 rounded-xl border notion-border shadow-sm hover:shadow-md transition">
-              <div className="text-6xl font-serif-display text-gray-100 mb-6 font-bold select-none">3</div>
-              <h3 className="text-xl font-bold mb-3">Scan & Reward</h3>
-              <p className="text-gray-500 leading-relaxed">Use any phone or tablet to scan customer cards. No expensive hardware needed.</p>
-            </div>
+            <StepCard n={1} title="Design your card" text="Customize your colors, logo, and rewards in minutes." kind="design" />
+            <StepCard n={2} title="Print your QR" text="Download your unique poster. Place it at your checkout counter or on tables." kind="qr" />
+            <StepCard n={3} title="Scan & Reward" text="Use any phone or tablet to scan customer cards. No expensive hardware needed." kind="scan" />
           </div>
         </div>
       </section>
