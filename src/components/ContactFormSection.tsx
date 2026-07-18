@@ -4,6 +4,15 @@ import { submitContactMessage } from '../services/admin';
 
 type Inquiry = 'merchant_inquiry' | 'customer_inquiry' | 'partnership' | 'other';
 
+// Soft multi-colour wash + a thin top strip, both built from the wallet-card palette.
+const CARD_WASH =
+  'radial-gradient(closest-side, #75FBFD, transparent) 12% 25%/38% 65% no-repeat,' +
+  'radial-gradient(closest-side, #510AF5, transparent) 42% 12%/38% 65% no-repeat,' +
+  'radial-gradient(closest-side, #EA33B6, transparent) 72% 25%/38% 65% no-repeat,' +
+  'radial-gradient(closest-side, #F0A479, transparent) 92% 62%/38% 65% no-repeat,' +
+  'radial-gradient(closest-side, #1132F5, transparent) 22% 72%/38% 65% no-repeat';
+const CARD_LINEAR = 'linear-gradient(90deg, #75FBFD, #1132F5, #510AF5, #EA33B6, #EA3323, #F0A479, #F7CE46)';
+
 /**
  * Contact form embedded in the marketing site footer. Anonymous users
  * can submit inquiries; they land in admin → Contact Inquiries.
@@ -45,14 +54,15 @@ export function ContactFormSection() {
 
   if (sent) {
     return (
-      <section id="contact" className="bg-[#37352F] text-white py-16 px-6">
-        <div className="max-w-md mx-auto text-center space-y-4">
-          <div className="w-12 h-12 bg-white/10 rounded-full mx-auto flex items-center justify-center">
-            <Check className="w-6 h-6 text-green-300" strokeWidth={3} />
+      <section id="contact" className="relative bg-white text-[#37352F] py-16 px-6 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 opacity-40 blur-3xl" style={{ background: CARD_WASH }} />
+        <div className="relative max-w-md mx-auto text-center space-y-4">
+          <div className="w-12 h-12 bg-green-100 rounded-full mx-auto flex items-center justify-center">
+            <Check className="w-6 h-6 text-green-600" strokeWidth={3} />
           </div>
           <h2 className="text-2xl font-serif-display font-semibold">Got it — thanks!</h2>
-          <p className="text-sm text-gray-300">
-            We'll get back to you at <strong className="text-white">{email}</strong> within 1-2 business days.
+          <p className="text-sm text-gray-500">
+            We'll get back to you at <strong className="text-[#37352F]">{email}</strong> within 1-2 business days.
           </p>
         </div>
       </section>
@@ -60,16 +70,18 @@ export function ContactFormSection() {
   }
 
   return (
-    <section id="contact" className="bg-[#37352F] text-white py-16 px-6">
-      <div className="max-w-3xl mx-auto">
+    <section id="contact" className="relative bg-white text-[#37352F] py-16 px-6 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 opacity-40 blur-3xl" style={{ background: CARD_WASH }} />
+      <div className="relative max-w-3xl mx-auto">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Get in touch</h2>
-          <p className="text-sm text-gray-300 max-w-md mx-auto">
+          <p className="text-sm text-gray-500 max-w-md mx-auto">
             Questions about getting started, partnerships, or something else? Drop us a line and we'll reply within 1-2 business days.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white text-[#37352F] rounded-xl p-6 md:p-8 space-y-4 shadow-2xl">
+        <form onSubmit={handleSubmit} className="relative bg-white text-[#37352F] rounded-xl p-6 md:p-8 space-y-4 shadow-2xl border notion-border overflow-hidden">
+          <div className="h-1.5 -mx-6 md:-mx-8 -mt-6 md:-mt-8 mb-2" style={{ background: CARD_LINEAR }} />
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Your name" required>
               <input

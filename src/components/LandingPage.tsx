@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowRight, ScanLine, X, Loader2, ArrowLeft, Mail, CheckCircle,
-  BarChart3, Users, Zap, Smartphone, QrCode,
+  BarChart3, Users, Zap, Smartphone, QrCode, Instagram, Linkedin,
 } from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
 import { WalletFanVisual, InsightsVisual, StepCard, StatCard } from './FeatureVisuals';
@@ -491,6 +491,18 @@ export function LandingPage({
             <a href="#contact" className="hover:text-[#37352F]">Contact</a>
           </div>
           <div className="mt-4 md:mt-0">&copy; 2026 Stampfix Inc.</div>
+        </div>
+        {/* Social — replace href="#" with your real Instagram / LinkedIn / TikTok URLs */}
+        <div className="max-w-6xl mx-auto flex justify-center gap-3 mt-8">
+          <a href="#" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
+            <Instagram className="w-4 h-4" />
+          </a>
+          <a href="#" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
+            <Linkedin className="w-4 h-4" />
+          </a>
+          <a href="#" aria-label="TikTok" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" aria-hidden="true"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-2.59-2.6c.27 0 .53.05.78.12V9.66a5.7 5.7 0 0 0-.78-.06 5.7 5.7 0 1 0 5.7 5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.3 4.3 0 0 1-3.26-1.48z"/></svg>
+          </a>
         </div>
       </footer>
     </div>

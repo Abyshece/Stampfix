@@ -69,9 +69,20 @@ export function FeaturesSection() {
             ))}
           </div>
 
-          {/* Right — iPhone mockup with Lucky Café loyalty card */}
-          <div className="flex justify-center md:justify-end">
-            <PhoneMockup />
+          {/* Right — big yellow loyalty card with animated stamps */}
+          <div className="relative flex justify-center md:justify-end">
+            <div
+              className="pointer-events-none absolute -inset-6 md:-inset-10 opacity-50 blur-3xl"
+              style={{
+                background:
+                  'radial-gradient(closest-side, #F7CE46, transparent) 42% 30%/62% 72% no-repeat,' +
+                  'radial-gradient(closest-side, #75FBFD, transparent) 14% 66%/52% 60% no-repeat,' +
+                  'radial-gradient(closest-side, #F0A479, transparent) 82% 60%/52% 60% no-repeat',
+              }}
+            />
+            <div className="relative w-full drop-shadow-2xl" style={{ maxWidth: 460 }}>
+              <SampleLoyaltyCard />
+            </div>
           </div>
         </div>
       </div>
