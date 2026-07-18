@@ -138,3 +138,19 @@ export function StepCard({ n, title, text, kind }: { n: number; title: string; t
     </div>
   );
 }
+
+// ─────────────────────────────────────────── Pricing stat cards
+export function StatCard({ value, label, color, delay }: { value: string; label: string; color: string; delay: number }) {
+  const { ref, inView } = useInView<HTMLDivElement>(0.3);
+  return (
+    <div
+      ref={ref}
+      className="bg-white border notion-border rounded-xl p-5 relative overflow-hidden transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-md"
+      style={{ opacity: inView ? 1 : 0, transform: inView ? 'translateY(0)' : 'translateY(16px)', transitionDelay: `${delay}ms` }}
+    >
+      <span className="absolute top-0 left-0 h-1 w-full" style={{ background: color }} />
+      <div className="text-2xl font-serif-display font-semibold" style={{ color }}>{value}</div>
+      <div className="text-sm text-gray-500 mt-1">{label}</div>
+    </div>
+  );
+}

@@ -4,7 +4,7 @@ import {
   BarChart3, Users, Zap, Smartphone, QrCode,
 } from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
-import { WalletFanVisual, InsightsVisual, StepCard } from './FeatureVisuals';
+import { WalletFanVisual, InsightsVisual, StepCard, StatCard } from './FeatureVisuals';
 import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
 import { PasswordInput } from './PasswordInput';
@@ -448,18 +448,9 @@ export function LandingPage({
             See what paper cards cost you <ArrowRight className="w-4 h-4" />
           </a>
           <div className="grid sm:grid-cols-3 gap-4 mt-12 max-w-2xl mx-auto text-left">
-            <div className="bg-white border notion-border rounded-xl p-5">
-              <div className="text-2xl font-serif-display font-semibold text-[#37352F]">$0</div>
-              <div className="text-sm text-gray-500 mt-1">Setup &amp; hardware</div>
-            </div>
-            <div className="bg-white border notion-border rounded-xl p-5">
-              <div className="text-2xl font-serif-display font-semibold text-[#37352F]">Unlimited</div>
-              <div className="text-sm text-gray-500 mt-1">Customers &amp; cards</div>
-            </div>
-            <div className="bg-white border notion-border rounded-xl p-5">
-              <div className="text-2xl font-serif-display font-semibold text-[#37352F]">Cancel anytime</div>
-              <div className="text-sm text-gray-500 mt-1">No contract</div>
-            </div>
+            <StatCard value="$0" label="Setup & hardware" color="#16A34A" delay={0} />
+            <StatCard value="Unlimited" label="Customers & cards" color="#510AF5" delay={120} />
+            <StatCard value="Cancel anytime" label="No contract" color="#1132F5" delay={240} />
           </div>
         </div>
       </section>

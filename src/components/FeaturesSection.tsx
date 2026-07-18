@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Smartphone, Zap, BarChart3, Palette, Layers, Globe, Wallet, Building2, Shield, Mail, MapPin } from 'lucide-react';
 import { useInView } from './FeatureVisuals';
 
@@ -120,9 +121,20 @@ const INK = '#2D3142';
 /** Sample loyalty card — matches the live Apple/Google Wallet pass design. */
 function SampleLoyaltyCard() {
   const total = 8;
-  const collected = 3; // a little progress so the card looks alive
+  const { ref, inView } = useInView<HTMLDivElement>(0.35);
+  const [filled, setFilled] = useState(0);
+  useEffect(() => {
+    if (!inView) return;
+    let t: ReturnType<typeof setTimeout>;
+    const step = (n: number) => {
+      setFilled(n);
+      t = setTimeout(() => step(n < total ? n + 1 : 0), n < total ? 520 : 2400);
+    };
+    t = setTimeout(() => step(1), 500);
+    return () => clearTimeout(t);
+  }, [inView]);
   return (
-    <div className="w-full rounded-2xl shadow-md overflow-hidden" style={{ backgroundColor: CARD_BG }}>
+    <div ref={ref} className="w-full rounded-2xl shadow-md overflow-hidden" style={{ backgroundColor: CARD_BG }}>
       {/* Header: brand mark + business name | stamps left */}
       <div className="px-4 pt-4 pb-3 flex items-start justify-between">
         <div className="flex items-center gap-2 min-w-0">
@@ -131,14 +143,14 @@ function SampleLoyaltyCard() {
         </div>
         <div className="text-right flex-shrink-0">
           <div className="text-[7px] font-bold uppercase tracking-widest" style={{ color: INK, opacity: 0.65 }}>Stamps left</div>
-          <div className="text-lg font-bold leading-none mt-0.5" style={{ color: INK }}>{total - collected}</div>
+          <div className="text-lg font-bold leading-none mt-0.5" style={{ color: INK }}>{total - filled}</div>
         </div>
       </div>
 
       {/* Stamp grid — 4 cols x 2 rows = 8, shapes cycle square / circle / cross */}
       <div className="px-4 py-1 grid grid-cols-4 gap-y-3 place-items-center">
         {Array.from({ length: total }, (_, i) => (
-          <StampShape key={i} kind={i % 3} filled={i < collected} />
+          <StampShape key={i < filled ? `f${i}` : `e${i}`} kind={i % 3} filled={i < filled} />
         ))}
       </div>
 
@@ -161,6 +173,7 @@ function SampleLoyaltyCard() {
           <div className="text-[8px] font-mono text-center mt-1 text-[#37352F]">SF00042</div>
         </div>
       </div>
+      <style>{`@keyframes sf-stamp{0%{transform:scale(1.7);opacity:0}60%{transform:scale(.9)}100%{transform:scale(1);opacity:1}}`}</style>
     </div>
   );
 }
@@ -179,9 +192,10 @@ function BrandMark() {
 /** One stamp slot. kind 0=square 1=circle 2=cross. Faded when not yet collected. */
 function StampShape({ kind, filled }: { kind: number; filled: boolean }) {
   const op = filled ? 1 : 0.18;
-  if (kind === 0) return <span className="block w-7 h-7 rounded-[4px]" style={{ backgroundColor: INK, opacity: op }} />;
-  if (kind === 1) return <span className="block w-7 h-7 rounded-full" style={{ backgroundColor: INK, opacity: op }} />;
-  return <Cross className="w-7 h-7" opacity={op} />;
+  const anim = filled ? { animation: 'sf-stamp 0.45s cubic-bezier(0.34,1.56,0.64,1) both' } : undefined;
+  if (kind === 0) return <span className="block w-7 h-7 rounded-[4px]" style={{ backgroundColor: INK, opacity: op, ...anim }} />;
+  if (kind === 1) return <span className="block w-7 h-7 rounded-full" style={{ backgroundColor: INK, opacity: op, ...anim }} />;
+  return <span className="inline-flex" style={anim}><Cross className="w-7 h-7" opacity={op} /></span>;
 }
 
 function Cross({ className, opacity = 1 }: { className?: string; opacity?: number }) {
