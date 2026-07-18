@@ -276,10 +276,10 @@ export function LandingPage({
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2 font-semibold text-lg">
+        <a href="/" aria-label="Stampfix home" className="flex items-center gap-2 font-semibold text-lg text-[#37352F] hover:opacity-80 transition">
           <svg viewBox="0 0 282 90" className="h-6 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
           Stampfix
-        </div>
+        </a>
         <div className="flex items-center gap-2 md:gap-3 text-sm font-medium">
           <a href="/features" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Features</a>
           <a href="/use-cases" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Use cases</a>
@@ -478,10 +478,10 @@ export function LandingPage({
       {/* Footer */}
       <footer className="border-t notion-border bg-white py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
-          <div className="flex items-center gap-2 font-semibold text-[#37352F] mb-4 md:mb-0">
+          <a href="/" aria-label="Stampfix home" className="flex items-center gap-2 font-semibold text-[#37352F] mb-4 md:mb-0 hover:opacity-80 transition">
             <svg viewBox="0 0 282 90" className="h-5 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
             Stampfix
-          </div>
+          </a>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
             <a href="/faq" className="hover:text-[#37352F]">FAQ</a>
             <a href="/wallet-guide" className="hover:text-[#37352F]">Update your card</a>

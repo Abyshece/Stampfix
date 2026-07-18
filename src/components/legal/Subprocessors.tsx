@@ -106,8 +106,7 @@ export function Subprocessors() {
       </p>
 
       <p className="text-xs text-gray-400 pt-8 border-t notion-border mt-8">
-        This document is a template provided for convenience and does not constitute legal advice.
-        Have it reviewed by qualified counsel before relying on it.
+        Last updated: 18 July 2026
       </p>
     </LegalPage>
   );

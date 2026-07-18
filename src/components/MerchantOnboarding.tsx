@@ -443,6 +443,10 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
                 placeholder="ACME"
                 maxLength={10}
               />
+              <div className="flex gap-2 items-start text-[11px] text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-2 mt-1.5">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-blue-500" />
+                <span>This short text shows at the very top of your card &mdash; next to your logo &mdash; in both Apple Wallet and Google Wallet.</span>
+              </div>
             </div>
           </div>
 
