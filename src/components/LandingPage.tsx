@@ -121,6 +121,7 @@ export function LandingPage({
             onClick={() => setIsLoginOpen(false)}
           />
           <div className="relative bg-white rounded-xl shadow-2xl border notion-border w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="absolute top-0 inset-x-0 h-1.5 z-20" style={{ background: 'linear-gradient(90deg,#75FBFD,#1132F5,#510AF5,#EA33B6,#EA3323,#F0A479,#F7CE46,#75FBFD)' }} />
             <button
               onClick={() => setIsLoginOpen(false)}
               className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition z-10"

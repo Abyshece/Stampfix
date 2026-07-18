@@ -1,4 +1,4 @@
-import { MarketingLayout, Eyebrow, StartButton } from './MarketingLayout';
+import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './MarketingLayout';
 import { BarChart3, Zap, ShieldCheck, Sparkles } from 'lucide-react';
 
 const MERCHANT_BENEFITS = [
@@ -120,17 +120,11 @@ export function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="max-w-4xl mx-auto px-6 py-14">
-        <div className="bg-[#37352F] rounded-3xl px-8 py-14 text-center text-white">
-          <h2 className="text-3xl md:text-4xl font-serif-display font-medium mb-4 leading-tight">
-            Turn casual walk-ins into lifelong regulars.
-          </h2>
-          <p className="text-white/70 mb-8 max-w-lg mx-auto">
-            Ditch the paper, skip the App Store, and give your customers a loyalty card they&rsquo;ll actually use.
-          </p>
-          <StartButton label="Start your free trial" className="px-6 py-3 !bg-white !text-[#37352F] hover:!bg-gray-100" />
-        </div>
-      </section>
+      <GradientBanner
+        title="Turn casual walk-ins into lifelong regulars."
+        subtitle="Ditch the paper, skip the App Store, and give your customers a loyalty card they’ll actually use."
+        buttonLabel="Start your free trial"
+      />
     </MarketingLayout>
   );
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
-import { MarketingLayout, Eyebrow, StartButton } from './MarketingLayout';
+import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './MarketingLayout';
 
 /* ---- tiny formatting helpers so post bodies stay readable ---- */
 const Lead = ({ children }: { children: ReactNode }) => (
@@ -165,12 +165,7 @@ export function BlogPage() {
           <h1 className="text-4xl md:text-5xl font-serif-display font-medium leading-[1.1] tracking-tight mb-8">{post.title}</h1>
           <div className="text-[16px] text-gray-700">{post.body}</div>
         </article>
-        <div className="max-w-2xl mx-auto px-6 pb-4">
-          <div className="bg-[#37352F] rounded-3xl px-8 py-12 text-center text-white">
-            <h2 className="text-2xl md:text-3xl font-serif-display font-medium mb-4">Ready to retire the paper card?</h2>
-            <StartButton label="Start your free trial" className="px-6 py-3 !bg-white !text-[#37352F] hover:!bg-gray-100" />
-          </div>
-        </div>
+        <GradientBanner title="Ready to retire the paper card?" buttonLabel="Start your free trial" />
       </MarketingLayout>
     );
   }

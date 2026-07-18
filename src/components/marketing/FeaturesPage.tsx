@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MarketingLayout, Eyebrow, StartButton } from './MarketingLayout';
+import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './MarketingLayout';
 import { Wallet, BellRing, BarChart3, ShieldCheck, Smartphone, RefreshCw } from 'lucide-react';
 
 /** Fire once when the element scrolls into view. */
@@ -116,19 +116,11 @@ export function FeaturesPage() {
       </section>
 
       {/* We handle the tech — animated rainbow gradient border */}
-      <section className="max-w-4xl mx-auto px-6 py-14">
-        <div
-          className="relative rounded-3xl p-[3px] overflow-hidden shadow-lg"
-          style={{ background: WALLET_LINEAR, backgroundSize: '200% 100%', animation: 'sf-grad 7s ease-in-out infinite' }}
-        >
-          <div className="relative bg-[#37352F] rounded-[calc(1.5rem-3px)] px-8 py-14 text-center text-white">
-            <h2 className="text-3xl md:text-4xl font-serif-display font-medium mb-4 leading-tight">We handle the tech. You handle the counter.</h2>
-            <p className="text-white/70 mb-8 max-w-lg mx-auto">Premium customer retention, minimal monthly cost. No setup fees, no app development.</p>
-            <StartButton label="Start your free trial" className="px-6 py-3 !bg-white !text-[#37352F] hover:!bg-gray-100" />
-          </div>
-        </div>
-        <style>{`@keyframes sf-grad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`}</style>
-      </section>
+      <GradientBanner
+        title="We handle the tech. You handle the counter."
+        subtitle="Premium customer retention, minimal monthly cost. No setup fees, no app development."
+        buttonLabel="Start your free trial"
+      />
     </MarketingLayout>
   );
 }

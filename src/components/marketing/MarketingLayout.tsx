@@ -23,6 +23,32 @@ export function StartButton({ label = 'Start for free', className = '' }: { labe
   );
 }
 
+const CARD_WASH =
+  'radial-gradient(closest-side, #75FBFD, transparent) 12% 25%/38% 65% no-repeat,' +
+  'radial-gradient(closest-side, #510AF5, transparent) 42% 12%/38% 65% no-repeat,' +
+  'radial-gradient(closest-side, #EA33B6, transparent) 72% 25%/38% 65% no-repeat,' +
+  'radial-gradient(closest-side, #F0A479, transparent) 92% 62%/38% 65% no-repeat,' +
+  'radial-gradient(closest-side, #1132F5, transparent) 22% 72%/38% 65% no-repeat';
+const CARD_LINEAR = 'linear-gradient(90deg,#75FBFD,#1132F5,#510AF5,#EA33B6,#EA3323,#F0A479,#F7CE46,#75FBFD)';
+
+/** White CTA banner with a soft wallet-card gradient wash + animated gradient top strip. */
+export function GradientBanner({ title, subtitle, buttonLabel }: { title: string; subtitle?: string; buttonLabel: string }) {
+  return (
+    <section className="max-w-4xl mx-auto px-6 py-14">
+      <div className="relative rounded-3xl border notion-border bg-white overflow-hidden shadow-lg px-8 py-14 text-center">
+        <div className="pointer-events-none absolute inset-0 opacity-45 blur-3xl" style={{ background: CARD_WASH }} />
+        <div className="absolute top-0 inset-x-0 h-1.5" style={{ background: CARD_LINEAR, backgroundSize: '200% 100%', animation: 'sf-grad 7s ease-in-out infinite' }} />
+        <div className="relative">
+          <h2 className="text-3xl md:text-4xl font-serif-display font-medium mb-4 leading-tight text-[#37352F]">{title}</h2>
+          {subtitle && <p className="text-gray-500 mb-8 max-w-lg mx-auto">{subtitle}</p>}
+          <StartButton label={buttonLabel} className="px-6 py-3" />
+        </div>
+      </div>
+      <style>{`@keyframes sf-grad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`}</style>
+    </section>
+  );
+}
+
 /** Eyebrow pill — matches the landing hero's small label chip. */
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (

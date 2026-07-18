@@ -1,4 +1,4 @@
-import { MarketingLayout, Eyebrow, StartButton } from './MarketingLayout';
+import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './MarketingLayout';
 import { Coffee, Scissors, Truck, ShoppingBag } from 'lucide-react';
 
 const CASES = [
@@ -60,12 +60,7 @@ export function UseCasesPage() {
         <p className="text-center text-gray-400 mt-8 font-serif-display text-xl">No paper. No apps. No friction.</p>
       </section>
 
-      <section className="max-w-4xl mx-auto px-6 py-10">
-        <div className="bg-[#37352F] rounded-3xl px-8 py-14 text-center text-white">
-          <h2 className="text-3xl md:text-4xl font-serif-display font-medium mb-4 leading-tight">Stop punching paper. Start building relationships.</h2>
-          <StartButton label="Start your free trial" className="px-6 py-3 mt-2 !bg-white !text-[#37352F] hover:!bg-gray-100" />
-        </div>
-      </section>
+      <GradientBanner title="Stop punching paper. Start building relationships." buttonLabel="Start your free trial" />
     </MarketingLayout>
   );
 }
