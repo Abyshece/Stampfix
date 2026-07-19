@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
-  Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2,
+  Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import {
@@ -18,7 +18,7 @@ import {
 import { OffersTab } from './OffersTab';
 import { setMerchantApproval, getMerchantApproval } from '../lib/db';
 
-type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'LOGS';
+type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'LOGS' | 'FUNNEL';
 
 export function AdminPanel() {
   const { user, loading: authLoading } = useAuth();
@@ -114,6 +114,7 @@ export function AdminPanel() {
             ['CONTACT', Mail, 'Contact Inquiries'],
             ['OFFERS', Tag, 'Offers'],
             ['LOGS', Activity, 'Logs'],
+            ['FUNNEL', Filter, 'Funnel'],
           ] as const).map(([id, Icon, label]) => (
             <button
               key={id}
@@ -159,6 +160,7 @@ export function AdminPanel() {
         {tab === 'B2B2C_REPORTS' && <ReportsTab source="customer" title="B2B2C Reports" subtitle="Tickets submitted by end-customers." />}
         {tab === 'CONTACT' && <ContactTab />}
         {tab === 'LOGS' && <LogsTab />}
+        {tab === 'FUNNEL' && <FunnelTab />}
         {tab === 'OFFERS' && <OffersTab />}
       </main>
     </div>
@@ -1357,6 +1359,114 @@ function LogsTab() {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =====================================================================
+// FUNNEL — where merchants (B2B) and customers (B2B2C) drop off
+// =====================================================================
+
+function FunnelTab() {
+  const [view, setView] = useState<'b2b' | 'b2b2c'>('b2b');
+  const [merchants, setMerchants] = useState<MerchantRow[] | null>(null);
+  const [customers, setCustomers] = useState<CustomerRow[] | null>(null);
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  useEffect(() => {
+    listMerchants(undefined, 1000).then(setMerchants).catch(() => setMerchants([]));
+    listCustomers(undefined, undefined, 1000).then(setCustomers).catch(() => setCustomers([]));
+  }, []);
+
+  const loading = merchants === null || customers === null;
+  const now = Date.now();
+  const D30 = 30 * 864e5;
+  const mAll = (merchants ?? []).filter((x) => x.status !== 'deleted');
+  const cAll = customers ?? [];
+
+  const b2b = [
+    { label: 'Signed up', hint: 'Created a merchant account', n: mAll.length },
+    { label: 'Activated', hint: 'Logged in at least once', n: mAll.filter((x) => x.last_login_at).length },
+    { label: 'Upgraded to Pro', hint: 'On a paid plan', n: mAll.filter((x) => x.plan === 'pro').length },
+  ];
+  const b2b2c = [
+    { label: 'Joined', hint: 'Customer record created', n: cAll.length },
+    { label: 'Added to Wallet', hint: 'Has a card in Apple / Google Wallet', n: cAll.filter((x) => x.cards_in_wallet > 0).length },
+    { label: 'Earned a stamp', hint: 'Collected at least one stamp', n: cAll.filter((x) => x.total_stamps > 0).length },
+    { label: 'Active (30d)', hint: 'Stamped in the last 30 days', n: cAll.filter((x) => x.last_stamp_at && now - new Date(x.last_stamp_at).getTime() < D30).length },
+  ];
+
+  const stages = view === 'b2b' ? b2b : b2b2c;
+  const top = stages[0]?.n || 0;
+  const COLORS = ['#1132F5', '#510AF5', '#EA33B6', '#EA3323', '#F0A479'];
+
+  let lastW = 100;
+  const rows = stages.map((s, i) => {
+    const pct = top ? (s.n / top) * 100 : 0;
+    let w = 34 + (pct / 100) * 66;
+    w = Math.min(w, lastW);
+    lastW = w;
+    const prev = i > 0 ? stages[i - 1].n : s.n;
+    return { ...s, pct, w, stepPct: prev ? (s.n / prev) * 100 : 100, dropped: prev - s.n };
+  });
+
+  return (
+    <div>
+      <h1 className="text-3xl font-serif-display font-semibold mb-1">Funnel</h1>
+      <p className="text-gray-500 text-sm mb-6">Where people move forward, and where they drop off. Click any stage for detail.</p>
+
+      <div className="inline-flex rounded-lg border notion-border overflow-hidden mb-8">
+        {(['b2b', 'b2b2c'] as const).map((v) => (
+          <button key={v} onClick={() => { setView(v); setOpenIdx(null); }}
+            className={`px-4 py-2 text-sm font-medium transition ${view === v ? 'bg-[#37352F] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+            {v === 'b2b' ? 'B2B \u00b7 Merchants' : 'B2B2C \u00b7 Customers'}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Loading\u2026</div>
+      ) : top === 0 ? (
+        <div className="text-gray-400 text-sm">No data yet.</div>
+      ) : (
+        <div className="max-w-2xl">
+          <div className="text-[11px] text-gray-400 mb-4">Website visits and registration clicks aren&rsquo;t tracked server-side, so this funnel starts at account creation.</div>
+          {rows.map((r, i) => {
+            const isOpen = openIdx === i;
+            return (
+              <div key={i}>
+                {i > 0 && (
+                  <div className="text-center text-[11px] py-1.5 text-gray-400">
+                    {r.stepPct.toFixed(0)}% continued
+                    {r.dropped > 0 && <span className="text-red-400"> \u00b7 {r.dropped.toLocaleString()} dropped off</span>}
+                  </div>
+                )}
+                <button onClick={() => setOpenIdx(isOpen ? null : i)} className="block mx-auto text-left" style={{ width: `${r.w}%` }}>
+                  <div className="rounded-xl px-5 py-4 text-white shadow-sm flex items-center justify-between transition hover:brightness-110" style={{ background: COLORS[i % COLORS.length] }}>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm truncate">{r.label}</div>
+                      <div className="text-[11px] text-white/70 truncate">{r.hint}</div>
+                    </div>
+                    <div className="text-right pl-3">
+                      <div className="text-2xl font-bold tabular-nums leading-none">{r.n.toLocaleString()}</div>
+                      <div className="text-[11px] text-white/70">{r.pct.toFixed(0)}% of top</div>
+                    </div>
+                  </div>
+                </button>
+                {isOpen && (
+                  <div className="mx-auto mt-1.5 mb-1 rounded-lg bg-[#F7F7F5] border notion-border p-4" style={{ width: `${r.w}%` }}>
+                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                      <div><div className="text-[11px] text-gray-400">Reached</div><div className="font-bold tabular-nums">{r.n.toLocaleString()}</div></div>
+                      <div><div className="text-[11px] text-gray-400">From previous</div><div className="font-bold tabular-nums">{i === 0 ? '100%' : `${r.stepPct.toFixed(0)}%`}</div></div>
+                      <div><div className="text-[11px] text-gray-400">Dropped here</div><div className="font-bold tabular-nums text-red-500">{i === 0 ? '\u2014' : r.dropped.toLocaleString()}</div></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
