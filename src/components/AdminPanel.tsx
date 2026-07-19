@@ -128,6 +128,15 @@ export function AdminPanel() {
         </nav>
 
         <div className="p-3 border-t notion-border space-y-1.5">
+          <a
+            href="https://dashboard.stripe.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center gap-2 px-2.5 py-2 mb-1 rounded-md text-sm font-medium bg-[#635BFF] text-white hover:bg-[#5248e6] transition shadow-sm"
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            Stripe Dashboard
+          </a>
           <a href="/" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-500 hover:text-[#37352F]">
             <ChevronRight className="w-3 h-3" /> Back to main app
           </a>
