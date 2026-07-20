@@ -1394,7 +1394,7 @@ function FunnelTab() {
   const b2b2c = [
     { label: 'Joined', hint: 'Customer record created', n: cAll.length },
     { label: 'Added to Wallet', hint: 'Has a card in Apple / Google Wallet', n: cAll.filter((x) => x.cards_in_wallet > 0).length },
-    { label: 'Earned a stamp', hint: 'Collected at least one stamp', n: cAll.filter((x) => x.total_stamps > 0).length },
+    { label: 'Earned a stamp', hint: 'Collected at least one stamp', n: cAll.filter((x) => x.last_stamp_at).length },
     { label: 'Active (30d)', hint: 'Stamped in the last 30 days', n: cAll.filter((x) => x.last_stamp_at && now - new Date(x.last_stamp_at).getTime() < D30).length },
   ];
 
@@ -1409,7 +1409,8 @@ function FunnelTab() {
     w = Math.min(w, lastW);
     lastW = w;
     const prev = i > 0 ? stages[i - 1].n : s.n;
-    return { ...s, pct, w, stepPct: prev ? (s.n / prev) * 100 : 100, dropped: prev - s.n };
+    const stepPct = prev ? Math.min(100, (s.n / prev) * 100) : 100;
+    return { ...s, pct, w, stepPct, dropped: Math.max(0, prev - s.n) };
   });
 
   return (
@@ -1427,7 +1428,7 @@ function FunnelTab() {
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Loading\u2026</div>
+        <div className="flex items-center gap-2 text-gray-400 text-sm"><Loader2 className="w-4 h-4 animate-spin" /> Loading&hellip;</div>
       ) : top === 0 ? (
         <div className="text-gray-400 text-sm">No data yet.</div>
       ) : (
@@ -1440,7 +1441,7 @@ function FunnelTab() {
                 {i > 0 && (
                   <div className="text-center text-[11px] py-1.5 text-gray-400">
                     {r.stepPct.toFixed(0)}% continued
-                    {r.dropped > 0 && <span className="text-red-400"> \u00b7 {r.dropped.toLocaleString()} dropped off</span>}
+                    {r.dropped > 0 && <span className="text-red-400"> &middot; {r.dropped.toLocaleString()} dropped off</span>}
                   </div>
                 )}
                 <button onClick={() => setOpenIdx(isOpen ? null : i)} className="block mx-auto text-left" style={{ width: `${r.w}%` }}>
