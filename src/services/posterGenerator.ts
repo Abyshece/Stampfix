@@ -581,7 +581,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   /* ===== Instagram square post (1080x1080) ===== */
   @page instagram { size: 210mm 210mm; margin: 0; }
   .size-instagram {
-    width: 1080px; height: 1080px; margin: 30px auto; background: __CARD_BG__; color: __CARD_INK__;
+    width: 1080px; height: 1080px; margin: 30px auto; background: __POSTER_BG__; color: var(--ink);
     display: flex; flex-direction: column; align-items: center; justify-content: space-between;
     padding: 84px 70px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;
   }
@@ -595,14 +595,14 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   /* ===== Table QR (45mm x 45mm) ===== */
   @page table { size: 45mm 45mm; margin: 0; }
   .size-table {
-    width: 170px; height: 170px; margin: 30px auto; background: #fff; color: __INK__;
-    border: 4px solid __CARD_BG__; border-radius: 14px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;
+    width: 170px; height: 170px; margin: 30px auto; background: __POSTER_BG__; color: var(--ink);
+    border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;
   }
-  .size-table .tb-qr img { width: 106px; height: 106px; display: block; }
-  .size-table .tb-label { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-top: 5px; }
-  .size-table .tb-biz { font-size: 7px; opacity: 0.7; margin-top: 1px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .size-table .tb-label { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .size-table .tb-box { background: #fff; border-radius: 8px; padding: 6px; margin: 5px 0; }
+  .size-table .tb-box img { width: 96px; height: 96px; display: block; }
+  .size-table .tb-biz { font-size: 7px; opacity: 0.9; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* ===== A4 sticker sheet: table QR repeated in a grid ===== */
   @page sticker { size: A4 portrait; margin: 0; }
   .size-sticker {
@@ -742,9 +742,9 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
 
   <!-- ============= TABLE QR (45mm) ============= -->
   <div class="size-table">
-    <div class="tb-qr"><img src="__QR_URL__" alt="Scan to join" /></div>
     <div class="tb-label">Scan to join</div>
-    <div class="tb-biz">__BUSINESS_NAME__</div>
+    <div class="tb-box"><img src="__QR_URL__" alt="Scan to join" /></div>
+    <div class="tb-biz">__BUSINESS_NAME__ · collect stamps</div>
   </div>
 
   <!-- ============= A4 STICKER SHEET ============= -->
