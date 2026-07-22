@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Palette, Check, Loader2, Lock, Sparkles } from 'lucide-react';
 import type { Campaign } from '../types';
 import { updateCampaign } from '../lib/db';
+import { downloadInstagramPng, downloadTableQrPng } from '../services/posterImage';
 import { buildPosterHtml } from '../services/posterGenerator';
 import { useToast } from './ToastProvider';
 
@@ -91,7 +92,7 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
   };
 
   /** Open a new tab showing the current preview value applied to a real poster. */
-  const handlePreview = (size: 'card' | 'pamphlet' | 'poster') => {
+  const handlePreview = (size: 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker') => {
     const html = buildPosterHtml({
       campaign,
       size,
@@ -235,6 +236,36 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
           className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
         >
           A4 poster
+        </button>
+        <button
+          onClick={() => handlePreview('instagram')}
+          className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
+        >
+          Instagram post
+        </button>
+        <button
+          onClick={() => handlePreview('table')}
+          className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
+        >
+          Table QR (4.5cm)
+        </button>
+        <button
+          onClick={() => handlePreview('sticker')}
+          className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
+        >
+          Sticker sheet (A4)
+        </button>
+        <button
+          onClick={() => downloadInstagramPng(campaign, previewBg)}
+          className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white hover:opacity-90 transition"
+        >
+          ⬇ Instagram PNG
+        </button>
+        <button
+          onClick={() => downloadTableQrPng(campaign, previewBg)}
+          className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white hover:opacity-90 transition"
+        >
+          ⬇ Table QR PNG
         </button>
       </div>
 

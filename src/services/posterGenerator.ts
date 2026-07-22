@@ -1,6 +1,6 @@
 import type { Campaign, Location } from '../types';
 
-export type PosterSize = 'card' | 'pamphlet' | 'poster';
+export type PosterSize = 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker';
 
 interface BuildPosterInput {
   campaign: Campaign;
@@ -115,6 +115,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   // signup, no API key. The URL we pass through is the actual join
   // URL with embedded campaign+location params.
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=0&data=${encodeURIComponent(joinUrl)}`;
+  const stickerCells = Array.from({ length: 20 }, () => `<div class="st-cell"><img src="${qrUrl}" alt="Scan to join"/><span>Scan to join</span></div>`).join('');
 
   // The example "0" stamp count and "Alex" / "06/03/26" footer are
   // illustrative — they show the customer what a card LOOKS like.
@@ -127,6 +128,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__ICON__',           esc(icon))
     .replaceAll('__OFFER_TITLE__',    esc(offerTitle))
     .replaceAll('__STARBURST__',      starburstText)
+    .replaceAll('__STICKER_CELLS__',  stickerCells)
     .replaceAll('__QR_URL__',         qrUrl)
     .replaceAll('__STAMPS_GRID__',    buildStampsGrid(maxStamps, icon))
     .replaceAll('__OFFER_PILL__',     esc(condenseOfferForPill(offerTitle, maxStamps)))
@@ -139,7 +141,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__INK_SOFT__',       inkSoft)
     .replaceAll('__VBRAND__',         vbrand)
     .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
-    .replaceAll('__PAGE__',           input.size === 'card' ? '85mm 55mm' : input.size === 'pamphlet' ? '210mm 148mm' : '210mm 297mm')
+    .replaceAll('__PAGE__',           input.size === 'card' ? '85mm 55mm' : input.size === 'pamphlet' ? '210mm 148mm' : input.size === 'instagram' ? '210mm 210mm' : input.size === 'table' ? '45mm 45mm' : input.size === 'sticker' ? '210mm 297mm' : '210mm 297mm')
     .replaceAll('__SIZE__',           input.size);
 }
 
@@ -261,7 +263,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     .controls { display: none !important; }
     .size-card,
     .size-pamphlet,
-    .size-poster { box-shadow: none !important; margin: 0 !important; }
+    .size-poster,
+    .size-instagram,
+    .size-table,
+    .size-sticker { box-shadow: none !important; margin: 0 !important; }
   }
 
   /* On-screen controls — hidden when printing */
@@ -573,6 +578,44 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .scan-cta { display: flex; justify-content: center; }
   .scan-cta img { display: block; width: 168px; height: 168px; }
   .size-poster .scan-cta img { width: 196px; height: 196px; }
+  /* ===== Instagram square post (1080x1080) ===== */
+  @page instagram { size: 210mm 210mm; margin: 0; }
+  .size-instagram {
+    width: 1080px; height: 1080px; margin: 30px auto; background: __CARD_BG__; color: __CARD_INK__;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 84px 70px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;
+  }
+  .size-instagram .ig-biz { font-size: 34px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; opacity: 0.9; }
+  .size-instagram .ig-mid { display: flex; flex-direction: column; align-items: center; gap: 44px; }
+  .size-instagram .ig-headline { font-size: 132px; font-weight: 900; line-height: 0.92; letter-spacing: -3px; text-align: center; margin: 0; }
+  .size-instagram .ig-qr { background: #fff; border-radius: 30px; padding: 26px; box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
+  .size-instagram .ig-qr img { width: 300px; height: 300px; display: block; }
+  .size-instagram .ig-foot { font-size: 32px; font-weight: 600; opacity: 0.9; text-align: center; }
+
+  /* ===== Table QR (45mm x 45mm) ===== */
+  @page table { size: 45mm 45mm; margin: 0; }
+  .size-table {
+    width: 170px; height: 170px; margin: 30px auto; background: #fff; color: __INK__;
+    border: 4px solid __CARD_BG__; border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;
+  }
+  .size-table .tb-qr img { width: 106px; height: 106px; display: block; }
+  .size-table .tb-label { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-top: 5px; }
+  .size-table .tb-biz { font-size: 7px; opacity: 0.7; margin-top: 1px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* ===== A4 sticker sheet: table QR repeated in a grid ===== */
+  @page sticker { size: A4 portrait; margin: 0; }
+  .size-sticker {
+    width: 794px; height: 1123px; margin: 30px auto; background: #fff; color: __INK__;
+    padding: 24px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    align-content: start; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+  .size-sticker .st-cell {
+    border: 3px solid __CARD_BG__; border-radius: 12px; aspect-ratio: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px;
+  }
+  .size-sticker .st-cell img { width: 74%; height: auto; display: block; }
+  .size-sticker .st-cell span { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-top: 5px; color: #1A1A1A; }
 </style>
 </head>
 <body data-size="__SIZE__">
@@ -687,15 +730,35 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     <div class="ps-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
 
+  <!-- ============= INSTAGRAM SQUARE ============= -->
+  <div class="size-instagram">
+    <div class="ig-biz">__BUSINESS_NAME__</div>
+    <div class="ig-mid">
+      <h1 class="ig-headline">SCAN<br>&amp; WIN</h1>
+      <div class="ig-qr"><img src="__QR_URL__" alt="Scan to join" /></div>
+    </div>
+    <div class="ig-foot">Rewards every visit — no app to download.</div>
+  </div>
+
+  <!-- ============= TABLE QR (45mm) ============= -->
+  <div class="size-table">
+    <div class="tb-qr"><img src="__QR_URL__" alt="Scan to join" /></div>
+    <div class="tb-label">Scan to join</div>
+    <div class="tb-biz">__BUSINESS_NAME__</div>
+  </div>
+
+  <!-- ============= A4 STICKER SHEET ============= -->
+  <div class="size-sticker">__STICKER_CELLS__</div>
+
 <script>
   // Hide non-selected size formats based on body[data-size]. This lets
   // the merchant print just the size they downloaded.
   (function() {
     var size = document.body.dataset.size || 'poster';
-    var validSizes = ['card', 'pamphlet', 'poster'];
+    var validSizes = ['card', 'pamphlet', 'poster', 'instagram', 'table', 'sticker'];
     if (!validSizes.includes(size)) size = 'poster';
     var sel = '.size-' + size;
-    document.querySelectorAll('.size-card, .size-pamphlet, .size-poster').forEach(function(el) {
+    document.querySelectorAll('.size-card, .size-pamphlet, .size-poster, .size-instagram, .size-table, .size-sticker').forEach(function(el) {
       if (!el.matches(sel)) el.style.display = 'none';
     });
     // Use the right @page rule on print so paper size matches.
@@ -703,6 +766,9 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     style.textContent = '@page { size: ' + (
       size === 'card' ? '85mm 55mm'
       : size === 'pamphlet' ? 'A5 landscape'
+      : size === 'instagram' ? '210mm 210mm'
+      : size === 'table' ? '45mm 45mm'
+      : size === 'sticker' ? 'A4 portrait'
       : 'A4 portrait'
     ) + '; margin: 0; }';
     document.head.appendChild(style);
