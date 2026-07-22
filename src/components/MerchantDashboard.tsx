@@ -317,7 +317,7 @@ export function MerchantDashboard({
    *  by services/posterGenerator and includes the merchant's offer,
    *  branding color (or gradient from posterColor), icon, business name,
    *  and a per-location QR code. */
-  const handleDownloadPoster = (location: Location | null, size: PosterSize = 'poster') => {
+  const handleDownloadPoster = (location: Location | null, size: PosterSize = 'pamphlet') => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Please allow pop-ups to download the poster.');

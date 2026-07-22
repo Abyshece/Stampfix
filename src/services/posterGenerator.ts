@@ -139,6 +139,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__INK_SOFT__',       inkSoft)
     .replaceAll('__VBRAND__',         vbrand)
     .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
+    .replaceAll('__PAGE__',           input.size === 'card' ? '85mm 55mm' : input.size === 'pamphlet' ? '210mm 148mm' : '210mm 297mm')
     .replaceAll('__SIZE__',           input.size);
 }
 
@@ -245,6 +246,8 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
 <meta charset="utf-8">
 <title>__BUSINESS_NAME__ — Loyalty Poster</title>
 <style>
+  /* Pin the printed page to the chosen format so it never spills to a 2nd page. */
+  @page { size: __PAGE__; margin: 0; }
   /* Reset + sensible defaults */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
