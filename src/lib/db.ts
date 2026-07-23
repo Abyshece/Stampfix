@@ -1,3 +1,4 @@
+import { getStaffSession } from '../services/staff';
 import { supabase } from './supabase';
 import type { Campaign, UserCard, ActivityItem, Location, MerchantBilling, Plan } from '../types';
 
@@ -558,6 +559,8 @@ async function logActivity(
   // Server-side functions pass their own actor via the source='webhook'
   // path; in the browser, this is the logged-in merchant or customer.
   const { data: { user } } = await supabase.auth.getUser();
+  // If a staff member is signed in on this device, record who did it.
+  const staff = getStaffSession(campaignId);
   const { error } = await supabase.from('activities').insert({
     campaign_id: campaignId,
     card_id: cardId,
@@ -565,6 +568,8 @@ async function logActivity(
     type,
     source,
     actor_user_id: user?.id ?? null,
+    staff_id: staff?.id ?? null,
+    staff_name: staff?.name ?? null,
   });
   if (error) {
     // Activity logging is best-effort. Don't fail the parent action over it.

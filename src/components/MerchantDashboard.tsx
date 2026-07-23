@@ -12,6 +12,9 @@ import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
+import { StaffPanel } from './StaffPanel';
+import { StaffGate } from './StaffGate';
+import { listStaff, getStaffSession } from '../services/staff';
 import { ProLockOverlay } from './ProLockOverlay';
 import { isDarkColor } from '../lib/colors';
 import { UpgradeBanner } from './UpgradeBanner';
@@ -59,7 +62,7 @@ interface MerchantDashboardProps {
   onLogout: () => void;
 }
 
-type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'VALUE' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
+type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
 
 const NOTION_COLORS = [
   { name: 'Default', hex: '#37352F' },
@@ -97,6 +100,17 @@ export function MerchantDashboard({
   }, [activeTab]);
   const toast = useToast();
   const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
+  // "Who's on shift?" — ask for a staff PIN once per browser session, but only
+  // if this shop actually has active staff set up.
+  const [showStaffGate, setShowStaffGate] = useState(false);
+  useEffect(() => {
+    if (getStaffSession(campaign.id)) return;
+    let cancelled = false;
+    listStaff(campaign.id)
+      .then((rows) => { if (!cancelled && rows.some((r) => r.active)) setShowStaffGate(true); })
+      .catch(() => { /* staff is optional — never block the dashboard */ });
+    return () => { cancelled = true; };
+  }, [campaign.id]);
   // Show the Admin shortcut only for the platform owner's account.
   const { user } = useAuth();
   const isStampfixAdmin = (user?.email ?? '').toLowerCase() === 'abyshece@gmail.com';
@@ -470,6 +484,7 @@ export function MerchantDashboard({
               ['ACTIVITY', History, 'Activity'],
               ['ANALYTICS', BarChart3, 'Insights'],
               ['VALUE', TrendingUp, 'Payback'],
+              ['STAFF', Users, 'Staff'],
               ['PREVIEW', Eye, 'Preview Card'],
               ['SHARE', Share, 'Share & Promote'],
               ['SETTINGS', Settings, 'Settings'],
@@ -1162,6 +1177,10 @@ export function MerchantDashboard({
         )}
 
         {/* --- SETTINGS --- */}
+        {activeTab === 'STAFF' && (
+          <StaffPanel campaignId={campaign.id} onSwitchStaff={() => setShowStaffGate(true)} />
+        )}
+
         {activeTab === 'VALUE' && (
           <MerchantValueCalculator country={country ?? null} businessName={campaign.businessName} />
         )}
@@ -1461,7 +1480,7 @@ export function MerchantDashboard({
           ))}
           <button onClick={() => setShowMobileMoreMenu(true)}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
+              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE', 'STAFF'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <Menu className="w-6 h-6" />
             <span className="text-[10px] font-medium">More</span>
@@ -1478,6 +1497,7 @@ export function MerchantDashboard({
               {([
                 ['ACTIVITY', History, 'Activity'],
                 ['VALUE', TrendingUp, 'Payback'],
+                ['STAFF', Users, 'Staff'],
                 ['SHARE', Share, 'Share'],
                 ['PREVIEW', Eye, 'Preview'],
                 ['SETTINGS', Settings, 'Settings'],
@@ -1512,6 +1532,14 @@ export function MerchantDashboard({
       )}
 
       {/* Upgrade modal — rendered at the root so it overlays everything */}
+      {showStaffGate && (
+        <StaffGate
+          campaignId={campaign.id}
+          onDone={() => setShowStaffGate(false)}
+          onSkip={() => setShowStaffGate(false)}
+        />
+      )}
+
       {showUpgradeModal && (
         <UpgradeModal country={country ?? null} onClose={() => setShowUpgradeModal(false)} />
       )}
