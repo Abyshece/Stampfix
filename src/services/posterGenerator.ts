@@ -115,7 +115,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   // signup, no API key. The URL we pass through is the actual join
   // URL with embedded campaign+location params.
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=0&data=${encodeURIComponent(joinUrl)}`;
-  const stickerCells = Array.from({ length: 20 }, () => `<div class="st-cell"><img src="${qrUrl}" alt="Scan to join"/><span>Scan to join</span></div>`).join('');
+  const stickerCells = Array.from({ length: 20 }, () => `<div class="st-cell"><div class="stx">Scan &amp; stamp</div><div class="st-box"><img src="${qrUrl}" alt="Scan"/></div><div class="stx">Win rewards with us</div></div>`).join('');
 
   // The example "0" stamp count and "Alex" / "06/03/26" footer are
   // illustrative — they show the customer what a card LOOKS like.
@@ -611,11 +611,12 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     align-content: start; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
   }
   .size-sticker .st-cell {
-    border: 3px solid __CARD_BG__; border-radius: 12px; aspect-ratio: 1;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px;
+    background: __POSTER_BG__; color: var(--ink); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; aspect-ratio: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; gap: 4px;
   }
-  .size-sticker .st-cell img { width: 74%; height: auto; display: block; }
-  .size-sticker .st-cell span { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-top: 5px; color: #1A1A1A; }
+  .size-sticker .st-cell .stx { font-size: 9px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; text-align: center; line-height: 1.1; }
+  .size-sticker .st-box { background: #fff; border-radius: 6px; padding: 4px; }
+  .size-sticker .st-box img { width: 66px; height: auto; display: block; }
 </style>
 </head>
 <body data-size="__SIZE__">
@@ -742,9 +743,9 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
 
   <!-- ============= TABLE QR (45mm) ============= -->
   <div class="size-table">
-    <div class="tb-label">Scan to join</div>
-    <div class="tb-box"><img src="__QR_URL__" alt="Scan to join" /></div>
-    <div class="tb-biz">__BUSINESS_NAME__ · collect stamps</div>
+    <div class="tb-label">Scan &amp; stamp</div>
+    <div class="tb-box"><img src="__QR_URL__" alt="Scan" /></div>
+    <div class="tb-label">Win rewards with us</div>
   </div>
 
   <!-- ============= A4 STICKER SHEET ============= -->

@@ -105,17 +105,16 @@ export async function downloadTableQrPng(c: PC, bg?: string | null) {
   const S = 900, cv = document.createElement('canvas'); cv.width = S; cv.height = S; const x = cv.getContext('2d')!;
   applyBg(x, f.posterBg, S, S);
   x.textAlign = 'center'; x.fillStyle = f.ink;
-  x.font = '800 40px "Helvetica Neue", Arial, sans-serif'; (x as unknown as { letterSpacing: string }).letterSpacing = '2px';
-  x.fillText('SCAN TO JOIN', S / 2, 120);
+  x.font = '800 54px "Helvetica Neue", Arial, sans-serif'; (x as unknown as { letterSpacing: string }).letterSpacing = '2px';
+  x.fillText('SCAN & STAMP', S / 2, 152);
   (x as unknown as { letterSpacing: string }).letterSpacing = '0px';
-  x.font = '400 30px "Helvetica Neue", Arial, sans-serif';
-  x.fillText(f.name.slice(0, 34) + ' — loyalty', S / 2, 168);
   // white QR box (keeps the code scannable on any colour)
   const q = 470, qx = (S - q) / 2, qy = 214;
   x.fillStyle = '#fff'; x.shadowColor = 'rgba(0,0,0,0.16)'; x.shadowBlur = 26; x.shadowOffsetY = 8;
   rr(x, qx - 30, qy - 30, q + 60, q + 60, 26); x.fill(); x.shadowColor = 'transparent';
   x.drawImage(qr, qx, qy, q, q);
-  x.fillStyle = f.ink; x.font = '700 34px "Helvetica Neue", Arial, sans-serif';
-  x.fillText('Collect stamps, earn rewards.', S / 2, 812);
+  x.fillStyle = f.ink; x.font = '800 46px "Helvetica Neue", Arial, sans-serif'; (x as unknown as { letterSpacing: string }).letterSpacing = '1px';
+  x.fillText('WIN REWARDS WITH US', S / 2, 814);
+  (x as unknown as { letterSpacing: string }).letterSpacing = '0px';
   dl(cv, `${slug(f.name)}-table-qr.png`);
 }
