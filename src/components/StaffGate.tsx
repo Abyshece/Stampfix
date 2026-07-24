@@ -20,13 +20,13 @@ export function StaffGate({ campaignId, onDone, onSkip }: { campaignId: string; 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-md flex items-center justify-center p-6">
       <div className="bg-white rounded-xl shadow-2xl border notion-border w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-[#37352F]" />
           <h2 className="text-lg font-semibold">Who&rsquo;s on shift?</h2>
         </div>
-        <p className="text-sm text-gray-500">Enter your staff PIN so today&rsquo;s stamps are recorded under your name.</p>
+        <p className="text-sm text-gray-500">Enter your staff ID (PIN) to start your shift. Everything you stamp today is recorded under your name.</p>
         <input
           autoFocus type="password" inputMode="numeric" value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}

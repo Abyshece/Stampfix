@@ -37,8 +37,12 @@ export async function listStaff(campaignId: string): Promise<StaffMember[]> {
 
 export async function createStaff(campaignId: string, name: string, pin: string): Promise<StaffMember> {
   const { data, error } = await supabase.rpc('staff_create', { p_campaign: campaignId, p_name: name, p_pin: pin });
-  if (error) throw error;
-  return toStaff((data as Row[])[0]);
+  if (error) throw new Error(error.message || 'Could not add staff member.');
+  const row = (data as Row[] | null)?.[0];
+  // The RPC returns no row when the insert was rejected (not the owner of this
+  // shop, blank name, or a PIN that isn't 4-8 digits).
+  if (!row) throw new Error('Could not add staff member — check the name and that the PIN is 4-8 digits.');
+  return toStaff(row);
 }
 
 export async function setStaffPin(staffId: string, pin: string): Promise<void> {
