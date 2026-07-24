@@ -4,7 +4,7 @@ import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, Merch
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock,
+  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { markApprovalBannerSeen } from '../lib/db';
@@ -364,6 +364,24 @@ export function MerchantDashboard({
    *  No 'deleted' bucket because the cleanup job actually removes those rows.
    */
   const [customerStatusFilter, setCustomerStatusFilter] = useState<'active' | 'blocked' | 'pending_deletion'>('active');
+  // Extra customer filters: when they joined, how engaged they are, reward state.
+  const [joinedFilter, setJoinedFilter] = useState<'all' | '7' | '30' | '90' | 'custom'>('all');
+  const [joinedFrom, setJoinedFrom] = useState('');
+  const [joinedTo, setJoinedTo] = useState('');
+  const [engagementFilter, setEngagementFilter] = useState<'all' | 'active30' | 'dormant30' | 'never'>('all');
+  const [rewardFilter, setRewardFilter] = useState<'all' | 'ready' | 'close' | 'redeemed'>('all');
+
+  /** Last stamp/redeem per card, derived from the activity log. */
+  const lastSeenByCard = useMemo(() => {
+    const m = new Map<string, number>();
+    activities.forEach((a) => {
+      if (!a.cardId) return;
+      if (a.type !== 'STAMP' && a.type !== 'REDEEM') return;
+      const t = a.timestamp.getTime();
+      if (t > (m.get(a.cardId) ?? 0)) m.set(a.cardId, t);
+    });
+    return m;
+  }, [activities]);
 
   const filteredCards = useMemo(() => {
     const q = customerSearch.trim().toLowerCase();
@@ -381,11 +399,72 @@ export function MerchantDashboard({
       // shouldn't have to know customers' emails, and asking customers to
       // dictate their email at a counter is awkward; the SF00XXX code is
       // easier to read off a phone and faster to type).
+      // Joined date
+      if (joinedFilter !== 'all') {
+        const joined = c.joinedAt.getTime();
+        if (joinedFilter === 'custom') {
+          if (joinedFrom && joined < new Date(joinedFrom).setHours(0, 0, 0, 0)) return false;
+          if (joinedTo && joined > new Date(joinedTo).setHours(23, 59, 59, 999)) return false;
+        } else {
+          const days = Number(joinedFilter);
+          if (joined < Date.now() - days * 864e5) return false;
+        }
+      }
+      // Engagement, from the activity log
+      if (engagementFilter !== 'all') {
+        const last = lastSeenByCard.get(c.id);
+        const cutoff = Date.now() - 30 * 864e5;
+        if (engagementFilter === 'never' && last) return false;
+        if (engagementFilter === 'active30' && (!last || last < cutoff)) return false;
+        if (engagementFilter === 'dormant30' && (!last || last >= cutoff)) return false;
+      }
+      // Reward state
+      if (rewardFilter !== 'all') {
+        const goal = c.maxStampsSnapshot ?? campaign.maxStamps;
+        if (rewardFilter === 'ready' && c.currentStamps < goal) return false;
+        if (rewardFilter === 'close' && !(c.currentStamps === goal - 1 && goal > 1)) return false;
+        if (rewardFilter === 'redeemed' && c.rewardsRedeemed < 1) return false;
+      }
       if (!q) return true;
       return c.customerName.toLowerCase().includes(q)
         || (c.customerCode ?? '').toLowerCase().includes(q);
     });
-  }, [cards, customerSearch, customerStatusFilter]);
+  }, [cards, customerSearch, customerStatusFilter, joinedFilter, joinedFrom, joinedTo,
+      engagementFilter, rewardFilter, lastSeenByCard, campaign.maxStamps]);
+
+  /** Download exactly what's on screen as a CSV. */
+  const exportCustomersCsv = () => {
+    const esc = (v: unknown) => {
+      const s = v === null || v === undefined ? '' : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const header = [
+      'Customer ID', 'Name', 'Email', 'Status', 'Joined', 'Stamps', 'Goal',
+      'Rewards redeemed', 'Last activity', 'Location',
+    ];
+    const rows = filteredCards.map((c) => {
+      const last = lastSeenByCard.get(c.id);
+      const loc = locations.find((l) => l.id === c.joinedAtLocationId)?.name ?? '';
+      return [
+        c.customerCode ?? '', c.customerName, c.email,
+        c.deletionRequestedAt ? 'Pending deletion' : c.status,
+        c.joinedAt.toISOString().slice(0, 10),
+        c.currentStamps, c.maxStampsSnapshot ?? campaign.maxStamps,
+        c.rewardsRedeemed,
+        last ? new Date(last).toISOString().slice(0, 10) : '',
+        loc,
+      ].map(esc).join(',');
+    });
+    const csv = [header.join(','), ...rows].join('\n');
+    // BOM so Excel opens UTF-8 names (Müller) correctly.
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   // Counts per bucket so the chips can show "(N)" badges.
   const bucketCounts = useMemo(() => ({
@@ -855,6 +934,14 @@ export function MerchantDashboard({
                     onChange={(e) => setCustomerSearch(e.target.value)}
                     className="pl-9 pr-4 py-1.5 bg-white border notion-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 w-64" />
                 </div>
+                <button
+                  onClick={exportCustomersCsv}
+                  disabled={filteredCards.length === 0}
+                  title="Download the filtered list as CSV"
+                  className="text-sm px-3 py-2 rounded border notion-border hover:bg-[#F7F7F5] disabled:opacity-40 flex items-center gap-1.5"
+                >
+                  <Download className="w-4 h-4" /> <span className="hidden sm:inline">Export CSV</span>
+                </button>
                 <button onClick={() => setIsAddCustomerModalOpen(true)} className="text-sm text-white px-3 py-2 rounded hover:bg-opacity-90 flex items-center gap-1 shadow-sm"
                   style={{ backgroundColor: campaign.primaryColor }}>
                   <Plus className="w-4 h-4" /> New
@@ -866,6 +953,62 @@ export function MerchantDashboard({
               <input type="text" placeholder="Name or SF00001..." value={customerSearch}
                 onChange={(e) => setCustomerSearch(e.target.value)}
                 className="pl-9 pr-4 py-2.5 bg-white border notion-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 w-full" />
+            </div>
+
+            {/* Joined / engagement / reward filters */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <select
+                value={joinedFilter}
+                onChange={(e) => setJoinedFilter(e.target.value as typeof joinedFilter)}
+                className="bg-white border notion-border rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                title="Filter by when they joined"
+              >
+                <option value="all">Joined: any time</option>
+                <option value="7">Joined: last 7 days</option>
+                <option value="30">Joined: last 30 days</option>
+                <option value="90">Joined: last 90 days</option>
+                <option value="custom">Joined: custom range…</option>
+              </select>
+              {joinedFilter === 'custom' && (
+                <>
+                  <input type="date" value={joinedFrom} onChange={(e) => setJoinedFrom(e.target.value)}
+                    className="bg-white border notion-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-gray-300" />
+                  <span className="text-gray-400">to</span>
+                  <input type="date" value={joinedTo} onChange={(e) => setJoinedTo(e.target.value)}
+                    className="bg-white border notion-border rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-gray-300" />
+                </>
+              )}
+              <select
+                value={engagementFilter}
+                onChange={(e) => setEngagementFilter(e.target.value as typeof engagementFilter)}
+                className="bg-white border notion-border rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                title="Based on the last stamp or redemption"
+              >
+                <option value="all">Activity: all</option>
+                <option value="active30">Active (last 30 days)</option>
+                <option value="dormant30">Dormant (30+ days)</option>
+                <option value="never">Never stamped</option>
+              </select>
+              <select
+                value={rewardFilter}
+                onChange={(e) => setRewardFilter(e.target.value as typeof rewardFilter)}
+                className="bg-white border notion-border rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-gray-300"
+                title="Where they are on the card"
+              >
+                <option value="all">Reward: all</option>
+                <option value="ready">Reward ready to claim</option>
+                <option value="close">One stamp away</option>
+                <option value="redeemed">Has redeemed before</option>
+              </select>
+              {(joinedFilter !== 'all' || engagementFilter !== 'all' || rewardFilter !== 'all') && (
+                <button
+                  onClick={() => { setJoinedFilter('all'); setJoinedFrom(''); setJoinedTo(''); setEngagementFilter('all'); setRewardFilter('all'); }}
+                  className="px-2.5 py-1.5 rounded-md border notion-border text-gray-500 hover:bg-[#F7F7F5]"
+                >
+                  Clear filters
+                </button>
+              )}
+              <span className="text-gray-400 ml-auto">{filteredCards.length} shown</span>
             </div>
 
             {/* Status filter chips — Active | Blocked | Pending deletion */}
