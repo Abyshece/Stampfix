@@ -31,7 +31,7 @@ export function StaffGate({ campaignId, onDone, onSkip }: { campaignId: string; 
           autoFocus type="password" inputMode="numeric" value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
           onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-          placeholder="••••"
+          placeholder="&bull;&bull;&bull;&bull;"
           className="w-full text-center tracking-[0.5em] text-lg bg-[#F7F7F5] border notion-border rounded-md px-3 py-3 focus:outline-none focus:ring-1 focus:ring-gray-400"
         />
         {err && <p className="text-xs text-red-600">{err}</p>}
@@ -41,7 +41,7 @@ export function StaffGate({ campaignId, onDone, onSkip }: { campaignId: string; 
         </button>
         {onSkip && (
           <button onClick={onSkip} className="w-full text-xs text-gray-400 hover:text-gray-600">
-            I&rsquo;m the owner — skip
+            I&rsquo;m the owner &mdash; skip
           </button>
         )}
       </div>

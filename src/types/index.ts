@@ -29,6 +29,8 @@ export interface Campaign {
   offerTitle: string;
   description: string;
   maxStamps: number;
+  /** Max stamps one customer can receive per day. 0 = unlimited. */
+  maxStampsPerDay?: number;
   primaryColor: string;
   backgroundColor: string;
   logoText: string;

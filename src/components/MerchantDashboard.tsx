@@ -100,8 +100,7 @@ export function MerchantDashboard({
   }, [activeTab]);
   const toast = useToast();
   const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
-  // "Who's on shift?" — ask for a staff PIN once per browser session, but only
-  // if this shop actually has active staff set up.
+  // "Who's on shift?" — ask once per browser session, only if staff exist.
   const [showStaffGate, setShowStaffGate] = useState(false);
   useEffect(() => {
     if (getStaffSession(campaign.id)) return;

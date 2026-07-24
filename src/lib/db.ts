@@ -80,6 +80,7 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   offerTitle: r.offer_title,
   description: r.description,
   maxStamps: r.max_stamps,
+  maxStampsPerDay: (r as { max_stamps_per_day?: number }).max_stamps_per_day ?? 1,
   primaryColor: r.primary_color,
   backgroundColor: r.background_color,
   logoText: r.logo_text,
@@ -377,7 +378,11 @@ export async function createCard(input: {
 // admin-initiated changes. We deliberately do NOT invoke the wallet functions
 // from the client too; doing so tripled the edge-function calls per stamp.
 
-export async function addStamp(cardId: string, maxStamps: number): Promise<UserCard> {
+export async function addStamp(
+  cardId: string,
+  maxStamps: number,
+  opts?: { reason?: string | null; isOverride?: boolean },
+): Promise<UserCard> {
   // Fetch current state to compute next value (Postgres doesn't have an
   // atomic "increment if less than" — for v1 we accept the read-modify-write).
   const { data: existing, error: fetchErr } = await supabase
@@ -404,7 +409,10 @@ export async function addStamp(cardId: string, maxStamps: number): Promise<UserC
     .single();
   if (error) throw error;
   const updated = toCard(data as CardRow);
-  await logActivity(updated.campaignId, updated.id, updated.customerName, 'STAMP');
+  await logActivity(updated.campaignId, updated.id, updated.customerName, 'STAMP', 'manual_dashboard', {
+    reason: opts?.reason ?? null,
+    isOverride: opts?.isOverride ?? false,
+  });
   return updated;
 }
 
@@ -554,6 +562,7 @@ async function logActivity(
   customerName: string,
   type: ActivityItem['type'],
   source: 'qr' | 'manual_dashboard' | 'admin' | 'webhook' = 'manual_dashboard',
+  extra?: { reason?: string | null; isOverride?: boolean },
 ): Promise<void> {
   // Get the actor's auth.users.id from the current session (if any).
   // Server-side functions pass their own actor via the source='webhook'
@@ -570,6 +579,8 @@ async function logActivity(
     actor_user_id: user?.id ?? null,
     staff_id: staff?.id ?? null,
     staff_name: staff?.name ?? null,
+    reason: extra?.reason ?? null,
+    is_override: extra?.isOverride ?? false,
   });
   if (error) {
     // Activity logging is best-effort. Don't fail the parent action over it.

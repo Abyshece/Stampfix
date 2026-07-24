@@ -1,24 +1,36 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, Loader2, KeyRound, Trash2, LogIn } from 'lucide-react';
+import { UserPlus, Loader2, KeyRound, Trash2, LogIn, AlertTriangle, ShieldCheck } from 'lucide-react';
 import {
   listStaff, createStaff, setStaffActive, setStaffPin, deleteStaff,
   listStaffLogins, getStaffSession, clearStaffSession,
   type StaffMember, type StaffLogin,
 } from '../services/staff';
+import { detectAnomalies, type Flag } from '../services/anomalies';
+import { getDailyCap, setDailyCap } from '../services/stampGuard';
 
-/** Merchant-facing staff management: create staff, set PINs, see who logged in. */
+const SEV: Record<Flag['severity'], { label: string; cls: string }> = {
+  high:   { label: 'High',   cls: 'bg-red-50 border-red-200 text-red-700' },
+  medium: { label: 'Medium', cls: 'bg-amber-50 border-amber-200 text-amber-800' },
+  low:    { label: 'Low',    cls: 'bg-blue-50 border-blue-200 text-blue-700' },
+};
+
+/** Merchant-facing staff management, sign-in log, and fraud alerts. */
 export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; onSwitchStaff: () => void }) {
   const [staff, setStaff] = useState<StaffMember[] | null>(null);
   const [logins, setLogins] = useState<StaffLogin[]>([]);
+  const [flags, setFlags] = useState<Flag[] | null>(null);
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [cap, setCap] = useState<number | null>(null);
   const current = getStaffSession(campaignId);
 
   const refresh = () => {
     listStaff(campaignId).then(setStaff).catch(() => setStaff([]));
     listStaffLogins(campaignId).then(setLogins).catch(() => setLogins([]));
+    detectAnomalies(campaignId).then(setFlags).catch(() => setFlags([]));
+    getDailyCap(campaignId).then(setCap).catch(() => setCap(1));
   };
   useEffect(refresh, [campaignId]);
 
@@ -59,27 +71,73 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
             ? <>Currently at the till: <span className="font-semibold text-[#37352F]">{current.name}</span></>
             : <span className="text-gray-500">No staff member signed in on this device.</span>}
         </div>
-        <button
-          onClick={() => { clearStaffSession(); onSwitchStaff(); }}
-          className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white hover:opacity-90 transition"
-        >
+        <button onClick={() => { clearStaffSession(); onSwitchStaff(); }}
+          className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white hover:opacity-90 transition">
           {current ? 'Switch staff' : 'Sign in staff'}
         </button>
+      </div>
+
+      {/* Daily stamp limit */}
+      <div className="p-5 rounded-lg border notion-border bg-white space-y-2">
+        <h3 className="font-semibold">Daily stamp limit</h3>
+        <p className="text-sm text-gray-500">
+          How many stamps one customer can collect per day. Keeping this at 1 enforces
+          &ldquo;one visit, one stamp&rdquo; &mdash; the simplest way to stop cards being padded.
+          Staff can still go over it, but they must give a reason and it&rsquo;s flagged here.
+        </p>
+        <div className="flex items-center gap-2 pt-1">
+          <select
+            value={cap ?? 1}
+            onChange={(e) => { const v = Number(e.target.value); setCap(v); setDailyCap(campaignId, v).catch(() => alert('Could not save the limit.')); }}
+            className="bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+          >
+            <option value={1}>1 per day (recommended)</option>
+            <option value={2}>2 per day</option>
+            <option value={3}>3 per day</option>
+            <option value={5}>5 per day</option>
+            <option value={0}>No limit</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Alerts */}
+      <div>
+        <h3 className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Unusual activity</h3>
+        {flags === null ? (
+          <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 className="w-4 h-4 animate-spin" /> Checking&hellip;</div>
+        ) : flags.length === 0 ? (
+          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
+            <ShieldCheck className="w-4 h-4" /> Nothing unusual in the last 7 days.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {flags.map((f) => (
+              <div key={f.id} className={`rounded-lg border p-3 ${SEV[f.severity].cls}`}>
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold">{f.title}</div>
+                    <div className="text-xs opacity-80 mt-0.5">{f.detail}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-xs font-semibold">{f.staffName}</div>
+                    <div className="text-[11px] opacity-70">{f.at.toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Add */}
       <div className="p-5 rounded-lg border notion-border bg-white space-y-3">
         <h3 className="font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4" /> Add a staff member</h3>
         <div className="flex gap-2 flex-wrap">
-          <input
-            value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (e.g. Martina)"
-            className="flex-1 min-w-[180px] bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
-          />
-          <input
-            value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (e.g. Martina)"
+            className="flex-1 min-w-[180px] bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400" />
+          <input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
             placeholder="PIN (4-8 digits)" inputMode="numeric"
-            className="w-40 bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
-          />
+            className="w-40 bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400" />
           <button onClick={add} disabled={busy}
             className="px-4 py-2 rounded-md bg-[#37352F] text-white text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
             {busy && <Loader2 className="w-4 h-4 animate-spin" />} Add
@@ -91,11 +149,11 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
         </p>
       </div>
 
-      {/* List */}
+      {/* Team */}
       <div>
         <h3 className="font-semibold mb-3">Your team</h3>
         {staff === null ? (
-          <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>
+          <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 className="w-4 h-4 animate-spin" /> Loading&hellip;</div>
         ) : staff.length === 0 ? (
           <p className="text-sm text-gray-400">No staff yet. Add your first team member above.</p>
         ) : (
@@ -128,7 +186,7 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
         )}
       </div>
 
-      {/* Login log */}
+      {/* Sign-in log */}
       <div>
         <h3 className="font-semibold mb-3 flex items-center gap-2"><LogIn className="w-4 h-4" /> Sign-in log</h3>
         {logins.length === 0 ? (

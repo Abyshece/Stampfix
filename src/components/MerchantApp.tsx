@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, MerchantBilling, Plan } from '../types';
 import { useAuth, signOut } from '../lib/auth';
+import { checkDailyCap } from '../services/stampGuard';
+import { StampReasonModal } from './StampReasonModal';
 import {
   getCampaignByMerchant,
   listCardsForCampaign,
@@ -130,12 +132,18 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     setActivities(acts);
   }, [campaign]);
 
-  const handleStampCard = useCallback(
-    async (cardId: string) => {
+  const [pendingStamp, setPendingStamp] = useState<
+    { cardId: string; customerName: string; stampsToday: number; cap: number } | null
+  >(null);
+
+  // Applies the stamp. `reason` is recorded for overrides so the activity log
+  // always explains the unusual ones.
+  const applyStamp = useCallback(
+    async (cardId: string, reason?: string | null, isOverride = false) => {
       if (!campaign) return;
       try {
         const card = cards.find((c) => c.id === cardId);
-        const updated = await addStamp(cardId, card?.maxStampsSnapshot ?? campaign.maxStamps);
+        const updated = await addStamp(cardId, card?.maxStampsSnapshot ?? campaign.maxStamps, { reason, isOverride });
         setCards((prev) => prev.map((c) => (c.id === cardId ? updated : c)));
         refreshActivities();
       } catch (err) {
@@ -143,6 +151,27 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       }
     },
     [campaign, refreshActivities, cards],
+  );
+
+  const handleStampCard = useCallback(
+    async (cardId: string) => {
+      if (!campaign) return;
+      const card = cards.find((c) => c.id === cardId);
+      const cap = campaign.maxStampsPerDay ?? 1;
+      const check = await checkDailyCap(cardId, cap);
+      if (check.atCap) {
+        // Over the daily limit — make the person say why before it goes through.
+        setPendingStamp({
+          cardId,
+          customerName: card?.customerName ?? 'This customer',
+          stampsToday: check.stampsToday,
+          cap: check.cap,
+        });
+        return;
+      }
+      applyStamp(cardId);
+    },
+    [campaign, cards, applyStamp],
   );
 
   const handleResetCard = useCallback(
@@ -359,6 +388,21 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
           onClose={() => {
             // The wizard already saves wizard_dismissed=true to the server;
             // local state will sync via handleMarkOnboardingStep.
+          }}
+        />
+      )}
+
+      {pendingStamp && (
+        <StampReasonModal
+          customerName={pendingStamp.customerName}
+          atCap
+          stampsToday={pendingStamp.stampsToday}
+          cap={pendingStamp.cap}
+          onCancel={() => setPendingStamp(null)}
+          onConfirm={async (reason) => {
+            const p = pendingStamp;
+            setPendingStamp(null);
+            await applyStamp(p.cardId, reason, true);
           }}
         />
       )}
