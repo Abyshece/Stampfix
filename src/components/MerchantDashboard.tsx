@@ -1428,6 +1428,39 @@ export function MerchantDashboard({
             )}
 
             {settingsSection === 'posters' && (
+            <div className="border notion-border rounded-lg p-6 space-y-4">
+              <h3 className="font-medium">Poster icon</h3>
+                    <div className="space-y-1 relative">
+                      <label className="text-xs font-bold text-gray-400 uppercase">Custom Icon</label>
+                      <p className="text-xs text-gray-400">Shown on your printed posters and pamphlets.</p>
+                      <div className="flex gap-2">
+                        <input value={tempSettings.customIcon}
+                          onChange={(e) => setTempSettings({ ...tempSettings, customIcon: e.target.value })}
+                          className="w-full bg-[#F7F7F5] border notion-border rounded px-3 py-2 text-sm" />
+                        <button onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className="px-3 bg-white border notion-border rounded hover:bg-gray-50 transition flex items-center justify-center text-gray-500">
+                          <Smile className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {showEmojiPicker && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)}></div>
+                          <div className="absolute top-full right-0 mt-2 z-50 bg-white border notion-border shadow-xl rounded-lg p-2 w-64 h-64 overflow-y-auto grid grid-cols-5 gap-1">
+                            {EMOJI_LIST.map((emoji) => (
+                              <button key={emoji}
+                                onClick={() => { setTempSettings({ ...tempSettings, customIcon: emoji }); setShowEmojiPicker(false); }}
+                                className="w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded transition">
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+            </div>
+            )}
+
+            {settingsSection === 'posters' && (
             <PosterSettings
               campaign={campaign}
               onUpdated={(updated) => onUpdateCampaign({ posterColor: updated.posterColor })}
@@ -1523,6 +1556,7 @@ export function MerchantDashboard({
                     logoColor: tempSettings.logoColor,
                     logoText: tempSettings.logoText,
                     logoImage: tempSettings.logoImage,
+                    logoMode: tempSettings.logoMode ?? 'stampfix',
                   }}
                 />
                 <ProLockOverlay locked={!isPro} title="Card colour & custom branding are Pro features" onUpgrade={() => setShowUpgradeModal(true)}>
@@ -1589,60 +1623,35 @@ export function MerchantDashboard({
                 >
                   <RotateCcw className="w-3 h-3" /> Reset to default colors
                 </button>
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold text-gray-400 uppercase">Card Pattern</label>
-                    <div className="flex gap-2">
-                      {(['solid', 'dots', 'grid'] as const).map((pattern) => (
-                        <button key={pattern}
-                          onClick={() => setTempSettings({ ...tempSettings, cardPattern: pattern })}
-                          className={`flex-1 h-12 rounded border-2 transition relative overflow-hidden ${
-                            tempSettings.cardPattern === pattern ? 'border-[#37352F] bg-[#F7F7F5]' : 'border-gray-200 bg-white'
-                          }`}>
-                          {pattern === 'dots' && (
-                            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '8px 8px' }} />
-                          )}
-                          {pattern === 'grid' && (
-                            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
-                          )}
-                          <span className="text-xs font-medium relative z-10 bg-white/50 px-1 rounded capitalize">{pattern}</span>
+                <div className="space-y-3 max-w-xl">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Card logo</label>
+                  <p className="text-xs text-gray-400 -mt-1">What appears at the top of the wallet card, next to your name.</p>
+                  <div className="grid sm:grid-cols-3 gap-2">
+                    {([
+                      ['stampfix', 'Stampfix mark', 'The \u25aa\u25cf\u2715 symbol'],
+                      ['custom',   'Your own logo', 'Upload an image'],
+                      ['none',     'Text only',     'No logo at all'],
+                    ] as const).map(([mode, title, hint]) => {
+                      const on = (tempSettings.logoMode ?? 'stampfix') === mode;
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => setTempSettings({ ...tempSettings, logoMode: mode })}
+                          className={`text-left p-3 rounded-lg border-2 transition ${on ? 'border-[#37352F] bg-[#F7F7F5]' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                        >
+                          <div className="text-sm font-medium">{title}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{hint}</div>
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
-                  <div className="space-y-4">
-                    <div className="space-y-1 relative">
-                      <label className="text-xs font-bold text-gray-400 uppercase">Custom Icon</label>
-                      <div className="flex gap-2">
-                        <input value={tempSettings.customIcon}
-                          onChange={(e) => setTempSettings({ ...tempSettings, customIcon: e.target.value })}
-                          className="w-full bg-[#F7F7F5] border notion-border rounded px-3 py-2 text-sm" />
-                        <button onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                          className="px-3 bg-white border notion-border rounded hover:bg-gray-50 transition flex items-center justify-center text-gray-500">
-                          <Smile className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {showEmojiPicker && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)}></div>
-                          <div className="absolute top-full right-0 mt-2 z-50 bg-white border notion-border shadow-xl rounded-lg p-2 w-64 h-64 overflow-y-auto grid grid-cols-5 gap-1">
-                            {EMOJI_LIST.map((emoji) => (
-                              <button key={emoji}
-                                onClick={() => { setTempSettings({ ...tempSettings, customIcon: emoji }); setShowEmojiPicker(false); }}
-                                className="w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded transition">
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-400 uppercase">Upload Logo</label>
+
+                  {(tempSettings.logoMode ?? 'stampfix') === 'custom' && (
+                    <div className="space-y-1 pt-1">
                       <div className="flex gap-2 items-center">
                         <label className="flex-1 cursor-pointer bg-[#F7F7F5] border notion-border border-dashed rounded h-10 flex items-center justify-center text-xs text-gray-500 hover:bg-gray-100 transition">
                           <Upload className="w-3 h-3 mr-2" />
-                          {tempSettings.logoImage ? 'Change File' : 'Choose File'}
+                          {tempSettings.logoImage ? 'Change file' : 'Choose file'}
                           <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
                         </label>
                         {tempSettings.logoImage && (
@@ -1652,8 +1661,11 @@ export function MerchantDashboard({
                           </button>
                         )}
                       </div>
+                      {!tempSettings.logoImage && (
+                        <p className="text-xs text-amber-700">No image uploaded yet \u2014 the card shows your text until you add one.</p>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
                 </ProLockOverlay>
               </div>

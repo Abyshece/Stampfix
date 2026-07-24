@@ -35,6 +35,8 @@ export interface Campaign {
   backgroundColor: string;
   logoText: string;
   cardPattern: 'solid' | 'dots' | 'grid';
+  /** Branding shown at the top of the wallet card. */
+  logoMode?: 'stampfix' | 'custom' | 'none';
   customIcon: string;
   logoImage?: string | null;
   /** Custom poster background. Solid hex or CSS gradient. Falls back

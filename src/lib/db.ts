@@ -19,6 +19,7 @@ interface CampaignRow {
   background_color: string;
   logo_text: string;
   card_pattern: 'solid' | 'dots' | 'grid';
+  logo_mode?: 'stampfix' | 'custom' | 'none' | null;
   custom_icon: string;
   logo_image: string | null;
   poster_color: string | null;
@@ -85,6 +86,7 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   backgroundColor: r.background_color,
   logoText: r.logo_text,
   cardPattern: r.card_pattern,
+  logoMode: r.logo_mode ?? 'stampfix',
   customIcon: r.custom_icon,
   logoImage: r.logo_image,
   posterColor: r.poster_color,
@@ -231,6 +233,7 @@ export async function updateCampaign(id: string, patch: Partial<Campaign>): Prom
   if (patch.backgroundColor !== undefined) dbPatch.background_color = patch.backgroundColor;
   if (patch.logoText !== undefined) dbPatch.logo_text = patch.logoText;
   if (patch.cardPattern !== undefined) dbPatch.card_pattern = patch.cardPattern;
+  if (patch.logoMode !== undefined) dbPatch.logo_mode = patch.logoMode;
   if (patch.customIcon !== undefined) dbPatch.custom_icon = patch.customIcon;
   if (patch.logoImage !== undefined) dbPatch.logo_image = patch.logoImage;
   if (patch.posterColor !== undefined) dbPatch.poster_color = patch.posterColor;
