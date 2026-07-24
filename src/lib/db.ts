@@ -709,7 +709,9 @@ export async function recoverCards(
   phone: string,
   code: string,
 ): Promise<{ card: UserCard; campaign: Campaign }[]> {
-  const { data, error } = await supabase.rpc('recover_cards', { p_phone: phone, p_code: code });
+  // Guarded wrapper: rate-limits attempts per phone number so a 6-digit code
+  // can't be brute-forced. The inner function is not callable from the client.
+  const { data, error } = await supabase.rpc('recover_cards_guarded', { p_phone: phone, p_code: code });
   if (error) throw error;
   const rows = (data as Array<{ card: CardRow; campaign: CampaignRow }>) ?? [];
   return rows.map((r) => ({ card: toCard(r.card), campaign: toCampaign(r.campaign) }));
