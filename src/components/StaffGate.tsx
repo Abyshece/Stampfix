@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { Loader2, ShieldCheck } from 'lucide-react';
-import { verifyStaffPin, setStaffSession } from '../services/staff';
+import { verifyStaffPin, verifyStaffPinFor, setStaffSession } from '../services/staff';
 
 /** PIN prompt shown after the shop logs in: "who's at the till?" */
-export function StaffGate({ campaignId, onDone, onSkip }: { campaignId: string; onDone: () => void; onSkip?: () => void }) {
+export function StaffGate({ campaignId, onDone, onSkip, staffId, staffName }: {
+  campaignId: string; onDone: () => void; onSkip?: () => void;
+  /** When set, the PIN must belong to this person (they picked their name first). */
+  staffId?: string; staffName?: string;
+}) {
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -12,8 +16,13 @@ export function StaffGate({ campaignId, onDone, onSkip }: { campaignId: string; 
     if (!/^\d{4,8}$/.test(pin)) { setErr('Enter your 4-8 digit PIN.'); return; }
     setBusy(true); setErr(null);
     try {
-      const s = await verifyStaffPin(campaignId, pin);
-      if (!s) { setErr('That PIN wasn\u2019t recognised.'); setPin(''); return; }
+      const s = staffId
+        ? await verifyStaffPinFor(campaignId, staffId, pin)
+        : await verifyStaffPin(campaignId, pin);
+      if (!s) {
+        setErr(staffName ? `That PIN doesn\u2019t match ${staffName}.` : 'That PIN wasn\u2019t recognised.');
+        setPin(''); return;
+      }
       setStaffSession(s); onDone();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Could not check that PIN.'); }
     finally { setBusy(false); }
@@ -24,7 +33,7 @@ export function StaffGate({ campaignId, onDone, onSkip }: { campaignId: string; 
       <div className="bg-white rounded-xl shadow-2xl border notion-border w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-[#37352F]" />
-          <h2 className="text-lg font-semibold">Who&rsquo;s on shift?</h2>
+          <h2 className="text-lg font-semibold">{staffName ? `Sign in as ${staffName}` : 'Who\u2019s on shift?'}</h2>
         </div>
         <p className="text-sm text-gray-500">Enter your staff ID (PIN) to start your shift. Everything you stamp today is recorded under your name.</p>
         <input

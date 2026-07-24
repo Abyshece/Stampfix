@@ -69,6 +69,17 @@ export async function verifyStaffPin(campaignId: string, pin: string): Promise<S
   return { id: row.id, name: row.name, campaignId };
 }
 
+/** Verify a PIN for one specific staff member (chosen from the dropdown). */
+export async function verifyStaffPinFor(campaignId: string, staffId: string, pin: string): Promise<StaffSession | null> {
+  const { data, error } = await supabase.rpc('staff_verify_pin_for', {
+    p_campaign: campaignId, p_staff: staffId, p_pin: pin,
+  });
+  if (error) throw error;
+  const row = (data as { id: string; name: string }[] | null)?.[0];
+  if (!row) return null;
+  return { id: row.id, name: row.name, campaignId };
+}
+
 export interface StaffLogin { id: string; staffName: string; at: Date; }
 export async function listStaffLogins(campaignId: string, limit = 50): Promise<StaffLogin[]> {
   const { data, error } = await supabase

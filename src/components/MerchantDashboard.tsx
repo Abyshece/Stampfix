@@ -14,7 +14,7 @@ import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { StaffPanel } from './StaffPanel';
 import { StaffGate } from './StaffGate';
-import { listStaff, getStaffSession } from '../services/staff';
+import { listStaff, getStaffSession, clearStaffSession, type StaffMember } from '../services/staff';
 import { ProLockOverlay } from './ProLockOverlay';
 import { isDarkColor } from '../lib/colors';
 import { UpgradeBanner } from './UpgradeBanner';
@@ -102,11 +102,18 @@ export function MerchantDashboard({
   const [showMobileMoreMenu, setShowMobileMoreMenu] = useState(false);
   // "Who's on shift?" — ask once per browser session, only if staff exist.
   const [showStaffGate, setShowStaffGate] = useState(false);
+  const [staffRoster, setStaffRoster] = useState<StaffMember[]>([]);
+  const [gateTarget, setGateTarget] = useState<{ id: string; name: string } | null>(null);
+  const [activeStaff, setActiveStaff] = useState(() => getStaffSession(campaign.id));
   useEffect(() => {
-    if (getStaffSession(campaign.id)) return;
     let cancelled = false;
     listStaff(campaign.id)
-      .then((rows) => { if (!cancelled && rows.some((r) => r.active)) setShowStaffGate(true); })
+      .then((rows) => {
+        if (cancelled) return;
+        const active = rows.filter((r) => r.active);
+        setStaffRoster(active);
+        if (active.length > 0 && !getStaffSession(campaign.id)) setShowStaffGate(true);
+      })
       .catch(() => { /* staff is optional — never block the dashboard */ });
     return () => { cancelled = true; };
   }, [campaign.id]);
@@ -601,6 +608,28 @@ export function MerchantDashboard({
                 Total vertical footprint above the scanner: ~60px on mobile. */}
             <div className="flex items-center justify-between gap-3 mb-2 md:mb-0 flex-shrink-0">
               <h1 className="text-xl md:text-2xl font-serif-display font-semibold">Scan</h1>
+              <div className="flex items-center gap-2">
+              {staffRoster.length > 0 && (
+                <div className="flex items-center gap-1.5 bg-white border notion-border rounded-md px-2.5 py-1.5 shadow-sm">
+                  <Users className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <select
+                    value={activeStaff?.id ?? ''}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      if (!id) { clearStaffSession(); setActiveStaff(null); return; }
+                      const m = staffRoster.find((r) => r.id === id);
+                      if (m) { setGateTarget({ id: m.id, name: m.name }); setShowStaffGate(true); }
+                    }}
+                    className="text-xs md:text-sm font-medium text-[#37352F] bg-transparent focus:outline-none cursor-pointer max-w-[130px] truncate"
+                    title="Who is on shift"
+                  >
+                    <option value="">Staff…</option>
+                    {staffRoster.map((r) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               {activeLocations.length > 0 && (
                 <div className="flex items-center gap-1.5 bg-white border notion-border rounded-md px-2.5 py-1.5 shadow-sm">
                   <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -615,6 +644,7 @@ export function MerchantDashboard({
                   </select>
                 </div>
               )}
+              </div>
             </div>
 
             {/* Get Started checklist — disappears once all three milestones are hit.
@@ -1534,8 +1564,14 @@ export function MerchantDashboard({
       {showStaffGate && (
         <StaffGate
           campaignId={campaign.id}
-          onDone={() => setShowStaffGate(false)}
-          onSkip={() => setShowStaffGate(false)}
+          staffId={gateTarget?.id}
+          staffName={gateTarget?.name}
+          onDone={() => {
+            setShowStaffGate(false);
+            setGateTarget(null);
+            setActiveStaff(getStaffSession(campaign.id));
+          }}
+          onSkip={() => { setShowStaffGate(false); setGateTarget(null); }}
         />
       )}
 
