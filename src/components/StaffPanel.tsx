@@ -7,6 +7,7 @@ import {
 } from '../services/staff';
 import { detectAnomalies, type Flag } from '../services/anomalies';
 import { getDailyCap, setDailyCap } from '../services/stampGuard';
+import { ownerPinIsSet, setOwnerPin } from '../services/staff';
 
 const SEV: Record<Flag['severity'], { label: string; cls: string }> = {
   high:   { label: 'High',   cls: 'bg-red-50 border-red-200 text-red-700' },
@@ -24,6 +25,8 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [cap, setCap] = useState<number | null>(null);
+  const [ownerSet, setOwnerSet] = useState<boolean | null>(null);
+  const [ownerPin, setOwnerPinValue] = useState('');
   const current = getStaffSession(campaignId);
 
   const refresh = () => {
@@ -31,6 +34,7 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
     listStaffLogins(campaignId).then(setLogins).catch(() => setLogins([]));
     detectAnomalies(campaignId).then(setFlags).catch(() => setFlags([]));
     getDailyCap(campaignId).then(setCap).catch(() => setCap(1));
+    ownerPinIsSet(campaignId).then(setOwnerSet).catch(() => setOwnerSet(false));
   };
   useEffect(refresh, [campaignId]);
 
@@ -75,6 +79,48 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
           className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white hover:opacity-90 transition">
           {current ? 'Switch staff' : 'Sign in staff'}
         </button>
+      </div>
+
+      {/* Owner PIN */}
+      <div className="p-5 rounded-lg border notion-border bg-white space-y-2">
+        <h3 className="font-semibold">Owner PIN</h3>
+        <p className="text-sm text-gray-500">
+          Protects the &ldquo;I&rsquo;m the owner &mdash; skip&rdquo; option on the staff sign-in screen. Without it,
+          anyone can skip identification and work unattributed.
+          {ownerSet === false && <span className="text-amber-700"> No owner PIN set yet &mdash; skip is currently open to anyone.</span>}
+          {ownerSet === true && <span className="text-green-700"> Owner PIN is set.</span>}
+        </p>
+        <div className="flex gap-2 flex-wrap pt-1">
+          <input
+            value={ownerPin}
+            onChange={(e) => setOwnerPinValue(e.target.value.replace(/\D/g, '').slice(0, 8))}
+            placeholder={ownerSet ? 'New owner PIN' : 'Set an owner PIN (4-8 digits)'}
+            inputMode="numeric"
+            className="w-56 bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+          />
+          <button
+            onClick={async () => {
+              if (!/^\d{4,8}$/.test(ownerPin)) { alert('Owner PIN must be 4-8 digits.'); return; }
+              try { await setOwnerPin(campaignId, ownerPin); setOwnerPinValue(''); setOwnerSet(true); alert('Owner PIN saved.'); }
+              catch (e) { alert(e instanceof Error ? e.message : 'Could not save the owner PIN.'); }
+            }}
+            className="px-4 py-2 rounded-md bg-[#37352F] text-white text-sm hover:opacity-90"
+          >
+            {ownerSet ? 'Change PIN' : 'Set PIN'}
+          </button>
+          {ownerSet && (
+            <button
+              onClick={async () => {
+                if (!window.confirm('Remove the owner PIN? Anyone will be able to skip staff sign-in again.')) return;
+                try { await setOwnerPin(campaignId, null); setOwnerSet(false); }
+                catch (e) { alert(e instanceof Error ? e.message : 'Could not remove the owner PIN.'); }
+              }}
+              className="px-3 py-2 rounded-md border notion-border text-sm text-red-600 hover:bg-red-50"
+            >
+              Remove
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Daily stamp limit */}

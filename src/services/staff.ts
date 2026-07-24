@@ -89,3 +89,22 @@ export async function listStaffLogins(campaignId: string, limit = 50): Promise<S
   return (data as unknown as { id: string; created_at: string; staff: { name: string } | null }[])
     .map((r) => ({ id: r.id, staffName: r.staff?.name ?? 'Unknown', at: new Date(r.created_at) }));
 }
+
+// ---------- Owner PIN (protects the "skip" on the staff gate) ----------
+
+export async function ownerPinIsSet(campaignId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('owner_pin_is_set', { p_campaign: campaignId });
+  if (error) return false;
+  return Boolean(data);
+}
+
+export async function setOwnerPin(campaignId: string, pin: string | null): Promise<void> {
+  const { error } = await supabase.rpc('owner_pin_set', { p_campaign: campaignId, p_pin: pin });
+  if (error) throw new Error(error.message || 'Could not save the owner PIN.');
+}
+
+export async function verifyOwnerPin(campaignId: string, pin: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('owner_pin_verify', { p_campaign: campaignId, p_pin: pin });
+  if (error) return false;
+  return Boolean(data);
+}
