@@ -62,6 +62,7 @@ interface MerchantDashboardProps {
   onLogout: () => void;
 }
 
+type SettingsSection = 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'privacy' | 'danger';
 type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
 
 const NOTION_COLORS = [
@@ -363,6 +364,7 @@ export function MerchantDashboard({
    *    'pending_deletion' = BLOCKED + deletion_requested_at set
    *  No 'deleted' bucket because the cleanup job actually removes those rows.
    */
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>('general');
   const [customerStatusFilter, setCustomerStatusFilter] = useState<'active' | 'blocked' | 'pending_deletion'>('active');
   // Extra customer filters: when they joined, how engaged they are, reward state.
   const [joinedFilter, setJoinedFilter] = useState<'all' | '7' | '30' | '90' | 'custom'>('all');
@@ -1370,7 +1372,36 @@ export function MerchantDashboard({
                 </div>
               )}
             </header>
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              {/* Settings sub-navigation */}
+              <nav className="w-full md:w-52 flex-shrink-0 flex md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-1 md:pb-0">
+                {([
+                  ['general',   'General'],
+                  ['wallet',    'Wallet & card'],
+                  ['posters',   'Posters & print'],
+                  ['locations', 'Locations'],
+                  ['billing',   'Account & billing'],
+                  ['privacy',   'Privacy & data'],
+                  ['danger',    'Danger zone'],
+                ] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setSettingsSection(id)}
+                    className={`text-left text-sm px-3 py-2 rounded-md whitespace-nowrap transition ${
+                      settingsSection === id
+                        ? 'bg-[#37352F] text-white font-medium'
+                        : id === 'danger'
+                          ? 'text-red-600 hover:bg-red-50'
+                          : 'text-gray-600 hover:bg-[#F7F7F5]'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </nav>
+              <div className="flex-1 min-w-0 space-y-8">
 
+            {settingsSection === 'billing' && (
             <div id="billing-section">
               <AccountBilling
                 billing={billing}
@@ -1378,7 +1409,9 @@ export function MerchantDashboard({
                 cards={cards}
               />
             </div>
+            )}
 
+            {settingsSection === 'locations' && (
             <LocationsPanel
               locations={locations}
               activeLocationId={activeLocationId}
@@ -1387,24 +1420,32 @@ export function MerchantDashboard({
               isPro={isPro}
               onUpgrade={() => setShowUpgradeModal(true)}
             />
+            )}
 
+            {settingsSection === 'privacy' && (
             <ComplianceSettings merchantId={campaign.merchantId} />
+            )}
 
+            {settingsSection === 'posters' && (
             <PosterSettings
               campaign={campaign}
               onUpdated={(updated) => onUpdateCampaign({ posterColor: updated.posterColor })}
               isPro={isPro}
               onUpgrade={() => setShowUpgradeModal(true)}
             />
+            )}
 
+            {settingsSection === 'privacy' && (
             <CustomerPrivacyNoticePanel
               campaign={campaign}
               onUpdated={(updated) => onUpdateCampaign({ customerPrivacyNotice: updated.customerPrivacyNotice })}
             />
+            )}
 
             {/* Data export — GDPR Art. 20 portability + PIPEDA Principle 9.
                 Lets the merchant download a full JSON snapshot of their
                 account, customers, and activity history. */}
+            {settingsSection === 'privacy' && (
             <div className="bg-white rounded-lg border notion-border p-6 space-y-2">
               <h3 className="text-base font-semibold">Your data</h3>
               <p className="text-sm text-gray-500">
@@ -1412,7 +1453,9 @@ export function MerchantDashboard({
               </p>
               <DownloadMyDataButton variant="merchant" />
             </div>
+            )}
 
+            {settingsSection === 'danger' && (
             <DangerZonePanel
               businessName={campaign.businessName}
               billing={billing}
@@ -1420,8 +1463,11 @@ export function MerchantDashboard({
                 document.getElementById('billing-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
             />
+            )}
 
+            {(settingsSection === 'general' || settingsSection === 'wallet') && (
             <div className="border notion-border rounded-lg p-6 space-y-8">
+            {settingsSection === 'general' && (
               <div>
                 <h3 className="font-medium mb-4 flex items-center gap-2"><Settings className="w-4 h-4" /> General Configuration</h3>
                 <div className="bg-blue-50 border border-blue-100 rounded-md p-3 mb-4 text-xs text-blue-800 leading-relaxed">
@@ -1461,7 +1507,9 @@ export function MerchantDashboard({
                   </div>
                 </div>
               </div>
+            )}
 
+            {settingsSection === 'wallet' && (
               <div className="border-t notion-border pt-6">
                 <h3 className="font-medium mb-4 flex items-center gap-2"><Palette className="w-4 h-4" /> Branding Studio</h3>
                 <ProLockOverlay locked={!isPro} title="Card colour & custom branding are Pro features" onUpgrade={() => setShowUpgradeModal(true)}>
@@ -1596,6 +1644,7 @@ export function MerchantDashboard({
                 </div>
                 </ProLockOverlay>
               </div>
+            )}
 
               <div className="flex justify-end gap-3 pt-4 border-t notion-border">
                 <button onClick={() => setTempSettings(campaign)}
@@ -1615,6 +1664,9 @@ export function MerchantDashboard({
                 <button onClick={onLogout} className="text-red-500 text-sm hover:underline flex items-center gap-1">
                   <LogOut className="w-3 h-3" /> Sign out
                 </button>
+              </div>
+            </div>
+            )}
               </div>
             </div>
           </div>
