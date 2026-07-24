@@ -13,6 +13,7 @@ import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { StaffPanel } from './StaffPanel';
+import { WalletLivePreview } from './WalletLivePreview';
 import { StaffGate } from './StaffGate';
 import { listStaff, getStaffSession, clearStaffSession, type StaffMember } from '../services/staff';
 import { ProLockOverlay } from './ProLockOverlay';
@@ -1511,7 +1512,19 @@ export function MerchantDashboard({
 
             {settingsSection === 'wallet' && (
               <div className="border-t notion-border pt-6">
-                <h3 className="font-medium mb-4 flex items-center gap-2"><Palette className="w-4 h-4" /> Branding Studio</h3>
+                <h3 className="font-medium mb-4 flex items-center gap-2"><Palette className="w-4 h-4" /> Customise your wallet</h3>
+                <WalletLivePreview
+                  settings={{
+                    businessName: tempSettings.businessName,
+                    offerTitle: tempSettings.offerTitle,
+                    maxStamps: tempSettings.maxStamps,
+                    backgroundColor: tempSettings.backgroundColor,
+                    cardTextColor: tempSettings.cardTextColor,
+                    logoColor: tempSettings.logoColor,
+                    logoText: tempSettings.logoText,
+                    logoImage: tempSettings.logoImage,
+                  }}
+                />
                 <ProLockOverlay locked={!isPro} title="Card colour & custom branding are Pro features" onUpgrade={() => setShowUpgradeModal(true)}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                   <div className="space-y-1">
