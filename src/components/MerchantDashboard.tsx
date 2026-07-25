@@ -14,6 +14,7 @@ import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { StaffPanel } from './StaffPanel';
 import { WalletLivePreview } from './WalletLivePreview';
+import { InfoHint } from './InfoHint';
 import { StaffGate } from './StaffGate';
 import { listStaff, getStaffSession, clearStaffSession, type StaffMember } from '../services/staff';
 import { ProLockOverlay } from './ProLockOverlay';
@@ -1401,6 +1402,24 @@ export function MerchantDashboard({
                 ))}
               </nav>
               <div className="flex-1 min-w-0 space-y-8">
+              {(() => {
+                const meta: Record<SettingsSection, { title: string; hint: string }> = {
+                  general:   { title: 'General', hint: 'Your business name, the reward you offer, and how many stamps a customer needs. These appear on every card you issue, so changing them updates what new customers see.' },
+                  wallet:    { title: 'Customise your wallet', hint: 'Controls how the loyalty card looks inside Apple Wallet and Google Wallet — colours, text colour, and the logo at the top. The previews update live; nothing is applied until you press Save.' },
+                  posters:   { title: 'Posters & print', hint: 'Download printable material with your QR code: business cards, A5 pamphlets, A4 posters, an Instagram square, and table stickers. Customers scan these to join.' },
+                  locations: { title: 'Locations', hint: 'Add each branch so stamps are recorded against the right shop. The Scan screen lets staff pick which location they are working at, and Insights breaks results down per branch.' },
+                  billing:   { title: 'Account & billing', hint: 'Your plan, invoices, and payment method. The free plan covers your first 10 customers; Pro removes that limit and unlocks branding and multi-location features.' },
+                  privacy:   { title: 'Privacy & data', hint: 'Your business registration details (needed for GDPR and your Impressum), the privacy notice your customers see at signup, and a full export of your data.' },
+                  danger:    { title: 'Danger zone', hint: 'Permanent actions. Deleting your account removes your cards, customers, and history — this cannot be undone.' },
+                };
+                const m = meta[settingsSection];
+                return (
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-semibold text-[#37352F]">{m.title}</h2>
+                    <InfoHint text={m.hint} label={m.title} />
+                  </div>
+                );
+              })()}
 
             {settingsSection === 'billing' && (
             <div id="billing-section">
@@ -1503,7 +1522,7 @@ export function MerchantDashboard({
             <div className="border notion-border rounded-lg p-6 space-y-8">
             {settingsSection === 'general' && (
               <div>
-                <h3 className="font-medium mb-4 flex items-center gap-2"><Settings className="w-4 h-4" /> General Configuration</h3>
+                <h3 className="font-medium mb-4 flex items-center gap-2"><Settings className="w-4 h-4" /> General Configuration</h3> <InfoHint text="Existing cards keep the offer they were issued with. Changing the offer or stamp count affects new cards, and existing ones update after their next reward." label="general configuration" />
                 <div className="bg-blue-50 border border-blue-100 rounded-md p-3 mb-4 text-xs text-blue-800 leading-relaxed">
                   <strong>How offer changes work:</strong> When you change the offer title or
                   required stamps, only <strong>new customers</strong> get the updated offer.
@@ -1545,7 +1564,7 @@ export function MerchantDashboard({
 
             {settingsSection === 'wallet' && (
               <div className="border-t notion-border pt-6">
-                <h3 className="font-medium mb-4 flex items-center gap-2"><Palette className="w-4 h-4" /> Customise your wallet</h3>
+                <h3 className="font-medium mb-4 flex items-center gap-2"><Palette className="w-4 h-4" /> Customise your wallet</h3> <InfoHint text="Colours apply to the card in the customer's wallet — not to your posters. Text colour is picked automatically for contrast unless you override it." label="wallet colours" />
                 <WalletLivePreview
                   settings={{
                     businessName: tempSettings.businessName,

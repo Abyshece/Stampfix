@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Coffee, TrendingUp } from 'lucide-react';
 import { proMonthly, type MerchantCountry } from '../lib/pricing';
+import { InfoHint } from './InfoHint';
 
 /**
  * Merchant-facing "Payback" page (Workspace → Payback).
@@ -66,7 +67,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
         <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
           <TrendingUp className="w-4 h-4" /> Payback
         </div>
-        <h2 className="text-3xl font-serif-display font-semibold">What your regulars are worth</h2>
+        <h2 className="text-3xl font-serif-display font-semibold">What your regulars are worth</h2> <InfoHint text="An estimate, not a promise. Slide in your own numbers to see what returning customers add over a year, and how quickly the subscription pays for itself." label="payback" />
         <p className="text-gray-500 mt-1">
           Slide in {businessName ? businessName + "\u2019s" : 'your'} numbers. See what repeat
           customers add — and how fast Stampfix pays for itself.

@@ -6,6 +6,7 @@ import {
   type StaffMember, type StaffLogin,
 } from '../services/staff';
 import { detectAnomalies, type Flag } from '../services/anomalies';
+import { InfoHint } from './InfoHint';
 import { getDailyCap, setDailyCap } from '../services/stampGuard';
 import { ownerPinIsSet, setOwnerPin } from '../services/staff';
 
@@ -63,7 +64,7 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
   return (
     <div className="space-y-8">
       <header>
-        <h2 className="text-3xl font-serif-display font-semibold">Staff</h2>
+        <h2 className="text-3xl font-serif-display font-semibold">Staff</h2> <InfoHint text="Staff share the shop's login, then identify themselves with a personal PIN. Every stamp, redemption and sign-in is recorded against the person who did it, so problems can be traced to a name." label="staff" />
         <p className="text-gray-500 mt-1">
           Give each team member their own PIN. Every stamp and redemption is recorded against the person who did it.
         </p>
@@ -83,7 +84,7 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
 
       {/* Owner PIN */}
       <div className="p-5 rounded-lg border notion-border bg-white space-y-2">
-        <h3 className="font-semibold">Owner PIN</h3>
+        <h3 className="font-semibold">Owner PIN</h3> <InfoHint text="Locks the ‘I’m the owner — skip’ button on the staff sign-in screen. Without it, anyone can skip identification and work unattributed." label="owner PIN" />
         <p className="text-sm text-gray-500">
           Protects the &ldquo;I&rsquo;m the owner &mdash; skip&rdquo; option on the staff sign-in screen. Without it,
           anyone can skip identification and work unattributed.
@@ -125,7 +126,7 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
 
       {/* Daily stamp limit */}
       <div className="p-5 rounded-lg border notion-border bg-white space-y-2">
-        <h3 className="font-semibold">Daily stamp limit</h3>
+        <h3 className="font-semibold">Daily stamp limit</h3> <InfoHint text="The maximum stamps one customer can collect in a day. Set to 1 so a visit earns a stamp, not a purchase. Staff can exceed it, but must give a reason and it is flagged below." label="daily stamp limit" />
         <p className="text-sm text-gray-500">
           How many stamps one customer can collect per day. Keeping this at 1 enforces
           &ldquo;one visit, one stamp&rdquo; &mdash; the simplest way to stop cards being padded.
@@ -148,7 +149,7 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
 
       {/* Alerts */}
       <div>
-        <h3 className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Unusual activity</h3>
+        <h3 className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Unusual activity</h3> <InfoHint text="Patterns from the last 7 days that are worth a second look: rapid bursts of stamps, one customer stamped many times in a day, repeated limit overrides, activity at odd hours, and heavy manual stamping." label="unusual activity" />
         {flags === null ? (
           <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 className="w-4 h-4 animate-spin" /> Checking&hellip;</div>
         ) : flags.length === 0 ? (
