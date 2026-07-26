@@ -140,6 +140,8 @@ interface Campaign {
   primary_color: string;
   max_stamps: number;
   custom_icon: string;
+  logo_image?: string | null;
+  logo_mode?: string | null;
 }
 
 interface Card {
@@ -154,13 +156,22 @@ const classIdFor = (campaignId: string) => `${ISSUER_ID}.stampify_${campaignId.r
 const objectIdFor = (cardId: string) => `${ISSUER_ID}.card_${cardId.replace(/-/g, '')}`;
 
 function buildLoyaltyClass(campaign: Campaign) {
+  // Use the merchant's own logo when they've uploaded one to storage (a public
+  // https URL). Google can't fetch base64 data URLs, so anything else falls
+  // back to the Stampfix logo.
+  const logoUri =
+    campaign.logo_mode === 'custom' &&
+    typeof campaign.logo_image === 'string' &&
+    /^https?:\/\//.test(campaign.logo_image)
+      ? campaign.logo_image
+      : 'https://stampfix.app/wallet-assets/wallet-logo-v2.png';
   return {
     id: classIdFor(campaign.id),
     issuerName: campaign.business_name,
     programName: campaign.business_name,
     programLogo: {
       sourceUri: {
-        uri: 'https://stampfix.app/wallet-assets/wallet-logo-v2.png',
+        uri: logoUri,
       },
     },
     reviewStatus: 'UNDER_REVIEW',
@@ -363,7 +374,7 @@ Deno.serve(async (req) => {
 
   const { data: campaign, error: campaignErr } = await db
     .from('campaigns')
-    .select('id, business_name, offer_title, primary_color, max_stamps, custom_icon')
+    .select('id, business_name, offer_title, primary_color, max_stamps, custom_icon, logo_image, logo_mode')
     .eq('id', card.campaign_id)
     .single();
   if (campaignErr || !campaign) return json(404, { error: 'Campaign not found' });

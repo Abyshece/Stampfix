@@ -31,6 +31,7 @@ import { InsightsPanel } from './InsightsPanel';
 import { RevealableEmail } from './RevealableEmail';
 import { GetHelpPanel } from './GetHelpPanel';
 import { useToast } from './ToastProvider';
+import { supabase } from '../lib/supabase';
 import { buildPosterHtml, type PosterSize } from '../services/posterGenerator';
 
 interface MerchantDashboardProps {
@@ -127,6 +128,7 @@ export function MerchantDashboard({
   // Buffered settings
   const [tempSettings, setTempSettings] = useState<Campaign>(campaign);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Scanner state
@@ -309,13 +311,31 @@ export function MerchantDashboard({
     setTimeout(() => setSettingsSaved(false), 3000);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        if (ev.target?.result) setTempSettings({ ...tempSettings, logoImage: ev.target.result as string });
-      };
-      reader.readAsDataURL(e.target.files[0]);
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+    if (file.type !== 'image/png') {
+      toast.error('Please upload a PNG image.');
+      return;
+    }
+    setLogoUploading(true);
+    try {
+      const path = `${campaign.id}/logo.png`;
+      const { error } = await supabase.storage
+        .from('merchant-logos')
+        .upload(path, file, { upsert: true, contentType: 'image/png', cacheControl: '3600' });
+      if (error) throw error;
+      const { data } = supabase.storage.from('merchant-logos').getPublicUrl(path);
+      // Cache-buster so Apple/Google/browsers re-fetch after a re-upload.
+      const url = `${data.publicUrl}?v=${Date.now()}`;
+      setTempSettings((prev) => ({ ...prev, logoImage: url }));
+      toast.success('Logo uploaded');
+    } catch (err) {
+      console.error('[logo upload] failed:', err);
+      toast.error('Logo upload failed. Please try again.');
+    } finally {
+      setLogoUploading(false);
     }
   };
 
@@ -1670,8 +1690,8 @@ export function MerchantDashboard({
                       <div className="flex gap-2 items-center">
                         <label className="flex-1 cursor-pointer bg-[#F7F7F5] border notion-border border-dashed rounded h-10 flex items-center justify-center text-xs text-gray-500 hover:bg-gray-100 transition">
                           <Upload className="w-3 h-3 mr-2" />
-                          {tempSettings.logoImage ? 'Change file' : 'Choose file'}
-                          <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                          {logoUploading ? 'Uploading…' : tempSettings.logoImage ? 'Change file' : 'Choose file'}
+                          <input type="file" className="hidden" accept="image/png" onChange={handleLogoUpload} />
                         </label>
                         {tempSettings.logoImage && (
                           <button onClick={() => setTempSettings({ ...tempSettings, logoImage: null })}
@@ -1681,7 +1701,7 @@ export function MerchantDashboard({
                         )}
                       </div>
                       {!tempSettings.logoImage && (
-                        <p className="text-xs text-amber-700">No image uploaded yet \u2014 the card shows your text until you add one.</p>
+                        <p className="text-xs text-amber-700">No image uploaded yet — the card shows your text until you add one.</p>
                       )}
                     </div>
                   )}
