@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
 
     const { data: campaign } = await supabase
       .from('campaigns')
-      .select('business_name, offer_title, max_stamps, primary_color, background_color, card_text_color, logo_color')
+      .select('business_name, offer_title, max_stamps, primary_color, background_color, card_text_color, logo_color, logo_image, logo_mode')
       .eq('id', card.campaign_id)
       .maybeSingle();
 
@@ -380,27 +380,52 @@ Deno.serve(async (req) => {
       console.error('[generate-apple-pass] strip generation failed:', stripErr);
     }
 
-    // Stampfix brand mark in the top-left logo slot. Dark mark on light cards,
-    // white on dark cards. Canvas is padded so it stays compact next to the
-    // business name. Best-effort — a failure never blocks the pass.
+    // Top-left logo slot. If the merchant uploaded their own logo, embed that
+    // image; otherwise render the Stampfix brand mark (dark on light cards,
+    // white on dark). Best-effort — any failure falls back to the mark and
+    // never blocks the pass.
     try {
-      const lightCard = (() => {
-        const m = /^#?([0-9a-fA-F]{6})$/.exec(String(cardBg).trim());
-        if (!m) return true;
-        const n = parseInt(m[1], 16);
-        return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150;
-      })();
-      const logoFill = campaign?.logo_color || (lightCard ? '#1A1A1A' : '#FFFFFF');
-      const logoSvg =
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 282 150" width="282" height="150">` +
-        `<g fill="${logoFill}" transform="translate(0 30)">` +
-        `<rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/>` +
-        `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/>` +
-        `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></g></svg>`;
-      const logoPng = await svgToPng(logoSvg, origin);
-      files['logo.png'] = logoPng;
-      files['logo@2x.png'] = logoPng;
-      files['logo@3x.png'] = logoPng;
+      let customLogo: Uint8Array | null = null;
+      try {
+        const src = campaign?.logo_mode === 'custom' ? campaign?.logo_image : null;
+        if (typeof src === 'string' && src) {
+          if (src.startsWith('data:image/')) {
+            const bin = atob(src.slice(src.indexOf(',') + 1));
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            customLogo = bytes;
+          } else if (/^https?:\/\//.test(src)) {
+            const r = await fetch(src);
+            if (r.ok) customLogo = new Uint8Array(await r.arrayBuffer());
+          }
+        }
+      } catch (_) {
+        customLogo = null;
+      }
+
+      if (customLogo && customLogo.length > 0) {
+        files['logo.png'] = customLogo;
+        files['logo@2x.png'] = customLogo;
+        files['logo@3x.png'] = customLogo;
+      } else {
+        const lightCard = (() => {
+          const m = /^#?([0-9a-fA-F]{6})$/.exec(String(cardBg).trim());
+          if (!m) return true;
+          const n = parseInt(m[1], 16);
+          return 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150;
+        })();
+        const logoFill = campaign?.logo_color || (lightCard ? '#1A1A1A' : '#FFFFFF');
+        const logoSvg =
+          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 282 150" width="282" height="150">` +
+          `<g fill="${logoFill}" transform="translate(0 30)">` +
+          `<rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/>` +
+          `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/>` +
+          `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></g></svg>`;
+        const logoPng = await svgToPng(logoSvg, origin);
+        files['logo.png'] = logoPng;
+        files['logo@2x.png'] = logoPng;
+        files['logo@3x.png'] = logoPng;
+      }
     } catch (logoErr) {
       console.error('[generate-apple-pass] logo generation failed:', logoErr);
     }

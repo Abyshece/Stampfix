@@ -156,15 +156,19 @@ export function WalletCard({ card, campaign, disableSave, staticQR }: WalletCard
         {/* Header */}
         <div className="relative p-5 pb-2 flex justify-between items-start z-10 shrink-0">
           <div className="flex items-center gap-3">
-                        {/* Fixed Stampfix brand mark — the same square/circle/cross logo the
-                Apple Wallet pass renders in its top-left slot. Replaces the
-                per-merchant emoji so every card carries Stampfix branding. */}
-            <svg viewBox="0 0 290 90" className="h-5 w-auto shrink-0" fill={effectiveLogoColor(campaign.logoColor, campaign.backgroundColor)} aria-hidden="true">
-              <rect x="8" y="12" width="66" height="66" rx="4" />
-              <circle cx="140" cy="45" r="34" />
-              <rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)" />
-              <rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)" />
-            </svg>
+            {/* Top-left branding, honouring the merchant's logo choice:
+                their own uploaded logo, the Stampfix mark, or text only.
+                Mirrors the settings live preview so the real card matches it. */}
+            {campaign.logoMode === 'custom' && campaign.logoImage ? (
+              <img src={campaign.logoImage} alt="" className="h-5 w-auto object-contain shrink-0" />
+            ) : (campaign.logoMode ?? 'stampfix') === 'stampfix' ? (
+              <svg viewBox="0 0 290 90" className="h-5 w-auto shrink-0" fill={effectiveLogoColor(campaign.logoColor, campaign.backgroundColor)} aria-hidden="true">
+                <rect x="8" y="12" width="66" height="66" rx="4" />
+                <circle cx="140" cy="45" r="34" />
+                <rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)" />
+                <rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)" />
+              </svg>
+            ) : null}
             <h2 className="text-xs font-bold uppercase tracking-widest max-w-[140px] leading-tight text-gray-900">
               {campaign.businessName}
             </h2>
