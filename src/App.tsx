@@ -124,10 +124,15 @@ export default function App() {
       // No merchant row (or soft-deleted). Brand-new merchant signup whose
       // trigger silently failed → heal from auth metadata. (Customers were
       // already handled and returned above.)
-      const isMerchantSignup = meta.role === 'merchant';
+      let googleMerchant = false;
+      try { googleMerchant = localStorage.getItem('sf_google_merchant') === '1'; } catch { /* ignore */ }
+      const isMerchantSignup = meta.role === 'merchant' || googleMerchant;
 
       if (isMerchantSignup && (!data || data.status !== 'deleted')) {
-        const businessName = (typeof meta.business_name === 'string' && meta.business_name) || 'My business';
+        const businessName = (typeof meta.business_name === 'string' && meta.business_name)
+          || (typeof meta.full_name === 'string' && meta.full_name)
+          || (typeof meta.name === 'string' && meta.name)
+          || 'My business';
         const country = (typeof meta.country === 'string' ? meta.country : null);
         const { error: insertErr } = await supabase
           .from('merchants')
@@ -138,6 +143,7 @@ export default function App() {
             country,
           });
         if (!insertErr) {
+          try { localStorage.removeItem('sf_google_merchant'); } catch { /* ignore */ }
           setHasMerchantRow(true);
           setOrphanCheckDone(true);
           return;

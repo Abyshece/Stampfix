@@ -204,3 +204,20 @@ export async function resetPassword(email: string): Promise<void> {
   });
   if (error) throw error;
 }
+
+/**
+ * Google OAuth sign-in / sign-up. Works for both: OAuth signs the user in if
+ * they exist, or creates the auth user if new. New users are provisioned a
+ * merchant row by the handle_new_user DB trigger (google provider branch);
+ * they then land on the onboarding form to create their first campaign.
+ */
+export async function signInWithGoogle(): Promise<void> {
+  // Intent flag: survives the external redirect so a brand-new Google user
+  // gets a merchant row provisioned on return (returning merchants have one).
+  try { localStorage.setItem('sf_google_merchant', '1'); } catch { /* ignore */ }
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/?signup=1` },
+  });
+  if (error) throw error;
+}

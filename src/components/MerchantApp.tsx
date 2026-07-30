@@ -347,7 +347,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   }
 
   if (!campaign) {
-    return <MerchantOnboarding onComplete={loadAll} initialStep={startOnLogin ? 'LOGIN' : 'FORM'} onBack={onLogout} />;
+    return <MerchantOnboarding onComplete={loadAll} initialStep={user ? 'FINISH' : (startOnLogin ? 'LOGIN' : 'FORM')} onBack={onLogout} />;
   }
 
   // Show the first-run wizard when the merchant hasn't dismissed it AND

@@ -1,7 +1,7 @@
 import { PhoneField } from './PhoneField';
 import { useState } from 'react';
 import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff, Info } from 'lucide-react';
-import { signUpMerchant, signInMerchant } from '../lib/auth';
+import { signUpMerchant, signInMerchant, signInWithGoogle } from '../lib/auth';
 import { createCampaign, createLocation } from '../lib/db';
 import { supabase } from '../lib/supabase';
 import { Turnstile } from './Turnstile';
@@ -30,7 +30,7 @@ const EMOJI_LIST = [
 interface OnboardingProps {
   onComplete: () => void;
   /** Which screen to open on. Defaults to the signup form. */
-  initialStep?: 'FORM' | 'LOGIN';
+  initialStep?: 'FORM' | 'LOGIN' | 'FINISH';
   /** Optional: show a back button that returns to the landing page. */
   onBack?: () => void;
 }
@@ -45,8 +45,19 @@ interface OnboardingProps {
  * creation (because they need to be authenticated for RLS to allow the
  * insert). Otherwise we create immediately.
  */
+function GoogleG() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+      <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+      <path fill="#FBBC05" d="M11.69 28.18C11.25 26.86 11 25.45 11 24s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+      <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+    </svg>
+  );
+}
+
 export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }: OnboardingProps) {
-  const [step, setStep] = useState<'FORM' | 'CHECK_EMAIL' | 'LOGIN' | 'THANK_YOU'>(() => {
+  const [step, setStep] = useState<'FORM' | 'CHECK_EMAIL' | 'LOGIN' | 'THANK_YOU' | 'FINISH'>(() => {
     // Survive the remount caused by signing out right after signup, so the
     // thank-you screen shows instead of bouncing back to the empty form.
     try { if (sessionStorage.getItem('sf_just_registered') === '1') return 'THANK_YOU'; } catch { /* ignore */ }
@@ -184,6 +195,26 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
     }
   };
 
+  // Google (already authenticated) users: no signup, just create the campaign.
+  const handleFinish = async () => {
+    setError(null);
+    if (!busName.trim()) { setError('Please enter your business name.'); return; }
+    if (!maxStamps || maxStamps < 1) { setError('Set how many stamps a customer needs to earn the reward (at least 1).'); return; }
+    if (!termsAccepted || !privacyAccepted || !dpaAccepted) {
+      setError('Please accept the Terms, Privacy Policy, and Data Processing Agreement to continue.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await createCampaignForCurrentUser();
+      onComplete();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Setup failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSwitchToLogin = () => {
     setError(null);
     setStep('LOGIN');
@@ -263,6 +294,45 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   }
 
   // ----- LOGIN step (for users coming back from email confirmation) -----
+  if (step === 'FINISH') {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-6 text-[#37352F]">
+        <div className="max-w-md w-full space-y-5">
+          <div className="text-center space-y-2">
+            <h1 className="text-3xl font-serif-display font-semibold">Finish setting up</h1>
+            <p className="text-gray-500 text-sm">You're signed in with Google. Name your loyalty program to go live.</p>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase text-gray-400 tracking-wider">Business name</label>
+            <input value={busName} onChange={(e) => setBusName(e.target.value)} placeholder="Jackie's Cafe"
+              className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase text-gray-400 tracking-wider">Reward</label>
+            <input value={offerTitle} onChange={(e) => setOfferTitle(e.target.value)} placeholder="Buy 6, get 1 free"
+              className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold uppercase text-gray-400 tracking-wider">Stamps needed for the reward</label>
+            <input type="number" min={1} value={maxStamps || ''} onChange={(e) => setMaxStamps(parseInt(e.target.value) || 0)} placeholder="6"
+              className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20" />
+          </div>
+          <div className="space-y-2 text-xs text-gray-500 pt-1">
+            <label className="flex items-start gap-2"><input type="checkbox" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} className="mt-0.5" /> I accept the Terms of Service.</label>
+            <label className="flex items-start gap-2"><input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} className="mt-0.5" /> I accept the Privacy Policy.</label>
+            <label className="flex items-start gap-2"><input type="checkbox" checked={dpaAccepted} onChange={(e) => setDpaAccepted(e.target.checked)} className="mt-0.5" /> I accept the Data Processing Agreement.</label>
+          </div>
+          {error && <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{error}</div>}
+          <button onClick={handleFinish} disabled={loading || !busName || !maxStamps || !termsAccepted || !privacyAccepted || !dpaAccepted}
+            className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (<>Create workspace <ArrowRight className="w-4 h-4" /></>)}
+          </button>
+          <button onClick={onBack} className="w-full text-xs text-gray-500 hover:text-[#37352F]">Cancel</button>
+        </div>
+      </div>
+    );
+  }
+
   if (step === 'LOGIN') {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-6 text-[#37352F]">
@@ -311,6 +381,16 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
             </button>
           </form>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <div className="h-px flex-1 bg-gray-200" /> or <div className="h-px flex-1 bg-gray-200" />
+          </div>
+          <button
+            type="button"
+            onClick={() => { void signInWithGoogle(); }}
+            className="w-full border notion-border rounded-md py-3 text-sm font-medium hover:bg-[#F7F7F5] transition flex items-center justify-center gap-2"
+          >
+            <GoogleG /> Continue with Google
+          </button>
           <button
             onClick={() => { clearRegFlags(); setStep('FORM'); }}
             className="w-full text-xs text-gray-500 hover:text-[#37352F] flex items-center justify-center gap-1"
@@ -552,6 +632,17 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
               <>Create Workspace <ArrowRight className="w-4 h-4" /></>
             )}
+          </button>
+
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <div className="h-px flex-1 bg-gray-200" /> or <div className="h-px flex-1 bg-gray-200" />
+          </div>
+          <button
+            type="button"
+            onClick={() => { void signInWithGoogle(); }}
+            className="w-full border notion-border rounded-md py-3 text-sm font-medium hover:bg-[#F7F7F5] transition flex items-center justify-center gap-2"
+          >
+            <GoogleG /> Continue with Google
           </button>
 
           <div className="pt-4 border-t notion-border flex justify-center">
