@@ -90,7 +90,12 @@ function env(name: string, fallback?: string): string {
 // SHA-1 hex of a byte array (Apple manifest uses SHA-1).
 function sha1Hex(bytes: Uint8Array): string {
   const md = forge.md.sha1.create();
-  md.update(forge.util.binary.raw.encode(bytes));
+  // Feed the digest in 32KB slices. forge's raw.encode does
+  // String.fromCharCode.apply(null, bytes), which throws "Maximum call stack
+  // size exceeded" on large files (e.g. a big custom logo).
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    md.update(forge.util.binary.raw.encode(bytes.subarray(i, i + 0x8000)));
+  }
   return md.digest().toHex();
 }
 

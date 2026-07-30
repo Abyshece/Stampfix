@@ -1691,7 +1691,7 @@ export function MerchantDashboard({
                   <RotateCcw className="w-3 h-3" /> Reset to default colors
                 </button>
                 <div className="space-y-3 max-w-xl">
-                  <label className="text-xs font-bold text-gray-400 uppercase">Card logo</label>
+                  <label className="text-xs font-bold text-gray-400 uppercase">Card logo</label> <InfoHint label="the card logo" text="Upload a square PNG, about 512×512px (at least ~200×200px), with a transparent background and under 1 MB. Apple Wallet shows it small in the card's top-left; Google Wallet crops it to a circle — so a square, transparent logo looks best on both." />
                   <p className="text-xs text-gray-400 -mt-1">What appears at the top of the wallet card, next to your name.</p>
                   <div className="grid sm:grid-cols-3 gap-2">
                     {([
