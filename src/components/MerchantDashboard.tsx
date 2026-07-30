@@ -24,6 +24,7 @@ import { isDarkColor } from '../lib/colors';
 import { UpgradeBanner } from './UpgradeBanner';
 import { UpgradeModal } from './UpgradeModal';
 import { AccountBilling } from './AccountBilling';
+import { AccountSecurity } from './AccountSecurity';
 import { ComplianceSettings } from './ComplianceSettings';
 import { PosterSettings } from './PosterSettings';
 import { CustomerPrivacyNoticePanel } from './CustomerPrivacyNoticePanel';
@@ -67,7 +68,7 @@ interface MerchantDashboardProps {
   onLogout: () => void;
 }
 
-type SettingsSection = 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'privacy' | 'danger';
+type SettingsSection = 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'account' | 'privacy' | 'danger';
 type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
 
 const NOTION_COLORS = [
@@ -761,7 +762,10 @@ export function MerchantDashboard({
                 action (scan) and the merchant uses it dozens of times a day.
                 Total vertical footprint above the scanner: ~60px on mobile. */}
             <div className="flex items-center justify-between gap-3 mb-2 md:mb-0 flex-shrink-0">
-              <h1 className="text-xl md:text-2xl font-serif-display font-semibold">Scan</h1>
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-serif-display font-semibold truncate">Hi, {campaign.businessName || 'there'}</h1>
+                <p className="text-[11px] md:text-xs text-gray-400 truncate">You are logged in as {user?.email ?? '—'}</p>
+              </div>
               <div className="flex items-center gap-2">
               {staffRoster.length > 0 && (
                 <div className="flex items-center gap-1.5 bg-white border notion-border rounded-md px-2.5 py-1.5 shadow-sm">
@@ -1453,6 +1457,7 @@ export function MerchantDashboard({
                   ['posters',   'Posters & print'],
                   ['locations', 'Locations'],
                   ['billing',   'Account & billing'],
+                  ['account',   'Login & security'],
                   ['privacy',   'Privacy & data'],
                   ['danger',    'Danger zone'],
                 ] as const).map(([id, label]) => (
@@ -1479,6 +1484,7 @@ export function MerchantDashboard({
                   posters:   { title: 'Posters & print', hint: 'Download printable material with your QR code: business cards, A5 pamphlets, A4 posters, an Instagram square, and table stickers. Customers scan these to join.' },
                   locations: { title: 'Locations', hint: 'Add each branch so stamps are recorded against the right shop. The Scan screen lets staff pick which location they are working at, and Insights breaks results down per branch.' },
                   billing:   { title: 'Account & billing', hint: 'Your plan, invoices, and payment method. The free plan covers your first 10 customers; Pro removes that limit and unlocks branding and multi-location features.' },
+                  account:   { title: 'Login & security', hint: 'Change the email address and password you use to sign in. Changing your email requires clicking a confirmation link we send to both your old and new address.' },
                   privacy:   { title: 'Privacy & data', hint: 'Your business registration details (needed for GDPR and your Impressum), the privacy notice your customers see at signup, and a full export of your data.' },
                   danger:    { title: 'Danger zone', hint: 'Permanent actions. Deleting your account removes your cards, customers, and history — this cannot be undone.' },
                 };
@@ -1490,6 +1496,10 @@ export function MerchantDashboard({
                   </div>
                 );
               })()}
+
+            {settingsSection === 'account' && (
+              <AccountSecurity currentEmail={user?.email ?? ''} />
+            )}
 
             {settingsSection === 'billing' && (
             <div id="billing-section">
