@@ -1,5 +1,5 @@
 import { PhoneField } from './PhoneField';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff, Info } from 'lucide-react';
 import { signUpMerchant, signInMerchant, signInWithGoogle } from '../lib/auth';
 import { createCampaign, createLocation } from '../lib/db';
@@ -70,6 +70,24 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
       sessionStorage.removeItem('sf_registered_business');
     } catch { /* ignore */ }
   };
+
+  const [authedEmail, setAuthedEmail] = useState<string | null>(null);
+  // If the visitor is already signed in (e.g. just returned from Google OAuth),
+  // they don't need the email/password signup form — only to create their
+  // campaign. Switch to FINISH once the session is confirmed. This is resilient
+  // to the brief window right after the OAuth redirect where the session hasn't
+  // hydrated yet, so the mount-time step may still be FORM.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try { if (sessionStorage.getItem('sf_just_registered') === '1') return; } catch { /* ignore */ }
+      const { data } = await supabase.auth.getSession();
+      if (cancelled || !data.session) return;
+      setAuthedEmail(data.session.user.email ?? null);
+      setStep((prev) => (prev === 'FORM' || prev === 'LOGIN') ? 'FINISH' : prev);
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const [email, setEmail] = useState(() => {
     try { return sessionStorage.getItem('sf_registered_email') ?? ''; } catch { return ''; }
   });
@@ -300,7 +318,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
         <div className="max-w-md w-full space-y-5">
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-serif-display font-semibold">Finish setting up</h1>
-            <p className="text-gray-500 text-sm">You're signed in with Google. Name your loyalty program to go live.</p>
+            <p className="text-gray-500 text-sm">{authedEmail ? `Signed in as ${authedEmail}. ` : "You're signed in with Google. "}Name your loyalty program to go live.</p>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold uppercase text-gray-400 tracking-wider">Business name</label>
