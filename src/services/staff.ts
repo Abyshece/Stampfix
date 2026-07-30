@@ -3,7 +3,22 @@ import { supabase } from '../lib/supabase';
 export interface StaffMember {
   id: string; name: string; active: boolean;
   lastLoginAt: Date | null; createdAt: Date;
+  hiddenSections: string[];
 }
+
+/** Sidebar sections an owner can hide from an individual staff member.
+ *  The Scanner is always available — it's what staff are there to use. */
+export const STAFF_HIDEABLE_SECTIONS: { key: string; label: string }[] = [
+  { key: 'CUSTOMERS', label: 'Customers' },
+  { key: 'ACTIVITY', label: 'Activity' },
+  { key: 'ANALYTICS', label: 'Insights' },
+  { key: 'VALUE', label: 'Payback' },
+  { key: 'STAFF', label: 'Staff' },
+  { key: 'PREVIEW', label: 'Preview Card' },
+  { key: 'SHARE', label: 'Share & Promote' },
+  { key: 'SETTINGS', label: 'Settings' },
+  { key: 'HELP', label: 'Get help' },
+];
 export interface StaffSession { id: string; name: string; campaignId: string; }
 
 const KEY = 'sf_staff_session';
@@ -20,16 +35,17 @@ export function getStaffSession(campaignId: string): StaffSession | null {
 export function setStaffSession(s: StaffSession) { try { sessionStorage.setItem(KEY, JSON.stringify(s)); } catch { /* ignore */ } }
 export function clearStaffSession() { try { sessionStorage.removeItem(KEY); } catch { /* ignore */ } }
 
-interface Row { id: string; name: string; active: boolean; last_login_at: string | null; created_at: string }
+interface Row { id: string; name: string; active: boolean; last_login_at: string | null; created_at: string; hidden_sections: string[] | null }
 const toStaff = (r: Row): StaffMember => ({
   id: r.id, name: r.name, active: r.active,
   lastLoginAt: r.last_login_at ? new Date(r.last_login_at) : null,
   createdAt: new Date(r.created_at),
+  hiddenSections: r.hidden_sections ?? [],
 });
 
 export async function listStaff(campaignId: string): Promise<StaffMember[]> {
   const { data, error } = await supabase
-    .from('staff').select('id,name,active,last_login_at,created_at')
+    .from('staff').select('id,name,active,last_login_at,created_at,hidden_sections')
     .eq('campaign_id', campaignId).order('created_at', { ascending: true });
   if (error) throw error;
   return (data as Row[]).map(toStaff);
@@ -52,6 +68,12 @@ export async function setStaffPin(staffId: string, pin: string): Promise<void> {
 
 export async function setStaffActive(staffId: string, active: boolean): Promise<void> {
   const { error } = await supabase.from('staff').update({ active }).eq('id', staffId);
+  if (error) throw error;
+}
+
+/** Set which sidebar sections are hidden for a staff member (owner-only). */
+export async function setStaffSections(staffId: string, hidden: string[]): Promise<void> {
+  const { error } = await supabase.from('staff').update({ hidden_sections: hidden }).eq('id', staffId);
   if (error) throw error;
 }
 

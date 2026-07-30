@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { UserPlus, Loader2, KeyRound, Trash2, LogIn, AlertTriangle, ShieldCheck } from 'lucide-react';
 import {
   listStaff, createStaff, setStaffActive, setStaffPin, deleteStaff,
-  listStaffLogins, getStaffSession, clearStaffSession,
+  listStaffLogins, getStaffSession, clearStaffSession, setStaffSections, STAFF_HIDEABLE_SECTIONS,
   type StaffMember, type StaffLogin,
 } from '../services/staff';
 import { detectAnomalies, type Flag } from '../services/anomalies';
@@ -226,6 +226,27 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
                   <button onClick={() => remove(s)} className="text-xs px-2.5 py-1.5 rounded-md border notion-border text-red-600 hover:bg-red-50 flex items-center gap-1">
                     <Trash2 className="w-3 h-3" />
                   </button>
+                </div>
+                <div className="w-full mt-1 pt-2 border-t notion-border">
+                  <div className="text-[10px] uppercase tracking-wide text-gray-400 mb-1.5">What {s.name} can see (tap to hide/show)</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {STAFF_HIDEABLE_SECTIONS.map((sec) => {
+                      const hidden = s.hiddenSections.includes(sec.key);
+                      return (
+                        <button
+                          key={sec.key}
+                          onClick={() => {
+                            const next = hidden ? s.hiddenSections.filter((k) => k !== sec.key) : [...s.hiddenSections, sec.key];
+                            setStaffSections(s.id, next).then(refresh).catch(() => alert('Could not update access.'));
+                          }}
+                          className={`text-[11px] px-2 py-1 rounded-md border transition ${hidden ? 'bg-gray-50 text-gray-400 border-gray-200 line-through' : 'bg-[#37352F] text-white border-[#37352F]'}`}
+                          title={hidden ? `Hidden from ${s.name}` : `Visible to ${s.name}`}
+                        >
+                          {sec.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             ))}

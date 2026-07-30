@@ -110,6 +110,15 @@ export function MerchantDashboard({
   const [staffRoster, setStaffRoster] = useState<StaffMember[]>([]);
   const [gateTarget, setGateTarget] = useState<{ id: string; name: string } | null>(null);
   const [activeStaff, setActiveStaff] = useState(() => getStaffSession(campaign.id));
+  // Sections the on-shift staff member is not allowed to see (owner-controlled).
+  // Empty when the owner is using the dashboard directly (no staff session).
+  const staffHidden = useMemo(
+    () => (activeStaff ? (staffRoster.find((r) => r.id === activeStaff.id)?.hiddenSections ?? []) : []),
+    [activeStaff, staffRoster],
+  );
+  useEffect(() => {
+    if (staffHidden.includes(activeTab)) setActiveTab('DASHBOARD');
+  }, [staffHidden, activeTab]);
   useEffect(() => {
     let cancelled = false;
     listStaff(campaign.id)
@@ -599,7 +608,7 @@ export function MerchantDashboard({
               ['SHARE', Share, 'Share & Promote'],
               ['SETTINGS', Settings, 'Settings'],
               ['HELP', LifeBuoy, 'Get help'],
-            ] as const).map(([id, Icon, label]) => (
+            ] as const).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
               <button key={id} onClick={() => handleTabChange(id)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition ${
                   activeTab === id ? 'bg-[#EFEFEE] font-medium' : 'hover:bg-[#EFEFEE] text-gray-600'
@@ -1758,7 +1767,7 @@ export function MerchantDashboard({
             ['DASHBOARD', ScanLine, 'Scan'],
             ['CUSTOMERS', Users, 'People'],
             ['ANALYTICS', BarChart3, 'Insights'],
-          ] as const).map(([id, Icon, label]) => (
+          ] as const).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
             <button key={id} onClick={() => handleTabChange(id)}
               className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
                 activeTab === id ? 'text-[#37352F]' : 'text-gray-400'
@@ -1791,7 +1800,7 @@ export function MerchantDashboard({
                 ['PREVIEW', Eye, 'Preview'],
                 ['SETTINGS', Settings, 'Settings'],
                 ['HELP', LifeBuoy, 'Get help'],
-              ] as const).map(([id, Icon, label]) => (
+              ] as const).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
                 <button key={id} onClick={() => handleTabChange(id)}
                   className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${
                     activeTab === id ? 'bg-[#F7F7F5] border-[#37352F]' : 'bg-white border-transparent'

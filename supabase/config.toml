@@ -3,3 +3,9 @@ project_id = "stampify"
 
 [functions.generate-wallet-jwt]
 verify_jwt = true
+
+[functions.generate-apple-pass]
+verify_jwt = false
+
+[functions.apple-wallet-webservice]
+verify_jwt = false
