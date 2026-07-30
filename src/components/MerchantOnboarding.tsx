@@ -2,6 +2,7 @@ import { PhoneField } from './PhoneField';
 import { useState } from 'react';
 import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff, Info } from 'lucide-react';
 import { signUpMerchant, signInMerchant } from '../lib/auth';
+import { CountrySelect } from './CountrySelect';
 import { createCampaign, createLocation } from '../lib/db';
 import { supabase } from '../lib/supabase';
 import { Turnstile } from './Turnstile';
@@ -68,7 +69,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const [busName, setBusName] = useState(() => {
     try { return sessionStorage.getItem('sf_registered_business') ?? ''; } catch { return ''; }
   });
-  const [country, setCountry] = useState<'DE' | 'CA' | ''>('');
+  const [country, setCountry] = useState<string>('');
   const [offerTitle, setOfferTitle] = useState('Buy 6, get 1 free');
   const [logoText, setLogoText] = useState('');
   const [phone, setPhone] = useState('');
@@ -416,24 +417,8 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Country</label>
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                {([
-                  ['DE', '🇩🇪', 'Germany'],
-                  ['CA', '🇨🇦', 'Canada'],
-                ] as const).map(([code, flag, name]) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => setCountry(code)}
-                    className={`flex items-center gap-2 px-4 py-3 rounded-md border-2 text-sm font-medium transition ${
-                      country === code
-                        ? 'border-[#37352F] bg-[#F7F7F5]'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
-                    }`}
-                  >
-                    <span className="text-lg">{flag}</span> {name}
-                  </button>
-                ))}
+              <div className="pt-1">
+                <CountrySelect value={country} onChange={setCountry} />
               </div>
             </div>
             <div className="space-y-1">

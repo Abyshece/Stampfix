@@ -82,7 +82,7 @@ export async function signUpMerchant(
   email: string,
   password: string,
   businessName: string,
-  country: 'DE' | 'CA',
+  country: string,
   marketingOptIn: boolean,
   phone?: string,
 ): Promise<{ needsEmailConfirmation: boolean }> {
