@@ -410,9 +410,9 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
                 value={primaryLocationName}
                 onChange={(e) => setPrimaryLocationName(e.target.value)}
                 className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-                placeholder={busName || 'e.g. Mitte branch, or just your shop name'}
+                placeholder={busName || 'e.g. Downtown branch, or just your shop name'}
               />
-              <p className="text-[11px] text-gray-400">If you have multiple branches with the same name, name this one (e.g. "Mitte"). You can add more locations later in Settings.</p>
+              <p className="text-[11px] text-gray-400">If you have multiple branches with the same name, name this one (e.g. "Downtown"). You can add more locations later in Settings.</p>
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Country</label>

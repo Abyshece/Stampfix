@@ -126,7 +126,7 @@ export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate, i
           <input
             value={addingName}
             onChange={(e) => setAddingName(e.target.value)}
-            placeholder='Name (e.g. "Mitte branch")'
+            placeholder='Name (e.g. "Downtown branch")'
             className="w-full bg-white border notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
             autoFocus
           />
