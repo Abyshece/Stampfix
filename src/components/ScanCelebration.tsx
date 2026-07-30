@@ -1,0 +1,152 @@
+import { useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
+
+export interface CelebrationData {
+  customerName: string;
+  currentStamps: number;
+  maxStamps: number;
+  offerTitle: string;
+  /** True when this scan redeemed the reward (card reset to 0). */
+  redeemed: boolean;
+}
+
+const COLORS = ['#EA3323', '#F7CE46', '#1132F5', '#75FBFD', '#EA33B6', '#510AF5', '#75FBE2', '#F0A479'];
+
+/**
+ * Celebratory pop-up shown after a successful scan. White card on a blurred
+ * backdrop, confetti rain, animated stamp dots, and a state-aware message —
+ * "one more to go", "reward unlocked", "reward redeemed". Auto-dismisses after
+ * 5 seconds (restarting the timer on each fresh scan) and on tap.
+ */
+export function ScanCelebration({ data, onClose }: { data: CelebrationData; onClose: () => void }) {
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const t = setTimeout(() => closeRef.current(), 5000);
+    return () => clearTimeout(t);
+  }, [data]);
+
+  const stampsLeft = Math.max(0, data.maxStamps - data.currentStamps);
+  const redeemed = data.redeemed;
+  const unlocked = !redeemed && data.maxStamps > 0 && data.currentStamps >= data.maxStamps;
+  const oneMore = !redeemed && !unlocked && stampsLeft === 1;
+  const big = redeemed || unlocked;
+
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: big ? 80 : 44 }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        delay: Math.random() * 0.7,
+        duration: 2.3 + Math.random() * 1.9,
+        size: 7 + Math.random() * 9,
+        color: COLORS[i % COLORS.length],
+        rotate: Math.random() * 360,
+        round: Math.random() > 0.5,
+      })),
+    [big],
+  );
+
+  const emoji = redeemed ? '🎁' : unlocked ? '🎉' : oneMore ? '🔥' : '✨';
+  const headline = redeemed
+    ? 'Reward redeemed!'
+    : unlocked
+    ? 'Reward unlocked!'
+    : oneMore
+    ? 'One more to go!'
+    : 'Stamp added!';
+  const sub = redeemed
+    ? `${data.customerName} just enjoyed “${data.offerTitle}”`
+    : unlocked
+    ? `${data.customerName} earned “${data.offerTitle}”`
+    : oneMore
+    ? `${data.customerName} needs just 1 more stamp`
+    : `Nice one, ${data.customerName}!`;
+
+  const total = Math.min(data.maxStamps || 0, 12);
+  const filled = redeemed ? total : Math.min(data.currentStamps, total);
+
+  const pill = redeemed
+    ? 'Fresh card — back to zero ✨'
+    : unlocked
+    ? 'Card complete 🎯'
+    : `${stampsLeft} stamp${stampsLeft === 1 ? '' : 's'} to “${data.offerTitle}”`;
+
+  return createPortal(
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-[100] flex items-center justify-center p-6 cursor-pointer"
+      style={{ background: 'rgba(15,15,20,0.45)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+    >
+      <style>{`
+        @keyframes sc-fall { 0%{transform:translateY(-14vh) rotate(0);opacity:0} 8%{opacity:1} 100%{transform:translateY(112vh) rotate(720deg);opacity:1} }
+        @keyframes sc-pop { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.06);opacity:1} 100%{transform:scale(1);opacity:1} }
+        @keyframes sc-emoji { 0%{transform:scale(0) rotate(-30deg)} 55%{transform:scale(1.3) rotate(10deg)} 100%{transform:scale(1) rotate(0)} }
+        @keyframes sc-dot { 0%{transform:scale(0)} 60%{transform:scale(1.25)} 100%{transform:scale(1)} }
+        @keyframes sc-glow { 0%,100%{box-shadow:0 24px 60px -20px rgba(0,0,0,.45)} 50%{box-shadow:0 24px 90px -8px rgba(234,51,182,.5)} }
+      `}</style>
+
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {pieces.map((p) => (
+          <span
+            key={p.id}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: `${p.left}%`,
+              width: p.size,
+              height: p.size,
+              background: p.color,
+              borderRadius: p.round ? '50%' : 2,
+              transform: `rotate(${p.rotate}deg)`,
+              animation: `sc-fall ${p.duration}s linear ${p.delay}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div
+        className="relative w-full max-w-sm bg-white rounded-3xl px-8 py-9 text-center shadow-2xl"
+        style={{
+          animation: big
+            ? 'sc-pop .5s cubic-bezier(.2,.8,.2,1.2) both, sc-glow 1.6s ease-in-out .5s infinite'
+            : 'sc-pop .5s cubic-bezier(.2,.8,.2,1.2) both',
+        }}
+      >
+        <div className="text-6xl mb-3 select-none" style={{ animation: 'sc-emoji .6s cubic-bezier(.2,.8,.2,1.4) both' }}>
+          {emoji}
+        </div>
+        <h2 className="text-3xl font-serif-display font-semibold text-[#37352F] leading-tight">{headline}</h2>
+        <p className="mt-2 text-sm text-gray-500">{sub}</p>
+
+        {total > 0 && (
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {Array.from({ length: total }).map((_, i) => {
+              const on = i < filled;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    background: on ? COLORS[i % COLORS.length] : 'transparent',
+                    border: on ? 'none' : '2px solid #E7E7E4',
+                    animation: on ? `sc-dot .4s ease ${0.2 + i * 0.05}s both` : 'none',
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#F7F7F5] px-4 py-2 text-sm font-medium text-[#37352F]">
+          {pill}
+        </div>
+
+        <p className="mt-5 text-[11px] text-gray-300">tap anywhere to dismiss</p>
+      </div>
+    </div>,
+    document.body,
+  );
+}

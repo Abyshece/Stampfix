@@ -10,6 +10,7 @@ import { useAuth } from '../lib/auth';
 import { markApprovalBannerSeen } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
+import { ScanCelebration } from './ScanCelebration';
 import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { StaffPanel } from './StaffPanel';
@@ -149,6 +150,24 @@ export function MerchantDashboard({
     card?: UserCard;
     message: string;
   } | null>(null);
+  // Party celebration overlay after a successful scan. Kept separate from
+  // scanResult so it can run a full 5s regardless of scanResult's own shorter
+  // auto-clear (which drives the inline error state).
+  const [celebration, setCelebration] = useState<{
+    customerName: string; currentStamps: number; maxStamps: number; offerTitle: string; redeemed: boolean;
+  } | null>(null);
+  useEffect(() => {
+    if (scanResult?.status === 'success' && scanResult.card) {
+      const c = scanResult.card;
+      setCelebration({
+        customerName: c.customerName,
+        currentStamps: c.currentStamps,
+        maxStamps: c.maxStampsSnapshot ?? campaign.maxStamps,
+        offerTitle: campaign.offerTitle,
+        redeemed: /redeem/i.test(scanResult.message),
+      });
+    }
+  }, [scanResult, campaign.maxStamps, campaign.offerTitle]);
 
   // Derived: non-archived locations, and the currently active one.
   const activeLocations = useMemo(() => locations.filter((l) => !l.archived), [locations]);
@@ -835,12 +854,11 @@ export function MerchantDashboard({
               {/* Location picker — which branch is doing the stamping
                   (Moved into the compact header row above; this block removed.) */}
               <div className="flex-1 min-h-0 border notion-border rounded-xl bg-white shadow-sm p-3 md:p-4 flex flex-col relative overflow-hidden">
-                {scanResult && (
+                {celebration && <ScanCelebration data={celebration} onClose={() => setCelebration(null)} />}
+                {scanResult && scanResult.status === 'error' && (
                   <div className="absolute inset-0 z-20 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
-                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-sm border ${
-                      scanResult.status === 'success' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-red-50 border-red-100 text-red-500'
-                    }`}>
-                      {scanResult.status === 'success' ? <CheckCircle2 className="w-10 h-10" /> : <Ban className="w-10 h-10" />}
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-sm border bg-red-50 border-red-100 text-red-500">
+                      <Ban className="w-10 h-10" />
                     </div>
                     <h3 className="text-2xl font-serif-display font-semibold mb-2">{scanResult.message}</h3>
                     {scanResult.card && (
