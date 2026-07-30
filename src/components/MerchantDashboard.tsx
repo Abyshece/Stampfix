@@ -348,6 +348,28 @@ export function MerchantDashboard({
       toast.error('Please upload a PNG image.');
       return;
     }
+    if (file.size > 1024 * 1024) {
+      toast.error('Logo is too large — please keep it under 1 MB.');
+      return;
+    }
+    // Enforce a minimum size so the logo isn't blurry on the pass.
+    let dims: { w: number; h: number };
+    try {
+      dims = await new Promise<{ w: number; h: number }>((resolve, reject) => {
+        const img = new Image();
+        const objUrl = URL.createObjectURL(file);
+        img.onload = () => { URL.revokeObjectURL(objUrl); resolve({ w: img.naturalWidth, h: img.naturalHeight }); };
+        img.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('decode failed')); };
+        img.src = objUrl;
+      });
+    } catch {
+      toast.error("Couldn't read that image — please try a different PNG.");
+      return;
+    }
+    if (dims.w < 200 || dims.h < 200) {
+      toast.error(`Logo is too small (${dims.w}×${dims.h}px). Please upload at least 200×200px.`);
+      return;
+    }
     setLogoUploading(true);
     try {
       const path = `${campaign.id}/logo.png`;
@@ -1715,6 +1737,10 @@ export function MerchantDashboard({
 
                   {(tempSettings.logoMode ?? 'stampfix') === 'custom' && (
                     <div className="space-y-1 pt-1">
+                      <div className="flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-100 rounded-md p-2.5">
+                        <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                        <span>Requirements: PNG, square, at least 200×200px, and under 1 MB. Files outside these limits are rejected.</span>
+                      </div>
                       <div className="flex gap-2 items-center">
                         <label className="flex-1 cursor-pointer bg-[#F7F7F5] border notion-border border-dashed rounded h-10 flex items-center justify-center text-xs text-gray-500 hover:bg-gray-100 transition">
                           <Upload className="w-3 h-3 mr-2" />
