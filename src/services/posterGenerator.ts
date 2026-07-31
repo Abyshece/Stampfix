@@ -27,7 +27,7 @@ interface BuildPosterInput {
  *
  * Why HTML instead of SVG or canvas:
  *   - HTML/CSS gives us the layout flexibility we need at three very
- *     different aspect ratios (business card, A5 landscape, A4 portrait)
+ *     different aspect ratios (business card, A4 landscape, A4 portrait)
  *   - Browser print is universal — every merchant has it, no installs,
  *     no licensing fees, works at the merchant's actual paper size
  *   - The QR code is a separate <img> we generate via a third-party
@@ -359,7 +359,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   /* ============================
    *  A5 PAMPHLET (210x148mm landscape)
    * ============================ */
-  @page pamphlet { size: A5 landscape; margin: 0; }
+  @page pamphlet { size: A4 landscape; margin: 0; }
   .size-pamphlet {
     width: 1123px; height: 794px;
     background: __POSTER_BG__;
@@ -766,7 +766,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     var style = document.createElement('style');
     style.textContent = '@page { size: ' + (
       size === 'card' ? '85mm 55mm'
-      : size === 'pamphlet' ? 'A5 landscape'
+      : size === 'pamphlet' ? 'A4 landscape'
       : size === 'instagram' ? '210mm 210mm'
       : size === 'table' ? '45mm 45mm'
       : size === 'sticker' ? 'A4 portrait'
