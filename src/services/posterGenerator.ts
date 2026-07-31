@@ -16,6 +16,8 @@ interface BuildPosterInput {
   /** Optional override for the background. Used by the live preview in
    *  Settings — the user picks a color and we re-render before saving. */
   posterBgOverride?: string;
+  /** Explicit wallet-card colour on the poster (overrides the auto default). */
+  cardColorOverride?: string;
 }
 
 /**
@@ -34,7 +36,7 @@ interface BuildPosterInput {
  *     service (api.qrserver.com), which is free and reliable
  */
 export function buildPosterHtml(input: BuildPosterInput): string {
-  const { campaign, location, joinUrlOverride, posterBgOverride } = input;
+  const { campaign, location, joinUrlOverride, posterBgOverride, cardColorOverride } = input;
 
   // ----- Resolve dynamic values from the campaign -----
   const businessName = (campaign.businessName || 'Your Business').toUpperCase();
@@ -74,13 +76,14 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   const inkSoft = lightBg ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)';
   const vbrand = lightBg ? '#9B8B66' : '#FBBF24';
 
-  // Dummy-card colour: the customer's real card colour, or a creamy default.
-  const cardBg = isHex(campaign.primaryColor)
-    ? (campaign.primaryColor as string)
-    : isHex(campaign.posterColor)
-      ? (campaign.posterColor as string)
-      : '#f0ece1';
-  const cardInk = isHex(cardBg) && lumOf(cardBg) > 150 ? '#26314D' : '#FFFFFF';
+  // Wallet-card colour on the poster. Default is chosen for contrast with the
+  // poster background — white card on a coloured/gradient poster, black card on
+  // the plain white poster — and can be overridden from the poster settings.
+  const posterIsPlainWhite = !isGradient && isHex(posterBg) && lumOf(posterBg) > 245;
+  const cardBg = (cardColorOverride && isHex(cardColorOverride))
+    ? (cardColorOverride as string)
+    : (posterIsPlainWhite ? '#111318' : '#FFFFFF');
+  const cardInk = lumOf(cardBg) > 150 ? '#1A1A1A' : '#FFFFFF';
 
   const markPaths =
     `<rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/>` +

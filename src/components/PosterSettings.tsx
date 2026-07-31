@@ -60,6 +60,7 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
   const [gradAngle, setGradAngle] = useState<number>(parseGradient(stored)?.angle ?? GRAD_DEFAULTS.angle);
 
   const [saving, setSaving] = useState(false);
+  const [cardColor, setCardColor] = useState<string>(''); // '' = auto (contrast-based)
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const toast = useToast();
 
@@ -97,6 +98,7 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
       campaign,
       size,
       posterBgOverride: previewBg,
+      cardColorOverride: cardColor || undefined,
     });
     const win = window.open('', '_blank');
     if (!win) {
@@ -214,6 +216,27 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
             </div>
           )}
         </ModeRow>
+      </div>
+
+      {/* Wallet card colour on the poster */}
+      <div className="space-y-2 pt-3 border-t notion-border">
+        <label className="text-sm font-medium">Wallet card colour</label>
+        <p className="text-xs text-gray-400 -mt-1">The sample loyalty card shown on the poster. Auto uses a white card on a coloured background, and a black card on a white one.</p>
+        <div className="flex gap-2 pt-1">
+          {([['', 'Auto'], ['#FFFFFF', 'White'], ['#111318', 'Black']] as const).map(([val, label]) => (
+            <button
+              key={label}
+              onClick={() => setCardColor(val)}
+              className={`flex-1 rounded-md h-11 border-2 text-xs font-medium transition flex items-center justify-center gap-2 ${cardColor === val ? 'border-[#37352F] ring-2 ring-[#37352F]/20' : 'border-gray-200 hover:border-gray-300'}`}
+            >
+              {val && <span className="w-4 h-4 rounded border border-black/10" style={{ background: val }} />}
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="pt-1">
+          <ColorPicker label="Or a custom card colour" value={/^#[0-9a-fA-F]{6}$/.test(cardColor) ? cardColor : '#FFFFFF'} onChange={setCardColor} />
+        </div>
       </div>
 
       {/* Preview links */}
