@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { verifyStaffPin, verifyStaffPinFor, setStaffSession, ownerPinIsSet, verifyOwnerPin } from '../services/staff';
+import { supabase } from '../lib/supabase';
 
 /** PIN prompt shown after the shop logs in: "who's at the till?" */
 export function StaffGate({ campaignId, onDone, onSkip, staffId, staffName }: {
@@ -43,6 +44,11 @@ export function StaffGate({ campaignId, onDone, onSkip, staffId, staffName }: {
     finally { setBusy(false); }
   };
 
+  const handleLogout = async () => {
+    try { await supabase.auth.signOut(); } catch { /* ignore */ }
+    window.location.href = '/';
+  };
+
   return (
     <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-md flex items-center justify-center p-6">
       <div className="bg-white rounded-xl shadow-2xl border notion-border w-full max-w-sm p-6 space-y-4">
@@ -54,7 +60,7 @@ export function StaffGate({ campaignId, onDone, onSkip, staffId, staffName }: {
             ? 'Enter the owner PIN to continue without signing in as staff.'
             : 'Enter your staff ID (PIN) to start your shift. Everything you stamp today is recorded under your name.'}</p>
         <input
-          autoFocus type="password" inputMode="numeric" value={pin}
+          autoFocus type="password" inputMode="numeric" autoComplete="one-time-code" name="sf-otp" value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
           onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
           placeholder="&bull;&bull;&bull;&bull;"
@@ -68,16 +74,22 @@ export function StaffGate({ campaignId, onDone, onSkip, staffId, staffName }: {
         {onSkip && !ownerMode && (
           <button
             onClick={() => { if (ownerLocked) { setOwnerMode(true); setPin(''); setErr(null); } else { onSkip(); } }}
-            className="w-full text-xs text-gray-400 hover:text-gray-600"
+            className="w-full py-2.5 rounded-md border notion-border text-sm font-medium text-[#37352F] hover:bg-[#F7F7F5] transition"
           >
-            I&rsquo;m the owner &mdash; skip
+            {ownerLocked ? 'Enter owner PIN' : 'I am the owner'}
           </button>
         )}
         {ownerMode && (
-          <button onClick={() => { setOwnerMode(false); setPin(''); setErr(null); }} className="w-full text-xs text-gray-400 hover:text-gray-600">
+          <button onClick={() => { setOwnerMode(false); setPin(''); setErr(null); }} className="w-full py-2.5 rounded-md border notion-border text-sm font-medium text-[#37352F] hover:bg-[#F7F7F5] transition">
             Back to staff sign-in
           </button>
         )}
+        <div className="pt-3 border-t notion-border text-center">
+          <p className="text-xs text-gray-400 mb-1">Forgot the PIN, or not on shift?</p>
+          <button onClick={handleLogout} className="text-xs font-medium text-red-600 hover:underline">
+            Log out and go back to the home screen
+          </button>
+        </div>
       </div>
     </div>
   );
