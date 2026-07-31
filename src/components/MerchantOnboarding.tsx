@@ -75,7 +75,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const [phone, setPhone] = useState('');
   const [selectedColor, setSelectedColor] = useState(NOTION_COLORS[0].hex);
   const [selectedIcon, setSelectedIcon] = useState('☕️');
-  const [maxStamps, setMaxStamps] = useState(0);
+  const [maxStamps, setMaxStamps] = useState(6);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   // Primary location name. Defaults to the business name so single-
   // location merchants don't have to think about it; multi-location ones
@@ -122,10 +122,6 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const handleSignup = async () => {
     setError(null);
     if (!busName || !email || !password || !country) return;
-    if (!maxStamps || maxStamps < 1) {
-      setError('Please set how many stamps a customer needs to earn the reward (at least 1).');
-      return;
-    }
     if (!termsAccepted || !privacyAccepted || !dpaAccepted) {
       setError('Please accept the Terms, Privacy Policy, and Data Processing Agreement to continue.');
       return;
@@ -250,8 +246,8 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
             Click it to activate your workspace, then come back here and sign in.
           </p>
           <div className="bg-[#F7F7F5] border notion-border rounded-lg p-4 text-xs text-gray-500 text-left">
-            <strong>Heads up:</strong> Your workspace details ({busName}, {maxStamps} stamps)
-            will be set up automatically the first time you sign in after confirming.
+            <strong>Heads up:</strong> Your workspace ({busName}) will be set up
+            automatically the first time you sign in after confirming — you'll set your reward in the next step.
           </div>
           <button
             onClick={handleSwitchToLogin}
@@ -437,39 +433,8 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
             </div>
           </div>
 
-          {/* Rules */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider border-b notion-border pb-2">Loyalty Rules</h3>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Offer Title</label>
-              <input
-                value={offerTitle}
-                onChange={(e) => setOfferTitle(e.target.value)}
-                className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-                placeholder="e.g. Buy 8, get 1 free"
-              />
-              <div className="flex gap-2 items-start text-[11px] text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-2 mt-1.5">
-                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-blue-500" />
-                <span>Describe the reward in your customers&rsquo; words. e.g. <b>&ldquo;Buy 8 coffees, get 1 free&rdquo;</b> or <b>&ldquo;Order 6 times, get a dessert on us.&rdquo;</b></span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Number of stamps to earn a reward</label>
-              <input
-                type="number"
-                min={1}
-                max={20}
-                value={maxStamps === 0 ? '' : maxStamps}
-                onChange={(e) => setMaxStamps(parseInt(e.target.value) || 0)}
-                className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-                placeholder="e.g. 8"
-              />
-              <div className="flex gap-2 items-start text-[11px] text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-2 mt-1.5">
-                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-blue-500" />
-                <span>How many stamps a customer collects before the reward unlocks. e.g. <b>8</b> means they buy 8 and the 9th is free.</span>
-              </div>
-            </div>
-          </div>
+          {/* Loyalty reward is set in the first onboarding step after signup,
+              to keep this form short. */}
 
           {error && (
             <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-3 rounded">{error}</div>

@@ -12,11 +12,13 @@ interface OnboardingWizardProps {
   initialState: OnboardingState;
   /** Called whenever a step's outcome should be saved to the server. */
   onMarkStep: (patch: Partial<OnboardingState>) => Promise<void>;
+  /** Persist the loyalty reward set in the first step. */
+  onUpdateCampaign: (patch: Partial<Campaign>) => Promise<void>;
   /** Called to close the wizard (after completion or skip). */
   onClose: () => void;
 }
 
-type Step = 0 | 1 | 2 | 3;
+type Step = 0 | 1 | 2 | 3 | 4;
 
 /**
  * First-run wizard shown to brand-new merchants after signup. Walks
@@ -36,18 +38,33 @@ export function OnboardingWizard({
   locations,
   initialState,
   onMarkStep,
+  onUpdateCampaign,
   onClose,
 }: OnboardingWizardProps) {
   const [step, setStep] = useState<Step>(0);
   const [saving, setSaving] = useState(false);
+  const [offerTitle, setOfferTitle] = useState(campaign.offerTitle);
+  const [maxStamps, setMaxStamps] = useState(campaign.maxStamps);
 
   const primaryLocation = locations.find((l) => !l.archived) ?? null;
   const joinUrl = primaryLocation
     ? `${window.location.origin}/?campaign=${campaign.id}&location=${primaryLocation.id}`
     : `${window.location.origin}/?campaign=${campaign.id}`;
 
-  const goNext = () => setStep((s) => Math.min(3, s + 1) as Step);
+  const goNext = () => setStep((s) => Math.min(4, s + 1) as Step);
   const goBack = () => setStep((s) => Math.max(0, s - 1) as Step);
+
+  const handleContinue = async () => {
+    if (step === 0) {
+      setSaving(true);
+      try {
+        await onUpdateCampaign({ offerTitle: offerTitle.trim() || campaign.offerTitle, maxStamps });
+      } finally {
+        setSaving(false);
+      }
+    }
+    goNext();
+  };
 
   const handleSkip = async () => {
     setSaving(true);
@@ -105,7 +122,7 @@ export function OnboardingWizard({
         {/* Header */}
         <div className="sticky top-0 bg-white/95 backdrop-blur z-10 px-6 py-4 border-b notion-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2, 3, 4].map((i) => (
               <div
                 key={i}
                 className={`h-1.5 rounded-full transition-all ${
@@ -115,7 +132,7 @@ export function OnboardingWizard({
                 }`}
               />
             ))}
-            <span className="ml-2 text-xs text-gray-400 font-medium">Step {step + 1} of 4</span>
+            <span className="ml-2 text-xs text-gray-400 font-medium">Step {step + 1} of 5</span>
           </div>
           <button
             onClick={handleSkip}
@@ -128,8 +145,17 @@ export function OnboardingWizard({
 
         {/* Content */}
         <div className="px-8 py-10">
-          {step === 0 && <WelcomeStep businessName={campaign.businessName} />}
-          {step === 1 && (
+          {step === 0 && (
+            <LoyaltyStep
+              businessName={campaign.businessName}
+              offerTitle={offerTitle}
+              setOfferTitle={setOfferTitle}
+              maxStamps={maxStamps}
+              setMaxStamps={setMaxStamps}
+            />
+          )}
+          {step === 1 && <WelcomeStep businessName={campaign.businessName} />}
+          {step === 2 && (
             <PrintStep
               campaign={campaign}
               location={primaryLocation}
@@ -137,13 +163,13 @@ export function OnboardingWizard({
               onDownload={handleDownloadPoster}
             />
           )}
-          {step === 2 && (
+          {step === 3 && (
             <TestStep
               alreadyDone={!!initialState.test_signup_done}
               onOpen={handleOpenCustomerView}
             />
           )}
-          {step === 3 && <ScanTourStep />}
+          {step === 4 && <ScanTourStep />}
         </div>
 
         {/* Footer */}
@@ -155,13 +181,13 @@ export function OnboardingWizard({
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          {step < 3 ? (
+          {step < 4 ? (
             <button
-              onClick={goNext}
-              disabled={saving}
-              className="bg-[#37352F] text-white px-5 py-2 rounded-md font-medium text-sm hover:bg-opacity-90 transition flex items-center gap-2"
+              onClick={handleContinue}
+              disabled={saving || (step === 0 && (maxStamps < 1 || !offerTitle.trim()))}
+              className="bg-[#37352F] text-white px-5 py-2 rounded-md font-medium text-sm hover:bg-opacity-90 transition flex items-center gap-2 disabled:opacity-50"
             >
-              Continue <ArrowRight className="w-4 h-4" />
+              {saving && step === 0 && <Loader2 className="w-4 h-4 animate-spin" />} Continue <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
             <button
@@ -187,6 +213,55 @@ export function OnboardingWizard({
 // ---------------------------------------------------------------------
 // Steps
 // ---------------------------------------------------------------------
+
+function LoyaltyStep({
+  businessName,
+  offerTitle,
+  setOfferTitle,
+  maxStamps,
+  setMaxStamps,
+}: {
+  businessName: string;
+  offerTitle: string;
+  setOfferTitle: (v: string) => void;
+  maxStamps: number;
+  setMaxStamps: (v: number) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <div className="inline-flex w-14 h-14 rounded-2xl bg-[#37352F]/5 items-center justify-center mb-1">
+          <Sparkles className="w-7 h-7 text-[#37352F]" />
+        </div>
+        <h2 className="text-2xl font-serif-display font-semibold">Set your loyalty reward</h2>
+        <p className="text-gray-500 text-sm">This is the deal your customers see on their card at {businessName}. You can change it anytime in Settings.</p>
+      </div>
+      <div className="space-y-1">
+        <label className="text-sm font-medium">Reward</label>
+        <input
+          value={offerTitle}
+          onChange={(e) => setOfferTitle(e.target.value)}
+          placeholder="e.g. Buy 8, get 1 free"
+          className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
+        />
+        <p className="text-[11px] text-gray-400">Describe it in your customers' words, e.g. "Buy 8 coffees, get 1 free".</p>
+      </div>
+      <div className="space-y-1">
+        <label className="text-sm font-medium">Stamps needed to earn the reward</label>
+        <input
+          type="number"
+          min={1}
+          max={20}
+          value={maxStamps === 0 ? '' : maxStamps}
+          onChange={(e) => setMaxStamps(parseInt(e.target.value) || 0)}
+          placeholder="e.g. 8"
+          className="w-full bg-[#F7F7F5] border notion-border rounded-md px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
+        />
+        <p className="text-[11px] text-gray-400">e.g. 8 means they collect 8 stamps and the 9th visit is the reward.</p>
+      </div>
+    </div>
+  );
+}
 
 function WelcomeStep({ businessName }: { businessName: string }) {
   return (

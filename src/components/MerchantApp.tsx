@@ -385,6 +385,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
           locations={locations}
           initialState={onboarding}
           onMarkStep={handleMarkOnboardingStep}
+          onUpdateCampaign={handleUpdateCampaign}
           onClose={() => {
             // The wizard already saves wizard_dismissed=true to the server;
             // local state will sync via handleMarkOnboardingStep.
