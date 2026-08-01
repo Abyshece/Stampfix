@@ -144,7 +144,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__INK_SOFT__',       inkSoft)
     .replaceAll('__VBRAND__',         vbrand)
     .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
-    .replaceAll('__PAGE__',           input.size === 'card' ? '85mm 55mm' : input.size === 'pamphlet' ? '210mm 148mm' : input.size === 'instagram' ? '210mm 210mm' : input.size === 'table' ? '45mm 45mm' : input.size === 'sticker' ? '210mm 297mm' : '210mm 297mm')
+    .replaceAll('__PAGE__',           input.size === 'card' ? '85mm 55mm' : input.size === 'pamphlet' ? '297mm 210mm' : input.size === 'instagram' ? '210mm 210mm' : input.size === 'table' ? '45mm 45mm' : input.size === 'sticker' ? '210mm 297mm' : '210mm 297mm')
     .replaceAll('__SIZE__',           input.size);
 }
 
@@ -524,7 +524,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
    * ============================ */
   .dummy-card {
     background: __CARD_BG__; color: __CARD_INK__;
-    border-radius: 22px; padding: 22px 24px; width: 100%;
+    border-radius: 20px; padding: 20px 22px; width: 100%; max-width: 300px; margin: 0 auto;
     box-sizing: border-box;
     box-shadow: 0 16px 40px rgba(0,0,0,0.18);
     border: 1px solid rgba(0,0,0,0.07);
@@ -547,7 +547,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     display: grid; grid-template-columns: repeat(4, 1fr);
     gap: 12px; justify-items: center; padding: 2px 0;
   }
-  .dummy-card .dc-shape { width: 36px; height: 36px; }
+  .dummy-card .dc-shape { width: 30px; height: 30px; }
   .dummy-card .dc-shape.sq { background: currentColor; border-radius: 7px; }
   .dummy-card .dc-shape.ci { background: currentColor; border-radius: 50%; }
   .dummy-card .dc-shape.cx { display: flex; }
