@@ -745,7 +745,7 @@ export function MerchantDashboard({
           <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
             <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-800 m-0">
-              <span className="font-semibold">Your account is being reviewed.</span> We'll check your business within 24 hours and either approve or reject it. You can keep setting things up in the meantime.
+              <span className="font-semibold">Your account is being reviewed.</span> Please give us 24 hours while we finish reviewing it. You can keep setting things up in the meantime.
             </p>
           </div>
         )}

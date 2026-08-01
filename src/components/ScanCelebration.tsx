@@ -34,16 +34,22 @@ export function ScanCelebration({ data, onClose }: { data: CelebrationData; onCl
 
   const pieces = useMemo(
     () =>
-      Array.from({ length: big ? 80 : 44 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 0.7,
-        duration: 2.3 + Math.random() * 1.9,
-        size: 7 + Math.random() * 9,
-        color: COLORS[i % COLORS.length],
-        rotate: Math.random() * 360,
-        round: Math.random() > 0.5,
-      })),
+      Array.from({ length: big ? 90 : 60 }, (_, i) => {
+        const duration = 2.3 + Math.random() * 1.9;
+        return {
+          id: i,
+          left: Math.random() * 100,
+          // Negative delay starts each piece partway through its fall, so the
+          // confetti is dense from the first frame and keeps raining evenly for
+          // the full 5 seconds (the animation loops infinitely below).
+          delay: -(Math.random() * duration),
+          duration,
+          size: 7 + Math.random() * 9,
+          color: COLORS[i % COLORS.length],
+          rotate: Math.random() * 360,
+          round: Math.random() > 0.5,
+        };
+      }),
     [big],
   );
 
@@ -70,7 +76,7 @@ export function ScanCelebration({ data, onClose }: { data: CelebrationData; onCl
     ? 'Fresh card — back to zero ✨'
     : unlocked
     ? 'Card complete 🎯'
-    : `${stampsLeft} stamp${stampsLeft === 1 ? '' : 's'} to “${data.offerTitle}”`;
+    : `${stampsLeft} stamp${stampsLeft === 1 ? '' : 's'} left to get a reward`;
 
   return createPortal(
     <div
@@ -143,6 +149,9 @@ export function ScanCelebration({ data, onClose }: { data: CelebrationData; onCl
         <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#F7F7F5] px-4 py-2 text-sm font-medium text-[#37352F]">
           {pill}
         </div>
+        {!big && data.offerTitle && (
+          <p className="mt-2 text-[11px] text-gray-400">{data.offerTitle}</p>
+        )}
 
         <p className="mt-5 text-[11px] text-gray-300">tap anywhere to dismiss</p>
       </div>

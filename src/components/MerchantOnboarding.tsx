@@ -218,7 +218,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
           <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800 text-left flex items-start gap-2.5">
             <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <span>
-              We'll review your business within <strong>24 hours</strong> and approve or reject it. You can sign in now and start setting things up — you'll see your approval status on the dashboard.
+              Please give us <strong>24 hours</strong> while we review your request. You can sign in now and start setting things up — you'll see your approval status on the dashboard.
             </span>
           </div>
           <button
