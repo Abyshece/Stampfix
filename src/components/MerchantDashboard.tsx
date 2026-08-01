@@ -73,6 +73,30 @@ interface MerchantDashboardProps {
 type SettingsSection = 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'account' | 'links' | 'privacy' | 'danger';
 type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
 
+/** Each dashboard tab has a real URL so refresh, back/forward and deep links work. */
+const TAB_PATH: Record<Tab, string> = {
+  DASHBOARD: '/scan',
+  CUSTOMERS: '/customers',
+  ACTIVITY: '/activity',
+  ANALYTICS: '/insights',
+  VALUE: '/payback',
+  STAFF: '/staff',
+  PREVIEW: '/preview-card',
+  SETTINGS: '/settings',
+  SHARE: '/promote',
+  HELP: '/help',
+};
+const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'posters', 'locations', 'billing', 'account', 'links', 'privacy', 'danger'];
+function pathToTab(path: string): Tab | null {
+  if (path === '/settings' || path.startsWith('/settings/')) return 'SETTINGS';
+  const e = (Object.entries(TAB_PATH) as [Tab, string][]).find(([, p]) => p === path);
+  return e ? e[0] : null;
+}
+function pathToSection(path: string): SettingsSection | null {
+  const m = path.match(/^\/settings\/([a-z]+)$/);
+  return m && (SETTINGS_SECTIONS as string[]).includes(m[1]) ? (m[1] as SettingsSection) : null;
+}
+
 const NOTION_COLORS = [
   { name: 'Default', hex: '#37352F' },
   { name: 'Gray', hex: '#9B9A97' },
@@ -100,7 +124,7 @@ export function MerchantDashboard({
   onAddCustomer, onDeleteCustomer, onBlockCustomer, onMarkOnboardingStep, onLogout,
 }: MerchantDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>(
-    () => (sessionStorage.getItem('sf_active_tab') as Tab) || 'DASHBOARD',
+    () => pathToTab(window.location.pathname) || (sessionStorage.getItem('sf_active_tab') as Tab) || 'DASHBOARD',
   );
   // Keep the open tab sticky so opening a poster (or any re-render) never
   // bounces the merchant back to the dashboard.
@@ -121,7 +145,7 @@ export function MerchantDashboard({
     [activeStaff, staffRoster],
   );
   useEffect(() => {
-    if (staffHidden.includes(activeTab)) setActiveTab('DASHBOARD');
+    if (staffHidden.includes(activeTab)) { setActiveTab('DASHBOARD'); window.history.replaceState({}, '', TAB_PATH.DASHBOARD); }
   }, [staffHidden, activeTab]);
   useEffect(() => {
     let cancelled = false;
@@ -229,6 +253,7 @@ export function MerchantDashboard({
       setSettingsSaved(false);
     }
     setActiveTab(tab);
+    if (pathToTab(window.location.pathname) !== tab) window.history.pushState({}, '', TAB_PATH[tab]);
     setShowMobileMoreMenu(false);
   };
 
@@ -457,7 +482,23 @@ export function MerchantDashboard({
    *    'pending_deletion' = BLOCKED + deletion_requested_at set
    *  No 'deleted' bucket because the cleanup job actually removes those rows.
    */
-  const [settingsSection, setSettingsSection] = useState<SettingsSection>('general');
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>(() => pathToSection(window.location.pathname) || 'general');
+  // Keep the browser URL and the active tab in sync: normalize an unknown path
+  // (e.g. "/") to the current tab on mount, and follow back/forward navigation.
+  useEffect(() => {
+    if (pathToTab(window.location.pathname) === null) {
+      window.history.replaceState({}, '', activeTab === 'SETTINGS' ? `/settings/${settingsSection}` : TAB_PATH[activeTab]);
+    }
+    const onPop = () => {
+      const t = pathToTab(window.location.pathname);
+      if (t) setActiveTab(t);
+      const sec = pathToSection(window.location.pathname);
+      if (sec) setSettingsSection(sec);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [customerStatusFilter, setCustomerStatusFilter] = useState<'active' | 'blocked' | 'pending_deletion'>('active');
   // Extra customer filters: when they joined, how engaged they are, reward state.
   const [joinedFilter, setJoinedFilter] = useState<'all' | '7' | '30' | '90' | 'custom'>('all');
@@ -855,7 +896,7 @@ export function MerchantDashboard({
                     done={!!onboarding.poster_downloaded}
                     label="Download your QR poster"
                     actionLabel="Go to Share & Promote"
-                    onClick={() => setActiveTab('SHARE')}
+                    onClick={() => handleTabChange('SHARE')}
                   />
                   <ChecklistItem
                     done={!!onboarding.test_signup_done}
@@ -1483,7 +1524,7 @@ export function MerchantDashboard({
                 ] as const).map(([id, label]) => (
                   <button
                     key={id}
-                    onClick={() => setSettingsSection(id)}
+                    onClick={() => { setSettingsSection(id); window.history.pushState({}, '', `/settings/${id}`); }}
                     className={`text-left text-sm px-3 py-2 rounded-md whitespace-nowrap transition ${
                       settingsSection === id
                         ? 'bg-[#37352F] text-white font-medium'

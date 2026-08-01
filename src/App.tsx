@@ -33,6 +33,9 @@ import { BrandLoading } from './components/BrandLoading';
  */
 type View = 'landing' | 'merchant';
 
+/** Merchant dashboard pages that open the merchant flow on a deep link / refresh. */
+const MERCHANT_PATHS = ['/scan', '/customers', '/activity', '/insights', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
+
 export default function App() {
   const { user, loading: authLoading } = useAuth();
   const [campaignFromUrl, setCampaignFromUrl] = useState<string | null>(null);
@@ -42,7 +45,9 @@ export default function App() {
   const [cameFromConfirmation, setCameFromConfirmation] = useState(false);
   const [view, setView] = useState<View>(() => {
     const p = new URLSearchParams(window.location.search);
-    return p.get('signup') === '1' ? 'merchant' : 'landing';
+    if (p.get('signup') === '1') return 'merchant';
+    const path = window.location.pathname;
+    return MERCHANT_PATHS.some((mp) => path === mp || path.startsWith(mp + '/')) ? 'merchant' : 'landing';
   });
   const [enterOnLogin] = useState<boolean>(
     () => new URLSearchParams(window.location.search).get('login') === '1',
@@ -243,7 +248,7 @@ export default function App() {
   if (view === 'merchant') {
     return (
       <>
-        <Suspense fallback={<BrandLoading />}><MerchantApp onLogout={() => setView('landing')} startOnLogin={cameFromConfirmation} /></Suspense>
+        <Suspense fallback={<BrandLoading />}><MerchantApp onLogout={() => { window.history.pushState({}, '', '/'); setView('landing'); }} startOnLogin={cameFromConfirmation} /></Suspense>
         {showUpgraded && <UpgradeSuccessToast onClose={() => setShowUpgraded(false)} />}
       </>
     );
