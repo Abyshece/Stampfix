@@ -4,6 +4,7 @@ import type { Campaign } from '../types';
 import { updateCampaign } from '../lib/db';
 import { downloadInstagramPng, downloadTableQrPng } from '../services/posterImage';
 import { buildPosterHtml } from '../services/posterGenerator';
+import { toPng } from 'html-to-image';
 import { useToast } from './ToastProvider';
 
 interface PosterSettingsProps {
@@ -92,21 +93,53 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
     }
   };
 
-  /** Open a new tab showing the current preview value applied to a real poster. */
-  const handlePreview = (size: 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker') => {
+  /** Render the selected poster to a PNG and download it directly. */
+  const handlePreview = async (size: 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker') => {
     const html = buildPosterHtml({
       campaign,
       size,
       posterBgOverride: previewBg,
       cardColorOverride: cardColor || undefined,
     });
-    const win = window.open('', '_blank');
-    if (!win) {
-      alert('Please allow pop-ups to preview the poster');
-      return;
+    // Pull the styles + the specific format element out of the generated
+    // document and render just that element off-screen, then snapshot it.
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const styleText = Array.from(doc.querySelectorAll('style')).map((s) => s.textContent || '').join('\n');
+    const posterEl = doc.querySelector('.size-' + size) as HTMLElement | null;
+    if (!posterEl) return;
+
+    const holder = document.createElement('div');
+    holder.style.cssText = 'position:fixed;left:-100000px;top:0;pointer-events:none;';
+    const styleEl = document.createElement('style');
+    styleEl.textContent = styleText;
+    holder.appendChild(styleEl);
+    const clone = posterEl.cloneNode(true) as HTMLElement;
+    clone.style.margin = '0';
+    holder.appendChild(clone);
+    document.body.appendChild(holder);
+
+    try {
+      // Wait for the QR image(s) and web fonts before snapshotting.
+      const imgs = Array.from(clone.querySelectorAll('img'));
+      await Promise.all(imgs.map((img) =>
+        img.complete && img.naturalWidth
+          ? Promise.resolve()
+          : new Promise<void>((res) => { img.onload = () => res(); img.onerror = () => res(); }),
+      ));
+      if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch { /* ignore */ } }
+      await new Promise((r) => setTimeout(r, 120));
+
+      const dataUrl = await toPng(clone, { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' });
+      const link = document.createElement('a');
+      link.download = `stampfix-${size}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('[poster png]', err);
+      alert('Could not generate the PNG — please try again.');
+    } finally {
+      document.body.removeChild(holder);
     }
-    win.document.write(html);
-    win.document.close();
   };
 
   if (!isPro) {
@@ -241,7 +274,7 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
 
       {/* Preview links */}
       <div className="flex flex-wrap gap-2 pt-2 border-t notion-border">
-        <span className="text-xs text-gray-400 self-center mr-2">Preview at full size:</span>
+        <span className="text-xs text-gray-400 self-center mr-2">Download as PNG:</span>
         <button
           onClick={() => handlePreview('card')}
           className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
