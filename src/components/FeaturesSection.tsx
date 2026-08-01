@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Smartphone, Zap, BarChart3, Palette, Layers, Globe, Wallet, Building2, Shield, Mail, MapPin } from 'lucide-react';
+import { Smartphone, Zap, Globe, BarChart3, Palette, Building2, Users, Wallet, FileDown, Gauge, Link2, MapPin, BellRing, ShieldCheck, Printer, LifeBuoy, Sparkles, TrendingUp } from 'lucide-react';
 import { useInView } from './FeatureVisuals';
+import { WalletPass } from './HeroCardLoop';
 
 /**
  * Features section for the marketing site. Two-column on desktop:
@@ -16,75 +17,90 @@ export function FeaturesSection() {
   // Each feature gets a colour chip drawn from the wallet-card palette, so the
   // list reads as colourful as the cards themselves.
   const features = [
-    { icon: Zap,         c: '#75FBFD', fg: '#223355', text: 'No extra scanner hardware — your phone is the terminal' },
-    { icon: Smartphone,  c: '#EA3323', fg: '#FFFFFF', text: 'Set up your first loyalty card in 2-3 minutes' },
-    { icon: Globe,       c: '#510AF5', fg: '#FCFF54', text: 'No app for customers to download — works in any browser' },
-    { icon: BarChart3,   c: '#F7CE46', fg: '#1A1A1A', text: 'Detailed dashboard with per-location and per-offer analytics' },
-    { icon: Palette,     c: '#EA33B6', fg: '#FFFFFF', text: 'Brand it your way — choose colors, logo, and offer text' },
-    { icon: Layers,      c: '#1132F5', fg: '#FFFFFF', text: 'Run multiple offers and migrate customers automatically' },
-    { icon: Wallet,      c: '#F0A479', fg: '#1A1A1A', text: 'Works with Apple Wallet and Google Wallet — no app to download' },
-    { icon: Building2,   c: '#75FBE2', fg: '#223355', text: 'Multi-location ready — one account, every branch tracked separately' },
-    { icon: Mail,        c: '#ABC2C2', fg: '#223355', text: 'Automatic one-stamp-away emails bring customers back' },
-    { icon: Shield,      c: '#37352F', fg: '#FFFFFF', text: 'GDPR-compliant by default with consent flow + data deletion' },
-    { icon: MapPin,      c: '#EFECE2', fg: '#1A1A1A', text: 'Print-ready posters in 3 sizes (business card, A5, A4)' },
+    { icon: Smartphone,  c: '#75FBFD', fg: '#1A1A1A', anim: 'sf-fl', text: 'No extra scanner hardware — your phone is the terminal' },
+    { icon: Zap,         c: '#EA3323', fg: '#FFFFFF', anim: 'sf-pu', text: 'Set up your first loyalty card in 1–2 minutes' },
+    { icon: Globe,       c: '#510AF5', fg: '#FCFF54', anim: 'sf-sp', text: 'No app for customers to download — works in any browser' },
+    { icon: BarChart3,   c: '#F7CE46', fg: '#1A1A1A', anim: 'sf-fl', text: 'Detailed dashboard with per-location and per-offer analytics' },
+    { icon: Palette,     c: '#EA33B6', fg: '#FFFFFF', anim: 'sf-wg', text: 'Brand it your way — colours, logo, and offer text, with a live preview' },
+    { icon: Building2,   c: '#1132F5', fg: '#FFFFFF', anim: 'sf-fl', text: 'Run a single offer across multiple branches' },
+    { icon: Users,       c: '#F0A479', fg: '#1A1A1A', anim: 'sf-pu', text: 'Add staff, track their activity, assign PINs, and gate parts of the dashboard' },
+    { icon: Wallet,      c: '#75FBE2', fg: '#1A1A1A', anim: 'sf-fl', text: 'Works with Apple Wallet and Google Wallet — no app to download' },
+    { icon: FileDown,    c: '#ABC2C2', fg: '#1A1A1A', anim: 'sf-bo', text: 'Export CSV files whenever you need them' },
+    { icon: Gauge,       c: '#EA3323', fg: '#FFFFFF', anim: 'sf-wg', text: 'Set daily stamp limits per customer' },
+    { icon: Link2,       c: '#75FBFD', fg: '#1A1A1A', anim: 'sf-sp', text: 'Add custom links to your cards — socials, delivery sites, your own website' },
+    { icon: MapPin,      c: '#510AF5', fg: '#FFFFFF', anim: 'sf-fl', text: 'Multi-location ready — one account, every branch tracked separately' },
+    { icon: BellRing,    c: '#F7CE46', fg: '#1A1A1A', anim: 'sf-wg', text: 'Automatic geo notifications reach customers on their locked phone' },
+    { icon: ShieldCheck, c: '#111318', fg: '#FFFFFF', anim: 'sf-pu', text: 'GDPR-compliant by default, with consent flow and data deletion' },
+    { icon: Printer,     c: '#EA33B6', fg: '#FFFFFF', anim: 'sf-fl', text: 'Print-ready posters in three sizes (business card, A5, A4)' },
+    { icon: LifeBuoy,    c: '#1132F5', fg: '#FFFFFF', anim: 'sf-sp', text: 'A “Get help” button right in your dashboard for faster support' },
+    { icon: Sparkles,    c: '#F0A479', fg: '#1A1A1A', anim: 'sf-pu', text: 'Animated, sound-backed stamps for a delightful experience' },
+    { icon: TrendingUp,  c: '#75FBE2', fg: '#1A1A1A', anim: 'sf-fl', text: 'Find your inactive and top customers from the dashboard' },
   ];
   const { ref: listRef, inView } = useInView<HTMLDivElement>(0.15);
 
   return (
     <section className="bg-white py-16 md:py-24 px-6">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12 md:mb-16">
-          <span className="text-xs uppercase tracking-widest font-bold text-gray-400">Features</span>
+        <div className="text-center mb-10 md:mb-14">
+          <span className="text-xs uppercase tracking-widest font-bold text-gray-400">Stampfix Pro</span>
           <h2 className="text-3xl md:text-5xl font-serif-display font-semibold mt-2 mb-4">
-            Everything a small business needs
+            Everything you get with Pro
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            Built for cafés, salons, and shops who want loyalty without the bloat — or the price tag — of enterprise platforms.
+            One flat price — no per-customer fees, no enterprise bloat. Just every tool a café, salon, or shop needs to run loyalty, without the price tag of the big platforms.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
-          {/* Left — feature checklist */}
-          <div ref={listRef} className="space-y-3">
-            {features.map((f, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-3 transition-all duration-500 ease-out"
-                style={{
-                  opacity: inView ? 1 : 0,
-                  transform: inView ? 'translateX(0)' : 'translateX(-16px)',
-                  transitionDelay: `${i * 55}ms`,
-                }}
-              >
-                <div
-                  className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm"
-                  style={{ background: f.c, color: f.fg }}
-                >
-                  <f.icon className="w-4 h-4" strokeWidth={2.5} />
-                </div>
-                <div className="flex-1 pt-0.5">
-                  <span className="text-sm md:text-base text-[#37352F] leading-relaxed">{f.text}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Right — big yellow loyalty card with animated stamps */}
-          <div className="relative flex justify-center md:justify-end">
+        {/* Hero card — a real Apple Wallet pass at its actual size (same renderer as the site) */}
+        <div className="flex justify-center mb-14 md:mb-16">
+          <div className="relative">
             <div
-              className="pointer-events-none absolute -inset-6 md:-inset-10 opacity-50 blur-3xl"
+              className="pointer-events-none absolute -inset-8 opacity-40 blur-3xl"
               style={{
                 background:
-                  'radial-gradient(closest-side, #F7CE46, transparent) 42% 30%/62% 72% no-repeat,' +
-                  'radial-gradient(closest-side, #75FBFD, transparent) 14% 66%/52% 60% no-repeat,' +
+                  'radial-gradient(closest-side, #75FBFD, transparent) 42% 30%/62% 72% no-repeat,' +
+                  'radial-gradient(closest-side, #EA33B6, transparent) 14% 66%/52% 60% no-repeat,' +
                   'radial-gradient(closest-side, #F0A479, transparent) 82% 60%/52% 60% no-repeat',
               }}
             />
-            <div className="relative w-full drop-shadow-2xl" style={{ maxWidth: 460 }}>
-              <SampleLoyaltyCard />
+            <div className="relative rounded-[22px] overflow-hidden border border-gray-200/80 shadow-2xl">
+              <WalletPass spec={{ bg: '#FFFFFF', mark: '#1A1A1A', text: '#000000', name: 'Koko Cafe', reward: 'Buy 6, get 1 free', stamps: 2 }} />
             </div>
           </div>
         </div>
+
+        {/* Pro feature grid */}
+        <div ref={listRef} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {features.map((f, i) => (
+            <div
+              key={i}
+              className="group rounded-2xl border notion-border bg-white p-5 flex flex-col gap-3.5 transition-all duration-500 ease-out hover:shadow-xl hover:-translate-y-1"
+              style={{
+                opacity: inView ? 1 : 0,
+                transform: inView ? 'translateY(0)' : 'translateY(18px)',
+                transitionDelay: `${(i % 9) * 45}ms`,
+              }}
+            >
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: f.c, color: f.fg }}>
+                <f.icon className={`w-6 h-6 ${f.anim}`} strokeWidth={2.2} style={{ animationDelay: `${(i % 6) * 0.15}s` }} />
+              </div>
+              <p className="text-sm md:text-[15px] text-[#37352F] leading-snug">{f.text}</p>
+            </div>
+          ))}
+        </div>
+
+        <style>{`
+          @keyframes sf-fl { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+          @keyframes sf-pu { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
+          @keyframes sf-wg { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-12deg)} 75%{transform:rotate(12deg)} }
+          @keyframes sf-sp { to{transform:rotate(360deg)} }
+          @keyframes sf-bo { 0%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+          .sf-fl{animation:sf-fl 3s ease-in-out infinite}
+          .sf-pu{animation:sf-pu 2.4s ease-in-out infinite}
+          .sf-wg{animation:sf-wg 2.6s ease-in-out infinite}
+          .sf-sp{animation:sf-sp 8s linear infinite}
+          .sf-bo{animation:sf-bo 2.6s ease-in-out infinite}
+        `}</style>
       </div>
     </section>
   );
