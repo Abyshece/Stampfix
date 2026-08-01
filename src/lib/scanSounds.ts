@@ -71,13 +71,27 @@ function ping(c: AudioContext, out: GainNode, freq: number, t0: number, dur: num
   voice(c, out, freq * 2, t0, dur * 0.6, peak * 0.16, 'sine', null);
 }
 
-export type ScanSound = 'stamp' | 'last' | 'redeem';
+/** A buzzy, slightly harsh note (sawtooth + sub-octave) for the negative tone. */
+function buzz(c: AudioContext, out: GainNode, freq: number, t0: number, dur: number, peak: number): void {
+  voice(c, out, freq, t0, dur, peak, 'sawtooth', 1300);
+  voice(c, out, freq / 2, t0, dur, peak * 0.55, 'square', 700);
+}
+
+export type ScanSound = 'stamp' | 'last' | 'redeem' | 'error';
 
 /** Play the tone for a scan outcome. Safe to call anywhere; no-ops if audio is unavailable. */
 export function playScanSound(kind: ScanSound): void {
   const a = audio();
   if (!a) return;
   const { c, out } = a;
+
+  if (kind === 'error') {
+    // "Wrong card" — two descending, dissonant low buzzes a tritone apart:
+    // a firm, unmistakably-negative "nuh-uh".
+    buzz(c, out, 220.0, 0, 0.26, 0.16);     // A3
+    buzz(c, out, 155.56, 0.2, 0.52, 0.18);  // D#3 — tritone below, lower & longer
+    return;
+  }
 
   if (kind === 'stamp') {
     // C5 E5 G5 C6

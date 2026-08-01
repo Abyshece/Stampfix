@@ -12,6 +12,7 @@ import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { ScanCelebration } from './ScanCelebration';
 import { playScanSound } from '../lib/scanSounds';
+import { ScanRejection } from './ScanRejection';
 import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { StaffPanel } from './StaffPanel';
@@ -183,6 +184,8 @@ export function MerchantDashboard({
   const [celebration, setCelebration] = useState<{
     customerName: string; currentStamps: number; maxStamps: number; offerTitle: string; redeemed: boolean;
   } | null>(null);
+  // Wrong-card overlay: a card that belongs to a different business.
+  const [rejection, setRejection] = useState<{ businessName: string } | null>(null);
   useEffect(() => {
     if (scanResult?.status === 'success' && scanResult.card) {
       const c = scanResult.card;
@@ -201,6 +204,16 @@ export function MerchantDashboard({
     const msg = scanResult.message || '';
     playScanSound(/redeem/i.test(msg) ? 'redeem' : /unlock/i.test(msg) ? 'last' : 'stamp');
   }, [scanResult]);
+  // A scanned card that belongs to a different business: show the firm
+  // rejection overlay + a negative tone so staff instantly see what went wrong.
+  useEffect(() => {
+    if (scanResult?.status !== 'error') return;
+    const msg = scanResult.message || '';
+    if (/different caf|not from this|isn.?t from|another (caf|shop|store|business)|belongs to another/i.test(msg)) {
+      setRejection({ businessName: campaign.businessName || 'this café' });
+      playScanSound('error');
+    }
+  }, [scanResult, campaign.businessName]);
 
   // Derived: non-archived locations, and the currently active one.
   const activeLocations = useMemo(() => locations.filter((l) => !l.archived), [locations]);
@@ -349,7 +362,7 @@ export function MerchantDashboard({
       /* fall back to local state */
     }
     if (!target) {
-      setScanResult({ status: 'error', message: 'Card not from this campaign' });
+      setScanResult({ status: 'error', message: 'This card is from a different café' });
       setTimeout(() => setScanResult(null), 2500);
       return;
     }
@@ -977,6 +990,7 @@ export function MerchantDashboard({
                   (Moved into the compact header row above; this block removed.) */}
               <div className="flex-1 min-h-0 border notion-border rounded-xl bg-white shadow-sm p-3 md:p-4 flex flex-col relative overflow-hidden">
                 {celebration && <ScanCelebration data={celebration} onClose={() => setCelebration(null)} />}
+                {rejection && <ScanRejection data={rejection} onClose={() => setRejection(null)} />}
                 {scanResult && scanResult.status === 'error' && (
                   <div className="absolute inset-0 z-20 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
                     <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-sm border bg-red-50 border-red-100 text-red-500">
