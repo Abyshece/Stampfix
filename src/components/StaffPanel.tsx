@@ -82,118 +82,87 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
         </button>
       </div>
 
-      {/* Owner PIN */}
-      <div className="p-5 rounded-lg border notion-border bg-white space-y-2">
-        <h3 className="font-semibold">Owner PIN</h3> <InfoHint text="Locks the ‘I’m the owner — skip’ button on the staff sign-in screen. Without it, anyone can skip identification and work unattributed." label="owner PIN" />
-        <p className="text-sm text-gray-500">
-          Protects the &ldquo;I&rsquo;m the owner &mdash; skip&rdquo; option on the staff sign-in screen. Without it,
-          anyone can skip identification and work unattributed.
-          {ownerSet === false && <span className="text-amber-700"> No owner PIN set yet &mdash; skip is currently open to anyone.</span>}
-          {ownerSet === true && <span className="text-green-700"> Owner PIN is set.</span>}
-        </p>
-        <div className="flex gap-2 flex-wrap pt-1">
-          <input
-            value={ownerPin}
-            onChange={(e) => setOwnerPinValue(e.target.value.replace(/\D/g, '').slice(0, 8))}
-            placeholder={ownerSet ? 'New owner PIN' : 'Set an owner PIN (4-8 digits)'}
-            inputMode="numeric"
-            className="w-56 bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
-          />
-          <button
-            onClick={async () => {
-              if (!/^\d{4,8}$/.test(ownerPin)) { alert('Owner PIN must be 4-8 digits.'); return; }
-              try { await setOwnerPin(campaignId, ownerPin); setOwnerPinValue(''); setOwnerSet(true); alert('Owner PIN saved.'); }
-              catch (e) { alert(e instanceof Error ? e.message : 'Could not save the owner PIN.'); }
-            }}
-            className="px-4 py-2 rounded-md bg-[#37352F] text-white text-sm hover:opacity-90"
-          >
-            {ownerSet ? 'Change PIN' : 'Set PIN'}
-          </button>
-          {ownerSet && (
-            <button
-              onClick={async () => {
-                if (!window.confirm('Remove the owner PIN? Anyone will be able to skip staff sign-in again.')) return;
-                try { await setOwnerPin(campaignId, null); setOwnerSet(false); }
-                catch (e) { alert(e instanceof Error ? e.message : 'Could not remove the owner PIN.'); }
-              }}
-              className="px-3 py-2 rounded-md border notion-border text-sm text-red-600 hover:bg-red-50"
-            >
-              Remove
+      {/* Setup row: add staff + the two guardrails, side by side */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+        {/* Add a staff member */}
+        <div className="p-5 rounded-lg border notion-border bg-white flex flex-col">
+          <h3 className="font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4" /> Add staff</h3>
+          <p className="text-xs text-gray-400 mt-1 mb-3">They sign in with the shop login, then enter their own PIN &mdash; no email needed.</p>
+          <div className="space-y-2 mt-auto">
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (e.g. Martina)"
+              className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400" />
+            <input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              placeholder="PIN (4-8 digits)" inputMode="numeric"
+              className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400" />
+            {err && <p className="text-xs text-red-600">{err}</p>}
+            <button onClick={add} disabled={busy}
+              className="w-full px-4 py-2 rounded-md bg-[#37352F] text-white text-sm hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
+              {busy && <Loader2 className="w-4 h-4 animate-spin" />} Add staff member
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* Daily stamp limit */}
-      <div className="p-5 rounded-lg border notion-border bg-white space-y-2">
-        <h3 className="font-semibold">Daily stamp limit</h3> <InfoHint text="The maximum stamps one customer can collect in a day. Set to 1 so a visit earns a stamp, not a purchase. Staff can exceed it, but must give a reason and it is flagged below." label="daily stamp limit" />
-        <p className="text-sm text-gray-500">
-          How many stamps one customer can collect per day. Keeping this at 1 enforces
-          &ldquo;one visit, one stamp&rdquo; &mdash; the simplest way to stop cards being padded.
-          Staff can still go over it, but they must give a reason and it&rsquo;s flagged here.
-        </p>
-        <div className="flex items-center gap-2 pt-1">
-          <select
-            value={cap ?? 1}
-            onChange={(e) => { const v = Number(e.target.value); setCap(v); setDailyCap(campaignId, v).catch(() => alert('Could not save the limit.')); }}
-            className="bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
-          >
-            <option value={1}>1 per day (recommended)</option>
-            <option value={2}>2 per day</option>
-            <option value={3}>3 per day</option>
-            <option value={5}>5 per day</option>
-            <option value={0}>No limit</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Alerts */}
-      <div>
-        <h3 className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Unusual activity</h3> <InfoHint text="Patterns from the last 7 days that are worth a second look: rapid bursts of stamps, one customer stamped many times in a day, repeated limit overrides, activity at odd hours, and heavy manual stamping." label="unusual activity" />
-        {flags === null ? (
-          <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 className="w-4 h-4 animate-spin" /> Checking&hellip;</div>
-        ) : flags.length === 0 ? (
-          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
-            <ShieldCheck className="w-4 h-4" /> Nothing unusual in the last 7 days.
           </div>
-        ) : (
-          <div className="space-y-2">
-            {flags.map((f) => (
-              <div key={f.id} className={`rounded-lg border p-3 ${SEV[f.severity].cls}`}>
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold">{f.title}</div>
-                    <div className="text-xs opacity-80 mt-0.5">{f.detail}</div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-xs font-semibold">{f.staffName}</div>
-                    <div className="text-[11px] opacity-70">{f.at.toLocaleString()}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Add */}
-      <div className="p-5 rounded-lg border notion-border bg-white space-y-3">
-        <h3 className="font-semibold flex items-center gap-2"><UserPlus className="w-4 h-4" /> Add a staff member</h3>
-        <div className="flex gap-2 flex-wrap">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name (e.g. Martina)"
-            className="flex-1 min-w-[180px] bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400" />
-          <input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
-            placeholder="PIN (4-8 digits)" inputMode="numeric"
-            className="w-40 bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400" />
-          <button onClick={add} disabled={busy}
-            className="px-4 py-2 rounded-md bg-[#37352F] text-white text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
-            {busy && <Loader2 className="w-4 h-4 animate-spin" />} Add
-          </button>
         </div>
-        {err && <p className="text-xs text-red-600">{err}</p>}
-        <p className="text-xs text-gray-400">
-          Staff use the shop&rsquo;s login, then enter their PIN. Nobody needs their own email account.
-        </p>
+
+        {/* Owner PIN */}
+        <div className="p-5 rounded-lg border notion-border bg-white flex flex-col">
+          <div className="flex items-center gap-1.5"><h3 className="font-semibold">Owner PIN</h3> <InfoHint text="Locks the ‘I’m the owner — skip’ button on the staff sign-in screen. Without it, anyone can skip identification and work unattributed." label="owner PIN" /></div>
+          <p className="text-xs text-gray-400 mt-1">Locks the &ldquo;I&rsquo;m the owner &mdash; skip&rdquo; button on staff sign-in.</p>
+          <p className="text-xs mt-1 mb-3">
+            {ownerSet === false && <span className="text-amber-700 font-medium">Not set &mdash; skip is open to anyone.</span>}
+            {ownerSet === true && <span className="text-green-700 font-medium">Owner PIN is set.</span>}
+          </p>
+          <div className="space-y-2 mt-auto">
+            <input
+              value={ownerPin}
+              onChange={(e) => setOwnerPinValue(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              placeholder={ownerSet ? 'New owner PIN' : 'Set a PIN (4-8 digits)'}
+              inputMode="numeric"
+              className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (!/^\d{4,8}$/.test(ownerPin)) { alert('Owner PIN must be 4-8 digits.'); return; }
+                  try { await setOwnerPin(campaignId, ownerPin); setOwnerPinValue(''); setOwnerSet(true); alert('Owner PIN saved.'); }
+                  catch (e) { alert(e instanceof Error ? e.message : 'Could not save the owner PIN.'); }
+                }}
+                className="flex-1 px-4 py-2 rounded-md bg-[#37352F] text-white text-sm hover:opacity-90"
+              >
+                {ownerSet ? 'Change' : 'Set PIN'}
+              </button>
+              {ownerSet && (
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('Remove the owner PIN? Anyone will be able to skip staff sign-in again.')) return;
+                    try { await setOwnerPin(campaignId, null); setOwnerSet(false); }
+                    catch (e) { alert(e instanceof Error ? e.message : 'Could not remove the owner PIN.'); }
+                  }}
+                  className="px-3 py-2 rounded-md border notion-border text-sm text-red-600 hover:bg-red-50"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Daily stamp limit */}
+        <div className="p-5 rounded-lg border notion-border bg-white flex flex-col">
+          <div className="flex items-center gap-1.5"><h3 className="font-semibold">Daily stamp limit</h3> <InfoHint text="The maximum stamps one customer can collect in a day. Set to 1 so a visit earns a stamp, not a purchase. Staff can exceed it, but must give a reason and it is flagged below." label="daily stamp limit" /></div>
+          <p className="text-xs text-gray-400 mt-1 mb-3">Max stamps one customer can earn per day. Keep at 1 for &ldquo;one visit, one stamp.&rdquo; Staff can override with a reason.</p>
+          <div className="mt-auto">
+            <select
+              value={cap ?? 1}
+              onChange={(e) => { const v = Number(e.target.value); setCap(v); setDailyCap(campaignId, v).catch(() => alert('Could not save the limit.')); }}
+              className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+            >
+              <option value={1}>1 per day (recommended)</option>
+              <option value={2}>2 per day</option>
+              <option value={3}>3 per day</option>
+              <option value={5}>5 per day</option>
+              <option value={0}>No limit</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Team */}
@@ -246,6 +215,35 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Activity — moved to the bottom */}
+      <div>
+        <h3 className="font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Unusual activity</h3> <InfoHint text="Patterns from the last 7 days that are worth a second look: rapid bursts of stamps, one customer stamped many times in a day, repeated limit overrides, activity at odd hours, and heavy manual stamping." label="unusual activity" />
+        {flags === null ? (
+          <div className="flex items-center gap-2 text-sm text-gray-400"><Loader2 className="w-4 h-4 animate-spin" /> Checking&hellip;</div>
+        ) : flags.length === 0 ? (
+          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
+            <ShieldCheck className="w-4 h-4" /> Nothing unusual in the last 7 days.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {flags.map((f) => (
+              <div key={f.id} className={`rounded-lg border p-3 ${SEV[f.severity].cls}`}>
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold">{f.title}</div>
+                    <div className="text-xs opacity-80 mt-0.5">{f.detail}</div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <div className="text-xs font-semibold">{f.staffName}</div>
+                    <div className="text-[11px] opacity-70">{f.at.toLocaleString()}</div>
                   </div>
                 </div>
               </div>
