@@ -11,6 +11,7 @@ import { markApprovalBannerSeen } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { ScanCelebration } from './ScanCelebration';
+import { playScanSound } from '../lib/scanSounds';
 import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { StaffPanel } from './StaffPanel';
@@ -170,6 +171,12 @@ export function MerchantDashboard({
       });
     }
   }, [scanResult, campaign.maxStamps, campaign.offerTitle]);
+  // Subtle tone per successful scan: stamp / reward-unlocked / redeem.
+  useEffect(() => {
+    if (scanResult?.status !== 'success') return;
+    const msg = scanResult.message || '';
+    playScanSound(/redeem/i.test(msg) ? 'redeem' : /unlock/i.test(msg) ? 'last' : 'stamp');
+  }, [scanResult]);
 
   // Derived: non-archived locations, and the currently active one.
   const activeLocations = useMemo(() => locations.filter((l) => !l.archived), [locations]);
