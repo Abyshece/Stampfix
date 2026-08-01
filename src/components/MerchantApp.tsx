@@ -121,6 +121,18 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     }
   }, [user, setActiveLocationId]);
 
+  // Silent card-only refresh (no loading screen) — used by the realtime/focus
+  // sync so the merchant list stays fresh WITHOUT flashing the full-page loader
+  // or interrupting the scan celebration.
+  const refreshCards = useCallback(async () => {
+    if (!campaign) return;
+    try {
+      setCards(await listCardsForCampaign(campaign.id));
+    } catch (err) {
+      console.error('[merchant] refreshCards failed:', err);
+    }
+  }, [campaign]);
+
   useEffect(() => {
     loadAll();
   }, [loadAll]);
@@ -135,7 +147,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     let t: ReturnType<typeof setTimeout> | null = null;
     const refresh = () => {
       if (t) clearTimeout(t);
-      t = setTimeout(() => { void loadAll(); }, 250);
+      t = setTimeout(() => { void refreshCards(); }, 250);
     };
     const channel = supabase
       .channel(`cards-${campaign.id}`)
@@ -145,7 +157,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         refresh,
       )
       .subscribe();
-    const onFocus = () => { if (document.visibilityState === 'visible') void loadAll(); };
+    const onFocus = () => { if (document.visibilityState === 'visible') void refreshCards(); };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onFocus);
     return () => {
@@ -154,7 +166,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onFocus);
     };
-  }, [campaign, loadAll]);
+  }, [campaign, refreshCards]);
 
   // Refresh activities after an action — they're the cheapest to refetch
   // and the source of truth (since the DB writes them).
