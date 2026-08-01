@@ -142,6 +142,7 @@ interface Campaign {
   custom_icon: string;
   logo_image?: string | null;
   logo_mode?: string | null;
+  social_links?: Record<string, string> | null;
 }
 
 interface Card {
@@ -184,6 +185,14 @@ function buildLoyaltyClass(campaign: Campaign) {
 }
 
 function buildLoyaltyObject(campaign: Campaign, card: Card) {
+  const socialLinks = (campaign.social_links ?? {}) as Record<string, string>;
+  const LINK_LABELS: [string, string][] = [
+    ['website', 'Website'], ['order', 'Order online'], ['delivery', 'Delivery'],
+    ['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['linkedin', 'LinkedIn'],
+  ];
+  const linkUris = LINK_LABELS
+    .filter(([k]) => typeof socialLinks[k] === 'string' && String(socialLinks[k]).trim())
+    .map(([k, label]) => ({ uri: String(socialLinks[k]).trim(), description: label }));
   return {
     id: objectIdFor(card.id),
     classId: classIdFor(campaign.id),
@@ -216,6 +225,7 @@ function buildLoyaltyObject(campaign: Campaign, card: Card) {
         body: 'Your card updates automatically. To refresh it yourself, open the pass in Google Wallet, tap the \u22ee menu (top-right) and choose refresh.',
       },
     ],
+    linksModuleData: linkUris.length ? { uris: linkUris } : undefined,
   };
 }
 
@@ -374,7 +384,7 @@ Deno.serve(async (req) => {
 
   const { data: campaign, error: campaignErr } = await db
     .from('campaigns')
-    .select('id, business_name, offer_title, primary_color, max_stamps, custom_icon, logo_image, logo_mode')
+    .select('id, business_name, offer_title, primary_color, max_stamps, custom_icon, logo_image, logo_mode, social_links')
     .eq('id', card.campaign_id)
     .single();
   if (campaignErr || !campaign) return json(404, { error: 'Campaign not found' });

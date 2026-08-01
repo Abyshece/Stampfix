@@ -25,6 +25,7 @@ import { UpgradeBanner } from './UpgradeBanner';
 import { UpgradeModal } from './UpgradeModal';
 import { AccountBilling } from './AccountBilling';
 import { AccountSecurity } from './AccountSecurity';
+import { LinksSettings } from './LinksSettings';
 import { ComplianceSettings } from './ComplianceSettings';
 import { PosterSettings } from './PosterSettings';
 import { CustomerPrivacyNoticePanel } from './CustomerPrivacyNoticePanel';
@@ -68,7 +69,7 @@ interface MerchantDashboardProps {
   onLogout: () => void;
 }
 
-type SettingsSection = 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'account' | 'privacy' | 'danger';
+type SettingsSection = 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'account' | 'links' | 'privacy' | 'danger';
 type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
 
 const NOTION_COLORS = [
@@ -1458,6 +1459,7 @@ export function MerchantDashboard({
                   ['locations', 'Locations'],
                   ['billing',   'Account & billing'],
                   ['account',   'Login & security'],
+                  ['links', 'Links & socials'],
                   ['privacy',   'Privacy & data'],
                   ['danger',    'Danger zone'],
                 ] as const).map(([id, label]) => (
@@ -1485,6 +1487,7 @@ export function MerchantDashboard({
                   locations: { title: 'Locations', hint: 'Add each branch so stamps are recorded against the right shop. The Scan screen lets staff pick which location they are working at, and Insights breaks results down per branch.' },
                   billing:   { title: 'Account & billing', hint: 'Your plan, invoices, and payment method. The free plan covers your first 10 customers; Pro removes that limit and unlocks branding and multi-location features.' },
                   account:   { title: 'Login & security', hint: 'Change the email address and password you use to sign in. Changing your email requires clicking a confirmation link we send to both your old and new address.' },
+                  links:     { title: 'Links & socials', hint: 'Add your website, social profiles, and ordering or delivery links. Each one you fill in becomes a tappable link on the back of the Apple Wallet card and in the Google Wallet card details.' },
                   privacy:   { title: 'Privacy & data', hint: 'Your business registration details (needed for GDPR and your Impressum), the privacy notice your customers see at signup, and a full export of your data.' },
                   danger:    { title: 'Danger zone', hint: 'Permanent actions. Deleting your account removes your cards, customers, and history — this cannot be undone.' },
                 };
@@ -1496,6 +1499,10 @@ export function MerchantDashboard({
                   </div>
                 );
               })()}
+
+            {settingsSection === 'links' && (
+              <LinksSettings campaign={campaign} onUpdated={(updated) => onUpdateCampaign({ socialLinks: updated.socialLinks })} />
+            )}
 
             {settingsSection === 'account' && (
               <AccountSecurity currentEmail={user?.email ?? ''} />

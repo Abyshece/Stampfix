@@ -23,6 +23,7 @@ interface CampaignRow {
   custom_icon: string;
   logo_image: string | null;
   poster_color: string | null;
+  social_links: Record<string, string> | null;
   customer_privacy_notice: string | null;
   card_text_color: string | null;
   logo_color: string | null;
@@ -90,6 +91,7 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   customIcon: r.custom_icon,
   logoImage: r.logo_image,
   posterColor: r.poster_color,
+  socialLinks: r.social_links ?? {},
   customerPrivacyNotice: r.customer_privacy_notice,
   cardTextColor: r.card_text_color ?? null,
   logoColor: r.logo_color ?? null,
@@ -227,6 +229,7 @@ export async function updateCampaign(id: string, patch: Partial<Campaign>): Prom
   const dbPatch: Record<string, unknown> = {};
   if (patch.businessName !== undefined) dbPatch.business_name = patch.businessName;
   if (patch.offerTitle !== undefined) dbPatch.offer_title = patch.offerTitle;
+  if (patch.socialLinks !== undefined) dbPatch.social_links = patch.socialLinks;
   if (patch.description !== undefined) dbPatch.description = patch.description;
   if (patch.maxStamps !== undefined) dbPatch.max_stamps = patch.maxStamps;
   if (patch.primaryColor !== undefined) dbPatch.primary_color = patch.primaryColor;

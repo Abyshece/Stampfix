@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
 
     const { data: campaign } = await supabase
       .from('campaigns')
-      .select('business_name, offer_title, max_stamps, primary_color, background_color, card_text_color, logo_color, logo_image, logo_mode')
+      .select('business_name, offer_title, max_stamps, primary_color, background_color, card_text_color, logo_color, logo_image, logo_mode, social_links')
       .eq('id', card.campaign_id)
       .maybeSingle();
 
@@ -290,6 +290,16 @@ Deno.serve(async (req) => {
       await supabase.from('cards').update({ apple_auth_token: authToken }).eq('id', card.id);
     }
     const webServiceURL = `${env('SUPABASE_URL')}/functions/v1/apple-wallet-webservice`;
+
+    // Merchant-configured links -> tappable rows on the back of the pass.
+    const socialLinks = (campaign?.social_links ?? {}) as Record<string, string>;
+    const LINK_LABELS: [string, string][] = [
+      ['website', 'Website'], ['order', 'Order online'], ['delivery', 'Delivery'],
+      ['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['linkedin', 'LinkedIn'],
+    ];
+    const linkFields = LINK_LABELS
+      .filter(([k]) => typeof socialLinks[k] === 'string' && String(socialLinks[k]).trim())
+      .map(([k, label]) => ({ key: `link_${k}`, label, value: String(socialLinks[k]).trim() }));
 
     // ---- Build pass.json ----
     const passJson = {
@@ -335,6 +345,7 @@ Deno.serve(async (req) => {
         // Shown on the back of the pass (tap the ••• button). Wallet renders the
         // date in the customer's own time zone via dateStyle/timeStyle.
         backFields: [
+          ...linkFields,
           {
             key: 'updated',
             label: 'Last updated',

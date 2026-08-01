@@ -42,6 +42,7 @@ export interface Campaign {
   /** Custom poster background. Solid hex or CSS gradient. Falls back
    *  to primaryColor when null. See migration 20260528070000. */
   posterColor?: string | null;
+  socialLinks?: Record<string, string> | null;
   /** Text/foreground color for the wallet card. Apple Wallet honours this
    *  exactly; Google Wallet auto-derives text color for contrast and
    *  ignores it. Falls back to #1d3458 when null. */
