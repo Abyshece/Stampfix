@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, MerchantBilling, Plan } from '../types';
 import { useAuth, signOut } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 import { checkDailyCap } from '../services/stampGuard';
 import { StampReasonModal } from './StampReasonModal';
 import {
@@ -123,6 +124,37 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  // Keep the card list live so the merchant view never shows a stale count
+  // (e.g. still 6/6 after a card already redeemed to 0). Refresh from the DB on
+  // any realtime change to this campaign's cards, and whenever the tab regains
+  // focus. If realtime isn't enabled on the project the subscription is a
+  // harmless no-op and the focus refresh still keeps things fresh.
+  useEffect(() => {
+    if (!campaign) return;
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const refresh = () => {
+      if (t) clearTimeout(t);
+      t = setTimeout(() => { void loadAll(); }, 250);
+    };
+    const channel = supabase
+      .channel(`cards-${campaign.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cards', filter: `campaign_id=eq.${campaign.id}` },
+        refresh,
+      )
+      .subscribe();
+    const onFocus = () => { if (document.visibilityState === 'visible') void loadAll(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      if (t) clearTimeout(t);
+      supabase.removeChannel(channel);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [campaign, loadAll]);
 
   // Refresh activities after an action — they're the cheapest to refetch
   // and the source of truth (since the DB writes them).
