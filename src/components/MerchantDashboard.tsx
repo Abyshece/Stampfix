@@ -506,6 +506,8 @@ export function MerchantDashboard({
   const [joinedTo, setJoinedTo] = useState('');
   const [engagementFilter, setEngagementFilter] = useState<'all' | 'active30' | 'dormant30' | 'never'>('all');
   const [rewardFilter, setRewardFilter] = useState<'all' | 'ready' | 'close' | 'redeemed'>('all');
+  // One-tap customer segments (quick pills) for the questions merchants ask most.
+  const [segment, setSegment] = useState<'all' | 'top' | 'ready' | 'close' | 'new' | 'inactive'>('all');
 
   /** Last stamp/redeem per card, derived from the activity log. */
   const lastSeenByCard = useMemo(() => {
@@ -521,7 +523,8 @@ export function MerchantDashboard({
 
   const filteredCards = useMemo(() => {
     const q = customerSearch.trim().toLowerCase();
-    return cards.filter((c) => {
+    const now = Date.now();
+    const list = cards.filter((c) => {
       // Status bucket
       if (customerStatusFilter === 'active') {
         if (c.status !== 'ACTIVE') return false;
@@ -561,12 +564,45 @@ export function MerchantDashboard({
         if (rewardFilter === 'close' && !(c.currentStamps === goal - 1 && goal > 1)) return false;
         if (rewardFilter === 'redeemed' && c.rewardsRedeemed < 1) return false;
       }
+      // Quick segment pill
+      if (segment !== 'all') {
+        const goal = c.maxStampsSnapshot ?? campaign.maxStamps;
+        const last = lastSeenByCard.get(c.id);
+        if (segment === 'top' && c.rewardsRedeemed < 1) return false;
+        if (segment === 'ready' && c.currentStamps < goal) return false;
+        if (segment === 'close' && !(c.currentStamps === goal - 1 && goal > 1)) return false;
+        if (segment === 'new' && c.joinedAt.getTime() < now - 7 * 864e5) return false;
+        if (segment === 'inactive' && last && last >= now - 30 * 864e5) return false;
+      }
       if (!q) return true;
       return c.customerName.toLowerCase().includes(q)
         || (c.customerCode ?? '').toLowerCase().includes(q);
     });
+    // "Top spenders" ranks by rewards earned (the loyalty proxy for spend).
+    if (segment === 'top') list.sort((a, b) => b.rewardsRedeemed - a.rewardsRedeemed);
+    return list;
   }, [cards, customerSearch, customerStatusFilter, joinedFilter, joinedFrom, joinedTo,
-      engagementFilter, rewardFilter, lastSeenByCard, campaign.maxStamps]);
+      engagementFilter, rewardFilter, segment, lastSeenByCard, campaign.maxStamps]);
+
+  // Live counts for each quick-segment pill (over active customers).
+  const segCounts = useMemo(() => {
+    const now = Date.now();
+    const c30 = now - 30 * 864e5;
+    const c7 = now - 7 * 864e5;
+    const cnt = { all: 0, top: 0, ready: 0, close: 0, new: 0, inactive: 0 };
+    for (const c of cards) {
+      if (c.status !== 'ACTIVE') continue;
+      cnt.all++;
+      const goal = c.maxStampsSnapshot ?? campaign.maxStamps;
+      if (c.rewardsRedeemed >= 1) cnt.top++;
+      if (c.currentStamps >= goal) cnt.ready++;
+      if (c.currentStamps === goal - 1 && goal > 1) cnt.close++;
+      if (c.joinedAt.getTime() >= c7) cnt.new++;
+      const last = lastSeenByCard.get(c.id);
+      if (!last || last < c30) cnt.inactive++;
+    }
+    return cnt;
+  }, [cards, lastSeenByCard, campaign.maxStamps]);
 
   /** Download exactly what's on screen as a CSV. */
   const exportCustomersCsv = () => {
@@ -1093,6 +1129,29 @@ export function MerchantDashboard({
                 className="pl-9 pr-4 py-2.5 bg-white border notion-border rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 w-full" />
             </div>
 
+            {/* Quick segment pills */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {([
+                ['all', 'All', segCounts.all],
+                ['top', 'Top spenders', segCounts.top],
+                ['ready', 'Reward ready', segCounts.ready],
+                ['close', 'One away', segCounts.close],
+                ['new', 'New this week', segCounts.new],
+                ['inactive', 'Inactive 30d+', segCounts.inactive],
+              ] as const).map(([id, label, count]) => (
+                <button
+                  key={id}
+                  onClick={() => setSegment(id)}
+                  className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition ${
+                    segment === id ? 'bg-[#37352F] text-white border-[#37352F]' : 'bg-white notion-border text-gray-600 hover:bg-[#F7F7F5]'
+                  }`}
+                >
+                  {label}
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${segment === id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>{count}</span>
+                </button>
+              ))}
+            </div>
+
             {/* Joined / engagement / reward filters */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <select
@@ -1138,9 +1197,9 @@ export function MerchantDashboard({
                 <option value="close">One stamp away</option>
                 <option value="redeemed">Has redeemed before</option>
               </select>
-              {(joinedFilter !== 'all' || engagementFilter !== 'all' || rewardFilter !== 'all') && (
+              {(joinedFilter !== 'all' || engagementFilter !== 'all' || rewardFilter !== 'all' || segment !== 'all') && (
                 <button
-                  onClick={() => { setJoinedFilter('all'); setJoinedFrom(''); setJoinedTo(''); setEngagementFilter('all'); setRewardFilter('all'); }}
+                  onClick={() => { setJoinedFilter('all'); setJoinedFrom(''); setJoinedTo(''); setEngagementFilter('all'); setRewardFilter('all'); setSegment('all'); }}
                   className="px-2.5 py-1.5 rounded-md border notion-border text-gray-500 hover:bg-[#F7F7F5]"
                 >
                   Clear filters
