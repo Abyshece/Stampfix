@@ -268,6 +268,14 @@ export async function listCardsForCampaign(campaignId: string): Promise<UserCard
   return (data as CardRow[]).map(toCard);
 }
 
+/** Fetch one card by id, fresh from the DB — used so scan-time stamp/redeem
+ *  decisions never run on a stale local count. */
+export async function getCardById(cardId: string): Promise<UserCard | null> {
+  const { data, error } = await supabase.from('cards').select('*').eq('id', cardId).maybeSingle();
+  if (error) throw error;
+  return data ? toCard(data as CardRow) : null;
+}
+
 export async function getCardForCustomer(
   campaignId: string,
   customerId: string,

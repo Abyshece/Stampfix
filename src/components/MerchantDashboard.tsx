@@ -7,7 +7,7 @@ import {
   RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
-import { markApprovalBannerSeen } from '../lib/db';
+import { markApprovalBannerSeen, getCardById } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { ScanCelebration } from './ScanCelebration';
@@ -311,8 +311,18 @@ export function MerchantDashboard({
       return;
     }
 
-    // Legacy cardId path — for old Google Wallet passes that don't rotate.
-    const target = cards.find((c) => c.id === parsed.cardId);
+    // Legacy cardId path — for wallet passes that encode the plain cardId.
+    // Re-read the card fresh from the DB so the stamp-vs-redeem decision is
+    // never made on a stale local count (which would send an already-full card
+    // down the stamp branch and never redeem).
+    const local = cards.find((c) => c.id === parsed.cardId);
+    let target = local ?? null;
+    try {
+      const fresh = await getCardById(parsed.cardId);
+      if (fresh) target = fresh;
+    } catch {
+      /* fall back to local state */
+    }
     if (!target) {
       setScanResult({ status: 'error', message: 'Card not from this campaign' });
       setTimeout(() => setScanResult(null), 2500);
@@ -323,7 +333,8 @@ export function MerchantDashboard({
       setTimeout(() => setScanResult(null), 2500);
       return;
     }
-    if (target.currentStamps >= (target.maxStampsSnapshot ?? campaign.maxStamps)) {
+    const goal = target.maxStampsSnapshot ?? campaign.maxStamps;
+    if (target.currentStamps >= goal) {
       onResetCard(target.id);
       setScanResult({
         status: 'success',
@@ -336,7 +347,7 @@ export function MerchantDashboard({
       setScanResult({
         status: 'success',
         card: { ...target, currentStamps: newStamps },
-        message: newStamps >= (target.maxStampsSnapshot ?? campaign.maxStamps) ? 'Reward Unlocked!' : 'Stamp Added',
+        message: newStamps >= goal ? 'Reward Unlocked!' : 'Stamp Added',
       });
     }
     setTimeout(() => setScanResult(null), 2500);
