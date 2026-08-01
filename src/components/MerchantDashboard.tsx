@@ -780,12 +780,12 @@ export function MerchantDashboard({
                 No description text, no big margins — this page exists for one
                 action (scan) and the merchant uses it dozens of times a day.
                 Total vertical footprint above the scanner: ~60px on mobile. */}
-            <div className="flex items-center justify-between gap-3 mb-2 md:mb-0 flex-shrink-0">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 mb-2 md:mb-0 flex-shrink-0">
               <div className="min-w-0">
                 <h1 className="text-xl md:text-2xl font-serif-display font-semibold truncate">Hi, {campaign.businessName || 'there'}</h1>
                 <p className="text-[11px] md:text-xs text-gray-400 truncate">You are logged in as {user?.email ?? '—'}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
               {staffRoster.length > 0 && (
                 <div className="flex items-center gap-1.5 bg-white border notion-border rounded-md px-2.5 py-1.5 shadow-sm">
                   <Users className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
