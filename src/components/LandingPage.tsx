@@ -283,6 +283,7 @@ export function LandingPage({
         </a>
         <div className="flex items-center gap-2 md:gap-3 text-sm font-medium">
           <a href="/features" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Features</a>
+          <a href="/pricing" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Pricing</a>
           <a href="/use-cases" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Use cases</a>
           <a href="/savings" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Savings</a>
           <a href="/blog" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Blog</a>
@@ -316,6 +317,7 @@ export function LandingPage({
             links={[
               { href: '/find-card', label: 'Lost your card? Download it here' },
               { href: '/features', label: 'Features' },
+              { href: '/pricing', label: 'Pricing' },
               { href: '/use-cases', label: 'Use cases' },
               { href: '/savings', label: 'Savings' },
               { href: '/blog', label: 'Blog' },
@@ -484,6 +486,7 @@ export function LandingPage({
             Stampfix
           </a>
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
+            <a href="/pricing" className="hover:text-[#37352F]">Pricing</a>
             <a href="/faq" className="hover:text-[#37352F]">FAQ</a>
             <a href="/wallet-guide" className="hover:text-[#37352F]">Update your card</a>
             <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>
