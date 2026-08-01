@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import type { ActivityItem, Campaign, Location, UserCard } from '../types';
 
-type DateRange = '7d' | '30d' | '90d' | 'all';
+type DateRange = 'today' | 'yesterday' | '7d' | '30d' | 'this_month' | 'last_month' | 'custom';
 type LocationFilter = 'all' | string; // location id or 'all'
 
 interface InsightsPanelProps {
@@ -31,8 +31,49 @@ interface InsightsPanelProps {
  * ever ship merchants with 10k+ customers we'd push aggregation to
  * the database.
  */
+/** Calendar-aligned date presets (mirrors the admin Overview filter), plus the
+ *  matching prior period for the "vs prior" trend numbers. */
+function resolveRange(
+  preset: DateRange,
+  customFrom: string,
+  customTo: string,
+): { from: Date; to: Date; prevFrom: Date; prevTo: Date; label: string } {
+  const now = new Date();
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let from: Date;
+  let to: Date;
+  let label: string;
+  switch (preset) {
+    case 'today': from = startOfToday; to = endOfToday; label = 'today'; break;
+    case 'yesterday': {
+      const s = new Date(startOfToday); s.setDate(s.getDate() - 1);
+      const e = new Date(s); e.setHours(23, 59, 59, 999);
+      from = s; to = e; label = 'yesterday'; break;
+    }
+    case '7d': { const s = new Date(startOfToday); s.setDate(s.getDate() - 6); from = s; to = endOfToday; label = 'the last 7 days'; break; }
+    case '30d': { const s = new Date(startOfToday); s.setDate(s.getDate() - 29); from = s; to = endOfToday; label = 'the last 30 days'; break; }
+    case 'this_month': from = new Date(now.getFullYear(), now.getMonth(), 1); to = endOfToday; label = 'this month'; break;
+    case 'last_month':
+      from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+      label = 'last month'; break;
+    case 'custom':
+      from = customFrom ? new Date(customFrom + 'T00:00:00') : (() => { const d = new Date(startOfToday); d.setDate(d.getDate() - 29); return d; })();
+      to = customTo ? new Date(customTo + 'T23:59:59') : endOfToday;
+      label = 'the selected range'; break;
+    default: from = startOfToday; to = endOfToday; label = 'today';
+  }
+  const span = to.getTime() - from.getTime();
+  const prevTo = new Date(from.getTime() - 1);
+  const prevFrom = new Date(prevTo.getTime() - span);
+  return { from, to, prevFrom, prevTo, label };
+}
+
 export function InsightsPanel({ campaign, cards, activities, locations }: InsightsPanelProps) {
   const [range, setRange] = useState<DateRange>('30d');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
   const [locFilter, setLocFilter] = useState<LocationFilter>('all');
   // 'all' = no offer filter; otherwise an offer-title snapshot from cards.
   // Lets the merchant see how a previous offer text performed even after
@@ -55,14 +96,11 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
       .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime());
   }, [cards]);
 
-  // --- Compute the time window from the selected range ---
-  const { from, prevFrom, now } = useMemo(() => {
-    const now = new Date();
-    const days = range === '7d' ? 7 : range === '30d' ? 30 : range === '90d' ? 90 : 365 * 10;
-    const from = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    const prevFrom = new Date(from.getTime() - days * 24 * 60 * 60 * 1000);
-    return { from, prevFrom, now };
-  }, [range]);
+  // --- Compute the time window (+ prior period) from the selected range ---
+  const { from, to, prevFrom, prevTo } = useMemo(
+    () => resolveRange(range, customFrom, customTo),
+    [range, customFrom, customTo],
+  );
 
   // Set of card IDs matching the chosen offer snapshot. Empty set
   // means "no filter" — checked by `offerFilter === 'all'` below.
@@ -75,23 +113,23 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
   const filtered = useMemo(() => {
     return activities.filter((a) => {
       const created = new Date(a.timestamp);
-      if (created < from) return false;
+      if (created < from || created > to) return false;
       if (locFilter !== 'all' && a.locationId !== locFilter) return false;
       if (matchingCardIds && (!a.cardId || !matchingCardIds.has(a.cardId))) return false;
       return true;
     });
-  }, [activities, from, locFilter, matchingCardIds]);
+  }, [activities, from, to, locFilter, matchingCardIds]);
 
   // --- Filter the prior window (for trend comparison) ---
   const filteredPrev = useMemo(() => {
     return activities.filter((a) => {
       const created = new Date(a.timestamp);
-      if (created >= from || created < prevFrom) return false;
+      if (created < prevFrom || created > prevTo) return false;
       if (locFilter !== 'all' && a.locationId !== locFilter) return false;
       if (matchingCardIds && (!a.cardId || !matchingCardIds.has(a.cardId))) return false;
       return true;
     });
-  }, [activities, from, prevFrom, locFilter, matchingCardIds]);
+  }, [activities, prevFrom, prevTo, locFilter, matchingCardIds]);
 
   // --- Filter cards by location for the breakdown ---
   const filteredCards = useMemo(() => {
@@ -133,19 +171,18 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
 
   // --- Activity per day (last N days) for the trend chart ---
   const dailySeries = useMemo(() => {
-    const days = range === '7d' ? 7 : range === '30d' ? 30 : range === '90d' ? 90 : 30;
-    const buckets = new Array(days).fill(0).map((_, i) => {
-      const d = new Date(now.getTime() - (days - 1 - i) * 24 * 60 * 60 * 1000);
-      return { date: d, count: 0 };
-    });
+    const DAY = 24 * 60 * 60 * 1000;
+    const startDay = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    const endDay = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+    const days = Math.min(120, Math.max(1, Math.round((endDay.getTime() - startDay.getTime()) / DAY) + 1));
+    const buckets = new Array(days).fill(0).map((_, i) => ({ date: new Date(startDay.getTime() + i * DAY), count: 0 }));
     filtered.forEach((a) => {
       const created = new Date(a.timestamp);
-      const dayDiff = Math.floor((now.getTime() - created.getTime()) / (24 * 60 * 60 * 1000));
-      const idx = days - 1 - dayDiff;
+      const idx = Math.floor((created.getTime() - startDay.getTime()) / DAY);
       if (idx >= 0 && idx < days) buckets[idx].count++;
     });
     return buckets;
-  }, [filtered, now, range]);
+  }, [filtered, from, to]);
 
   // --- Day-of-week heatmap (peak times) ---
   const dayOfWeek = useMemo(() => {
@@ -214,20 +251,45 @@ export function InsightsPanel({ campaign, cards, activities, locations }: Insigh
               })),
             ]}
           />
-          <FilterDropdown
-            icon={<Calendar className="w-3.5 h-3.5" />}
-            label="Range"
-            value={range}
-            onChange={(v) => setRange(v as DateRange)}
-            options={[
-              { value: '7d', label: 'Last 7 days' },
-              { value: '30d', label: 'Last 30 days' },
-              { value: '90d', label: 'Last 90 days' },
-              { value: 'all', label: 'All time' },
-            ]}
-          />
         </div>
       </header>
+
+      {/* Date range — presets + custom, like the admin overview */}
+      <div className="bg-white border notion-border rounded-lg p-4 space-y-3">
+        <div className="flex flex-wrap gap-2 items-center">
+          <Calendar className="w-4 h-4 text-gray-400 mr-1" />
+          {([
+            ['today', 'Today'],
+            ['yesterday', 'Yesterday'],
+            ['7d', 'Last 7 days'],
+            ['30d', 'Last 30 days'],
+            ['this_month', 'This month'],
+            ['last_month', 'Last month'],
+            ['custom', 'Custom'],
+          ] as const).map(([id, lbl]) => (
+            <button
+              key={id}
+              onClick={() => setRange(id)}
+              className={`text-xs px-3 py-1.5 rounded-md border transition ${
+                range === id ? 'bg-[#37352F] text-white border-[#37352F]' : 'bg-white notion-border hover:bg-[#F7F7F5]'
+              }`}
+            >
+              {lbl}
+            </button>
+          ))}
+        </div>
+        {range === 'custom' && (
+          <div className="flex items-center gap-2 text-sm pt-2 border-t notion-border flex-wrap">
+            <label className="text-xs text-gray-500">From:</label>
+            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} max={customTo || undefined} className="bg-[#F7F7F5] border notion-border rounded px-2 py-1 text-xs" />
+            <label className="text-xs text-gray-500 ml-2">To:</label>
+            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} min={customFrom || undefined} className="bg-[#F7F7F5] border notion-border rounded px-2 py-1 text-xs" />
+          </div>
+        )}
+        <div className="text-[11px] text-gray-400">
+          Showing data from <strong className="text-[#37352F]">{from.toLocaleDateString()}</strong> to <strong className="text-[#37352F]">{to.toLocaleDateString()}</strong>
+        </div>
+      </div>
 
       {/* Campaign banner — reminds them of the offer they're running */}
       <div className="bg-[#F7F7F5] border notion-border rounded-lg p-4 flex items-center gap-3">
