@@ -5,6 +5,7 @@ import { MobileNav } from '../MobileNav';
 
 const NAV_LINKS = [
   { href: '/features', label: 'Features' },
+  { href: '/pricing', label: 'Pricing' },
   { href: '/use-cases', label: 'Use cases' },
   { href: '/savings', label: 'Savings' },
   { href: '/blog', label: 'Blog' },
@@ -90,6 +91,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
               links={[
                 { href: '/find-card', label: 'My loyalty card' },
                 { href: '/features', label: 'Features' },
+                { href: '/pricing', label: 'Pricing' },
                 { href: '/use-cases', label: 'Use cases' },
                 { href: '/savings', label: 'Savings' },
                 { href: '/blog', label: 'Blog' },
@@ -116,6 +118,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
           </div>
           <FooterCol title="Product" links={[
             { href: '/features', label: 'Features' },
+            { href: '/pricing', label: 'Pricing' },
             { href: '/use-cases', label: 'Use cases' },
             { href: '/savings', label: 'Savings calculator' },
             { href: '/wallet-guide', label: 'Apple Wallet guide' },

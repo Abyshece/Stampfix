@@ -14,6 +14,7 @@ import { Faq } from './components/Faq';
 import { AppleWalletGuide } from './components/AppleWalletGuide';
 const AboutPage = lazy(() => import('./components/marketing/AboutPage').then((m) => ({ default: m.AboutPage })));
 const FeaturesPage = lazy(() => import('./components/marketing/FeaturesPage').then((m) => ({ default: m.FeaturesPage })));
+const PricingPage = lazy(() => import('./components/marketing/PricingPage').then((m) => ({ default: m.PricingPage })));
 const UseCasesPage = lazy(() => import('./components/marketing/UseCasesPage').then((m) => ({ default: m.UseCasesPage })));
 const BlogPage = lazy(() => import('./components/marketing/BlogPage').then((m) => ({ default: m.BlogPage })));
 const RoiCalculator = lazy(() => import('./components/marketing/RoiCalculator').then((m) => ({ default: m.RoiCalculator })));
@@ -182,6 +183,7 @@ export default function App() {
   if (path === '/wallet-guide') return <AppleWalletGuide />;
   if (path === '/about') return <Suspense fallback={<BrandLoading />}><AboutPage /></Suspense>;
   if (path === '/features') return <Suspense fallback={<BrandLoading />}><FeaturesPage /></Suspense>;
+  if (path === '/pricing') return <Suspense fallback={<BrandLoading />}><PricingPage /></Suspense>;
   if (path === '/use-cases') return <Suspense fallback={<BrandLoading />}><UseCasesPage /></Suspense>;
   if (path === '/blog' || path.startsWith('/blog/')) return <Suspense fallback={<BrandLoading />}><BlogPage /></Suspense>;
   if (path === '/savings') return <Suspense fallback={<BrandLoading />}><RoiCalculator /></Suspense>;
