@@ -13,12 +13,18 @@ import { LegalPage, LegalH2, Placeholder } from './LegalPage';
  */
 export function TermsOfService() {
   return (
-    <LegalPage title="Terms of Service" lastUpdated="19 June 2026">
+    <LegalPage title="Terms of Service" lastUpdated="2 August 2026 (v2.1)">
       <p>
         These Terms of Service (“Terms”) govern your use of the Stampfix loyalty-card platform (the
         “Service”) provided by 17999658 Canada Inc. (d/b/a Stampfix) (“Stampfix”, “we”, “us”).
         By creating an account or using the Service, you agree to these Terms. If you are using the
         Service on behalf of a business, you confirm you have authority to bind that business.
+      </p>
+      <p>
+        Stampfix is a business-to-business (B2B) service intended for businesses. It is not marketed
+        to consumers acting outside a trade or profession. Consumers who save a Merchant's loyalty
+        card to a mobile wallet ("Cardholders") are not parties to these Terms; their relationship
+        with Stampfix is governed by our Cardholder Terms and Privacy Policy.
       </p>
 
       <LegalH2>1. The Service</LegalH2>
@@ -28,34 +34,66 @@ export function TermsOfService() {
         We may add, change, or remove features over time.
       </p>
 
-      <LegalH2>2. Accounts</LegalH2>
+      <LegalH2>2. Accounts, authority, and language</LegalH2>
       <p>
         You must provide accurate information when creating an account and keep your login
         credentials secure. You are responsible for activity that occurs under your account. Notify
-        us promptly of any unauthorised use.
+        us promptly of any unauthorised use. By registering, you confirm you are acting in the course
+        of a trade, business, or profession (an <em>Unternehmer</em> within § 14 BGB where German
+        law applies), not as a consumer.
+      </p>
+      <p>
+        <strong>Notice for Quebec residents (Bill 96).</strong> Users geolocated in Quebec are
+        presented with a French version of these Terms by default. This English version applies to
+        you only if you expressly request it (by selecting "View in English / Voir en anglais"), and
+        that request is recorded. A French-language version of equivalent content is maintained.
       </p>
 
-      <LegalH2>3. Plans, fees, and billing</LegalH2>
+      <LegalH2>3. Plans, fees, billing, and taxes</LegalH2>
       <p>
-        The Service is currently offered free of charge up to 10 Cardholders per Merchant. Beyond
-        that limit, continued use requires a paid subscription: EUR 19.99 per month incl. USt. for
-        Merchants in Germany, or CA$29.99 per month for Merchants in Canada (plus applicable
-        GST/HST). Subscriptions are billed monthly through our payment provider, Stripe, and can be
-        cancelled at any time from your dashboard.
+        The Service is offered free of charge up to 10 Cardholders per Merchant. Beyond that limit, a
+        paid subscription is required: EUR 19.99 per month for Merchants in Germany or CA$29.99 per
+        month for Merchants in Canada, billed monthly through our payment provider, Stripe, and
+        cancellable at any time from your dashboard.
       </p>
       <p>
-        Subscriptions renew automatically until cancelled. You may cancel at any time; cancellation
-        takes effect at the end of the current billing period. Fees already paid are non-refundable
-        except where required by law.
+        <strong>Taxes.</strong> Prices shown to EU Merchants are inclusive of any applicable VAT
+        (USt.), which Stampfix collects and remits through the EU non-Union One-Stop-Shop (OSS)
+        scheme. A VAT-registered EU business may enter a valid EU VAT ID (USt-IdNr.) at checkout;
+        where a valid ID is provided and verified via the EU VIES database, the reverse-charge
+        mechanism applies and Stampfix charges no VAT. For Canadian Merchants, applicable GST/HST is
+        added where required.
+      </p>
+      <p>
+        Subscriptions renew automatically each month until cancelled. You may cancel at any time from
+        your dashboard; cancellation takes effect at the end of the current billing period, and you
+        retain access until then. Because the paid Service is provided to business customers (B2B),
+        the German § 312k BGB consumer "cancellation button" requirement does not apply; we
+        provide one-click in-dashboard cancellation regardless. Except where mandatory law provides
+        otherwise, fees paid by a business Merchant are non-refundable, including for partial use or
+        mid-period cancellation.
       </p>
 
-      <LegalH2>4. Merchant responsibilities</LegalH2>
+      <LegalH2>4. Data protection and Merchant responsibilities</LegalH2>
       <p>
-        As a Merchant, you are the data controller for your Cardholders’ personal information and are
-        responsible for: obtaining any consent required to enrol Cardholders and send them messages;
-        honouring the rewards you advertise; and complying with consumer-protection, marketing, and
-        data-protection laws applicable to your business, including GDPR (for German Merchants) and
-        PIPEDA and applicable provincial law (for Canadian Merchants).
+        For personal data about your customers ("Cardholders") that you collect and process through
+        the Service, <strong>you (the Merchant) are the data Controller and Stampfix acts as your
+        data Processor</strong>, processing that data only on your documented instructions to provide
+        the Service. This processor relationship is governed by our{' '}
+        <a href="/dpa" className="underline">Data Processing Agreement</a>, which forms part of these
+        Terms. Stampfix is an independent Controller only for data about you, the Merchant (your
+        account, billing, and our own security and operational records), as described in our{' '}
+        <a href="/privacy" className="underline">Privacy Policy</a>.
+      </p>
+      <p>
+        As the Controller, you are responsible for: obtaining any consent required to enrol
+        Cardholders and to send them commercial electronic messages (you are the sender of, and
+        responsible for, the messages you initiate, including consent, sender identification, and a
+        working unsubscribe mechanism under Canada's CASL); honouring the rewards you advertise;
+        providing required information to Cardholders and honouring their data-subject requests; and
+        complying with consumer-protection, marketing, and data-protection laws applicable to your
+        business, including the GDPR (German Merchants), Quebec Law 25, and PIPEDA (Canadian
+        Merchants).
       </p>
 
       <LegalH2>5. Acceptable use</LegalH2>
@@ -89,6 +127,13 @@ export function TermsOfService() {
         Note that wallet passes require a compatible device and a valid issuer configuration, which
         may affect availability of that feature.
       </p>
+      <p>
+        <strong>For German/EU users:</strong> the statutory rights of consumers are unaffected, and
+        nothing here excludes liability that may not be excluded under German law. Strict liability
+        for initial defects present at contract formation under rental law is excluded as follows:{' '}
+        <em>„Die verschuldensunabhängige Haftung wegen anfänglicher Mängel gemäß § 536a
+        Abs. 1 BGB ist ausgeschlossen.“</em>
+      </p>
 
       <LegalH2>9. Limitation of liability</LegalH2>
       <p>
@@ -97,6 +142,13 @@ export function TermsOfService() {
         liability for any claim relating to the Service will not exceed the greater of the amount you
         paid us in the twelve months before the claim, or EUR 100. Some jurisdictions do not allow
         certain limitations, so some of the above may not apply to you.
+      </p>
+      <p>
+        <strong>For German/EU Merchants:</strong> the foregoing exclusions and limitations do not
+        apply to damages arising from injury to life, body, or health, from wilful intent or gross
+        negligence, or under the Product Liability Act. For the breach of essential contractual
+        duties (<em>Kardinalpflichten</em>), liability for slight negligence is limited to the
+        contract-typical, foreseeable damage. Mandatory consumer rights are unaffected.
       </p>
 
       <LegalH2>10. Indemnity</LegalH2>
@@ -176,7 +228,7 @@ export function TermsOfService() {
       </p>
 
       <p className="text-xs text-gray-400 pt-8 border-t notion-border mt-8">
-        Last updated: 18 July 2026
+        Last updated: 2 August 2026 · Version 2.1
       </p>
     </LegalPage>
   );
