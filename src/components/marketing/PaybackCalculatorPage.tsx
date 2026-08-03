@@ -35,7 +35,7 @@ export function PaybackCalculatorPage() {
                 country === c ? 'bg-[#37352F] text-white font-medium' : 'text-gray-600 hover:text-[#37352F]'
               }`}
             >
-              {c === 'CA' ? 'CA$ · Canada' : '\u20ac · Germany'}
+              {c === 'CA' ? 'CA$ · Canada' : '€ · Germany'}
             </button>
           ))}
         </div>

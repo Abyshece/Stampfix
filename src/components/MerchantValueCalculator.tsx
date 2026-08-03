@@ -76,7 +76,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
           <InfoHint text="An estimate, not a promise. Slide in your own numbers to see what your loyal customers add over time, and how quickly the subscription pays for itself." label="payback" />
         </div>
         <p className="text-gray-500 mt-1 max-w-xl leading-relaxed">
-          Move the three sliders to match {businessName ? businessName + '\u2019s' : 'your'} shop. We
+          Move the three sliders to match {businessName ? businessName + '’s' : 'your'} shop. We
           multiply your regulars by their extra visits and their average spend to estimate the extra
           revenue a loyalty program brings in.
         </p>
@@ -87,7 +87,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
         <div className="p-6 border notion-border rounded-lg bg-white shadow-sm space-y-5">
           <Slider
             label="Regulars with a stamp card"
-            hint="Your repeat customers \u2014 the ones who carry a paper stamp card today, or a Stampfix card on their phone."
+            hint="Your repeat customers — the ones who carry a paper stamp card today, or a Stampfix card on their phone."
             value={regulars} min={20} max={1000} step={10}
             onChange={setRegulars} format={(v) => v.toLocaleString('en-CA')}
           />
@@ -99,7 +99,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
           />
           <Slider
             label="Extra visits per regular each month"
-            hint="Chasing a reward brings people back more often. A loyalty program usually adds 1\u20132 extra visits a month for each regular."
+            hint="Chasing a reward brings people back more often. A loyalty program usually adds 1–2 extra visits a month for each regular."
             value={extraVisits} min={1} max={6} step={1}
             onChange={setExtraVisits} format={(v) => `+${v} / mo`}
           />
@@ -122,7 +122,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
             ))}
           </div>
 
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Extra revenue \u00b7 {p.label}</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Extra revenue · {p.label}</p>
           <div className="text-5xl font-serif-display font-semibold mt-1 tabular-nums">{money(extraPeriod)}</div>
           <div className="mt-1 text-sm text-gray-300">from your returning customers</div>
 
@@ -140,7 +140,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
           <div className="mt-auto pt-6">
             <span className="inline-flex items-center gap-1.5 text-amber-300 font-semibold">
               <TrendingUp className="w-4 h-4" />
-              {roi >= 1 ? `${roi.toFixed(roi < 10 ? 1 : 0)}\u00d7 what you pay comes back` : 'Add a few regulars to break even'}
+              {roi >= 1 ? `${roi.toFixed(roi < 10 ? 1 : 0)}× what you pay comes back` : 'Add a few regulars to break even'}
             </span>
           </div>
         </div>
@@ -156,7 +156,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
           <p className="text-gray-600 text-sm mt-1 leading-relaxed">
             At {money(monthly)}/month{vat ? ' (incl. USt.)' : ''}, Stampfix costs about the price of{' '}
             <span className="font-semibold text-[#37352F]">{coffees} {coffees === 1 ? 'coffee' : 'coffees'}</span>
-            {' '}\u2014 covered by just{' '}
+            {' '}— covered by just{' '}
             <span className="font-semibold text-[#37352F]">{paybackCustomers} returning {paybackCustomers === 1 ? 'regular' : 'regulars'}</span>
             {' '}a month. Everything your other regulars spend on top of that is pure upside.
           </p>
