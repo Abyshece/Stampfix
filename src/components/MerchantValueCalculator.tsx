@@ -4,15 +4,9 @@ import { proMonthly, type MerchantCountry } from '../lib/pricing';
 import { InfoHint } from './InfoHint';
 
 /**
- * Merchant-facing "Payback" page (Workspace → Payback).
- *
- * Shows, in the merchant's own numbers, how much extra revenue repeat customers
- * bring — and how fast the Stampfix subscription pays for itself. Fully
- * self-contained: three sliders + live results, no external data.
- *
- * Currency + subscription price follow the merchant's country (DE → EUR incl.
- * USt., else CAD). Figures are estimates; the visit-uplift slider is the honest
- * lever — loyalty members typically visit ~20–30% more often than non-members.
+ * Merchant-facing "Payback" page (Workspace → Payback) and the public /savings
+ * page. Self-contained: three clearly-labelled sliders + a time-period filter,
+ * no external data. Currency + price follow the merchant's country.
  */
 
 interface Props {
@@ -20,16 +14,24 @@ interface Props {
   businessName?: string;
 }
 
+const PERIODS = [
+  { key: 'week', label: 'Weekly', months: 12 / 52 },
+  { key: 'month', label: 'Monthly', months: 1 },
+  { key: 'half', label: '6 months', months: 6 },
+  { key: 'year', label: 'Yearly', months: 12 },
+] as const;
+type PeriodKey = (typeof PERIODS)[number]['key'];
+
 function Slider({
-  label, value, min, max, step, onChange, format,
+  label, hint, value, min, max, step, onChange, format,
 }: {
-  label: string; value: number; min: number; max: number; step: number;
+  label: string; hint: string; value: number; min: number; max: number; step: number;
   onChange: (v: number) => void; format: (v: number) => string;
 }) {
   return (
     <div>
-      <div className="flex items-baseline justify-between mb-2">
-        <label className="text-sm text-gray-600">{label}</label>
+      <div className="flex items-baseline justify-between mb-1">
+        <label className="text-sm font-medium text-[#37352F]">{label}</label>
         <span className="text-lg font-semibold text-[#37352F] tabular-nums">{format(value)}</span>
       </div>
       <input
@@ -39,6 +41,7 @@ function Slider({
         className="w-full accent-[#37352F] cursor-pointer"
         aria-label={label}
       />
+      <p className="text-xs text-gray-400 mt-1 leading-relaxed">{hint}</p>
     </div>
   );
 }
@@ -50,14 +53,15 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
   const [regulars, setRegulars] = useState(120);
   const [spend, setSpend] = useState(6);
   const [extraVisits, setExtraVisits] = useState(2);
+  const [period, setPeriod] = useState<PeriodKey>('year');
 
+  const p = PERIODS.find((x) => x.key === period)!;
   const extraMonthly = regulars * extraVisits * spend;
-  const extraAnnual = extraMonthly * 12;
-  const subAnnual = monthly * 12;
-  const netAnnual = Math.max(0, extraAnnual - subAnnual);
-  const roi = extraMonthly > 0 ? extraAnnual / subAnnual : 0;
+  const extraPeriod = extraMonthly * p.months;
+  const subPeriod = monthly * p.months;
+  const netPeriod = Math.max(0, extraPeriod - subPeriod);
+  const roi = subPeriod > 0 ? extraPeriod / subPeriod : 0;
 
-  // "Almost free" framing
   const coffees = Math.max(1, Math.round(monthly / spend));
   const paybackCustomers = Math.max(1, Math.ceil(monthly / Math.max(1, extraVisits * spend)));
 
@@ -67,49 +71,76 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
         <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
           <TrendingUp className="w-4 h-4" /> Payback
         </div>
-        <h2 className="text-3xl font-serif-display font-semibold">What your regulars are worth</h2> <InfoHint text="An estimate, not a promise. Slide in your own numbers to see what returning customers add over a year, and how quickly the subscription pays for itself." label="payback" />
-        <p className="text-gray-500 mt-1">
-          Slide in {businessName ? businessName + "\u2019s" : 'your'} numbers. See what repeat
-          customers add — and how fast Stampfix pays for itself.
+        <div className="flex items-center gap-2">
+          <h2 className="text-3xl font-serif-display font-semibold">What your regulars are worth</h2>
+          <InfoHint text="An estimate, not a promise. Slide in your own numbers to see what your loyal customers add over time, and how quickly the subscription pays for itself." label="payback" />
+        </div>
+        <p className="text-gray-500 mt-1 max-w-xl leading-relaxed">
+          Move the three sliders to match {businessName ? businessName + '\u2019s' : 'your'} shop. We
+          multiply your regulars by their extra visits and their average spend to estimate the extra
+          revenue a loyalty program brings in.
         </p>
       </header>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Inputs */}
-        <div className="p-6 border notion-border rounded-lg bg-white shadow-sm space-y-6">
-          <Slider label="Regulars on your card" value={regulars} min={20} max={1000} step={10}
-            onChange={setRegulars} format={(v) => v.toLocaleString('en-CA')} />
-          <Slider label="Average spend per visit" value={spend} min={3} max={60} step={1}
-            onChange={setSpend} format={(v) => money(v)} />
-          <Slider label="Extra visits per regular / month" value={extraVisits} min={1} max={6} step={1}
-            onChange={setExtraVisits} format={(v) => `${v}\u00d7`} />
-          <p className="text-xs text-gray-400 leading-relaxed">
-            Loyalty members typically visit 20–30% more often than one-off customers. These figures
-            are estimates to help you picture the upside, not a guarantee.
-          </p>
+        <div className="p-6 border notion-border rounded-lg bg-white shadow-sm space-y-5">
+          <Slider
+            label="Regulars with a stamp card"
+            hint="Your repeat customers \u2014 the ones who carry a paper stamp card today, or a Stampfix card on their phone."
+            value={regulars} min={20} max={1000} step={10}
+            onChange={setRegulars} format={(v) => v.toLocaleString('en-CA')}
+          />
+          <Slider
+            label="Average spend per visit"
+            hint="What one customer typically spends each time they come in."
+            value={spend} min={3} max={60} step={1}
+            onChange={setSpend} format={(v) => money(v)}
+          />
+          <Slider
+            label="Extra visits per regular each month"
+            hint="Chasing a reward brings people back more often. A loyalty program usually adds 1\u20132 extra visits a month for each regular."
+            value={extraVisits} min={1} max={6} step={1}
+            onChange={setExtraVisits} format={(v) => `+${v} / mo`}
+          />
         </div>
 
         {/* Results */}
         <div className="p-6 border notion-border rounded-lg bg-[#37352F] text-white shadow-sm flex flex-col">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Extra revenue a year</p>
-          <div className="text-5xl font-serif-display font-semibold mt-1 tabular-nums">{money(extraAnnual)}</div>
-          <div className="mt-1 text-sm text-gray-300">{money(extraMonthly)} / month from returning customers</div>
+          {/* Time-period filter */}
+          <div className="inline-flex flex-wrap gap-0.5 rounded-lg bg-white/10 p-0.5 text-xs mb-4 self-start">
+            {PERIODS.map((x) => (
+              <button
+                key={x.key}
+                onClick={() => setPeriod(x.key)}
+                className={`px-2.5 py-1.5 rounded-md transition ${
+                  period === x.key ? 'bg-white text-[#37352F] font-semibold' : 'text-gray-300 hover:text-white'
+                }`}
+              >
+                {x.label}
+              </button>
+            ))}
+          </div>
+
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Extra revenue \u00b7 {p.label}</p>
+          <div className="text-5xl font-serif-display font-semibold mt-1 tabular-nums">{money(extraPeriod)}</div>
+          <div className="mt-1 text-sm text-gray-300">from your returning customers</div>
 
           <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
             <div>
-              <div className="text-gray-400 text-xs uppercase tracking-wide">Your subscription</div>
-              <div className="text-lg font-semibold tabular-nums">{money(subAnnual)}/yr</div>
+              <div className="text-gray-400 text-xs uppercase tracking-wide">Stampfix costs</div>
+              <div className="text-lg font-semibold tabular-nums">{money(subPeriod)}</div>
             </div>
             <div>
-              <div className="text-gray-400 text-xs uppercase tracking-wide">Net gain</div>
-              <div className="text-lg font-semibold tabular-nums text-amber-300">{money(netAnnual)}/yr</div>
+              <div className="text-gray-400 text-xs uppercase tracking-wide">You keep</div>
+              <div className="text-lg font-semibold tabular-nums text-amber-300">{money(netPeriod)}</div>
             </div>
           </div>
 
           <div className="mt-auto pt-6">
             <span className="inline-flex items-center gap-1.5 text-amber-300 font-semibold">
               <TrendingUp className="w-4 h-4" />
-              {roi >= 1 ? `${roi.toFixed(roi < 10 ? 1 : 0)}\u00d7 return on what you pay` : 'Add a few regulars to break even'}
+              {roi >= 1 ? `${roi.toFixed(roi < 10 ? 1 : 0)}\u00d7 what you pay comes back` : 'Add a few regulars to break even'}
             </span>
           </div>
         </div>
@@ -125,9 +156,9 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
           <p className="text-gray-600 text-sm mt-1 leading-relaxed">
             At {money(monthly)}/month{vat ? ' (incl. USt.)' : ''}, Stampfix costs about the price of{' '}
             <span className="font-semibold text-[#37352F]">{coffees} {coffees === 1 ? 'coffee' : 'coffees'}</span>
-            {' '}— covered by just{' '}
+            {' '}\u2014 covered by just{' '}
             <span className="font-semibold text-[#37352F]">{paybackCustomers} returning {paybackCustomers === 1 ? 'regular' : 'regulars'}</span>
-            {' '}a month. Everything your other regulars spend on top of that is extra.
+            {' '}a month. Everything your other regulars spend on top of that is pure upside.
           </p>
         </div>
       </div>

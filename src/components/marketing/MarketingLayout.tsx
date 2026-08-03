@@ -7,7 +7,7 @@ const NAV_LINKS = [
   { href: '/features', label: 'Features' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/use-cases', label: 'Use cases' },
-  { href: '/savings', label: 'Savings' },
+  { href: '/savings', label: 'Payback' },
   { href: '/blog', label: 'Blog' },
   { href: '/about', label: 'About' },
 ];
@@ -93,7 +93,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
                 { href: '/features', label: 'Features' },
                 { href: '/pricing', label: 'Pricing' },
                 { href: '/use-cases', label: 'Use cases' },
-                { href: '/savings', label: 'Savings' },
+                { href: '/savings', label: 'Payback' },
                 { href: '/blog', label: 'Blog' },
                 { href: '/about', label: 'About' },
                 { href: '/?login=1', label: 'Log in' },
@@ -120,7 +120,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
             { href: '/features', label: 'Features' },
             { href: '/pricing', label: 'Pricing' },
             { href: '/use-cases', label: 'Use cases' },
-            { href: '/savings', label: 'Savings calculator' },
+            { href: '/savings', label: 'Payback' },
             { href: '/wallet-guide', label: 'Apple Wallet guide' },
             { href: '/faq', label: 'FAQ' },
           ]} />
