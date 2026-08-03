@@ -7,6 +7,7 @@ import { createCampaign, createLocation } from '../lib/db';
 import { supabase } from '../lib/supabase';
 import { Turnstile } from './Turnstile';
 import { verifyTurnstile } from '../services/turnstile';
+import { logConsent, CONSENT_VERSIONS } from '../lib/consent';
 
 const NOTION_COLORS = [
   { name: 'Default', hex: '#37352F' },
@@ -145,6 +146,10 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
       const { needsEmailConfirmation } = await signUpMerchant(
         email, password, busName, country, marketingOptIn, phone,
       );
+      // Consent audit trail — record the three required acceptances.
+      logConsent({ subjectType: 'merchant', document: 'terms', version: CONSENT_VERSIONS.terms });
+      logConsent({ subjectType: 'merchant', document: 'privacy', version: CONSENT_VERSIONS.privacy });
+      logConsent({ subjectType: 'merchant', document: 'dpa', version: CONSENT_VERSIONS.dpa });
       if (needsEmailConfirmation) {
         // Can't create the campaign yet (RLS needs a session). Save form
         // values in sessionStorage for after confirmation.

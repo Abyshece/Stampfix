@@ -9,6 +9,7 @@ import { WalletCard } from './WalletCard';
 import { AddToAppleWalletButton } from './AddToAppleWalletButton';
 import { Turnstile } from './Turnstile';
 import { verifyTurnstile } from '../services/turnstile';
+import { logConsent, CONSENT_VERSIONS } from '../lib/consent';
 
 interface CustomerAppProps {
   campaignId: string;
@@ -139,6 +140,12 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             customerConsentAt: consentGiven ? new Date().toISOString() : null,
             marketingOptIn: marketing,
           });
+          // Consent audit trail (CASL/GDPR proof) + durable-medium welcome email.
+          if (existing) {
+            logConsent({ subjectType: 'cardholder', cardId: existing.id, document: 'cardholder_terms', version: CONSENT_VERSIONS.cardholder_terms, granted: consentGiven });
+            if (marketing) logConsent({ subjectType: 'cardholder', cardId: existing.id, document: 'marketing_consent', version: CONSENT_VERSIONS.cardholder_terms, granted: true });
+            void supabase.functions.invoke('send-welcome-email', { body: { email: user.email ?? '', name, businessName: campaign.businessName } });
+          }
           sessionStorage.removeItem('pending_customer_signup');
           // Consume the pending row so it doesn't linger after card creation
           if (pendingRowId) {

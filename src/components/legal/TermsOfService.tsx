@@ -34,19 +34,13 @@ export function TermsOfService() {
         We may add, change, or remove features over time.
       </p>
 
-      <LegalH2>2. Accounts, authority, and language</LegalH2>
+      <LegalH2>2. Accounts and authority</LegalH2>
       <p>
         You must provide accurate information when creating an account and keep your login
         credentials secure. You are responsible for activity that occurs under your account. Notify
         us promptly of any unauthorised use. By registering, you confirm you are acting in the course
         of a trade, business, or profession (an <em>Unternehmer</em> within § 14 BGB where German
         law applies), not as a consumer.
-      </p>
-      <p>
-        <strong>Notice for Quebec residents (Bill 96).</strong> Users geolocated in Quebec are
-        presented with a French version of these Terms by default. This English version applies to
-        you only if you expressly request it (by selecting "View in English / Voir en anglais"), and
-        that request is recorded. A French-language version of equivalent content is maintained.
       </p>
 
       <LegalH2>3. Plans, fees, billing, and taxes</LegalH2>

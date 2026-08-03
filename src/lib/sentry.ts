@@ -40,21 +40,17 @@ export function initSentry() {
     // Only the React integration + replay. We deliberately skip BrowserTracing
     // (performance monitoring) for v1 — it doubles the quota and we don't
     // have a performance story to investigate yet.
-    integrations: [
-      Sentry.replayIntegration({
-        // Don't record text input or any non-masked content by default;
-        // a loyalty-card app shouldn't be leaking PII to a monitoring tool.
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
-    // Sampling: ~10% of normal sessions get a replay; everything that
-    // produces an error gets one. Free tier covers this comfortably for
-    // an early-stage app.
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-    // Don't ship errors from non-prod builds to the prod dashboard. Useful
-    // when previewing locally with the env var accidentally set.
+    // Privacy: send no PII to the monitoring tool. Session Replay is disabled
+    // entirely (it records UI sessions and is the most privacy-invasive part),
+    // default PII (IP, cookies) is off, and any IP that slips through is stripped
+    // in beforeSend. Uncaught-error tracking still works fully.
+    integrations: [],
+    sendDefaultPii: false,
+    beforeSend(event) {
+      if (event.user) delete event.user.ip_address;
+      return event;
+    },
+    // Don't ship errors from non-prod builds to the prod dashboard.
     enabled: environment !== 'development',
   });
 }
