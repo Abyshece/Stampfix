@@ -680,7 +680,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <div class="dc-stamps">__DUMMY_STAMPS__</div>
         <div class="dc-bottom">
           <div class="dc-field"><span>Member</span><b>Alex</b></div>
-          <div class="dc-field dc-reward"><span>Reward</span><b>__OFFER_TITLE__</b></div>
+          <div class="dc-field dc-reward"><span>Reward</span><b>Free reward</b></div>
         </div>
       </div>
       <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
@@ -717,7 +717,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <div class="dc-stamps">__DUMMY_STAMPS__</div>
         <div class="dc-bottom">
           <div class="dc-field"><span>Member</span><b>Alex</b></div>
-          <div class="dc-field dc-reward"><span>Reward</span><b>__OFFER_TITLE__</b></div>
+          <div class="dc-field dc-reward"><span>Reward</span><b>Free reward</b></div>
         </div>
       </div>
       <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
