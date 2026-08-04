@@ -646,9 +646,6 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <img src="__QR_URL__" alt="Scan to join" />
       </div>
     </div>
-    <div class="bc-starburst">
-      <div class="bc-starburst-inner">__STARBURST__</div>
-    </div>
     <div class="bc-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
 
@@ -687,9 +684,6 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         </div>
       </div>
       <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
-      <div class="pm-starburst">
-        <div class="pm-starburst-inner">__STARBURST__</div>
-      </div>
     </div>
     <div class="pm-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
@@ -713,9 +707,6 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <div class="ps-step"><div class="ps-cb"></div><div class="text">Save card to Apple or Google Wallet</div></div>
         <div class="ps-step"><div class="ps-stepi">__ICON__</div><div class="text">Enjoy your reward!</div></div>
       </div>
-    </div>
-    <div class="ps-starburst">
-      <div class="ps-starburst-inner">__STARBURST__</div>
     </div>
     <div class="ps-rail">
       <div class="dummy-card">
