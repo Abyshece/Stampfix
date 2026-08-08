@@ -21,6 +21,7 @@ import {
   getOnboardingState,
   setOnboardingFlag,
   getMerchantBilling,
+  logMerchantActivity,
 } from '../lib/db';
 import { redeemStampToken } from '../services/stampToken';
 import { MerchantOnboarding, consumePendingCampaign } from './MerchantOnboarding';
@@ -60,6 +61,14 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     else localStorage.removeItem('stampfix_active_location_id');
   }, []);
   const [loading, setLoading] = useState(true);
+
+  // Log one "login" activity per browser session for the admin activity feed.
+  useEffect(() => {
+    if (user && !sessionStorage.getItem('sf_login_logged')) {
+      sessionStorage.setItem('sf_login_logged', '1');
+      logMerchantActivity('login');
+    }
+  }, [user]);
 
   const loadAll = useCallback(async () => {
     if (!user) {

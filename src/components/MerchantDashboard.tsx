@@ -7,7 +7,7 @@ import {
   RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
-import { markApprovalBannerSeen, getCardById } from '../lib/db';
+import { markApprovalBannerSeen, getCardById, logMerchantActivity } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { ScanCelebration } from './ScanCelebration';
@@ -487,6 +487,7 @@ export function MerchantDashboard({
     if (!onboarding.poster_downloaded) {
       onMarkOnboardingStep({ poster_downloaded: true });
     }
+    logMerchantActivity('poster_downloaded', { size });
   };
 
   /** Status filter for the Customers tab:

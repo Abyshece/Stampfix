@@ -7,6 +7,7 @@ import { buildPosterHtml } from '../services/posterGenerator';
 import { toPng } from 'html-to-image';
 import { useToast } from './ToastProvider';
 import { ProLockOverlay } from './ProLockOverlay';
+import { logMerchantActivity } from '../lib/db';
 
 interface PosterSettingsProps {
   campaign: Campaign;
@@ -284,7 +285,7 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
           Sticker sheet (A4)
         </button>
         <button
-          onClick={() => downloadInstagramPng(campaign, previewBg)}
+          onClick={() => { downloadInstagramPng(campaign, previewBg); logMerchantActivity('poster_downloaded', { type: 'instagram' }); }}
           className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white hover:opacity-90 transition"
         >
           ⬇ Instagram PNG

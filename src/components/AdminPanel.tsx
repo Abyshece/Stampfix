@@ -694,6 +694,10 @@ function formatMerchantActivity(a: MerchantActivityRow): string {
     case 'email_changed': return `Changed email: ${d.from ?? '?'} → ${d.to ?? '?'}`;
     case 'plan_changed': return `Plan changed: ${d.from ?? '?'} → ${d.to ?? '?'}`;
     case 'campaign_updated': return `Updated loyalty card${Array.isArray(d.changed) && (d.changed as unknown[]).length ? ' (' + (d.changed as string[]).join(', ') + ')' : ''}`;
+    case 'staff_added': return `Added staff${d.name ? ': ' + String(d.name) : ''}`;
+    case 'staff_removed': return `Removed staff${d.name ? ': ' + String(d.name) : ''}`;
+    case 'login': return 'Logged in';
+    case 'poster_downloaded': return `Downloaded a poster${(d.size || d.type) ? ' (' + String(d.size ?? d.type) + ')' : ''}`;
     default: return String(a.action).replace(/_/g, ' ');
   }
 }

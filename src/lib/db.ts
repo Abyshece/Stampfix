@@ -757,3 +757,10 @@ export async function getMerchantActivity(merchantId: string): Promise<MerchantA
   if (error) throw error;
   return (data as MerchantActivityRow[]) ?? [];
 }
+
+/** Log a merchant action to the activity feed (fire-and-forget; non-blocking). */
+export async function logMerchantActivity(action: string, detail?: Record<string, unknown>): Promise<void> {
+  try {
+    await supabase.rpc('log_merchant_activity', { p_action: action, p_detail: detail ?? null });
+  } catch { /* non-critical */ }
+}
