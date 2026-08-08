@@ -72,6 +72,12 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   useEffect(() => {
     if (authLoading) return;
     if (!campaign) return;
+    // Public enrollment is blocked until the merchant is approved. The owner
+    // merchant (logged in) can still enroll a test card to try the flow.
+    if (campaign.approvalStatus !== 'approved' && (!user || user.id !== campaign.merchantId)) {
+      setLoading(false);
+      return;
+    }
 
     let mounted = true;
     (async () => {
@@ -258,6 +264,27 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             <p className="text-gray-500">{error || 'No campaign found for this link.'}</p>
           )}
           <button onClick={onExit} className="text-blue-600 hover:underline">Return Home</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ----- Merchant not yet approved: block public enrollment (owner can test) -----
+  const isOwner = !!user && user.id === campaign.merchantId;
+  if (campaign.approvalStatus !== 'approved' && !isOwner) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-[#37352F] text-center">
+        <button onClick={onExit} className="absolute top-6 left-6 text-gray-400 hover:text-gray-600">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="max-w-sm w-full space-y-3">
+          <div className="w-12 h-12 bg-[#F7F7F5] rounded-md mx-auto flex items-center justify-center text-xl border notion-border mb-2">
+            {campaign.customIcon || '⏳'}
+          </div>
+          <h1 className="text-2xl font-serif-display font-semibold">Almost ready</h1>
+          <p className="text-gray-500 text-sm">
+            {campaign.businessName}&rsquo;s loyalty card isn&rsquo;t live just yet. They&rsquo;re finishing setup, so please check back soon.
+          </p>
         </div>
       </div>
     );

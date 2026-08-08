@@ -833,10 +833,10 @@ export function MerchantDashboard({
 
         {/* Account approval status banner */}
         {campaign.approvalStatus === 'pending' && (
-          <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800 m-0">
-              <span className="font-semibold">Your account is being reviewed.</span> Please give us 24 hours while we finish reviewing it. You can keep setting things up in the meantime.
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800 m-0">
+              <span className="font-semibold">Your account is being reviewed.</span> You can set up and test everything now: customize your card, and open your card link to enroll a test customer and try stamping. Your card goes live for real customers once approved, usually within 6-12 hours.
             </p>
           </div>
         )}
