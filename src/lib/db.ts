@@ -738,3 +738,22 @@ export async function recoverCardsByEmail(
   const rows = (data as Array<{ card: CardRow; campaign: CampaignRow }>) ?? [];
   return rows.map((r) => ({ card: toCard(r.card), campaign: toCampaign(r.campaign) }));
 }
+
+export interface MerchantActivityRow {
+  id: string;
+  action: string;
+  detail: Record<string, unknown> | null;
+  created_at: string;
+}
+
+/** Admin: read a merchant's dashboard activity log (RLS restricts to admins + the merchant). */
+export async function getMerchantActivity(merchantId: string): Promise<MerchantActivityRow[]> {
+  const { data, error } = await supabase
+    .from('merchant_activity')
+    .select('id, action, detail, created_at')
+    .eq('merchant_id', merchantId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data as MerchantActivityRow[]) ?? [];
+}

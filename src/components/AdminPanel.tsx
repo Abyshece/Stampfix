@@ -16,7 +16,7 @@ import {
   isReadOnlyAdminEmail,
 } from '../services/admin';
 import { OffersTab } from './OffersTab';
-import { setMerchantApproval, getMerchantApproval } from '../lib/db';
+import { setMerchantApproval, getMerchantApproval, getMerchantActivity, type MerchantActivityRow } from '../lib/db';
 
 type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'LOGS' | 'FUNNEL';
 
@@ -551,6 +551,8 @@ function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; o
   const [notes, setNotes] = useState(merchant.admin_notes ?? '');
   const [approval, setApproval] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
+  const [activity, setActivity] = useState<MerchantActivityRow[]>([]);
+  useEffect(() => { getMerchantActivity(merchant.id).then(setActivity).catch(() => setActivity([])); }, [merchant.id]);
   useEffect(() => { getMerchantApproval(merchant.id).then(setApproval).catch(() => {}); }, [merchant.id]);
   const changeApproval = async (status: 'pending' | 'approved' | 'rejected') => {
     setApprovalBusy(true);
@@ -666,8 +668,34 @@ function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; o
           className="w-full bg-[#F7F7F5] border notion-border rounded px-2 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-[#37352F]/20"
         />
       </div>
+      {/* Dashboard activity log */}
+      <div className="bg-white border notion-border rounded p-3 md:col-span-3">
+        <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-2">Dashboard activity</div>
+        {activity.length === 0 ? (
+          <div className="text-xs text-gray-400 italic">No dashboard activity recorded yet.</div>
+        ) : (
+          <ul className="space-y-1.5 max-h-64 overflow-y-auto">
+            {activity.map((a) => (
+              <li key={a.id} className="flex items-start justify-between gap-3 text-xs border-b notion-border pb-1.5 last:border-0">
+                <span className="text-[#37352F]">{formatMerchantActivity(a)}</span>
+                <span className="text-gray-400 whitespace-nowrap">{new Date(a.created_at).toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
+}
+
+function formatMerchantActivity(a: MerchantActivityRow): string {
+  const d = (a.detail ?? {}) as Record<string, unknown>;
+  switch (a.action) {
+    case 'email_changed': return `Changed email: ${d.from ?? '?'} → ${d.to ?? '?'}`;
+    case 'plan_changed': return `Plan changed: ${d.from ?? '?'} → ${d.to ?? '?'}`;
+    case 'campaign_updated': return `Updated loyalty card${Array.isArray(d.changed) && (d.changed as unknown[]).length ? ' (' + (d.changed as string[]).join(', ') + ')' : ''}`;
+    default: return String(a.action).replace(/_/g, ' ');
+  }
 }
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
