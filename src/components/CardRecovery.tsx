@@ -2,7 +2,7 @@ import { PhoneField } from './PhoneField';
 import { useState } from 'react';
 import { ArrowLeft, Loader2, Info } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
-import { recoverCards } from '../lib/db';
+import { recoverCardsByEmail } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { AddToAppleWalletButton } from './AddToAppleWalletButton';
 
@@ -12,7 +12,7 @@ import { AddToAppleWalletButton } from './AddToAppleWalletButton';
  * they can re-add to Apple/Google Wallet. No account/magic-link needed.
  */
 export function CardRecovery() {
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,16 +20,16 @@ export function CardRecovery() {
 
   const submit = async () => {
     setError(null);
-    if (!phone.trim() || !/^\d{4,6}$/.test(code)) {
-      setError('Enter the phone number and 6-digit code you used when you signed up.');
+    if (!/^\S+@\S+\.\S+$/.test(email.trim()) || !/^\d{4,6}$/.test(code)) {
+      setError('Enter the email and 6-digit code you used when you signed up.');
       return;
     }
     setLoading(true);
     try {
-      const found = await recoverCards(phone.trim(), code);
+      const found = await recoverCardsByEmail(email.trim(), code);
       setResults(found);
       if (found.length === 0) {
-        setError('No card found for that phone number and code. Double-check both and try again.');
+        setError('No card found for that email and code. Double-check both and try again.');
       }
     } catch {
       setError('Something went wrong. Please try again.');
@@ -51,13 +51,19 @@ export function CardRecovery() {
           <>
             <h1 className="text-3xl font-serif-display font-medium mb-2">Lost your card?</h1>
             <p className="text-gray-500 mb-8 leading-relaxed">
-              Enter the phone number and 6-digit code you set when you signed up, and we&rsquo;ll bring your card back.
+              Enter the email and 6-digit code you set when you signed up, and we&rsquo;ll bring your card back.
             </p>
 
             <div className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Phone number</label>
-                <PhoneField onChange={setPhone} onEnter={submit} />
+                <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Email</label>
+                <input
+                  type="email" inputMode="email" value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
+                  placeholder="you@email.com"
+                />
               </div>
               <div className="space-y-1">
                 <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">6-digit code</label>

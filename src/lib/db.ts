@@ -727,3 +727,14 @@ export async function recoverCards(
   const rows = (data as Array<{ card: CardRow; campaign: CampaignRow }>) ?? [];
   return rows.map((r) => ({ card: toCard(r.card), campaign: toCampaign(r.campaign) }));
 }
+
+/** Recover a customer's card(s) by EMAIL + the 6-digit passcode they set at signup. */
+export async function recoverCardsByEmail(
+  email: string,
+  code: string,
+): Promise<{ card: UserCard; campaign: Campaign }[]> {
+  const { data, error } = await supabase.rpc('recover_cards_by_email', { p_email: email, p_code: code });
+  if (error) throw error;
+  const rows = (data as Array<{ card: CardRow; campaign: CampaignRow }>) ?? [];
+  return rows.map((r) => ({ card: toCard(r.card), campaign: toCampaign(r.campaign) }));
+}
