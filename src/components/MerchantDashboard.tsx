@@ -766,7 +766,7 @@ export function MerchantDashboard({
                 }`}>
                 <Icon className="w-4 h-4" />
                 <span className="flex-1 text-left truncate">{label}</span>
-                {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP') && (
+                {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP' || id === 'STAFF') && (
                   <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
                 )}
               </button>
@@ -1561,9 +1561,16 @@ export function MerchantDashboard({
 
         {/* --- SETTINGS --- */}
         {activeTab === 'STAFF' && (
-          <ProLockOverlay locked={!isPro} title="Staff management is a Pro feature" onUpgrade={() => setShowUpgradeModal(true)}>
+          !isPro ? (
+            <ProFeatureLock
+              title="Staff management is a Pro feature"
+              description="Give your team their own PINs, see who stamped what, and control what each person can access."
+              bullets={['Individual staff PINs', 'Activity tracked per staff member', 'Hide sections from staff', 'Owner-PIN protected settings']}
+              onUpgrade={() => setShowUpgradeModal(true)}
+            />
+          ) : (
             <StaffPanel campaignId={campaign.id} onSwitchStaff={() => setShowStaffGate(true)} />
-          </ProLockOverlay>
+          )
         )}
 
         {activeTab === 'VALUE' && (

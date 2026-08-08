@@ -6,6 +6,7 @@ import { downloadInstagramPng, downloadTableQrPng } from '../services/posterImag
 import { buildPosterHtml } from '../services/posterGenerator';
 import { toPng } from 'html-to-image';
 import { useToast } from './ToastProvider';
+import { ProLockOverlay } from './ProLockOverlay';
 
 interface PosterSettingsProps {
   campaign: Campaign;
@@ -142,37 +143,8 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
     }
   };
 
-  if (!isPro) {
-    return (
-      <div className="bg-white rounded-lg border notion-border p-6 space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Palette className="w-5 h-5 text-gray-500" /> Poster appearance
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">
-            Free posters use a clean white background. Custom colours are part of Pro.
-          </p>
-        </div>
-        <div className="flex flex-col items-center text-center bg-[#F7F7F5] border notion-border rounded-lg p-6">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-100 to-orange-100 border border-amber-200 flex items-center justify-center mb-3 shadow-sm">
-            <Lock className="w-5 h-5 text-amber-600" />
-          </div>
-          <p className="text-sm font-semibold mb-1">Custom poster branding is a Pro feature</p>
-          <p className="text-xs text-gray-500 mb-4 max-w-xs">
-            Pick preset colours or a custom gradient for your printed posters, business cards &amp; pamphlets.
-          </p>
-          <button
-            onClick={onUpgrade}
-            className="inline-flex items-center gap-2 bg-[#37352F] text-white px-4 py-2 rounded-lg font-medium text-xs hover:bg-opacity-90 transition shadow-sm"
-          >
-            <Sparkles className="w-3.5 h-3.5" /> Upgrade to Pro
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
+    <ProLockOverlay locked={!isPro} title="Custom poster colours are a Pro feature" onUpgrade={onUpgrade}>
     <div className="bg-white rounded-lg border notion-border p-6 space-y-6">
       <div>
         <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -346,6 +318,7 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
         </button>
       </div>
     </div>
+    </ProLockOverlay>
   );
 }
 
