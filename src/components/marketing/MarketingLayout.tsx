@@ -133,6 +133,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
             { href: '/terms', label: 'Terms' },
             { href: '/dpa', label: 'DPA' },
             { href: '/impressum', label: 'Impressum' },
+            { href: '/cookies', label: 'Cookies' },
           ]} />
         </div>
         <div className="max-w-6xl mx-auto px-6 py-6 border-t notion-border text-sm text-gray-400 flex flex-col sm:flex-row justify-between gap-2">

@@ -23,6 +23,7 @@ type AuthMode = 'LOGIN' | 'FORGOT_PASSWORD' | 'RESET_SENT';
 
 // Demo data for the phone mockup
 import { MobileNav } from './MobileNav';
+import { reopenCookieBanner } from '../lib/cookieConsent';
 
 export function LandingPage({
   onEnterMerchantFlow,
@@ -478,6 +479,8 @@ export function LandingPage({
             <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>
             <a href="/terms" className="hover:text-[#37352F]">Terms</a>
             <a href="/impressum" className="hover:text-[#37352F]">Impressum</a>
+            <a href="/cookies" className="hover:text-[#37352F]">Cookies</a>
+            <button onClick={reopenCookieBanner} className="hover:text-[#37352F] cursor-pointer">Cookie settings</button>
             <a href="#contact" className="hover:text-[#37352F]">Contact</a>
           </div>
           <div className="mt-4 md:mt-0">&copy; 2026 Stampfix Inc.</div>

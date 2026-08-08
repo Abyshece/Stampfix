@@ -10,10 +10,12 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { initSentry, SentryErrorBoundary } from './lib/sentry';
 import { ToastProvider } from './components/ToastProvider';
+import { CookieBanner } from './components/CookieBanner';
+import { getCookieConsent } from './lib/cookieConsent';
 
-// Initialise Sentry before React mounts so any error during initial render
-// is captured. Safe no-op if VITE_SENTRY_DSN is not set.
-initSentry();
+// Error-monitoring is a consented, non-essential cookie: only start Sentry
+// if the user has opted in. The banner starts it immediately on consent.
+if (getCookieConsent()?.functional) initSentry();
 
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Could not find root element');
@@ -70,6 +72,7 @@ ReactDOM.createRoot(rootElement).render(
       <ToastProvider>
         <App />
       </ToastProvider>
+      <CookieBanner />
     </SentryErrorBoundary>
   </React.StrictMode>,
 );
