@@ -1,3 +1,4 @@
+import { toPng } from 'html-to-image';
 // Client-side PNG export for the Instagram square and the table QR.
 // Backgrounds honour the poster colour/gradient setting (same value the
 // pamphlet uses); the QR comes from CORS-enabled api.qrserver.com.
@@ -117,4 +118,41 @@ export async function downloadTableQrPng(c: PC, bg?: string | null) {
   x.fillText('WIN REWARDS WITH US', S / 2, 814);
   (x as unknown as { letterSpacing: string }).letterSpacing = '0px';
   dl(cv, `${slug(f.name)}-table-qr.png`);
+}
+
+/**
+ * Render a print poster (from buildPosterHtml) to a PNG and download it.
+ * Uses a hidden iframe so the poster's own stylesheet applies, strips the
+ * preview drop-shadow, and captures just the poster element.
+ */
+export async function downloadPosterPng(html: string, size: string, filename: string): Promise<void> {
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:1600px;height:2400px;border:0;background:#fff;';
+  document.body.appendChild(iframe);
+  try {
+    const doc = iframe.contentDocument;
+    if (!doc) throw new Error('no iframe document');
+    doc.open(); doc.write(html); doc.close();
+    await new Promise((r) => setTimeout(r, 150));
+    const imgs = Array.from(doc.querySelectorAll('img'));
+    await Promise.all(imgs.map((img) => (img.complete && img.naturalWidth)
+      ? Promise.resolve()
+      : new Promise<void>((res) => { img.onload = () => res(); img.onerror = () => res(); })));
+    try { await doc.fonts.ready; } catch { /* ignore */ }
+    await new Promise((r) => setTimeout(r, 100));
+    const el = (doc.querySelector('.size-' + size) as HTMLElement | null) ?? doc.body;
+    el.style.boxShadow = 'none';
+    el.style.margin = '0';
+    const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' });
+    const a = document.createElement('a');
+    a.download = filename;
+    a.href = dataUrl;
+    a.click();
+  } catch (err) {
+    console.error('[poster png]', err);
+    alert('Could not generate the poster image. Please try again.');
+  } finally {
+    setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* ignore */ } }, 200);
+  }
 }
