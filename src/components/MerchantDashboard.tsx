@@ -7,6 +7,7 @@ import {
   RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import { SupportModal } from './SupportModal';
 import { markApprovalBannerSeen, getCardById, logMerchantActivity } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
@@ -162,6 +163,7 @@ export function MerchantDashboard({
   }, [campaign.id]);
   // Show the Admin shortcut only for the platform owner's account.
   const { user } = useAuth();
+  const [showSupport, setShowSupport] = useState(false);
   const isStampfixAdmin = (user?.email ?? '').toLowerCase() === 'abyshece@gmail.com';
 
   // Buffered settings
@@ -846,7 +848,11 @@ export function MerchantDashboard({
             <p className="text-sm text-red-800 m-0">
               <span className="font-semibold">Your application wasn't approved.</span> Please contact support if you believe this is a mistake.
             </p>
+            <button onClick={() => setShowSupport(true)} className="ml-auto self-center whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-md bg-[#37352F] text-white hover:bg-[#2F2D28] transition">Contact support</button>
           </div>
+        )}
+        {showSupport && (
+          <SupportModal defaultEmail={user?.email ?? undefined} businessName={campaign.businessName} onClose={() => setShowSupport(false)} />
         )}
         {campaign.approvalStatus === 'approved' && !approvalSeen && (
           <div className="mb-6 flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">

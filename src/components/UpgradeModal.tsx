@@ -1,3 +1,4 @@
+import { PRO_FEATURES } from '../lib/pricing';
 import { useEffect, useState } from 'react';
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe-js';
@@ -143,15 +144,7 @@ function PricingView({
       </div>
 
       <div className="px-8 py-8 space-y-3">
-        {[
-          'Unlimited customers — unlimited Apple & Google Wallet cards',
-          'Custom branding for posters, business cards & pamphlets',
-          'Run one campaign across multiple locations',
-          'Run multiple campaigns at a single location',
-          'Control your card colour & the text shown in Apple Wallet / Maps',
-          'Priority email support',
-          'Cancel anytime, no contract',
-        ].map((feature) => (
+        {PRO_FEATURES.slice(0, 8).map((feature) => (
           <div key={feature} className="flex items-start gap-2.5">
             <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Check className="w-3 h-3 text-green-600" strokeWidth={3} />
@@ -159,6 +152,7 @@ function PricingView({
             <span className="text-sm text-[#37352F]">{feature}</span>
           </div>
         ))}
+        <p className="text-xs text-gray-400 m-0 pl-[30px]">and {PRO_FEATURES.length - 8} more — see the full list in Settings → Billing.</p>
       </div>
 
       <div className="px-8 pb-8 space-y-3">

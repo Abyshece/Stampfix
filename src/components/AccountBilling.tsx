@@ -1,3 +1,4 @@
+import { PRO_FEATURES } from '../lib/pricing';
 import { useState } from 'react';
 import { CreditCard, Sparkles, Check, Loader2, ExternalLink } from 'lucide-react';
 import type { MerchantBilling, UserCard } from '../types';
@@ -131,15 +132,7 @@ export function AccountBilling({ billing, country, cards }: AccountBillingProps)
       {!isPro && (
         <div className="bg-[#F7F7F5] border notion-border rounded-md p-4 space-y-2.5">
           <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Pro features — {price}</p>
-          {[
-            'Unlimited Apple & Google Wallet cards',
-            'Custom branding for posters & business cards',
-            'One campaign across multiple locations',
-            'Multiple campaigns per location',
-            'Control card colour & Apple Wallet text',
-            'Priority email support',
-            'Cancel anytime',
-          ].map((feat) => (
+          {PRO_FEATURES.map((feat) => (
             <div key={feat} className="flex items-center gap-2 text-sm">
               <Check className="w-3.5 h-3.5 text-green-600 flex-shrink-0" strokeWidth={3} />
               <span>{feat}</span>

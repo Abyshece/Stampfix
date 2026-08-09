@@ -36,3 +36,25 @@ export function proMonthly(country: MerchantCountry): {
   if (country === 'DE') return { amount: 19.99, symbol: '€', vat: true };
   return { amount: 29.99, symbol: 'CA$', vat: false };
 }
+
+/** Canonical Pro feature list — used in Pricing, Account & Billing, and the upgrade modal. */
+export const PRO_FEATURES: string[] = [
+  'Unlimited customer cards — Apple & Google Wallet',
+  'Unlimited locations',
+  'One campaign across multiple locations',
+  'Multiple campaigns at a single location',
+  'Custom card branding — colours & icon, with live preview',
+  'Control the text shown in Apple Wallet & Maps',
+  'Automatic wallet-pass updates when stamps are earned',
+  'Custom-branded posters — table QR, A4 & Instagram',
+  'Custom links on your loyalty cards',
+  'Analytics & insights — per-location & per-offer',
+  'Staff PINs — individual logins, activity & permissions',
+  'Per-customer daily stamp limits & anomaly detection',
+  'Customer segments & filters',
+  'CSV customer export',
+  'Geo / location-based notifications',
+  'Animated stamp effects',
+  'Priority email support',
+  'Cancel anytime, no contract',
+];
