@@ -183,6 +183,7 @@ function OverviewTab() {
   const [merchantSearch, setMerchantSearch] = useState('');
   const [appliedMerchant, setAppliedMerchant] = useState<string | null>(null);
   const [ext, setExt] = useState<ExtendedKPIs | null>(null);
+  const [extErr, setExtErr] = useState<string | null>(null);
 
   // Resolve the chosen preset into actual from/to dates.
   const { fromDate, toDate, label } = useMemo(() => {
@@ -198,8 +199,10 @@ function OverviewTab() {
   }, [fromDate, toDate]);
 
   useEffect(() => {
-    setExt(null);
-    fetchExtendedKPIs(fromDate, toDate, appliedMerchant).then(setExt).catch(() => setExt(null));
+    setExt(null); setExtErr(null);
+    fetchExtendedKPIs(fromDate, toDate, appliedMerchant)
+      .then((d) => { setExt(d); setExtErr(null); })
+      .catch((e) => setExtErr(e?.message ? String(e.message) : String(e)));
   }, [fromDate, toDate, appliedMerchant]);
 
   return (
@@ -300,7 +303,9 @@ function OverviewTab() {
                 )}
               </div>
             </div>
-            {!ext ? <div className="text-sm text-gray-400">Loading…</div> : (
+            {extErr ? (
+              <div className="text-sm text-red-500">Couldn&rsquo;t load KPIs: {extErr}. If it says the function does not exist, run admin-extended-kpis.sql in Supabase.</div>
+            ) : !ext ? <div className="text-sm text-gray-400">Loading…</div> : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <StatCard label="New merchants" value={ext.new_merchants} />
                 <StatCard label="Active merchants" value={ext.active_merchants} />
