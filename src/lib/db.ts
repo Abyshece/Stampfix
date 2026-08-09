@@ -764,3 +764,18 @@ export async function logMerchantActivity(action: string, detail?: Record<string
     await supabase.rpc('log_merchant_activity', { p_action: action, p_detail: detail ?? null });
   } catch { /* non-critical */ }
 }
+
+export interface ExtendedKPIs {
+  new_merchants: number; active_merchants: number; inactive_merchants: number; total_merchants: number;
+  new_customers: number; active_customers: number; inactive_customers: number; total_customers: number;
+  active_campaigns: number; apple_passes: number; rewards_redeemed: number; redemption_rate: number;
+}
+
+/** Admin: extended KPIs for a date range, optionally scoped to one merchant. */
+export async function fetchExtendedKPIs(from: Date, to: Date, merchantId?: string | null): Promise<ExtendedKPIs> {
+  const { data, error } = await supabase.rpc('admin_extended_kpis', {
+    p_start: from.toISOString(), p_end: to.toISOString(), p_merchant_id: merchantId || null,
+  });
+  if (error) throw error;
+  return data as ExtendedKPIs;
+}

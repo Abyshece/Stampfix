@@ -17,6 +17,7 @@ import {
 } from '../services/admin';
 import { OffersTab } from './OffersTab';
 import { setMerchantApproval, getMerchantApproval, getMerchantActivity, type MerchantActivityRow } from '../lib/db';
+import { fetchExtendedKPIs, type ExtendedKPIs } from '../lib/db';
 
 type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'LOGS' | 'FUNNEL';
 
@@ -179,6 +180,9 @@ function OverviewTab() {
   const [customTo, setCustomTo] = useState<string>('');
   const [data, setData] = useState<RangedKPIs | null>(null);
   const [loading, setLoading] = useState(true);
+  const [merchantSearch, setMerchantSearch] = useState('');
+  const [appliedMerchant, setAppliedMerchant] = useState<string | null>(null);
+  const [ext, setExt] = useState<ExtendedKPIs | null>(null);
 
   // Resolve the chosen preset into actual from/to dates.
   const { fromDate, toDate, label } = useMemo(() => {
@@ -192,6 +196,11 @@ function OverviewTab() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [fromDate, toDate]);
+
+  useEffect(() => {
+    setExt(null);
+    fetchExtendedKPIs(fromDate, toDate, appliedMerchant).then(setExt).catch(() => setExt(null));
+  }, [fromDate, toDate, appliedMerchant]);
 
   return (
     <div className="space-y-6">
@@ -267,8 +276,61 @@ function OverviewTab() {
             <KPIContainer title="Stamping activity" block={data.activity} accent="bg-orange-50 text-orange-700" />
             <KPIContainer title="Rewards redeemed" block={data.rewards} accent="bg-green-50 text-green-700" />
           </div>
+
+          {/* Detailed KPIs + per-merchant search (isolated add-on) */}
+          <div className="bg-white border notion-border rounded-lg p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <h2 className="text-lg font-semibold m-0">
+                Detailed KPIs
+                {appliedMerchant && <span className="text-xs font-normal text-gray-400"> · merchant {appliedMerchant.slice(0, 8)}…</span>}
+              </h2>
+              <div className="flex items-center gap-2">
+                <input
+                  value={merchantSearch}
+                  onChange={(e) => setMerchantSearch(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') setAppliedMerchant(merchantSearch.trim() || null); }}
+                  placeholder="Merchant ID (UUID) — blank = all"
+                  className="bg-[#F7F7F5] border notion-border rounded px-2 py-1.5 text-xs w-64"
+                />
+                <button onClick={() => setAppliedMerchant(merchantSearch.trim() || null)}
+                  className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white">Search</button>
+                {appliedMerchant && (
+                  <button onClick={() => { setMerchantSearch(''); setAppliedMerchant(null); }}
+                    className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5]">Clear</button>
+                )}
+              </div>
+            </div>
+            {!ext ? <div className="text-sm text-gray-400">Loading…</div> : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <StatCard label="New merchants" value={ext.new_merchants} />
+                <StatCard label="Active merchants" value={ext.active_merchants} />
+                <StatCard label="Inactive merchants" value={ext.inactive_merchants} />
+                <StatCard label="Active campaigns" value={ext.active_campaigns} />
+                <StatCard label="New customers" value={ext.new_customers} />
+                <StatCard label="Active customers" value={ext.active_customers} />
+                <StatCard label="Inactive customers" value={ext.inactive_customers} />
+                <StatCard label="Apple Wallet passes" value={ext.apple_passes} />
+                <StatCard label="Rewards redeemed" value={ext.rewards_redeemed} />
+                <StatCard label="Redemption rate" value={`${ext.redemption_rate}%`} />
+                <StatCard label="Total merchants" value={ext.total_merchants} />
+                <StatCard label="Total customers" value={ext.total_customers} />
+              </div>
+            )}
+            <p className="text-[11px] text-gray-400 m-0">
+              “Active” = touched in the selected window (a card enrolled or stamped). Wallet passes shown are Apple; Google installs and pass deletions aren’t tracked yet.
+            </p>
+          </div>
         </>
       )}
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="bg-[#F7F7F5] border notion-border rounded-lg p-3">
+      <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400">{label}</div>
+      <div className="text-2xl font-bold mt-1">{typeof value === 'number' ? value.toLocaleString() : value}</div>
     </div>
   );
 }
