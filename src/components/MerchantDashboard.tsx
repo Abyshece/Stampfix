@@ -40,6 +40,7 @@ import { GetHelpPanel } from './GetHelpPanel';
 import { useToast } from './ToastProvider';
 import { supabase } from '../lib/supabase';
 import { buildPosterHtml, type PosterSize } from '../services/posterGenerator';
+import { downloadPosterPng } from '../services/posterImage';
 
 interface MerchantDashboardProps {
   campaign: Campaign;
@@ -472,18 +473,8 @@ export function MerchantDashboard({
    *  branding color (or gradient from posterColor), icon, business name,
    *  and a per-location QR code. */
   const handleDownloadPoster = (location: Location | null, size: PosterSize = 'pamphlet') => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow pop-ups to download the poster.');
-      return;
-    }
-    const html = buildPosterHtml({
-      campaign,
-      location,
-      size,
-    });
-    printWindow.document.write(html);
-    printWindow.document.close();
+    const html = buildPosterHtml({ campaign, location, size });
+    void downloadPosterPng(html, size, `stampfix-${size}-poster.png`);
     // Onboarding: downloading any poster from the Share tab counts as
     // the poster-downloaded milestone. Fire and forget.
     if (!onboarding.poster_downloaded) {

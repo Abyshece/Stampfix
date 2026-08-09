@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import type { Campaign, Location, OnboardingState } from '../types';
 import { buildPosterHtml } from '../services/posterGenerator';
+import { downloadPosterPng } from '../services/posterImage';
 
 interface OnboardingWizardProps {
   campaign: Campaign;
@@ -89,19 +90,13 @@ export function OnboardingWizard({
   const handleDownloadPoster = async (color: string) => {
     // Open the real designed pamphlet (same generator the Share tab uses),
     // tinted with the colour the merchant picked.
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow popups so we can open the printable poster.');
-      return;
-    }
     const html = buildPosterHtml({
       campaign,
       location: primaryLocation,
       size: 'pamphlet',
       posterBgOverride: color,
     });
-    printWindow.document.write(html);
-    printWindow.document.close();
+    await downloadPosterPng(html, 'pamphlet', 'stampfix-poster.png');
     // Mark the step done as soon as the merchant initiates the download.
     await onMarkStep({ poster_downloaded: true });
   };
@@ -377,15 +372,15 @@ function PrintStep({
             />
           ))}
         </div>
-        <p className="text-xs text-gray-500 text-center max-w-xs">
-          You can change the colour anytime to match your branding in Settings → Share &amp; Promote.
-        </p>
+        <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 max-w-sm">
+          <strong>Notice:</strong> Coloured posters are a Pro feature. As a one-time welcome you can download a coloured poster now — afterwards, free accounts can only download plain white posters, and you&rsquo;d need Pro to make coloured ones again. So if you like a colour, grab it now.
+        </div>
 
         <button
           onClick={() => onDownload(posterColor)}
           className="bg-[#37352F] text-white px-5 py-2.5 rounded-md font-medium text-sm hover:bg-opacity-90 transition flex items-center gap-2"
         >
-          <Printer className="w-4 h-4" /> {alreadyDone ? 'Download again' : 'Download poster (PDF)'}
+          <Printer className="w-4 h-4" /> {alreadyDone ? 'Download again' : 'Download poster (PNG)'}
         </button>
         {alreadyDone && (
           <div className="text-xs text-green-600 flex items-center gap-1">

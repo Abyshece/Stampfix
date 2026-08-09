@@ -55,12 +55,23 @@ export function useAuth(): AuthState {
       setState((s) => ({ ...s, loading: false }));
     }, 3000);
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
-      setState({
-        session,
-        user: session?.user ?? null,
-        loading: false,
+      setState((prev) => {
+        const nextUser = session?.user ?? null;
+        // On a token refresh / re-fired SIGNED_IN (both happen when the tab
+        // regains focus), the signed-in user hasn't actually changed. Keep the
+        // SAME user object reference so effects keyed on `user` don't re-run and
+        // flash the loading screen — i.e. a quiet background refresh. Other
+        // events (real sign-in/out, USER_UPDATED) update normally.
+        const keepRef =
+          (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') &&
+          !!prev.user && !!nextUser && prev.user.id === nextUser.id;
+        return {
+          session,
+          user: keepRef ? prev.user : nextUser,
+          loading: false,
+        };
       });
     });
 
