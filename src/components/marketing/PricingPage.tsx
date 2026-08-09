@@ -3,6 +3,8 @@ import {
   Check, Smartphone, Zap, Globe, BarChart3, Palette, Building2, Users, Wallet,
   FileDown, Gauge, Link2, MapPin, BellRing, ShieldCheck, Printer, LifeBuoy, Sparkles, TrendingUp,
 } from 'lucide-react';
+import { useState } from 'react';
+import { proMonthly, type MerchantCountry } from '../../lib/pricing';
 
 const FREE = [
   'Up to 10 customer cards',
@@ -52,6 +54,8 @@ const BENEFITS = [
 ];
 
 export function PricingPage() {
+  const [country, setCountry] = useState<MerchantCountry>('CA');
+  const { amount, symbol } = proMonthly(country);
   return (
     <MarketingLayout active="/pricing">
       <section className="max-w-3xl mx-auto px-6 pt-20 pb-8 text-center">
@@ -66,12 +70,25 @@ export function PricingPage() {
 
       {/* Plans */}
       <section className="max-w-4xl mx-auto px-6 pb-6">
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex rounded-lg border notion-border bg-white p-0.5 text-sm">
+            {(['CA', 'DE'] as const).map((c) => (
+              <button
+                key={c}
+                onClick={() => setCountry(c)}
+                className={`px-4 py-1.5 rounded-md transition ${country === c ? 'bg-[#37352F] text-white font-medium' : 'text-gray-600 hover:text-[#37352F]'}`}
+              >
+                {c === 'CA' ? 'CA$ · Canada' : '€ · Germany'}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="grid md:grid-cols-2 gap-6 items-stretch">
           {/* Free */}
           <div className="border notion-border rounded-2xl p-8 flex flex-col bg-white">
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Free</div>
             <div className="mt-3 flex items-baseline gap-1">
-              <span className="text-5xl font-serif-display font-semibold">€0</span>
+              <span className="text-5xl font-serif-display font-semibold">{symbol}0</span>
               <span className="text-gray-500 text-sm">/month</span>
             </div>
             <p className="text-gray-500 mt-2 text-sm">Everything you need to launch a loyalty card and start stamping.</p>
@@ -91,10 +108,10 @@ export function PricingPage() {
             <span className="absolute -top-3 left-8 bg-[#37352F] text-white text-[11px] font-semibold px-3 py-1 rounded-full uppercase tracking-wide">Most popular</span>
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pro</div>
             <div className="mt-3 flex items-baseline gap-1">
-              <span className="text-5xl font-serif-display font-semibold">CA$29.99</span>
+              <span className="text-5xl font-serif-display font-semibold">{symbol}{amount}</span>
               <span className="text-gray-500 text-sm">/month</span>
             </div>
-            <p className="text-gray-500 mt-2 text-sm">€19.99/month in Germany. Everything in Free, plus the full toolkit.</p>
+            <p className="text-gray-500 mt-2 text-sm">Everything in Free, plus the full toolkit.{country === 'DE' ? ' Prices include VAT.' : ''}</p>
             <ul className="mt-6 space-y-3 flex-1">
               {PRO.map((f) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#37352F]">
