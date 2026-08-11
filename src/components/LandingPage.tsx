@@ -4,6 +4,7 @@ import {
   BarChart3, Users, Zap, Smartphone, QrCode, Instagram, Linkedin,
 } from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
+import { LaunchSteps } from './LaunchSteps';
 import { WalletFanVisual, InsightsVisual, StepCard, StatCard } from './FeatureVisuals';
 import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
@@ -421,19 +422,7 @@ export function LandingPage({
       </section>
 
       {/* How it works */}
-      <section className="bg-[#F7F7F5] border-y notion-border py-24">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-serif-display font-semibold mb-4">Launch in 3 steps</h2>
-            <p className="text-gray-500">No developer required.</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <StepCard n={1} title="Design your card" text="Customize your colors, logo, and rewards in minutes." kind="design" />
-            <StepCard n={2} title="Print your QR" text="Download your unique poster. Place it at your checkout counter or on tables." kind="qr" />
-            <StepCard n={3} title="Scan & Reward" text="Use any phone or tablet to scan customer cards. No expensive hardware needed." kind="scan" />
-          </div>
-        </div>
-      </section>
+      <LaunchSteps />
 
       {/* Budget pitch band */}
       <section className="py-24 px-6">
