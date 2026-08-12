@@ -119,7 +119,9 @@ export function PrivacyPolicy() {
 
       <LegalH2>6. International data transfers</LegalH2>
       <p>
-        Stampfix is established in Canada, so personal information of EU data subjects may be
+        <strong>Cardholder personal data is stored in the EU</strong> &mdash; our database and
+        authentication run on Supabase in the Central EU (Frankfurt) region, so this data stays within
+        the EEA. Stampfix itself is operated from Canada, and some personal information may be
         transferred to and processed in Canada. The European Commission has recognised Canada as
         providing an adequate level of data protection for commercial organisations subject to
         PIPEDA (the EU–Canada adequacy decision), which provides a lawful basis for these transfers.

@@ -16,8 +16,8 @@ const SUBPROCESSORS: Array<{
   {
     name: 'Supabase Inc.',
     purpose: 'Database, authentication, file storage',
-    location: 'EU (Frankfurt) and/or Canada — depends on project region',
-    transfer: 'Within EEA where the EU region is used; otherwise SCCs + Supabase DPA',
+    location: 'EU — Central EU (Frankfurt), eu-central-1',
+    transfer: 'None for stored data — cardholder data stays in the EEA (Frankfurt); Supabase DPA + SCCs cover incidental support access.',
   },
   {
     name: 'Vercel Inc.',
@@ -65,13 +65,21 @@ const SUBPROCESSORS: Array<{
 
 export function Subprocessors() {
   return (
-    <LegalPage title="Sub-processors" lastUpdated="24 June 2026">
+    <LegalPage title="Sub-processors" lastUpdated="12 August 2026">
       <p>
         Stampfix engages the third-party sub-processors below to process personal data on behalf of
         Merchants. This list is referenced by our{' '}
         <a href="/dpa" className="underline">Data Processing Agreement</a> (§7). Each sub-processor
         is bound by data-protection terms consistent with the DPA. We give Merchants 30 days’ notice
         before adding a new sub-processor and the opportunity to object on reasonable grounds.
+      </p>
+
+      <p>
+        <strong>Where cardholder data is stored:</strong> our database and authentication run on
+        Supabase in the <strong>EU region &mdash; Central EU (Frankfurt), eu-central-1</strong>, so
+        cardholder personal data is stored within the EEA. The sub-processors below may involve limited
+        processing elsewhere (wallet-pass issuance, email delivery, payments, error monitoring) under
+        the safeguards shown.
       </p>
 
       <div className="overflow-x-auto border notion-border rounded-lg not-prose">
@@ -106,7 +114,7 @@ export function Subprocessors() {
       </p>
 
       <p className="text-xs text-gray-400 pt-8 border-t notion-border mt-8">
-        Last updated: 18 July 2026
+        Last updated: 12 August 2026
       </p>
     </LegalPage>
   );
