@@ -230,7 +230,7 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+        <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
       </div>
     );
   }
@@ -280,7 +280,7 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
               </div>
               <button
                 onClick={() => { setLinkSent(false); setError(null); setOtp(''); }}
-                className="text-xs text-gray-400 hover:text-[#37352F] transition underline"
+                className="text-xs text-gray-500 hover:text-[#37352F] transition underline"
               >
                 Use a different email
               </button>
@@ -329,7 +329,7 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
               </div>
             </div>
           )}
-          <p className="text-[11px] text-gray-400 text-center">
+          <p className="text-[11px] text-gray-500 text-center">
             Haven't signed up yet? Scan a merchant's QR poster to join their program.
           </p>
           </>
@@ -344,7 +344,7 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
     return (
       <Shell onExit={onExit} onSignOut={handleSignOut}>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+          <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
         </div>
       </Shell>
     );
@@ -393,7 +393,7 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
 
         {/* Bookmark hint — encourages saving the URL for next time */}
         <div className="bg-[#F7F7F5] border notion-border rounded-lg p-3 text-xs text-gray-600 flex gap-2">
-          <Bookmark className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-400" />
+          <Bookmark className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-500" />
           <div>
             <strong>Tip:</strong> bookmark this page (<code className="bg-white px-1 rounded">stampfix.app/my-card</code>) to get back here anytime.
             {isIOS && ' On iPhone, tap Share → Add to Home Screen.'}
@@ -430,14 +430,14 @@ function Shell({
           {onSignOut ? (
             <button
               onClick={onSignOut}
-              className="text-xs text-gray-400 hover:text-[#37352F] transition flex items-center gap-1"
+              className="text-xs text-gray-500 hover:text-[#37352F] transition flex items-center gap-1"
             >
               <LogOut className="w-3 h-3" /> Sign out
             </button>
           ) : (
             <button
               onClick={onExit}
-              className="text-xs text-gray-400 hover:text-[#37352F] transition flex items-center gap-1"
+              className="text-xs text-gray-500 hover:text-[#37352F] transition flex items-center gap-1"
             >
               <ArrowLeft className="w-3 h-3" /> Home
             </button>
@@ -527,7 +527,7 @@ function DeletionRow({ card, onRefresh }: { card: UserCard; onRefresh: () => voi
       <button
         onClick={handleRequest}
         disabled={busy}
-        className="text-[11px] text-gray-400 hover:text-red-600 underline disabled:opacity-50 transition"
+        className="text-[11px] text-gray-500 hover:text-red-600 underline disabled:opacity-50 transition"
       >
         {busy ? 'Working...' : 'Request data deletion'}
       </button>
@@ -574,7 +574,7 @@ function EditProfileRow({ card, onRefresh }: { card: UserCard; onRefresh: () => 
       <div className="flex justify-end -mt-1">
         <button
           onClick={() => setEditing(true)}
-          className="text-[11px] text-gray-400 hover:text-[#37352F] underline transition"
+          className="text-[11px] text-gray-500 hover:text-[#37352F] underline transition"
         >
           Edit profile
         </button>
@@ -597,7 +597,7 @@ function EditProfileRow({ card, onRefresh }: { card: UserCard; onRefresh: () => 
           />
         </label>
       </div>
-      <p className="text-[10px] text-gray-400 leading-snug">
+      <p className="text-[10px] text-gray-500 leading-snug">
         Need to change your email? Contact <a href="mailto:hello@stampfix.app" className="underline">hello@stampfix.app</a>.
       </p>
       {error && <div className="text-red-600 text-[11px]">{error}</div>}

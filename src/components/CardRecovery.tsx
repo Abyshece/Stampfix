@@ -56,22 +56,22 @@ export function CardRecovery() {
 
             <div className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Email</label>
+                <label className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Email</label>
                 <input
                   type="email" inputMode="email" value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
+                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-400"
                   placeholder="you@email.com"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">6-digit code</label>
+                <label className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">6-digit code</label>
                 <input
                   type="text" inputMode="numeric" maxLength={6} value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 font-mono tracking-[0.3em] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
+                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 font-mono tracking-[0.3em] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-400"
                   placeholder="••••••"
                 />
                 <div className="flex gap-2 items-start text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-2.5 mt-1.5">

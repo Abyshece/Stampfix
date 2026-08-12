@@ -230,7 +230,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   // ----- Loading -----
   if (!campaign && !error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-gray-400">
+      <div className="min-h-screen flex items-center justify-center bg-white text-gray-500">
         <Loader2 className="w-6 h-6 animate-spin" />
       </div>
     );
@@ -251,7 +251,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
                 The loyalty program is currently at capacity. Please ask the staff to upgrade their
                 Stampfix account so you can join.
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-500">
                 Existing customers can still collect stamps as normal.
               </p>
             </>
@@ -269,8 +269,8 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   if (campaign.approvalStatus !== 'approved' && !isOwner) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-[#37352F] text-center">
-        <button onClick={onExit} className="absolute top-6 left-6 text-gray-400 hover:text-gray-600">
-          <ArrowLeft className="w-5 h-5" />
+        <button onClick={onExit} aria-label="Go back" className="absolute top-6 left-6 text-gray-500 hover:text-gray-600">
+          <ArrowLeft className="w-5 h-5" aria-hidden="true" />
         </button>
         <div className="max-w-sm w-full space-y-3">
           <div className="w-12 h-12 bg-[#F7F7F5] rounded-md mx-auto flex items-center justify-center text-xl border notion-border mb-2">
@@ -289,8 +289,8 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   if (!user) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-[#37352F]">
-        <button onClick={onExit} className="absolute top-6 left-6 text-gray-400 hover:text-gray-600">
-          <ArrowLeft className="w-5 h-5" />
+        <button onClick={onExit} aria-label="Go back" className="absolute top-6 left-6 text-gray-500 hover:text-gray-600">
+          <ArrowLeft className="w-5 h-5" aria-hidden="true" />
         </button>
         <div className="max-w-sm w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="text-center space-y-2">
@@ -304,48 +304,52 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">First Name</label>
+                <label htmlFor="sf-firstname" className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">First Name</label>
                 <input
+                  id="sf-firstname"
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
+                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-400"
                   placeholder="Jane"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Surname</label>
+                <label htmlFor="sf-surname" className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Surname</label>
                 <input
+                  id="sf-surname"
                   value={formData.surname}
                   onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
-                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
+                  className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-400"
                   placeholder="Doe"
                 />
               </div>
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Email Address</label>
+              <label htmlFor="sf-email" className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Email Address</label>
               <input
+                id="sf-email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
+                className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-400"
                 placeholder="jane@example.com"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Phone Number</label>
+              <label className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Phone Number</label>
               <PhoneField onChange={(v) => setFormData({ ...formData, phone: v })} />
               <p className="text-[11px] text-gray-500 leading-relaxed">
                 Recommended so {campaign.businessName} can reach you about your rewards and reach your card if you lose access to your email.
               </p>
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Card recovery code (6 digits)</label>
+              <label htmlFor="sf-code" className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Card recovery code (6 digits)</label>
               <input
+                id="sf-code"
                 type="text" inputMode="numeric" maxLength={6}
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 font-mono tracking-[0.3em] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
+                className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 font-mono tracking-[0.3em] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-400"
                 placeholder="••••••"
               />
               <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 text-[11px] text-blue-700 leading-relaxed">
@@ -410,7 +414,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
                 <>Join now <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
-            <p className="text-[10px] text-gray-400 text-center">
+            <p className="text-[10px] text-gray-500 text-center">
               No password needed — you'll get your card right away.
             </p>
           </div>
@@ -422,7 +426,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             <div className="bg-white rounded-t-xl sm:rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div className="sticky top-0 bg-white border-b notion-border px-5 py-3 flex items-center justify-between">
                 <h3 className="font-semibold">{campaign.businessName} — Privacy notice</h3>
-                <button onClick={() => setShowPrivacyNotice(false)} className="text-gray-400 hover:text-[#37352F] text-xl leading-none">&times;</button>
+                <button onClick={() => setShowPrivacyNotice(false)} aria-label="Close" className="text-gray-500 hover:text-[#37352F] text-xl leading-none"><span aria-hidden="true">&times;</span></button>
               </div>
               <div className="px-5 py-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                 {campaign.customerPrivacyNotice ?? (
@@ -443,7 +447,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   // ----- Authenticated, loading card -----
   if (loading || !card) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-gray-400">
+      <div className="min-h-screen flex items-center justify-center bg-white text-gray-500">
         <Loader2 className="w-6 h-6 animate-spin" />
       </div>
     );
@@ -484,23 +488,23 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
         <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-[340px] text-center">
           <div className="bg-white p-4 rounded-lg border notion-border shadow-sm">
             <div className="font-bold text-2xl mb-1 text-[#37352F]">{card.currentStamps}</div>
-            <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Stamps</div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Stamps</div>
           </div>
           <div className="bg-white p-4 rounded-lg border notion-border shadow-sm">
             <div className="font-bold text-2xl mb-1 text-[#37352F]">{campaign.maxStamps - card.currentStamps}</div>
-            <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">To Go</div>
+            <div className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">To Go</div>
           </div>
         </div>
 
         <div className="mt-8 text-center max-w-xs">
-          <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Instructions</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-2">Instructions</p>
           <p className="text-xs text-gray-500">
             Present the QR code on your card to the cashier at <strong>{campaign.businessName}</strong> to collect stamps and redeem rewards.
           </p>
         </div>
 
         <div className="mt-6 max-w-xs w-full bg-[#F7F7F5] border notion-border rounded-lg p-3 text-center">
-          <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1.5">Coming back later?</p>
+          <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1.5">Coming back later?</p>
           <p className="text-xs text-gray-600 leading-relaxed">
             Visit <a href="/my-card" className="text-[#37352F] font-medium underline">stampfix.app/my-card</a> and enter this same email to find your card again.
           </p>
