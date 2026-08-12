@@ -1436,7 +1436,6 @@ export function MerchantDashboard({
                       currentStamps: previewStamps,
                       customerName: 'Customer Preview',
                       email: 'preview@example.com',
-                      age: null,
                       rewardsRedeemed: 0,
                       joinedAt: new Date(),
                       status: 'ACTIVE',

@@ -77,13 +77,20 @@ export function PrivacyPolicy() {
       <p><strong>From Cardholders:</strong></p>
       <ul className="list-disc pl-6 space-y-1">
         <li>Name and email address</li>
-        <li>Optionally, age, if provided at signup</li>
         <li>Stamp and reward activity (when stamps are collected or rewards redeemed)</li>
       </ul>
       <p><strong>Automatically:</strong></p>
       <ul className="list-disc pl-6 space-y-1">
         <li>Basic technical data such as IP address, browser type, and timestamps, used for security and to operate the Service</li>
       </ul>
+
+      <p>
+        <strong>Children.</strong> Stampfix is not directed to children. Cardholders must be at least
+        16 years old &mdash; the age of digital consent under the GDPR in Germany and the EU (and any
+        higher age required by local law). We do not knowingly collect personal data from children
+        under this age. If you believe a child has signed up, contact us or the Merchant and we will
+        delete the data.
+      </p>
 
       <LegalH2>4. Why we use it and our legal basis</LegalH2>
       <p>

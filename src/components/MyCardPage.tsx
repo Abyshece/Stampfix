@@ -79,7 +79,6 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
                 customerId: user.id,
                 customerName: fullName,
                 email: user.email,
-                age: p.age ?? null,
                 joinedAtLocationId: p.joined_location_id ?? null,
                 customerConsentAt: p.terms_accepted ? new Date().toISOString() : null,
                 marketingOptIn: p.marketing_opt_in === true,
@@ -548,7 +547,6 @@ function DeletionRow({ card, onRefresh }: { card: UserCard; onRefresh: () => voi
 function EditProfileRow({ card, onRefresh }: { card: UserCard; onRefresh: () => void }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(card.customerName);
-  const [age, setAge] = useState<string>(card.age != null ? String(card.age) : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -557,14 +555,9 @@ function EditProfileRow({ card, onRefresh }: { card: UserCard; onRefresh: () => 
     if (!name.trim()) { setError('Name cannot be empty'); return; }
     setBusy(true);
     try {
-      const ageNum = age.trim() ? parseInt(age.trim(), 10) : null;
-      if (age.trim() && (isNaN(ageNum!) || ageNum! < 13 || ageNum! > 120)) {
-        throw new Error('Age must be between 13 and 120');
-      }
       const { error: rpcErr } = await supabase.rpc('update_my_card_profile', {
         card_id_in: card.id,
         new_name: name.trim(),
-        new_age: ageNum,
       });
       if (rpcErr) throw rpcErr;
       setEditing(false);
@@ -603,17 +596,6 @@ function EditProfileRow({ card, onRefresh }: { card: UserCard; onRefresh: () => 
             maxLength={100}
           />
         </label>
-        <label className="block">
-          <span className="text-gray-500 text-[10px] uppercase tracking-wider font-bold">Age (optional)</span>
-          <input
-            type="number"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            className="w-full bg-white border notion-border rounded px-2 py-1.5 text-sm mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
-            min={13}
-            max={120}
-          />
-        </label>
       </div>
       <p className="text-[10px] text-gray-400 leading-snug">
         Need to change your email? Contact <a href="mailto:hello@stampfix.app" className="underline">hello@stampfix.app</a>.
@@ -621,7 +603,7 @@ function EditProfileRow({ card, onRefresh }: { card: UserCard; onRefresh: () => 
       {error && <div className="text-red-600 text-[11px]">{error}</div>}
       <div className="flex gap-2 justify-end">
         <button
-          onClick={() => { setEditing(false); setName(card.customerName); setAge(card.age != null ? String(card.age) : ''); setError(null); }}
+          onClick={() => { setEditing(false); setName(card.customerName); setError(null); }}
           disabled={busy}
           className="text-[11px] px-2 py-1 rounded border notion-border bg-white hover:bg-[#F7F7F5]"
         >

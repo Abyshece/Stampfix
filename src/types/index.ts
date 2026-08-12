@@ -71,7 +71,6 @@ export interface UserCard {
   customerId?: string | null;
   customerName: string;
   email: string;
-  age?: number | null;
   currentStamps: number;
   rewardsRedeemed: number;
   status: 'ACTIVE' | 'BLOCKED';

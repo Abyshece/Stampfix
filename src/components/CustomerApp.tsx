@@ -40,7 +40,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   const [error, setError] = useState<string | null>(null);
 
   // Magic-link form state
-  const [formData, setFormData] = useState({ firstName: '', surname: '', email: '', age: '', phone: '', code: '' });
+  const [formData, setFormData] = useState({ firstName: '', surname: '', email: '', phone: '', code: '' });
   const [isSendingLink, setIsSendingLink] = useState(false);
   // Turnstile token gating the signup submit.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -95,7 +95,6 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
           //      Gmail-app-opens-new-window flow)
           //   3. Auth user email/metadata as last-resort fallback
           let name = user.email?.split('@')[0] ?? 'Customer';
-          let age: number | null = null;
           let consentGiven = false;
           let marketing = false;
           let pendingRowId: string | null = null;
@@ -106,7 +105,6 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             try {
               const p = JSON.parse(pendingRaw);
               name = `${p.firstName} ${p.surname}`.trim() || name;
-              age = p.age ? parseInt(p.age) : null;
               consentGiven = p.termsAccepted === true;
               marketing = p.marketingOptIn === true;
             } catch {
@@ -127,7 +125,6 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             if (pending) {
               pendingRowId = pending.id;
               name = `${pending.first_name ?? ''} ${pending.surname ?? ''}`.trim() || name;
-              age = pending.age ?? null;
               consentGiven = pending.terms_accepted === true;
               marketing = pending.marketing_opt_in === true;
               if (!resolvedJoinedLocationId && pending.joined_location_id) {
@@ -141,7 +138,6 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             customerId: user.id,
             customerName: name,
             email: user.email ?? '',
-            age,
             joinedAtLocationId: resolvedJoinedLocationId,
             customerConsentAt: consentGiven ? new Date().toISOString() : null,
             marketingOptIn: marketing,
@@ -204,7 +200,6 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
             campaign_id: campaignId,
             first_name: formData.firstName,
             surname: formData.surname || null,
-            age: formData.age ? parseInt(formData.age) : null,
             phone: formData.phone.trim() || null,
             recovery_code: formData.code,
             joined_location_id: joinedLocationId ?? null,
@@ -357,16 +352,6 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
                 <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                 <span>Don&rsquo;t forget this &mdash; you&rsquo;ll use your phone number and this code to download your card again if you ever lose access.</span>
               </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase text-gray-400 tracking-wider">Age (optional)</label>
-              <input
-                type="number"
-                value={formData.age}
-                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
-                placeholder="25"
-              />
             </div>
 
             {error && (

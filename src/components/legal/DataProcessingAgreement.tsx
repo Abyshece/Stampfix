@@ -46,7 +46,7 @@ export function DataProcessingAgreement() {
 
       <h2>5. Types of Personal Data and Categories of Data Subjects</h2>
       <p>
-        <strong>Personal Data:</strong> Customer name, email address, age (optional), stamp counts, reward redemption history, IP address (for security), wallet pass identifiers.
+        <strong>Personal Data:</strong> Customer name, email address, stamp counts, reward redemption history, IP address (for security), wallet pass identifiers.
       </p>
       <p>
         <strong>Data Subjects:</strong> End customers of the Merchant who enroll in the Merchant's loyalty program.

@@ -45,7 +45,6 @@ interface CardRow {
   customer_id: string | null;
   customer_name: string;
   email: string;
-  age: number | null;
   current_stamps: number;
   rewards_redeemed: number;
   status: 'ACTIVE' | 'BLOCKED';
@@ -113,7 +112,6 @@ const toCard = (r: CardRow): UserCard => ({
   customerId: r.customer_id,
   customerName: r.customer_name,
   email: r.email,
-  age: r.age,
   currentStamps: r.current_stamps,
   rewardsRedeemed: r.rewards_redeemed,
   status: r.status,
@@ -327,7 +325,6 @@ export async function createCard(input: {
   customerId?: string | null;
   customerName: string;
   email: string;
-  age?: number | null;
   joinedAtLocationId?: string | null;
   customerConsentAt?: string | null;
   marketingOptIn?: boolean;
@@ -353,7 +350,6 @@ export async function createCard(input: {
       customer_id: input.customerId ?? null,
       customer_name: input.customerName,
       email: input.email,
-      age: input.age ?? null,
       joined_at_location_id: input.joinedAtLocationId ?? null,
       offer_title_snapshot: campaign.offer_title,
       max_stamps_snapshot: campaign.max_stamps,

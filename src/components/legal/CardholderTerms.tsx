@@ -43,6 +43,11 @@ export function CardholderTerms() {
 
       <LegalH2>3. Your card and signing in</LegalH2>
       <p>
+        You must be at least 16 years old to sign up for a card (or older where your local law sets a
+        higher age of digital consent). Stampfix is not intended for children under 16, and we do not
+        knowingly collect their personal data.
+      </p>
+      <p>
         To use a card, you provide your name and an email address, and we send a secure sign-in link
         to that email. Keep access to your email and account secure, and tell us promptly of any
         unauthorised use. Please keep your details accurate so that you receive your stamps and any
