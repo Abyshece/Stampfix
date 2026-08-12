@@ -62,7 +62,7 @@ function flagOf(iso: string): string {
   return iso.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
 }
 
-export function PhoneField({ onChange, onEnter }: { onChange: (v: string) => void; onEnter?: () => void }) {
+export function PhoneField({ onChange, onEnter, id }: { onChange: (v: string) => void; onEnter?: () => void; id?: string }) {
   const [idx, setIdx] = useState(-1); // empty by default — no country pre-selected
   const [number, setNumber] = useState('');
   const [open, setOpen] = useState(false);
@@ -146,7 +146,7 @@ export function PhoneField({ onChange, onEnter }: { onChange: (v: string) => voi
         onKeyDown={(e) => { if (e.key === 'Enter' && onEnter) onEnter(); }}
         className="flex-1 min-w-0 bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-300"
         placeholder="170 1234567"
-        aria-label="Phone number"
+        id={id} aria-label="Phone number"
       />
     </div>
   );

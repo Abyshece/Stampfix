@@ -336,8 +336,8 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Phone Number</label>
-              <PhoneField onChange={(v) => setFormData({ ...formData, phone: v })} />
+              <label htmlFor="sf-phone" className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Phone Number</label>
+              <PhoneField id="sf-phone" onChange={(v) => setFormData({ ...formData, phone: v })} />
               <p className="text-[11px] text-gray-500 leading-relaxed">
                 Recommended so {campaign.businessName} can reach you about your rewards and reach your card if you lose access to your email.
               </p>

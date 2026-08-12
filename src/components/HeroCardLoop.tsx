@@ -30,14 +30,14 @@ const CARD_H = 374;
 
 const CARDS: CardSpec[] = [
   { bg: '#75FBFD', mark: '#1A1A1A', text: '#223355', name: 'Bloom Coffee',    reward: 'Buy 6, get 1 free',        stamps: 2 },
-  { bg: '#EA3323', mark: '#FFFFFF', text: '#FFFFFF', name: 'Fade Barbers',    reward: '6 cuts, 7th on us',        stamps: 4 },
+  { bg: '#DB2F20', mark: '#FFFFFF', text: '#FFFFFF', name: 'Fade Barbers',    reward: '6 cuts, 7th on us',        stamps: 4 },
   { bg: '#F7CE46', mark: '#1A1A1A', text: '#000000', name: 'Rise Bakery',     reward: 'Free pastry at 6 stamps',  stamps: 5 },
   { bg: '#1132F5', mark: '#FFFFFF', text: '#FFFFFF', name: 'Nori Sushi',      reward: 'Free miso every 6 visits', stamps: 3 },
-  { bg: '#F0A479', mark: '#1A1A1A', text: '#FFFFFF', name: 'Lush Nail Bar',   reward: 'Free file & polish',       stamps: 5 },
+  { bg: '#F0A479', mark: '#1A1A1A', text: '#1A1A1A', name: 'Lush Nail Bar',   reward: 'Free file & polish',       stamps: 5 },
   { bg: '#000000', mark: '#FFFFFF', text: '#FFFFFF', name: 'Iron Gym',        reward: '6 sessions, 1 free',       stamps: 1 },
   { bg: '#510AF5', mark: '#FFFFFF', text: '#FCFF54', name: 'Pulp Juice',      reward: 'Free juice, every 6th',    stamps: 6 },
-  { bg: '#75FBE2', mark: '#1A1A1A', text: '#EA3323', name: 'Green Grocer',    reward: 'Free tote at 6 stamps',    stamps: 2 },
-  { bg: '#EA33B6', mark: '#FFFFFF', text: '#FFFFFF', name: 'Sprinkle Donuts', reward: 'Free donut, every 6th',    stamps: 3 },
+  { bg: '#75FBE2', mark: '#1A1A1A', text: '#1A1A1A', name: 'Green Grocer',    reward: 'Free tote at 6 stamps',    stamps: 2 },
+  { bg: '#CD2CA0', mark: '#FFFFFF', text: '#FFFFFF', name: 'Sprinkle Donuts', reward: 'Free donut, every 6th',    stamps: 3 },
   { bg: '#EFECE2', mark: '#1A1A1A', text: '#1A1A1A', name: 'Paper & Bind',    reward: 'Free bookmark at 6',       stamps: 4 },
   { bg: '#ABC2C2', mark: '#1A1A1A', text: '#223355', name: 'Wash & Fold',     reward: '7th wash free',            stamps: 1 },
   { bg: '#FFFFFF', mark: '#1A1A1A', text: '#000000', name: 'Piccolo Pizza',   reward: 'Free slice at 6 stamps',   stamps: 4 },
