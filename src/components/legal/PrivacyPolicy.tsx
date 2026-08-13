@@ -152,6 +152,11 @@ export function PrivacyPolicy() {
               <td className="border notion-border px-3 py-2">Service provision</td>
             </tr>
             <tr>
+              <td className="border notion-border px-3 py-2">Cardholder card data (inactive card)</td>
+              <td className="border notion-border px-3 py-2">Erased after 24 months with no activity</td>
+              <td className="border notion-border px-3 py-2">Storage limitation; GDPR Art. 5(1)(e)</td>
+            </tr>
+            <tr>
               <td className="border notion-border px-3 py-2">Cardholder card data (deletion requested)</td>
               <td className="border notion-border px-3 py-2">24-hour grace window, then permanent erasure</td>
               <td className="border notion-border px-3 py-2">Allow mistake recovery; GDPR Art. 17</td>
@@ -163,7 +168,7 @@ export function PrivacyPolicy() {
             </tr>
             <tr>
               <td className="border notion-border px-3 py-2">Stamp / reward activity log</td>
-              <td className="border notion-border px-3 py-2">Linked to the card; deleted with the card</td>
+              <td className="border notion-border px-3 py-2">Deleted with the card, and in any case after 24 months</td>
               <td className="border notion-border px-3 py-2">Dispute evidence; audit</td>
             </tr>
             <tr>
