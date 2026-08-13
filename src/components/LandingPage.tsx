@@ -468,6 +468,7 @@ export function LandingPage({
             <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>
             <a href="/terms" className="hover:text-[#37352F]">Terms</a>
             <a href="/impressum" className="hover:text-[#37352F]">Impressum</a>
+            <a href="/accessibility" className="hover:text-[#37352F]">Accessibility</a>
             <a href="/cookies" className="hover:text-[#37352F]">Cookies</a>
             <button onClick={reopenCookieBanner} className="hover:text-[#37352F] cursor-pointer">Cookie settings</button>
             <a href="#contact" className="hover:text-[#37352F]">Contact</a>
