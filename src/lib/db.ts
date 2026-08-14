@@ -775,3 +775,10 @@ export async function fetchExtendedKPIs(from: Date, to: Date, merchantId?: strin
   if (error) throw error;
   return data as ExtendedKPIs;
 }
+
+/** Public one-click marketing unsubscribe by token (from an email link). */
+export async function unsubscribeByToken(token: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('unsubscribe_by_token', { p_token: token });
+  if (error) throw error;
+  return data === true;
+}

@@ -12,6 +12,7 @@ import { Impressum } from './components/legal/Impressum';
 import { Subprocessors } from './components/legal/Subprocessors';
 import { CookiePolicy } from './components/legal/CookiePolicy';
 import { AccessibilityStatement } from './components/legal/AccessibilityStatement';
+import { Unsubscribe } from './components/Unsubscribe';
 import { Faq } from './components/Faq';
 import { AppleWalletGuide } from './components/AppleWalletGuide';
 const AboutPage = lazy(() => import('./components/marketing/AboutPage').then((m) => ({ default: m.AboutPage })));
@@ -183,6 +184,7 @@ export default function App() {
   if (path === '/subprocessors') return <Subprocessors />;
   if (path === '/cookies') return <CookiePolicy />;
   if (path === '/accessibility') return <AccessibilityStatement />;
+  if (path === '/unsubscribe') return <Unsubscribe />;
   if (path === '/faq') return <Faq />;
   if (path === '/wallet-guide') return <AppleWalletGuide />;
   if (path === '/about') return <Suspense fallback={<BrandLoading />}><AboutPage /></Suspense>;
