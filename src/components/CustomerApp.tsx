@@ -167,7 +167,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   }, [authLoading, campaign, user]);
 
   const handleSendLink = async () => {
-    if (!formData.firstName || !formData.email || !formData.phone.trim() || !/^\d{6}$/.test(formData.code)) return;
+    if (!formData.firstName || !formData.email || !/^\d{6}$/.test(formData.code)) return;
     if (!turnstileToken) {
       setError('Please complete the security check.');
       return;
@@ -336,7 +336,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
               />
             </div>
             <div className="space-y-1">
-              <label htmlFor="sf-phone" className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Phone Number</label>
+              <label htmlFor="sf-phone" className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">Phone Number <span className="font-normal normal-case text-gray-400">(optional)</span></label>
               <PhoneField id="sf-phone" onChange={(v) => setFormData({ ...formData, phone: v })} />
               <p className="text-[11px] text-gray-500 leading-relaxed">
                 Recommended so {campaign.businessName} can reach you about your rewards and reach your card if you lose access to your email.
@@ -354,7 +354,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
               />
               <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 text-[11px] text-blue-700 leading-relaxed">
                 <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                <span>Don&rsquo;t forget this &mdash; you&rsquo;ll use your phone number and this code to download your card again if you ever lose access.</span>
+                <span>Keep this recovery code safe. If you added a phone number, the two together let you recover your card &mdash; either way you can always sign back in with your email.</span>
               </div>
             </div>
 
@@ -407,7 +407,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
 
             <button
               onClick={handleSendLink}
-              disabled={!formData.firstName || !formData.email || !formData.phone.trim() || !/^\d{6}$/.test(formData.code) || !turnstileToken || !termsAccepted || isSendingLink}
+              disabled={!formData.firstName || !formData.email || !/^\d{6}$/.test(formData.code) || !turnstileToken || !termsAccepted || isSendingLink}
               className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-2 mt-2"
             >
               {isSendingLink ? <Loader2 className="w-4 h-4 animate-spin" /> : (
