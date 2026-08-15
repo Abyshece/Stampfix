@@ -2,10 +2,11 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
-  Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText,
+  Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
+import { NotificationsAdmin } from './NotificationsAdmin';
 import {
   checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers, fetchStripeMrr,
   listTickets, listContactMessages,
@@ -20,7 +21,7 @@ import { OffersTab } from './OffersTab';
 import { setMerchantApproval, getMerchantApproval, getMerchantActivity, type MerchantActivityRow } from '../lib/db';
 import { fetchExtendedKPIs, type ExtendedKPIs } from '../lib/db';
 
-type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'LOGS' | 'FUNNEL' | 'BLOG';
+type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
 
 export function AdminPanel() {
   const { user, loading: authLoading } = useAuth();
@@ -118,6 +119,7 @@ export function AdminPanel() {
             ['LOGS', Activity, 'Logs'],
             ['FUNNEL', Filter, 'Funnel'],
             ['BLOG', FileText, 'Blog'],
+            ['NOTIFY', Bell, 'Notifications'],
           ] as const).map(([id, Icon, label]) => (
             <button
               key={id}
@@ -166,6 +168,7 @@ export function AdminPanel() {
         {tab === 'FUNNEL' && <FunnelTab />}
         {tab === 'OFFERS' && <OffersTab />}
         {tab === 'BLOG' && <BlogAdmin />}
+        {tab === 'NOTIFY' && <NotificationsAdmin />}
       </main>
     </div>
   );

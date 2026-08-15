@@ -813,3 +813,35 @@ export async function generateBlogWithAI(topic: string): Promise<{ limitReached:
   if (d?.error) throw new Error(d.error);
   return { limitReached: false, post: d as BlogDraft };
 }
+
+// ---------------- Broadcast notifications ----------------
+export interface NotificationRow { id: string; title: string; body: string; published: boolean; created_at: string }
+export async function listMerchantNotifications(): Promise<{ items: NotificationRow[]; readIds: Set<string> }> {
+  const [n, r] = await Promise.all([
+    supabase.from('notifications').select('*').eq('published', true).order('created_at', { ascending: false }),
+    supabase.from('notification_reads').select('notification_id'),
+  ]);
+  if (n.error) throw n.error;
+  if (r.error) throw r.error;
+  const readIds = new Set(((r.data ?? []) as { notification_id: string }[]).map((x) => x.notification_id));
+  return { items: (n.data ?? []) as NotificationRow[], readIds };
+}
+export async function markNotificationsRead(ids: string[], merchantId: string): Promise<void> {
+  if (!ids.length) return;
+  const rows = ids.map((id) => ({ merchant_id: merchantId, notification_id: id }));
+  const { error } = await supabase.from('notification_reads').upsert(rows, { onConflict: 'merchant_id,notification_id' });
+  if (error) throw error;
+}
+export async function adminListNotifications(): Promise<NotificationRow[]> {
+  const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as NotificationRow[];
+}
+export async function adminCreateNotification(title: string, body: string): Promise<void> {
+  const { error } = await supabase.from('notifications').insert({ title, body, published: true });
+  if (error) throw error;
+}
+export async function adminDeleteNotification(id: string): Promise<void> {
+  const { error } = await supabase.from('notifications').delete().eq('id', id);
+  if (error) throw error;
+}
