@@ -15,7 +15,7 @@ import { LegalPage, LegalH2 } from './LegalPage';
  */
 export function CardholderTerms() {
   return (
-    <LegalPage title="Cardholder Terms" lastUpdated="19 June 2026">
+    <LegalPage title="Cardholder Terms" lastUpdated="14 August 2026">
       <p>
         These Cardholder Terms (“Terms”) govern your use of the digital loyalty cards offered through
         Stampfix, a platform operated by 17999658 Canada Inc. (d/b/a Stampfix) (“Stampfix”, “we”,

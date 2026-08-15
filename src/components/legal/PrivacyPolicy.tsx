@@ -16,7 +16,7 @@ import { LegalPage, LegalH2, Placeholder } from './LegalPage';
  */
 export function PrivacyPolicy() {
   return (
-    <LegalPage title="Privacy Policy" lastUpdated="28 May 2026">
+    <LegalPage title="Privacy Policy" lastUpdated="14 August 2026">
       <p>
         This Privacy Policy explains how 17999658 Canada Inc. (d/b/a Stampfix) (“Stampfix”,
         “we”, “us”) collects, uses, and protects personal information when you use our digital

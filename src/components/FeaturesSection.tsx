@@ -29,7 +29,7 @@ export function FeaturesSection() {
     { icon: Gauge,       c: '#EA3323', fg: '#FFFFFF', anim: 'sf-wg', text: 'Set daily stamp limits per customer' },
     { icon: Link2,       c: '#75FBFD', fg: '#1A1A1A', anim: 'sf-sp', text: 'Add custom links to your cards — socials, delivery sites, your own website' },
     { icon: MapPin,      c: '#510AF5', fg: '#FFFFFF', anim: 'sf-fl', text: 'Multi-location ready — one account, every branch tracked separately' },
-    { icon: BellRing,    c: '#F7CE46', fg: '#1A1A1A', anim: 'sf-wg', text: 'Automatic geo notifications reach customers on their locked phone' },
+    { icon: BellRing,    c: '#F7CE46', fg: '#1A1A1A', anim: 'sf-wg', soon: true, text: 'Automatic geo notifications reach customers on their locked phone' },
     { icon: ShieldCheck, c: '#111318', fg: '#FFFFFF', anim: 'sf-pu', text: 'GDPR-compliant by default, with consent flow and data deletion' },
     { icon: Printer,     c: '#EA33B6', fg: '#FFFFFF', anim: 'sf-fl', text: 'Print-ready posters in three sizes (business card, A5, A4)' },
     { icon: LifeBuoy,    c: '#1132F5', fg: '#FFFFFF', anim: 'sf-sp', text: 'A “Get help” button right in your dashboard for faster support' },
@@ -85,6 +85,9 @@ export function FeaturesSection() {
                 <f.icon className={`w-6 h-6 ${f.anim}`} strokeWidth={2.2} style={{ animationDelay: `${(i % 6) * 0.15}s` }} />
               </div>
               <p className="text-sm md:text-[15px] text-[#37352F] leading-snug">{f.text}</p>
+              {('soon' in f) && (
+                <span className="self-start text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[#37352F]/10 text-[#37352F]/60">Coming soon</span>
+              )}
             </div>
           ))}
         </div>

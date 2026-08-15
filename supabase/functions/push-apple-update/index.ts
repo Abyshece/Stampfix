@@ -91,7 +91,10 @@ Deno.serve(async (req) => {
           // instead of APNs dropping the push after a single attempt.
           'apns-expiration': String(Math.floor(Date.now() / 1000) + 86400),
         },
-        body: '{}',
+        // content-available:1 is the signal that makes iOS actually wake Wallet
+        // to fetch the updated pass. An empty '{}' payload gets aggressively
+        // coalesced/dropped, which is why updates only appeared on manual refresh.
+        body: JSON.stringify({ aps: { 'content-available': 1 } }),
       });
       if (resp.ok) {
         pushed++;

@@ -19,7 +19,7 @@ import { LegalPage } from './LegalPage';
  */
 export function DataProcessingAgreement() {
   return (
-    <LegalPage title="Data Processing Agreement" lastUpdated="June 4, 2026">
+    <LegalPage title="Data Processing Agreement" lastUpdated="14 August 2026">
       <p className="text-sm text-gray-500 italic">
         This Data Processing Agreement ("DPA") forms part of the agreement between you (the "Controller", referred to as "you" or "the Merchant") and 17999658 Canada Inc. (d/b/a Stampfix) ("Stampfix", "we", "the Processor") and applies whenever Stampfix processes Personal Data on the Merchant's behalf.
       </p>

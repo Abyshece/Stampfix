@@ -110,8 +110,12 @@ Deno.serve(async (req) => {
       }
 
       // DELETE — unregister this device for the pass.
+      // Do NOT require a matching token here. A device removing its OWN
+      // registration (device + serial from the URL) is self-authorising, and
+      // requiring the token means a pass with a stale/orphaned token can never
+      // be unregistered: iOS retries forever and that failure poisons every
+      // other pass on the device. Matching device+serial lets orphans clear.
       if (req.method === 'DELETE' && serial) {
-        if (!(await validate(serial))) return new Response('Unauthorized', { status: 401 });
         await supabase
           .from('apple_wallet_registrations')
           .delete()

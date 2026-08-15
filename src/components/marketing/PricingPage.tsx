@@ -21,7 +21,7 @@ const PRO = [
   'Analytics — per-location & per-offer',
   'Staff PINs, activity & permissions',
   'Custom links on your cards',
-  'Geo notifications & CSV export',
+  'CSV export',
   'Per-customer stamp limits',
   'Custom-branded posters (3 sizes)',
   'Customer segments & animated stamps',

@@ -199,6 +199,16 @@ function buildLoyaltyObject(campaign: Campaign, card: Card) {
     state: card.status === 'BLOCKED' ? 'INACTIVE' : 'ACTIVE',
     accountId: card.id,
     accountName: card.customer_name,
+    // Google Wallet only pushes a NOTIFICATION when a message with a NEW id
+    // appears on the object. Updating loyaltyPoints alone is silent. A fresh id
+    // per (stamps, rewards) state => a notification on every stamp / reward.
+    messages: [
+      {
+        id: `s${card.current_stamps}r${card.rewards_redeemed}`,
+        header: campaign.offer_title || 'Your loyalty card',
+        body: `Your card was just updated \u2014 you now have ${card.current_stamps} stamp${card.current_stamps === 1 ? '' : 's'}. Keep collecting!`,
+      },
+    ],
     loyaltyPoints: {
       balance: { string: `${card.current_stamps} / ${campaign.max_stamps}` },
       label: 'Stamps',
