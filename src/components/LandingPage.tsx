@@ -10,6 +10,8 @@ import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
 import { PasswordInput } from './PasswordInput';
 import { FeaturesSection } from './FeaturesSection';
+import { TrustpilotWidget } from './TrustpilotWidget';
+import { InstaCarousel } from './InstaCarousel';
 import { PromoBannerBar } from './PromoBannerBar';
 
 interface LandingPageProps {
@@ -359,6 +361,7 @@ export function LandingPage({
 
       {/* Hero visual — live wallet cards on a straight looping rail */}
       <HeroCardLoop />
+      <TrustpilotWidget />
 
       {/* Social proof */}
       <section className="border-y notion-border bg-[#F7F7F5]/50 py-16">
@@ -423,6 +426,7 @@ export function LandingPage({
 
       {/* How it works */}
       <LaunchSteps />
+      <InstaCarousel />
 
       {/* Budget pitch band */}
       <section className="py-24 px-6">

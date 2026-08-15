@@ -17,7 +17,7 @@ const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, 'content-type': 'application/json' } });
 
 // Gemini Flash model (free 1,500/day). Change here if you want a newer one.
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-flash-latest';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -29,8 +29,10 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } },
   );
-  const { data: isAdmin, error: adminErr } = await supabase.rpc('is_stampfix_admin');
-  if (adminErr || !isAdmin) return json(403, { error: 'Admins only' });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return json(401, { error: 'Not authenticated' });
+  const { data: isAdmin } = await supabase.rpc('is_platform_admin');
+  if (isAdmin !== true) return json(403, { error: 'Admins only' });
 
   const { topic } = await req.json().catch(() => ({}));
   if (!topic || typeof topic !== 'string') return json(400, { error: 'Missing "topic"' });
