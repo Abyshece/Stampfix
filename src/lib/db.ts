@@ -833,7 +833,7 @@ export async function markNotificationsRead(ids: string[], merchantId: string): 
   if (error) throw error;
 }
 export async function adminListNotifications(): Promise<NotificationRow[]> {
-  const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('notifications').select('*').is('merchant_id', null).order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as NotificationRow[];
 }
