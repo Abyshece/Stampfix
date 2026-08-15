@@ -481,10 +481,10 @@ export function LandingPage({
         </div>
         {/* Social — replace href="#" with your real Instagram / LinkedIn / TikTok URLs */}
         <div className="max-w-6xl mx-auto flex justify-center gap-3 mt-8">
-          <a href="#" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
+          <a href="https://www.instagram.com/stampfix.app/" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
             <Instagram className="w-4 h-4" />
           </a>
-          <a href="#" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
+          <a href="https://www.linkedin.com/company/feemoji-app/" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
             <Linkedin className="w-4 h-4" />
           </a>
           <a href="#" aria-label="TikTok" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">

@@ -1,7 +1,7 @@
 import { Instagram } from 'lucide-react';
 
 // Your handle:
-const IG_URL = 'https://instagram.com/stampfix';
+const IG_URL = 'https://www.instagram.com/stampfix.app/';
 
 // Loads /public/instagram/01.PNG … 46.PNG (leading zero, uppercase .PNG).
 // Change COUNT if you add/remove images. Any that 404 hide automatically.

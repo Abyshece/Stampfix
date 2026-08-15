@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Instagram, Linkedin } from 'lucide-react';
 import { Logo } from '../Logo';
 import { MobileNav } from '../MobileNav';
 
@@ -137,8 +137,12 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
             { href: '/accessibility', label: 'Accessibility' },
           ]} />
         </div>
-        <div className="max-w-6xl mx-auto px-6 py-6 border-t notion-border text-sm text-gray-400 flex flex-col sm:flex-row justify-between gap-2">
+        <div className="max-w-6xl mx-auto px-6 py-6 border-t notion-border text-sm text-gray-400 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span>&copy; 2026 Stampfix</span>
+          <div className="flex items-center gap-4">
+            <a href="https://www.instagram.com/stampfix.app/" target="_blank" rel="noopener" aria-label="Instagram" className="hover:text-[#37352F] transition"><Instagram className="w-5 h-5" /></a>
+            <a href="https://www.linkedin.com/company/feemoji-app/" target="_blank" rel="noopener" aria-label="LinkedIn" className="hover:text-[#37352F] transition"><Linkedin className="w-5 h-5" /></a>
+          </div>
           <span>Keep them coming back, friction-free.</span>
         </div>
       </footer>
