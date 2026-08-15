@@ -49,7 +49,7 @@ export function CardRecovery() {
 
         {!hasResults && (
           <>
-            <h1 className="text-3xl font-serif-display font-medium mb-2">Lost your card?</h1>
+            <h1 className="text-3xl font-serif-display font-medium mb-2">Lost your stamp card?</h1>
             <p className="text-gray-500 mb-8 leading-relaxed">
               Enter the email and 6-digit code you set when you signed up, and we&rsquo;ll bring your card back.
             </p>

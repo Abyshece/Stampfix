@@ -300,7 +300,7 @@ export function LandingPage({
             href="/find-card"
             className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 py-2 md:px-3 transition whitespace-nowrap"
           >
-            Lost your card?
+            Lost your stamp card?
           </a>
           {isAuthenticated && onResumeMerchant ? (
             <button
@@ -319,7 +319,7 @@ export function LandingPage({
           )}
           <MobileNav
             links={[
-              { href: '/find-card', label: 'Lost your card? Download it here' },
+              { href: '/find-card', label: 'Lost your stamp card? Download it here' },
               { href: '/features', label: 'Features' },
               { href: '/pricing', label: 'Pricing' },
               { href: '/use-cases', label: 'Use cases' },
