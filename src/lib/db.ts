@@ -773,3 +773,40 @@ export async function unsubscribeByToken(token: string): Promise<boolean> {
   if (error) throw error;
   return data === true;
 }
+
+// ---------------- Blog posts ----------------
+export interface BlogPostRow {
+  id: string; slug: string; title: string; excerpt: string; tag: string;
+  read_mins: number; content: string; published: boolean; created_at: string; updated_at: string;
+}
+export async function listPublishedBlogPosts(): Promise<BlogPostRow[]> {
+  const { data, error } = await supabase.from('blog_posts').select('*').eq('published', true).order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BlogPostRow[];
+}
+export async function listAllBlogPosts(): Promise<BlogPostRow[]> {
+  const { data, error } = await supabase.from('blog_posts').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BlogPostRow[];
+}
+export async function upsertBlogPost(post: { id?: string; slug: string; title: string; excerpt: string; tag: string; read_mins: number; content: string; published: boolean }): Promise<BlogPostRow> {
+  const row = { slug: post.slug, title: post.title, excerpt: post.excerpt, tag: post.tag, read_mins: post.read_mins, content: post.content, published: post.published, updated_at: new Date().toISOString() };
+  if (post.id) {
+    const { data, error } = await supabase.from('blog_posts').update(row).eq('id', post.id).select('*').single();
+    if (error) throw error;
+    return data as BlogPostRow;
+  }
+  const { data, error } = await supabase.from('blog_posts').insert(row).select('*').single();
+  if (error) throw error;
+  return data as BlogPostRow;
+}
+export async function deleteBlogPost(id: string): Promise<void> {
+  const { error } = await supabase.from('blog_posts').delete().eq('id', id);
+  if (error) throw error;
+}
+export async function generateBlogWithAI(topic: string): Promise<{ title: string; slug: string; excerpt: string; tag: string; readMins: number; content: string }> {
+  const { data, error } = await supabase.functions.invoke('generate-blog', { body: { topic } });
+  if (error) throw error;
+  if (data && (data as { error?: string }).error) throw new Error((data as { error: string }).error);
+  return data as { title: string; slug: string; excerpt: string; tag: string; readMins: number; content: string };
+}

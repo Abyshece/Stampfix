@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './MarketingLayout';
+import { listPublishedBlogPosts } from '../../lib/db';
 
 /* ---- tiny formatting helpers so post bodies stay readable ---- */
 const Lead = ({ children }: { children: ReactNode }) => (
@@ -148,7 +149,22 @@ function PostCard({ post }: { post: Post }) {
 export function BlogPage() {
   const path = window.location.pathname;
   const slug = path.startsWith('/blog/') ? path.slice('/blog/'.length).replace(/\/$/, '') : '';
-  const post = slug ? POSTS.find((p) => p.slug === slug) : undefined;
+  const [dbPosts, setDbPosts] = useState<Post[] | null>(null);
+  useEffect(() => {
+    listPublishedBlogPosts()
+      .then((rows) => setDbPosts(rows.map((r) => ({
+        slug: r.slug, title: r.title, excerpt: r.excerpt, tag: r.tag,
+        date: new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        readMins: r.read_mins,
+        body: <div className="blog-html" dangerouslySetInnerHTML={{ __html: r.content }} />,
+      }))))
+      .catch(() => setDbPosts([]));
+  }, []);
+  const allPosts = [...(dbPosts ?? []), ...POSTS];
+  const post = slug ? allPosts.find((p) => p.slug === slug) : undefined;
+  if (slug && !post && dbPosts === null) {
+    return <MarketingLayout active="/blog"><div className="py-32 text-center text-gray-400">Loading\u2026</div></MarketingLayout>;
+  }
 
   // Individual post
   if (post) {
@@ -182,7 +198,7 @@ export function BlogPage() {
       </section>
       <section className="max-w-4xl mx-auto px-6 py-8">
         <div className="grid md:grid-cols-2 gap-5">
-          {POSTS.map((p) => <PostCard key={p.slug} post={p} />)}
+          {allPosts.map((p) => <PostCard key={p.slug} post={p} />)}
         </div>
       </section>
     </MarketingLayout>
