@@ -1,9 +1,10 @@
 // Supabase Edge Function: generate-blog
-// Admin-only. Takes { topic } and returns an SEO-optimised blog post drafted
-// by Claude. The admin reviews it in the dashboard before publishing.
+// Admin-only. Uses Google Gemini (Flash) to draft an SEO-optimised blog post.
+// Free tier = 1,500 requests/day on Flash models; a 429 means the quota/rate
+// limit is hit, which we surface to the UI as { limitReached: true }.
 //
 // Deploy:  supabase functions deploy generate-blog
-// Secret:  supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+// Secret:  supabase secrets set GEMINI_API_KEY=...   (from aistudio.google.com)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -12,20 +13,21 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, 'content-type': 'application/json' } });
+
+// Gemini Flash model (free 1,500/day). Change here if you want a newer one.
+const MODEL = 'gemini-2.0-flash';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
 
-  // Gate to admins: run is_stampfix_admin() as the CALLER.
-  const authHeader = req.headers.get('Authorization') ?? '';
+  // Gate to admins.
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
+    { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } },
   );
   const { data: isAdmin, error: adminErr } = await supabase.rpc('is_stampfix_admin');
   if (adminErr || !isAdmin) return json(403, { error: 'Admins only' });
@@ -33,21 +35,23 @@ Deno.serve(async (req) => {
   const { topic } = await req.json().catch(() => ({}));
   if (!topic || typeof topic !== 'string') return json(400, { error: 'Missing "topic"' });
 
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-  if (!apiKey) return json(500, { error: 'ANTHROPIC_API_KEY is not set' });
+  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!apiKey) return json(200, { error: 'GEMINI_API_KEY is not set' });
 
   const prompt = `You are an expert SEO content writer for Stampfix — a digital loyalty-card SaaS for independent merchants (cafés, barbers, bakeries, salons) that replaces paper punch cards with cards in Apple & Google Wallet (no app to download).
 
 Write a blog post about: "${topic}"
 
-Requirements:
-- SEO-optimised: a compelling, keyword-rich title (~55-60 characters) and a meta excerpt (~150-155 characters).
-- Audience: independent merchant/shop owners. Practical, warm, concrete — no fluff.
-- Structure: a short lead paragraph, then 3-5 <h2> sections with short paragraphs. 500-800 words.
-- Mention Stampfix naturally where it genuinely helps; do NOT be spammy.
+SEO + AI-search optimisation requirements:
+- A compelling, keyword-rich title (~55-60 characters) that matches real search intent.
+- A meta excerpt / description (~150-155 characters) that earns the click.
+- Answer the reader's likely question clearly in the FIRST paragraph (helps featured snippets + AI answers).
+- Structure with 3-5 descriptive <h2> sections (question- or benefit-led), short scannable paragraphs, and a bullet list where useful.
+- 600-900 words, genuinely helpful and specific to independent merchant owners. No fluff, no keyword stuffing.
+- Mention Stampfix naturally where it truly helps; never spammy.
 - Do NOT include the title inside the content; start the content with the lead paragraph.
 
-Return ONLY valid JSON (no markdown fences, no commentary) with EXACTLY these keys:
+Return ONLY valid JSON (no markdown fences) with EXACTLY these keys:
 {
   "title": "string",
   "slug": "url-safe-kebab-slug",
@@ -59,33 +63,34 @@ Return ONLY valid JSON (no markdown fences, no commentary) with EXACTLY these ke
 
   let resp: Response;
   try {
-    resp = await fetch('https://api.anthropic.com/v1/messages', {
+    resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6', // change to a newer model string if you like
-        max_tokens: 2200,
-        messages: [{ role: 'user', content: prompt }],
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 2400, responseMimeType: 'application/json' },
       }),
     });
   } catch (e) {
-    return json(502, { error: 'Could not reach the AI service', detail: String(e).slice(0, 200) });
+    return json(200, { error: 'Could not reach Gemini: ' + String(e).slice(0, 160) });
+  }
+
+  // 429 = quota / rate limit — this is the "free daily limit reached" signal.
+  if (resp.status === 429) {
+    const detail = await resp.text().catch(() => '');
+    return json(200, { limitReached: true, detail: detail.slice(0, 200) });
   }
   if (!resp.ok) {
     const t = await resp.text().catch(() => '');
-    return json(502, { error: 'AI request failed', detail: t.slice(0, 300) });
+    return json(200, { error: `Gemini error ${resp.status}: ${t.slice(0, 200)}` });
   }
 
   const data = await resp.json();
-  const text = (data.content ?? [])
-    .filter((b: { type: string }) => b.type === 'text')
-    .map((b: { text: string }) => b.text)
-    .join('');
+  const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
   try {
-    const post = JSON.parse(clean);
-    return json(200, post);
+    return json(200, JSON.parse(clean));
   } catch {
-    return json(502, { error: 'AI returned unparseable output', raw: clean.slice(0, 400) });
+    return json(200, { error: 'Gemini returned unparseable output', raw: clean.slice(0, 300) });
   }
 });

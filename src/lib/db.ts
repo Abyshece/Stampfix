@@ -804,9 +804,12 @@ export async function deleteBlogPost(id: string): Promise<void> {
   const { error } = await supabase.from('blog_posts').delete().eq('id', id);
   if (error) throw error;
 }
-export async function generateBlogWithAI(topic: string): Promise<{ title: string; slug: string; excerpt: string; tag: string; readMins: number; content: string }> {
+export interface BlogDraft { title: string; slug: string; excerpt: string; tag: string; readMins: number; content: string }
+export async function generateBlogWithAI(topic: string): Promise<{ limitReached: boolean; post?: BlogDraft }> {
   const { data, error } = await supabase.functions.invoke('generate-blog', { body: { topic } });
   if (error) throw error;
-  if (data && (data as { error?: string }).error) throw new Error((data as { error: string }).error);
-  return data as { title: string; slug: string; excerpt: string; tag: string; readMins: number; content: string };
+  const d = data as { limitReached?: boolean; error?: string } & Partial<BlogDraft>;
+  if (d?.limitReached) return { limitReached: true };
+  if (d?.error) throw new Error(d.error);
+  return { limitReached: false, post: d as BlogDraft };
 }

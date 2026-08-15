@@ -18,6 +18,7 @@ export function BlogAdmin() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
 
   const load = () => listAllBlogPosts().then(setPosts).catch((e) => setErr(e.message));
   useEffect(() => { load(); }, []);
@@ -26,9 +27,11 @@ export function BlogAdmin() {
 
   const generate = async () => {
     if (!topic.trim()) return;
-    setGenerating(true); setErr(null); setMsg(null);
+    setGenerating(true); setErr(null); setMsg(null); setLimitReached(false);
     try {
-      const p = await generateBlogWithAI(topic.trim());
+      const res = await generateBlogWithAI(topic.trim());
+      if (res.limitReached) { setLimitReached(true); return; }
+      const p = res.post!;
       setForm({ id: '', slug: p.slug || slugify(p.title), title: p.title, excerpt: p.excerpt, tag: p.tag || 'Guide', read_mins: p.readMins || 4, content: p.content, published: false });
       setMsg('Draft generated — review and publish.');
     } catch (e) { setErr(e instanceof Error ? e.message : 'Generation failed'); }
@@ -80,6 +83,11 @@ export function BlogAdmin() {
             {generating ? 'Writing…' : 'Generate'}
           </button>
         </div>
+        {limitReached && (
+          <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+            <strong>Daily AI limit reached.</strong> Gemini&rsquo;s free quota (1,500 requests/day on Flash) is used up. Try again later, or tomorrow if you hit the daily cap &mdash; or write the post manually below.
+          </div>
+        )}
       </div>
 
       {/* Editor */}

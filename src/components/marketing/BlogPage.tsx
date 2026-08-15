@@ -3,6 +3,19 @@ import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './MarketingLayout';
 import { listPublishedBlogPosts } from '../../lib/db';
 
+function setMetaDescription(content: string) {
+  let m = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+  if (!m) { m = document.createElement('meta'); m.setAttribute('name', 'description'); document.head.appendChild(m); }
+  m.setAttribute('content', content);
+}
+function setArticleJsonLd(obj: Record<string, unknown>) {
+  document.getElementById('blog-jsonld')?.remove();
+  const s = document.createElement('script');
+  s.type = 'application/ld+json'; s.id = 'blog-jsonld';
+  s.textContent = JSON.stringify(obj);
+  document.head.appendChild(s);
+}
+
 /* ---- tiny formatting helpers so post bodies stay readable ---- */
 const Lead = ({ children }: { children: ReactNode }) => (
   <p className="text-xl text-gray-600 font-serif-display leading-snug mb-8">{children}</p>
@@ -162,6 +175,14 @@ export function BlogPage() {
   }, []);
   const allPosts = [...(dbPosts ?? []), ...POSTS];
   const post = slug ? allPosts.find((p) => p.slug === slug) : undefined;
+  useEffect(() => {
+    if (!post) return;
+    const prev = document.title;
+    document.title = `${post.title} \u2014 Stampfix`;
+    setMetaDescription(post.excerpt);
+    setArticleJsonLd({ '@context': 'https://schema.org', '@type': 'Article', headline: post.title, description: post.excerpt, author: { '@type': 'Organization', name: 'Stampfix' }, publisher: { '@type': 'Organization', name: 'Stampfix' } });
+    return () => { document.title = prev; document.getElementById('blog-jsonld')?.remove(); };
+  }, [post]);
   if (slug && !post && dbPosts === null) {
     return <MarketingLayout active="/blog"><div className="py-32 text-center text-gray-400">Loading\u2026</div></MarketingLayout>;
   }
