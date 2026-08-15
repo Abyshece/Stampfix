@@ -398,6 +398,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
               <label className="text-sm font-medium">Business Name</label>
               <input
                 value={busName}
+                maxLength={60}
                 onChange={(e) => setBusName(e.target.value)}
                 className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
                 placeholder="e.g. Bella's Salon"

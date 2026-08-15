@@ -393,37 +393,28 @@ export async function addStamp(
   maxStamps: number,
   opts?: { reason?: string | null; isOverride?: boolean },
 ): Promise<UserCard> {
-  // Fetch current state to compute next value (Postgres doesn't have an
-  // atomic "increment if less than" — for v1 we accept the read-modify-write).
-  const { data: existing, error: fetchErr } = await supabase
-    .from('cards')
-    .select('*')
-    .eq('id', cardId)
-    .maybeSingle();
-  if (fetchErr) throw fetchErr;
-  if (!existing) throw new Error('Card not found.');
-  const row = existing as CardRow;
-  if (row.status === 'BLOCKED') throw new Error('Card is blocked');
-  // The card's frozen snapshot is the source of truth for its goal — never
-  // trust a maxStamps passed from the UI (it can be stale, or fall back to a
-  // since-changed campaign value). Use the argument only for legacy rows that
-  // predate the snapshot column.
-  const effectiveMax = row.max_stamps_snapshot ?? maxStamps;
-  if (row.current_stamps >= effectiveMax) return toCard(row); // already full
-
-  const { data, error } = await supabase
-    .from('cards')
-    .update({ current_stamps: row.current_stamps + 1 })
-    .eq('id', cardId)
-    .select('*')
-    .single();
+  // Atomic increment via RPC. The guards (not blocked, under the frozen goal,
+  // caller owns the campaign) run inside a single UPDATE, so a double-click or
+  // two staff stamping at once can never double-count or lose an update.
+  // Returns the updated row, or nothing when the card was full / blocked.
+  const { data, error } = await supabase.rpc('add_stamp_atomic', { p_card_id: cardId, p_max: maxStamps });
   if (error) throw error;
-  const updated = toCard(data as CardRow);
-  await logActivity(updated.campaignId, updated.id, updated.customerName, 'STAMP', 'manual_dashboard', {
-    reason: opts?.reason ?? null,
-    isOverride: opts?.isOverride ?? false,
-  });
-  return updated;
+  const rows = (data ?? []) as CardRow[];
+  if (rows.length > 0) {
+    const updated = toCard(rows[0]);
+    await logActivity(updated.campaignId, updated.id, updated.customerName, 'STAMP', 'manual_dashboard', {
+      reason: opts?.reason ?? null,
+      isOverride: opts?.isOverride ?? false,
+    });
+    return updated;
+  }
+  // No row updated: card was full, blocked, or not owned by the caller.
+  const { data: cur, error: curErr } = await supabase.from('cards').select('*').eq('id', cardId).maybeSingle();
+  if (curErr) throw curErr;
+  if (!cur) throw new Error('Card not found.');
+  const row = cur as CardRow;
+  if (row.status === 'BLOCKED') throw new Error('Card is blocked');
+  return toCard(row); // already full — unchanged
 }
 
 export async function redeemReward(cardId: string): Promise<UserCard> {

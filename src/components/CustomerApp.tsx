@@ -196,7 +196,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
         const { error: pendingErr } = await supabase
           .from('pending_customer_signups')
           .upsert({
-            email: formData.email.toLowerCase(),
+            email: formData.email.trim().toLowerCase(),
             campaign_id: campaignId,
             first_name: formData.firstName,
             surname: formData.surname || null,
@@ -214,7 +214,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
       // Frictionless: create the account (or sign in if returning) and log
       // the customer in immediately. No email, no code. The component then
       // re-renders into the signed-in branch, which creates/loads the card.
-      await signUpOrInCustomer(formData.email, campaignId, formData.phone);
+      await signUpOrInCustomer(formData.email.trim().toLowerCase(), campaignId, formData.phone);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not sign you in');
     } finally {
@@ -308,6 +308,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
                 <input
                   id="sf-firstname"
                   value={formData.firstName}
+                  maxLength={60}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-400"
                   placeholder="Jane"
@@ -318,6 +319,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
                 <input
                   id="sf-surname"
                   value={formData.surname}
+                  maxLength={60}
                   onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
                   className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-400"
                   placeholder="Doe"
