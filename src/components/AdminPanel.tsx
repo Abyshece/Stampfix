@@ -445,6 +445,7 @@ function B2BTab() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [stripeMrr, setStripeMrr] = useState<StripeMrr | null>(null);
+  const [pill, setPill] = useState<'all' | 'new' | 'active' | 'blocked' | 'pro' | 'free'>('all');
 
   const load = async (s = '') => {
     setLoading(true);
@@ -453,6 +454,24 @@ function B2BTab() {
     finally { setLoading(false); }
   };
   useEffect(() => { load(''); fetchStripeMrr().then(setStripeMrr).catch(() => {}); }, []);
+
+  const NEW_MS = 7 * 24 * 60 * 60 * 1000;
+  const isNew = (m: MerchantRow) => Date.now() - new Date(m.created_at).getTime() < NEW_MS;
+  const counts = {
+    all: rows.length,
+    new: rows.filter(isNew).length,
+    active: rows.filter((m) => m.status === 'active').length,
+    blocked: rows.filter((m) => m.status === 'blocked').length,
+    pro: rows.filter((m) => m.plan === 'pro').length,
+    free: rows.filter((m) => m.plan === 'free').length,
+  };
+  const shown = rows.filter((m) =>
+    pill === 'new' ? isNew(m) :
+    pill === 'active' ? m.status === 'active' :
+    pill === 'blocked' ? m.status === 'blocked' :
+    pill === 'pro' ? m.plan === 'pro' :
+    pill === 'free' ? m.plan === 'free' : true,
+  );
 
   const handleStatus = async (m: MerchantRow, target: MerchantStatus) => {
     const action = target === 'deleted' ? 'PERMANENTLY DELETE' : target;
@@ -510,7 +529,16 @@ function B2BTab() {
         </button>
       </form>
 
-      {loading ? <Loader /> : rows.length === 0 ? <Empty msg="No merchants found." /> : (
+      <div className="flex flex-wrap gap-2 mb-4">
+        {(([['all','All'],['new','New'],['active','Active'],['blocked','Blocked'],['pro','Pro'],['free','Free']]) as const).map(([k,label]) => (
+          <button key={k} onClick={() => setPill(k)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition ${pill===k ? 'bg-[#37352F] text-white border-[#37352F]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+            {label}<span className={`text-[10px] px-1.5 py-0.5 rounded-full ${pill===k ? 'bg-white/25' : (k==='new' && counts.new>0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500')}`}>{counts[k]}</span>
+          </button>
+        ))}
+      </div>
+
+      {loading ? <Loader /> : shown.length === 0 ? <Empty msg="No merchants match this filter." /> : (
         <div className="bg-white border notion-border rounded-lg overflow-x-auto">
           <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
@@ -529,7 +557,7 @@ function B2BTab() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((m) => {
+              {shown.map((m) => {
                 const isOpen = expandedId === m.id;
                 return (
                   <Fragment key={m.id}>
