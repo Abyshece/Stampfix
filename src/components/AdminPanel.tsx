@@ -299,7 +299,7 @@ function OverviewTab() {
                   onChange={(e) => setMerchantSearch(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') setAppliedMerchant(merchantSearch.trim() || null); }}
                   placeholder="Merchant ID (UUID) — blank = all"
-                  className="bg-[#F7F7F5] border notion-border rounded px-2 py-1.5 text-xs w-64"
+                  className="bg-[#F7F7F5] border notion-border rounded px-2 py-1.5 text-xs w-full sm:w-64"
                 />
                 <button onClick={() => setAppliedMerchant(merchantSearch.trim() || null)}
                   className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white">Search</button>
@@ -885,7 +885,7 @@ function B2B2CTab() {
       </header>
 
       <div className="flex gap-2 flex-wrap">
-        <form onSubmit={(e) => { e.preventDefault(); load(); }} className="flex-1 flex gap-2 min-w-[300px]">
+        <form onSubmit={(e) => { e.preventDefault(); load(); }} className="flex-1 flex gap-2 min-w-0">
           <div className="flex-1 flex items-center bg-white border notion-border rounded-md px-3">
             <Search className="w-4 h-4 text-gray-400" />
             <input

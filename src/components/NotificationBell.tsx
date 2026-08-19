@@ -46,7 +46,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-xl border notion-border bg-white shadow-lg z-50">
+        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1.5rem)] max-h-96 overflow-y-auto rounded-xl border notion-border bg-white shadow-lg z-50">
           <div className="px-4 py-2.5 border-b notion-border text-xs font-bold uppercase tracking-wider text-gray-500">Notifications</div>
           {items.length === 0 && <div className="px-4 py-6 text-sm text-gray-400 text-center">Nothing new right now.</div>}
           {items.map((n) => (
