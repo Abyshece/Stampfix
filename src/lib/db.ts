@@ -212,6 +212,17 @@ export async function setMerchantApproval(
 }
 
 /** Reads a merchant's current approval status (for the admin panel). */
+export async function setRejectionReason(merchantId: string, reason: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_rejection_reason', { merchant_id_in: merchantId, reason_in: reason });
+  if (error) throw error;
+}
+
+export async function getMerchantRejectionReason(merchantId: string): Promise<string | null> {
+  const { data, error } = await supabase.from('campaigns').select('rejection_reason').eq('merchant_id', merchantId).maybeSingle();
+  if (error) return null;
+  return ((data as { rejection_reason: string | null } | null)?.rejection_reason) ?? null;
+}
+
 export async function getMerchantApproval(
   merchantId: string,
 ): Promise<'pending' | 'approved' | 'rejected' | null> {

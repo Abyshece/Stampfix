@@ -18,7 +18,7 @@ import {
   isReadOnlyAdminEmail,
 } from '../services/admin';
 import { OffersTab } from './OffersTab';
-import { setMerchantApproval, getMerchantApproval, getMerchantActivity, type MerchantActivityRow } from '../lib/db';
+import { setMerchantApproval, getMerchantApproval, setRejectionReason, getMerchantRejectionReason, getMerchantActivity, type MerchantActivityRow } from '../lib/db';
 import { fetchExtendedKPIs, type ExtendedKPIs } from '../lib/db';
 
 type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
@@ -656,12 +656,22 @@ function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; o
   const [notes, setNotes] = useState(merchant.admin_notes ?? '');
   const [approval, setApproval] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
+  const [rejReason, setRejReason] = useState<string | null>(null);
   const [activity, setActivity] = useState<MerchantActivityRow[]>([]);
   useEffect(() => { getMerchantActivity(merchant.id).then(setActivity).catch(() => setActivity([])); }, [merchant.id]);
-  useEffect(() => { getMerchantApproval(merchant.id).then(setApproval).catch(() => {}); }, [merchant.id]);
+  useEffect(() => { getMerchantApproval(merchant.id).then(setApproval).catch(() => {}); getMerchantRejectionReason(merchant.id).then(setRejReason).catch(() => {}); }, [merchant.id]);
   const changeApproval = async (status: 'pending' | 'approved' | 'rejected') => {
+    let reason = '';
+    if (status === 'rejected') {
+      const r = prompt('Reason for rejection (the merchant sees this in their notification):', rejReason ?? '');
+      if (r === null) return;
+      reason = r.trim();
+    }
     setApprovalBusy(true);
-    try { await setMerchantApproval(merchant.id, status); setApproval(status); onChanged(); }
+    try {
+      if (status === 'rejected') { await setRejectionReason(merchant.id, reason); setRejReason(reason); }
+      await setMerchantApproval(merchant.id, status); setApproval(status); onChanged();
+    }
     catch (e) { alert(e instanceof Error ? e.message : 'Failed to update approval'); }
     finally { setApprovalBusy(false); }
   };
@@ -727,6 +737,9 @@ function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; o
           {approval && approval !== 'pending' && (
             <button onClick={() => changeApproval('pending')} disabled={approvalBusy}
               className="border notion-border text-xs px-3 py-1.5 rounded hover:bg-gray-50">Reset to pending</button>
+          )}
+          {approval === 'rejected' && rejReason && (
+            <div className="w-full text-xs text-red-700 bg-red-50 border border-red-100 rounded px-2 py-1.5 mt-1">Rejection reason: {rejReason}</div>
           )}
         </div>
       </div>
