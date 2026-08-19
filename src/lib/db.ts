@@ -218,9 +218,9 @@ export async function setRejectionReason(merchantId: string, reason: string): Pr
 }
 
 export async function getMerchantRejectionReason(merchantId: string): Promise<string | null> {
-  const { data, error } = await supabase.from('campaigns').select('rejection_reason').eq('merchant_id', merchantId).maybeSingle();
+  const { data, error } = await supabase.rpc('admin_get_rejection_reason', { merchant_id_in: merchantId });
   if (error) return null;
-  return ((data as { rejection_reason: string | null } | null)?.rejection_reason) ?? null;
+  return (data as string) ?? null;
 }
 
 export async function getMerchantApproval(
