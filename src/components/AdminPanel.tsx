@@ -8,7 +8,7 @@ import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
 import { NotificationsAdmin } from './NotificationsAdmin';
 import {
-  checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers, fetchStripeMrr,
+  checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers, listMerchantApprovals, fetchStripeMrr,
   listTickets, listContactMessages,
   setMerchantStatus, setMerchantPlan, setMerchantNotes, setTicketStatus, setContactMessageStatus,
   type RangedKPIs, type KPIBlock, type MerchantRow, type CustomerRow, type TicketRow,
@@ -445,7 +445,8 @@ function B2BTab() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [stripeMrr, setStripeMrr] = useState<StripeMrr | null>(null);
-  const [pill, setPill] = useState<'all' | 'new' | 'active' | 'blocked' | 'pro' | 'free'>('all');
+  const [pill, setPill] = useState<'all' | 'new' | 'pending' | 'active' | 'blocked' | 'pro' | 'free'>('all');
+  const [approvalMap, setApprovalMap] = useState<Record<string, string>>({});
 
   const load = async (s = '') => {
     setLoading(true);
@@ -453,13 +454,14 @@ function B2BTab() {
     catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(''); fetchStripeMrr().then(setStripeMrr).catch(() => {}); }, []);
+  useEffect(() => { load(''); fetchStripeMrr().then(setStripeMrr).catch(() => {}); listMerchantApprovals().then(setApprovalMap).catch(() => {}); }, []);
 
   const NEW_MS = 7 * 24 * 60 * 60 * 1000;
   const isNew = (m: MerchantRow) => Date.now() - new Date(m.created_at).getTime() < NEW_MS;
   const counts = {
     all: rows.length,
     new: rows.filter(isNew).length,
+    pending: rows.filter((m) => approvalMap[m.id] === 'pending').length,
     active: rows.filter((m) => m.status === 'active').length,
     blocked: rows.filter((m) => m.status === 'blocked').length,
     pro: rows.filter((m) => m.plan === 'pro').length,
@@ -467,6 +469,7 @@ function B2BTab() {
   };
   const shown = rows.filter((m) =>
     pill === 'new' ? isNew(m) :
+    pill === 'pending' ? approvalMap[m.id] === 'pending' :
     pill === 'active' ? m.status === 'active' :
     pill === 'blocked' ? m.status === 'blocked' :
     pill === 'pro' ? m.plan === 'pro' :
@@ -530,10 +533,10 @@ function B2BTab() {
       </form>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {(([['all','All'],['new','New'],['active','Active'],['blocked','Blocked'],['pro','Pro'],['free','Free']]) as const).map(([k,label]) => (
+        {(([['all','All'],['new','New'],['pending','Pending approval'],['active','Active'],['blocked','Blocked'],['pro','Pro'],['free','Free']]) as const).map(([k,label]) => (
           <button key={k} onClick={() => setPill(k)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition ${pill===k ? 'bg-[#37352F] text-white border-[#37352F]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-            {label}<span className={`text-[10px] px-1.5 py-0.5 rounded-full ${pill===k ? 'bg-white/25' : (k==='new' && counts.new>0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500')}`}>{counts[k]}</span>
+            {label}<span className={`text-[10px] px-1.5 py-0.5 rounded-full ${pill===k ? 'bg-white/25' : (k==='new' && counts.new>0 ? 'bg-red-100 text-red-700' : k==='pending' && counts.pending>0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500')}`}>{counts[k]}</span>
           </button>
         ))}
       </div>
@@ -578,6 +581,7 @@ function B2BTab() {
                               </div>
                             )}
                           </div>
+                          {(Date.now() - new Date(m.created_at).getTime()) < 7 * 24 * 60 * 60 * 1000 && <span className="text-[10px] font-bold uppercase bg-red-100 text-red-700 px-1.5 py-0.5 rounded">New</span>}
                           {m.is_platform_admin && <span className="text-[10px] font-bold uppercase bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">Admin</span>}
                           {m.admin_notes && <span title={m.admin_notes} className="text-[10px] text-gray-400">📝</span>}
                         </div>
@@ -826,6 +830,7 @@ function B2B2CTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [merchantFilter, setMerchantFilter] = useState<string>('');
+  const [c2pill, setC2pill] = useState<'all' | 'new' | 'deletion'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = async () => {
@@ -841,6 +846,18 @@ function B2B2CTab() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const C2_NEW_MS = 7 * 24 * 60 * 60 * 1000;
+  const c2isNew = (c: CustomerRow) => Date.now() - new Date(c.active_since).getTime() < C2_NEW_MS;
+  const c2counts = {
+    all: rows.length,
+    new: rows.filter(c2isNew).length,
+    deletion: rows.filter((c) => c.any_deletion_pending).length,
+  };
+  const c2shown = rows.filter((c) =>
+    c2pill === 'new' ? c2isNew(c) :
+    c2pill === 'deletion' ? c.any_deletion_pending : true,
+  );
 
   useEffect(() => {
     load();
@@ -879,7 +896,16 @@ function B2B2CTab() {
         </select>
       </div>
 
-      {loading ? <Loader /> : rows.length === 0 ? <Empty msg="No customers match." /> : (
+      <div className="flex flex-wrap gap-2 mb-4">
+        {(([['all','All'],['new','New'],['deletion','Deletion pending']]) as const).map(([k,label]) => (
+          <button key={k} onClick={() => setC2pill(k)}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition ${c2pill===k ? 'bg-[#37352F] text-white border-[#37352F]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
+            {label}<span className={`text-[10px] px-1.5 py-0.5 rounded-full ${c2pill===k ? 'bg-white/25' : (k==='new' && c2counts.new>0 ? 'bg-red-100 text-red-700' : k==='deletion' && c2counts.deletion>0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500')}`}>{c2counts[k]}</span>
+          </button>
+        ))}
+      </div>
+
+      {loading ? <Loader /> : c2shown.length === 0 ? <Empty msg="No customers match this filter." /> : (
         <div className="bg-white border notion-border rounded-lg overflow-x-auto">
           <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
@@ -897,7 +923,7 @@ function B2B2CTab() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((c) => {
+              {c2shown.map((c) => {
                 const isOpen = expandedId === c.customer_id;
                 return (
                   <Fragment key={c.customer_id}>

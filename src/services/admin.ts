@@ -205,6 +205,14 @@ export async function listMerchants(searchTerm?: string, limit = 100): Promise<M
   return rows;
 }
 
+export async function listMerchantApprovals(): Promise<Record<string, string>> {
+  const { data, error } = await supabase.from('campaigns').select('merchant_id, approval_status');
+  if (error) return {};
+  const map: Record<string, string> = {};
+  for (const r of (data ?? []) as { merchant_id: string; approval_status: string }[]) map[r.merchant_id] = r.approval_status;
+  return map;
+}
+
 export async function listCustomers(
   searchTerm?: string,
   merchantId?: string | null,
