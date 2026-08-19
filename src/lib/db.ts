@@ -499,6 +499,13 @@ export async function cancelCardDeletion(cardId: string): Promise<void> {
 // Activities
 // ---------------------------------------------------------------------
 
+export interface CustomerActivityRow { id: string; type: string; source: string; created_at: string }
+export async function getCustomerActivity(customerId: string): Promise<CustomerActivityRow[]> {
+  const { data, error } = await supabase.rpc('admin_customer_activity', { customer_id_in: customerId });
+  if (error) return [];
+  return (data as CustomerActivityRow[]) ?? [];
+}
+
 export async function listActivities(campaignId: string, limit = 50): Promise<ActivityItem[]> {
   const { data, error } = await supabase
     .from('activities')

@@ -7,6 +7,7 @@ import {
 import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
 import { NotificationsAdmin } from './NotificationsAdmin';
+import { CustomerActivityLog } from './CustomerActivityLog';
 import {
   checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers, listMerchantApprovals, fetchStripeMrr,
   listTickets, listContactMessages,
@@ -1013,6 +1014,8 @@ function B2B2CTab() {
                               </div>
                             ))}
                           </div>
+                          <div className="text-xs font-semibold text-gray-500 mt-4 mb-2 uppercase tracking-wider">Recent activity</div>
+                          <CustomerActivityLog customerId={c.customer_id} />
                         </td>
                       </tr>
                     )}
