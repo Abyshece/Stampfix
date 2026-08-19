@@ -8,6 +8,7 @@ import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
 import { NotificationsAdmin } from './NotificationsAdmin';
 import { CustomerActivityLog } from './CustomerActivityLog';
+import { adminDeleteCustomer } from '../lib/db';
 import {
   checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers, listMerchantApprovals, fetchStripeMrr,
   listTickets, listContactMessages,
@@ -161,7 +162,7 @@ export function AdminPanel() {
       <main className="md:ml-60 p-4 md:p-8 max-w-7xl">
         {tab === 'OVERVIEW' && <OverviewTab />}
         {tab === 'B2B' && <B2BTab />}
-        {tab === 'B2B2C' && <B2B2CTab />}
+        {tab === 'B2B2C' && <B2B2CTab readOnly={readOnly} />}
         {tab === 'B2B_REPORTS' && <ReportsTab source="merchant" title="B2B Reports" subtitle="Tickets submitted by merchants." />}
         {tab === 'B2B2C_REPORTS' && <ReportsTab source="customer" title="B2B2C Reports" subtitle="Tickets submitted by end-customers." />}
         {tab === 'CONTACT' && <ContactTab />}
@@ -838,13 +839,14 @@ function formatCents(cents: number, country: string | null): string {
   return `€${amount.toFixed(0)}`;
 }
 
-function B2B2CTab() {
+function B2B2CTab({ readOnly }: { readOnly: boolean }) {
   const [rows, setRows] = useState<CustomerRow[]>([]);
   const [merchants, setMerchants] = useState<MerchantRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [merchantFilter, setMerchantFilter] = useState<string>('');
   const [c2pill, setC2pill] = useState<'all' | 'new' | 'deletion'>('all');
+  const [delBusy, setDelBusy] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = async () => {
@@ -872,6 +874,13 @@ function B2B2CTab() {
     c2pill === 'new' ? c2isNew(c) :
     c2pill === 'deletion' ? c.any_deletion_pending : true,
   );
+  const handleDeleteCustomer = async (id: string) => {
+    if (!confirm('Delete this customer? All their cards will be scheduled for deletion with a 24-hour grace period — the same as a customer-initiated deletion.')) return;
+    setDelBusy(id);
+    try { await adminDeleteCustomer(id); await load(); }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed to delete customer'); }
+    finally { setDelBusy(null); }
+  };
 
   useEffect(() => {
     load();
@@ -988,7 +997,15 @@ function B2B2CTab() {
                     {isOpen && (
                       <tr className="bg-[#F7F7F5]">
                         <td colSpan={10} className="px-4 py-4">
-                          <div className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Card-by-card detail</div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Card-by-card detail</div>
+                            {!readOnly && (
+                              <button onClick={() => handleDeleteCustomer(c.customer_id)} disabled={delBusy === c.customer_id}
+                                className="inline-flex items-center gap-1 text-xs text-red-600 border border-red-200 px-2.5 py-1 rounded hover:bg-red-50 disabled:opacity-40">
+                                <Trash2 className="w-3.5 h-3.5" /> {delBusy === c.customer_id ? 'Deleting…' : 'Delete customer'}
+                              </button>
+                            )}
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {(c.cards_detail ?? []).map((d) => (
                               <div key={d.card_id} className="bg-white border notion-border rounded p-3 text-xs space-y-1">

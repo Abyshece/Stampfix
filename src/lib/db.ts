@@ -495,6 +495,13 @@ export async function cancelCardDeletion(cardId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Admin: schedule deletion of every card belonging to a customer (reuses the
+ *  same 24h-grace deletion flow as a customer-initiated request). */
+export async function adminDeleteCustomer(customerId: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_delete_customer', { customer_id_in: customerId });
+  if (error) throw error;
+}
+
 // ---------------------------------------------------------------------
 // Activities
 // ---------------------------------------------------------------------
