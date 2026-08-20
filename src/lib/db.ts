@@ -513,6 +513,12 @@ export async function adminUnfreezeCustomer(customerId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Admin: edit a customer's profile (name + email on their cards; phone best-effort). */
+export async function adminEditCustomer(customerId: string, name: string, email: string, phone: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_edit_customer', { customer_id_in: customerId, name_in: name, email_in: email, phone_in: phone });
+  if (error) throw error;
+}
+
 // ---------------------------------------------------------------------
 // Activities
 // ---------------------------------------------------------------------

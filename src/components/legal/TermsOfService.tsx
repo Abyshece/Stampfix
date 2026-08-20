@@ -90,6 +90,19 @@ export function TermsOfService() {
         Merchants).
       </p>
 
+      <p>
+        <strong>Push notifications.</strong> Stampfix provides a technical feature to send push
+        notifications through Wallet card updates. Stampfix acts solely as the technical transmitter;
+        you are responsible for the content and lawfulness of every notification you trigger. By using
+        this feature you confirm that you have a valid legal basis (such as consent or legitimate
+        interest) for contacting your customers, that notification content is lawful, accurate, and not
+        misleading, and that you will not send unsolicited commercial or marketing messages without the
+        prior consent required by applicable law — including the German Act Against Unfair Competition
+        (<em>Gesetz gegen den unlauteren Wettbewerb</em>, UWG) for German Merchants, the GDPR, and
+        Canada's CASL. Where consent is required, you must obtain and record it before sending, and you
+        accept full responsibility for notifications that breach these requirements.
+      </p>
+
       <LegalH2>5. Acceptable use</LegalH2>
       <p>You agree not to:</p>
       <ul className="list-disc pl-6 space-y-1">

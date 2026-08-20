@@ -55,9 +55,18 @@ export function DataProcessingAgreement() {
       <h2>6. Obligations of Stampfix (Processor)</h2>
       <ul>
         <li>Process Personal Data only on documented instructions from the Merchant, including with regard to international transfers.</li>
+        <li>Never process the Merchant's customer data for Stampfix's own purposes — including advertising, profiling, resale, or training of machine-learning models — and use it only to provide the Services.</li>
         <li>Ensure that personnel authorized to process Personal Data are subject to confidentiality obligations.</li>
-        <li>Implement appropriate technical and organizational security measures (Article 32 GDPR), including encryption in transit and at rest, role-based access control, and regular security review.</li>
-        <li>Promptly notify the Merchant (within 72 hours of awareness) of any Personal Data Breach affecting the Merchant's data.</li>
+        <li>Implement and maintain appropriate technical and organizational security measures (Article 32 GDPR), including:
+          <ul>
+            <li>AES-256 (or equivalent) encryption at rest for databases and storage, and TLS 1.2/1.3 for all data in transit;</li>
+            <li>role- and row-level access control on a least-privilege basis, restricting production data access to authorized personnel;</li>
+            <li>multi-tenant isolation, with each Merchant's records logically separated and access enforced at the database (row-level security) and application layer;</li>
+            <li>operational, security, and error logging, with personal data minimized in logs;</li>
+            <li>confidentiality obligations for all personnel with data access, regular security review, and a Record of Processing Activities maintained under Article 30(2) GDPR.</li>
+          </ul>
+        </li>
+        <li>Notify the Merchant without undue delay and within 24 hours of becoming aware of any Personal Data Breach affecting the Merchant's data — so the Merchant can meet its own 72-hour notification obligation under Article 33 GDPR — including, where available, the nature of the incident, the categories and approximate number of data subjects and records affected, the likely consequences, and the measures taken or proposed.</li>
         <li>Assist the Merchant in responding to Data Subject Requests (access, rectification, deletion, portability, restriction, objection).</li>
         <li>Make available all information necessary to demonstrate compliance with this DPA, and submit to audits no more than once per twelve-month period upon reasonable notice.</li>
       </ul>
@@ -88,12 +97,16 @@ export function DataProcessingAgreement() {
 
       <h2>9. Data Subject Rights</h2>
       <p>
-        Stampfix provides Merchants with tools to action data subject requests (deletion via the customer "My Card" page; bulk export and deletion via the Merchant dashboard or written request). The Merchant remains the primary point of contact for their customers' rights requests.
+        Stampfix provides Merchants with tools to action data subject requests (deletion via the customer "My Card" page; bulk export and deletion via the Merchant dashboard or written request). The Merchant remains the primary point of contact for their customers' rights requests. Verified requests forwarded by the Merchant are actioned within 14 calendar days where technically possible, with data exports provided in a standard machine-readable format (JSON or CSV).
       </p>
 
       <h2>10. Return and Deletion of Data</h2>
       <p>
         Upon termination of Services, Stampfix will delete or return all Personal Data to the Merchant within 30 days, unless legal obligations require longer retention (in which case Stampfix will isolate and protect the retained data).
+      </p>
+      <p>
+        Stampfix also applies storage-limitation controls (Article 5(1)(e) GDPR): consistent with the retention schedule in our{' '}
+        <a href="/privacy" className="underline">Privacy Policy</a>, end-customer records that remain inactive for 24 months are erased or irreversibly anonymized. Deleted records are removed from production without undue delay; where a copy persists in a backup, it is placed beyond use and removed on the backup's retention cycle, and suppression controls prevent deleted records from being reintroduced during a disaster-recovery restore.
       </p>
 
       <h2>11. Liability</h2>

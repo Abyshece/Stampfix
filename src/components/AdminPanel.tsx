@@ -2,13 +2,13 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
-  Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell,
+  Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell, Pencil,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
 import { NotificationsAdmin } from './NotificationsAdmin';
 import { CustomerActivityLog } from './CustomerActivityLog';
-import { adminDeleteCustomer, adminFreezeCustomer, adminUnfreezeCustomer } from '../lib/db';
+import { adminDeleteCustomer, adminFreezeCustomer, adminUnfreezeCustomer, adminEditCustomer } from '../lib/db';
 import {
   checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers, listMerchantApprovals, fetchStripeMrr,
   listTickets, listContactMessages,
@@ -847,6 +847,9 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
   const [merchantFilter, setMerchantFilter] = useState<string>('');
   const [c2pill, setC2pill] = useState<'all' | 'new' | 'deletion'>('all');
   const [delBusy, setDelBusy] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
+  const [editBusy, setEditBusy] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = async () => {
@@ -893,6 +896,13 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
     try { await adminUnfreezeCustomer(id); await load(); }
     catch (e) { alert(e instanceof Error ? e.message : 'Failed to unfreeze customer'); }
     finally { setDelBusy(null); }
+  };
+  const startEdit = (c: CustomerRow) => { setEditingId(c.customer_id); setEditForm({ name: c.customer_name ?? '', email: c.email ?? '', phone: c.phone ?? '' }); };
+  const saveEdit = async (id: string) => {
+    setEditBusy(true);
+    try { await adminEditCustomer(id, editForm.name.trim(), editForm.email.trim(), editForm.phone.trim()); setEditingId(null); await load(); }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed to save profile'); }
+    finally { setEditBusy(false); }
   };
 
   useEffect(() => {
@@ -1014,6 +1024,10 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Card-by-card detail</div>
                             {!readOnly && (
                               <div className="flex items-center gap-1.5 flex-wrap">
+                                <button onClick={() => startEdit(c)} disabled={delBusy === c.customer_id}
+                                  className="inline-flex items-center gap-1 text-xs text-gray-700 border border-gray-200 px-2.5 py-1 rounded hover:bg-gray-50 disabled:opacity-40">
+                                  <Pencil className="w-3.5 h-3.5" /> Edit
+                                </button>
                                 <button onClick={() => handleFreeze(c.customer_id)} disabled={delBusy === c.customer_id}
                                   className="inline-flex items-center gap-1 text-xs text-amber-700 border border-amber-200 px-2.5 py-1 rounded hover:bg-amber-50 disabled:opacity-40">
                                   <Snowflake className="w-3.5 h-3.5" /> Freeze
@@ -1029,6 +1043,18 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
                               </div>
                             )}
                           </div>
+                          {editingId === c.customer_id && (
+                            <div className="mb-3 p-3 border notion-border rounded bg-[#FAFAF9] space-y-2">
+                              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Edit profile</div>
+                              <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} placeholder="Name" className="w-full bg-white border notion-border rounded px-2 py-1.5 text-sm" />
+                              <input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} placeholder="Email" className="w-full bg-white border notion-border rounded px-2 py-1.5 text-sm" />
+                              <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="Phone" className="w-full bg-white border notion-border rounded px-2 py-1.5 text-sm" />
+                              <div className="flex gap-2">
+                                <button onClick={() => saveEdit(c.customer_id)} disabled={editBusy} className="text-xs bg-[#37352F] text-white px-3 py-1.5 rounded disabled:opacity-40">{editBusy ? 'Saving…' : 'Save'}</button>
+                                <button onClick={() => setEditingId(null)} className="text-xs border notion-border px-3 py-1.5 rounded">Cancel</button>
+                              </div>
+                            </div>
+                          )}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {(c.cards_detail ?? []).map((d) => (
                               <div key={d.card_id} className="bg-white border notion-border rounded p-3 text-xs space-y-1">
