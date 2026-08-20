@@ -10,6 +10,7 @@ import { TermsOfService } from './components/legal/TermsOfService';
 import { DataProcessingAgreement } from './components/legal/DataProcessingAgreement';
 import { Impressum } from './components/legal/Impressum';
 import { Subprocessors } from './components/legal/Subprocessors';
+import { CardholderPrivacy } from './components/legal/CardholderPrivacy';
 import { CookiePolicy } from './components/legal/CookiePolicy';
 import { AccessibilityStatement } from './components/legal/AccessibilityStatement';
 import { Unsubscribe } from './components/Unsubscribe';
@@ -182,6 +183,7 @@ export default function App() {
   if (path === '/dpa') return <DataProcessingAgreement />;
   if (path === '/impressum') return <Impressum />;
   if (path === '/subprocessors') return <Subprocessors />;
+  if (path === '/cardholder-privacy') return <CardholderPrivacy />;
   if (path === '/cookies') return <CookiePolicy />;
   if (path === '/accessibility') return <AccessibilityStatement />;
   if (path === '/unsubscribe') return <Unsubscribe />;

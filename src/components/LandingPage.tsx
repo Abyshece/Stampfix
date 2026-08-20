@@ -470,6 +470,7 @@ export function LandingPage({
             <a href="/faq" className="hover:text-[#37352F]">FAQ</a>
             <a href="/wallet-guide" className="hover:text-[#37352F]">Update your card</a>
             <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>
+            <a href="/cardholder-privacy" className="hover:text-[#37352F]">Cardholder Privacy</a>
             <a href="/terms" className="hover:text-[#37352F]">Terms</a>
             <a href="/impressum" className="hover:text-[#37352F]">Impressum</a>
             <a href="/accessibility" className="hover:text-[#37352F]">Accessibility</a>

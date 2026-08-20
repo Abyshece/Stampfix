@@ -130,6 +130,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
           ]} />
           <FooterCol title="Legal" links={[
             { href: '/privacy', label: 'Privacy' },
+            { href: '/cardholder-privacy', label: 'Cardholder Privacy' },
             { href: '/terms', label: 'Terms' },
             { href: '/dpa', label: 'DPA' },
             { href: '/impressum', label: 'Impressum' },

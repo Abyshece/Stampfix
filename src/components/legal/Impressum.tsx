@@ -79,15 +79,15 @@ export function Impressum() {
         Würzburg, Deutschland / Germany
       </p>
 
-      <LegalH2>EU-Streitschlichtung / EU dispute resolution</LegalH2>
+      <LegalH2>Verbraucherstreitbeilegung / Consumer dispute resolution</LegalH2>
       <p>
-        Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:{' '}
-        <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer" className="underline">
-          https://ec.europa.eu/consumers/odr/
-        </a>
-        . Unsere E-Mail-Adresse finden Sie oben. Stampfix richtet sich primär an Unternehmen (B2B);
-        wir sind weder verpflichtet noch bereit, an Streitbeilegungsverfahren vor einer
-        Verbraucherschlichtungsstelle teilzunehmen.
+        Die von der Europäischen Kommission bereitgestellte Plattform zur Online-Streitbeilegung (OS) wurde
+        zum 20. Juli 2025 eingestellt. / The European Commission’s Online Dispute Resolution (ODR) platform
+        was discontinued on 20 July 2025. Stampfix richtet sich primär an Unternehmen (B2B); wir sind gemäß
+        § 36 VSBG weder verpflichtet noch bereit, an Streitbeilegungsverfahren vor einer
+        Verbraucherschlichtungsstelle teilzunehmen. / Stampfix serves primarily businesses (B2B); pursuant to
+        § 36 VSBG we are neither obligated nor willing to participate in dispute-resolution proceedings before
+        a consumer arbitration body.
       </p>
 
       <LegalH2>Haftung für Inhalte / Liability for content</LegalH2>
