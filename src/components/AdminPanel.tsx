@@ -8,7 +8,7 @@ import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
 import { NotificationsAdmin } from './NotificationsAdmin';
 import { CustomerActivityLog } from './CustomerActivityLog';
-import { adminDeleteCustomer } from '../lib/db';
+import { adminDeleteCustomer, adminFreezeCustomer, adminUnfreezeCustomer } from '../lib/db';
 import {
   checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers, listMerchantApprovals, fetchStripeMrr,
   listTickets, listContactMessages,
@@ -881,6 +881,19 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
     catch (e) { alert(e instanceof Error ? e.message : 'Failed to delete customer'); }
     finally { setDelBusy(null); }
   };
+  const handleFreeze = async (id: string) => {
+    if (!confirm('Freeze this customer? Their active cards will be blocked (no new stamps) until you unfreeze. They are NOT deleted.')) return;
+    setDelBusy(id);
+    try { await adminFreezeCustomer(id); await load(); }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed to freeze customer'); }
+    finally { setDelBusy(null); }
+  };
+  const handleUnfreeze = async (id: string) => {
+    setDelBusy(id);
+    try { await adminUnfreezeCustomer(id); await load(); }
+    catch (e) { alert(e instanceof Error ? e.message : 'Failed to unfreeze customer'); }
+    finally { setDelBusy(null); }
+  };
 
   useEffect(() => {
     load();
@@ -997,13 +1010,23 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
                     {isOpen && (
                       <tr className="bg-[#F7F7F5]">
                         <td colSpan={10} className="px-4 py-4">
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Card-by-card detail</div>
                             {!readOnly && (
-                              <button onClick={() => handleDeleteCustomer(c.customer_id)} disabled={delBusy === c.customer_id}
-                                className="inline-flex items-center gap-1 text-xs text-red-600 border border-red-200 px-2.5 py-1 rounded hover:bg-red-50 disabled:opacity-40">
-                                <Trash2 className="w-3.5 h-3.5" /> {delBusy === c.customer_id ? 'Deleting…' : 'Delete customer'}
-                              </button>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <button onClick={() => handleFreeze(c.customer_id)} disabled={delBusy === c.customer_id}
+                                  className="inline-flex items-center gap-1 text-xs text-amber-700 border border-amber-200 px-2.5 py-1 rounded hover:bg-amber-50 disabled:opacity-40">
+                                  <Snowflake className="w-3.5 h-3.5" /> Freeze
+                                </button>
+                                <button onClick={() => handleUnfreeze(c.customer_id)} disabled={delBusy === c.customer_id}
+                                  className="inline-flex items-center gap-1 text-xs text-green-700 border border-green-200 px-2.5 py-1 rounded hover:bg-green-50 disabled:opacity-40">
+                                  <RotateCcw className="w-3.5 h-3.5" /> Unfreeze
+                                </button>
+                                <button onClick={() => handleDeleteCustomer(c.customer_id)} disabled={delBusy === c.customer_id}
+                                  className="inline-flex items-center gap-1 text-xs text-red-600 border border-red-200 px-2.5 py-1 rounded hover:bg-red-50 disabled:opacity-40">
+                                  <Trash2 className="w-3.5 h-3.5" /> {delBusy === c.customer_id ? '…' : 'Delete'}
+                                </button>
+                              </div>
                             )}
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

@@ -502,6 +502,17 @@ export async function adminDeleteCustomer(customerId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Admin: block all of a customer's active cards (no deletion). Reversible. */
+export async function adminFreezeCustomer(customerId: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_freeze_customer', { customer_id_in: customerId });
+  if (error) throw error;
+}
+/** Admin: reactivate a frozen customer's cards (skips cards pending deletion). */
+export async function adminUnfreezeCustomer(customerId: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_unfreeze_customer', { customer_id_in: customerId });
+  if (error) throw error;
+}
+
 // ---------------------------------------------------------------------
 // Activities
 // ---------------------------------------------------------------------
