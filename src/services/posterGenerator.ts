@@ -1,3 +1,6 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import QRCode from 'react-qr-code';
 import type { Campaign, Location } from '../types';
 
 export type PosterSize = 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker';
@@ -117,7 +120,10 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   // QR code from a free, reliable service. It only takes a URL, no
   // signup, no API key. The URL we pass through is the actual join
   // URL with embedded campaign+location params.
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=0&data=${encodeURIComponent(joinUrl)}`;
+  const qrSvg = renderToStaticMarkup(
+    createElement(QRCode, { value: joinUrl, size: 400, level: 'M', bgColor: '#FFFFFF', fgColor: '#000000' }),
+  );
+  const qrUrl = `data:image/svg+xml,${encodeURIComponent(qrSvg)}`;
   const stickerCells = Array.from({ length: 20 }, () => `<div class="st-cell"><div class="stx">Scan &amp; stamp</div><div class="st-box"><img src="${qrUrl}" alt="Scan"/></div><div class="stx">Win rewards with us</div></div>`).join('');
 
   // The example "0" stamp count and "Alex" / "06/03/26" footer are
@@ -544,8 +550,8 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   }
   .dummy-card .dc-sl b { font-size: 26px; font-weight: 800; }
   .dummy-card .dc-stamps {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 12px; justify-items: center; padding: 2px 0;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px; justify-items: center; padding: 4px 0;
   }
   .dummy-card .dc-shape { width: 30px; height: 30px; }
   .dummy-card .dc-shape.sq { background: currentColor; border-radius: 7px; }
