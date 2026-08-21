@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowRight, ScanLine, X, Loader2, ArrowLeft, Mail, CheckCircle,
-  BarChart3, Users, Zap, Smartphone, QrCode, Instagram, Linkedin,
+  BarChart3, Users, Zap, Smartphone, QrCode,
 } from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
 import { LaunchSteps } from './LaunchSteps';
 import { WalletFanVisual, InsightsVisual, StepCard, StatCard } from './FeatureVisuals';
 import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
+import { SiteFooter } from './SiteFooter';
 import { PasswordInput } from './PasswordInput';
 import { FeaturesSection } from './FeaturesSection';
 import { TrustpilotWidget } from './TrustpilotWidget';
@@ -460,41 +461,7 @@ export function LandingPage({
       {/* Contact form (lands in admin → Contact Inquiries) */}
       <ContactFormSection />
 
-      {/* Footer */}
-      <footer className="border-t notion-border bg-white py-12 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
-          <a href="/" aria-label="Stampfix home" className="flex items-center gap-2 font-semibold text-[#37352F] mb-4 md:mb-0 hover:opacity-80 transition">
-            <svg viewBox="0 0 282 90" className="h-5 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
-            Stampfix
-          </a>
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
-            <a href="/pricing" className="hover:text-[#37352F]">Pricing</a>
-            <a href="/faq" className="hover:text-[#37352F]">FAQ</a>
-            <a href="/wallet-guide" className="hover:text-[#37352F]">Update your card</a>
-            <a href="/privacy" className="hover:text-[#37352F]">Privacy</a>
-            <a href="/cardholder-privacy" className="hover:text-[#37352F]">Cardholder Privacy</a>
-            <a href="/terms" className="hover:text-[#37352F]">Terms</a>
-            <a href="/impressum" className="hover:text-[#37352F]">Impressum</a>
-            <a href="/accessibility" className="hover:text-[#37352F]">Accessibility</a>
-            <a href="/cookies" className="hover:text-[#37352F]">Cookies</a>
-            <button onClick={reopenCookieBanner} className="hover:text-[#37352F] cursor-pointer">Cookie settings</button>
-            <a href="#contact" className="hover:text-[#37352F]">Contact</a>
-          </div>
-          <div className="mt-4 md:mt-0">&copy; 2026 Stampfix Inc.</div>
-        </div>
-        {/* Social — replace href="#" with your real Instagram / LinkedIn / TikTok URLs */}
-        <div className="max-w-6xl mx-auto flex justify-center gap-3 mt-8">
-          <a href="https://www.instagram.com/stampfix.app/" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
-            <Instagram className="w-4 h-4" />
-          </a>
-          <a href="https://www.linkedin.com/company/feemoji-app/" aria-label="LinkedIn" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
-            <Linkedin className="w-4 h-4" />
-          </a>
-          <a href="#" aria-label="TikTok" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border notion-border flex items-center justify-center text-gray-500 hover:text-[#37352F] hover:border-[#37352F] transition">
-            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" aria-hidden="true"><path d="M16.6 5.82A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 1 1-2.59-2.6c.27 0 .53.05.78.12V9.66a5.7 5.7 0 0 0-.78-.06 5.7 5.7 0 1 0 5.7 5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3a4.3 4.3 0 0 1-3.26-1.48z"/></svg>
-          </a>
-        </div>
-      </footer>
+      <SiteFooter onCookieSettings={reopenCookieBanner} />
     </div>
   );
 }
