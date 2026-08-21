@@ -568,6 +568,15 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .dummy-card .dc-field b { font-size: 15px; font-weight: 700; line-height: 1.2; }
   .dummy-card .dc-reward { text-align: right; max-width: 62%; }
   .size-pamphlet .dummy-card { max-width: 358px; }
+  .wallet-compat {
+    display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+    gap: 6px 10px; margin: 16px auto 0; color: rgba(255,255,255,0.92);
+    font-size: 13px; font-weight: 600;
+  }
+  .wallet-compat .wc-label { text-transform: uppercase; letter-spacing: 1.5px; font-size: 10px; opacity: 0.7; }
+  .wallet-compat .wc-item { display: inline-flex; align-items: center; gap: 5px; }
+  .wallet-compat .wc-dot { opacity: 0.5; }
+  .wallet-compat .wc-ic { width: 15px; height: 12px; flex-shrink: 0; }
 
   /* Right-hand rail on the poster: dummy card on top, scan QR below. */
   .size-poster .ps-rail {
@@ -645,6 +654,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
       <div class="bc-tagline">
         Join our loyalty program — earn rewards every visit.
       </div>
+      <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1 6h22" stroke="currentColor" stroke-width="2"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1 6h22" stroke="currentColor" stroke-width="2"/></svg>Google Wallet</span></div>
     </div>
     <div class="bc-right">
       <div class="bc-scan-label">Scan to join</div>
@@ -689,6 +699,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="dc-field dc-reward"><span>Reward</span><b>Free reward</b></div>
         </div>
       </div>
+      <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1 6h22" stroke="currentColor" stroke-width="2"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1 6h22" stroke="currentColor" stroke-width="2"/></svg>Google Wallet</span></div>
       <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
     </div>
     <div class="pm-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
@@ -726,6 +737,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="dc-field dc-reward"><span>Reward</span><b>Free reward</b></div>
         </div>
       </div>
+      <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1 6h22" stroke="currentColor" stroke-width="2"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M1 6h22" stroke="currentColor" stroke-width="2"/></svg>Google Wallet</span></div>
       <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
     </div>
     <div class="ps-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
