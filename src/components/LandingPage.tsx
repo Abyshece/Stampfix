@@ -339,7 +339,7 @@ export function LandingPage({
         </div>
 
         <h1 className="text-5xl md:text-7xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-          No apps. No paper. <br />
+          No apps. No paper. No hardware. <br />
           <span className="text-gray-400">Just loyalty.</span>
         </h1>
 
