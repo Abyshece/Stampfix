@@ -201,7 +201,7 @@ function buildDummyStamps(maxStamps: number): string {
     const k = kinds[i % 3];
     const off = i >= offFrom ? ' off' : '';
     const inner = k === 'cx'
-      ? '<svg viewBox="0 0 40 40"><line x1="8" y1="8" x2="32" y2="32"/><line x1="32" y1="8" x2="8" y2="32"/></svg>'
+      ? '<i></i><i></i>'
       : '';
     out += `<div class="dc-shape ${k}${off}">${inner}</div>`;
   }
@@ -320,7 +320,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     letter-spacing: 0.3px; opacity: 0.92;
   }
   .size-card .bc-tagline {
-    font-size: 17px; font-weight: 500; opacity: 0.9;
+    font-size: 15px; font-weight: 500; opacity: 0.9;
     line-height: 1.3; max-width: 320px;
   }
   .size-card .bc-right {
@@ -399,7 +399,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     letter-spacing: -3px; text-transform: uppercase; margin-bottom: 18px;
   }
   .size-pamphlet .pm-subheading {
-    font-size: 18px; font-weight: 500; opacity: 0.85;
+    font-size: 16px; font-weight: 500; opacity: 0.85;
     max-width: 380px; line-height: 1.4;
   }
   .size-pamphlet .pm-signup-h {
@@ -479,7 +479,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     letter-spacing: -3px; text-transform: uppercase; max-width: 380px;
   }
   .size-poster .ps-subheading {
-    font-size: 20px; font-weight: 500; opacity: 0.85;
+    font-size: 17px; font-weight: 500; opacity: 0.85;
     max-width: 300px; margin-top: 16px; line-height: 1.4;
   }
   .size-poster .ps-signup {
@@ -556,9 +556,13 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .dummy-card .dc-shape { width: 30px; height: 30px; }
   .dummy-card .dc-shape.sq { background: currentColor; border-radius: 7px; }
   .dummy-card .dc-shape.ci { background: currentColor; border-radius: 50%; }
-  .dummy-card .dc-shape.cx { display: flex; }
-  .dummy-card .dc-shape.cx svg { width: 100%; height: 100%; }
-  .dummy-card .dc-shape.cx svg line { stroke: currentColor; stroke-width: 7; stroke-linecap: round; }
+  .dummy-card .dc-shape.cx { position: relative; }
+  .dummy-card .dc-shape.cx i {
+    position: absolute; top: 50%; left: 50%;
+    width: 116%; height: 6.5px; background: currentColor; border-radius: 4px;
+  }
+  .dummy-card .dc-shape.cx i:first-child { transform: translate(-50%, -50%) rotate(45deg); }
+  .dummy-card .dc-shape.cx i:last-child { transform: translate(-50%, -50%) rotate(-45deg); }
   .dummy-card .dc-shape.off { opacity: 0.22; }
   .dummy-card .dc-bottom { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; }
   .dummy-card .dc-field span {
@@ -574,6 +578,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-poster .dc-qr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 2px; }
   .size-poster .dc-qr img { width: 104px; height: 104px; }
   .size-poster .dc-qr span { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; opacity: 0.85; }
+  .size-poster .dc-name { font-size: 15px; }
   .wallet-compat {
     display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
     gap: 6px 10px; margin: 16px auto 0; color: rgba(255,255,255,0.92);
@@ -658,7 +663,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <div class="bc-noapp">No app to download</div>
       </div>
       <div class="bc-tagline">
-        Join our loyalty program — earn rewards every visit.
+        Join our loyalty program — get a stamp on every order and earn a reward once your card is full.
       </div>
       <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#111"/><rect x="12" y="8" width="16" height="15" rx="2.5" fill="#54A0EE"/><rect x="10.5" y="11" width="19" height="15" rx="2.5" fill="#F3C24C"/><rect x="9" y="14" width="22" height="15" rx="2.5" fill="#F17A50"/><path d="M8 20h24a1.5 1.5 0 0 1 1.5 1.5V31A1.5 1.5 0 0 1 32 32.5H8A1.5 1.5 0 0 1 6.5 31v-9.5A1.5 1.5 0 0 1 8 20z" fill="#E9E5DD"/><path d="M15.5 20h9a1 1 0 0 1 1 1c0 2.4-2 3.6-5.5 3.6S14.5 23.4 14.5 21a1 1 0 0 1 1-1z" fill="#111"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="gwclip"><rect width="44" height="40" rx="9"/></clipPath></defs><g clip-path="url(#gwclip)"><rect width="44" height="40" fill="#4285F4"/><rect width="44" height="13" fill="#34A853"/><rect y="8" width="44" height="13" fill="#FBBC04"/><rect y="16" width="44" height="14" fill="#EA4335"/><path d="M0 27c9-4 13-5 22-5s13 1 22 5v13H0z" fill="#4285F4"/></g></svg>Google Wallet</span></div>
     </div>
@@ -681,7 +686,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
       <div>
         <div class="pm-biz">__BUSINESS_NAME__</div>
         <h1 class="pm-headline">SCAN<br>&amp; SAVE</h1>
-        <p class="pm-subheading">Loyalty card right in your phone — no app to download.</p>
+        <p class="pm-subheading">Get a stamp on every order and earn a reward once your card is full.</p>
       </div>
       <div>
         <div class="pm-signup-h">How to sign up</div>
@@ -722,7 +727,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
       <div>
         <div class="ps-biz">__BUSINESS_NAME__</div>
         <h1 class="ps-headline">SCAN<br>&amp; SAVE</h1>
-        <p class="ps-subheading">Loyalty card in your phone — no app to download.</p>
+        <p class="ps-subheading">Get a stamp on every order and earn a reward once your card is full.</p>
       </div>
       <div class="ps-signup">
         <div class="ps-signup-h">How to<br>sign up:</div>
