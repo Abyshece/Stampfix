@@ -567,13 +567,13 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   }
   .dummy-card .dc-field b { font-size: 15px; font-weight: 700; line-height: 1.2; }
   .dummy-card .dc-reward { text-align: right; max-width: 62%; }
+  .dummy-card .dc-qr { display: none; }
   .size-pamphlet .dummy-card { max-width: 358px; }
-  .size-poster .dummy-card { width: 284px; max-width: 284px; min-height: 388px; justify-content: space-between; padding: 26px 24px; }
-  .size-poster .dc-stamps { gap: 18px; padding: 6px 0; }
-  .size-poster .dc-shape { width: 46px; height: 46px; }
-  .size-poster .dc-name { font-size: 22px; }
-  .size-poster .dc-sl b { font-size: 30px; }
-  .size-poster .dc-field b { font-size: 17px; }
+  .size-poster .dummy-card { width: 288px; max-width: 288px; padding: 22px 20px; gap: 14px; }
+  .size-poster .dc-stamps { gap: 12px; padding: 4px 0; }
+  .size-poster .dc-qr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 2px; }
+  .size-poster .dc-qr img { width: 104px; height: 104px; }
+  .size-poster .dc-qr span { font-size: 12px; font-weight: 700; letter-spacing: 1.5px; opacity: 0.85; }
   .wallet-compat {
     display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
     gap: 6px 10px; margin: 16px auto 0; color: rgba(255,255,255,0.92);
@@ -704,6 +704,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="dc-field"><span>Member</span><b>Alex</b></div>
           <div class="dc-field dc-reward"><span>Reward</span><b>Free reward</b></div>
         </div>
+        <div class="dc-qr"><img src="__QR_URL__" alt="" /><span>SF00108</span></div>
       </div>
       <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#111"/><rect x="12" y="8" width="16" height="15" rx="2.5" fill="#54A0EE"/><rect x="10.5" y="11" width="19" height="15" rx="2.5" fill="#F3C24C"/><rect x="9" y="14" width="22" height="15" rx="2.5" fill="#F17A50"/><path d="M8 20h24a1.5 1.5 0 0 1 1.5 1.5V31A1.5 1.5 0 0 1 32 32.5H8A1.5 1.5 0 0 1 6.5 31v-9.5A1.5 1.5 0 0 1 8 20z" fill="#E9E5DD"/><path d="M15.5 20h9a1 1 0 0 1 1 1c0 2.4-2 3.6-5.5 3.6S14.5 23.4 14.5 21a1 1 0 0 1 1-1z" fill="#111"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="gwclip"><rect width="44" height="40" rx="9"/></clipPath></defs><g clip-path="url(#gwclip)"><rect width="44" height="40" fill="#4285F4"/><rect width="44" height="13" fill="#34A853"/><rect y="8" width="44" height="13" fill="#FBBC04"/><rect y="16" width="44" height="14" fill="#EA4335"/><path d="M0 27c9-4 13-5 22-5s13 1 22 5v13H0z" fill="#4285F4"/></g></svg>Google Wallet</span></div>
       <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
@@ -742,6 +743,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="dc-field"><span>Member</span><b>Alex</b></div>
           <div class="dc-field dc-reward"><span>Reward</span><b>Free reward</b></div>
         </div>
+        <div class="dc-qr"><img src="__QR_URL__" alt="" /><span>SF00108</span></div>
       </div>
       <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#111"/><rect x="12" y="8" width="16" height="15" rx="2.5" fill="#54A0EE"/><rect x="10.5" y="11" width="19" height="15" rx="2.5" fill="#F3C24C"/><rect x="9" y="14" width="22" height="15" rx="2.5" fill="#F17A50"/><path d="M8 20h24a1.5 1.5 0 0 1 1.5 1.5V31A1.5 1.5 0 0 1 32 32.5H8A1.5 1.5 0 0 1 6.5 31v-9.5A1.5 1.5 0 0 1 8 20z" fill="#E9E5DD"/><path d="M15.5 20h9a1 1 0 0 1 1 1c0 2.4-2 3.6-5.5 3.6S14.5 23.4 14.5 21a1 1 0 0 1 1-1z" fill="#111"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="gwclip"><rect width="44" height="40" rx="9"/></clipPath></defs><g clip-path="url(#gwclip)"><rect width="44" height="40" fill="#4285F4"/><rect width="44" height="13" fill="#34A853"/><rect y="8" width="44" height="13" fill="#FBBC04"/><rect y="16" width="44" height="14" fill="#EA4335"/><path d="M0 27c9-4 13-5 22-5s13 1 22 5v13H0z" fill="#4285F4"/></g></svg>Google Wallet</span></div>
       <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
