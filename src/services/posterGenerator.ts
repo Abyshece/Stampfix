@@ -124,6 +124,8 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     createElement(QRCode, { value: joinUrl, size: 400, level: 'M', bgColor: '#FFFFFF', fgColor: '#000000' }),
   );
   const qrUrl = `data:image/svg+xml,${encodeURIComponent(qrSvg)}`;
+  const fakeQrSvg = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect width="100" height="100" fill="#fff"/><rect x="0" y="0" width="28" height="28" fill="#111"/><rect x="6" y="6" width="16" height="16" fill="#fff"/><rect x="10" y="10" width="8" height="8" fill="#111"/><rect x="72" y="0" width="28" height="28" fill="#111"/><rect x="78" y="6" width="16" height="16" fill="#fff"/><rect x="82" y="10" width="8" height="8" fill="#111"/><rect x="0" y="72" width="28" height="28" fill="#111"/><rect x="6" y="78" width="16" height="16" fill="#fff"/><rect x="10" y="82" width="8" height="8" fill="#111"/><g fill="#111"><rect x="40" y="8" width="8" height="8"/><rect x="56" y="8" width="8" height="8"/><rect x="48" y="24" width="8" height="8"/><rect x="64" y="24" width="8" height="8"/><rect x="8" y="40" width="8" height="8"/><rect x="24" y="40" width="8" height="8"/><rect x="40" y="40" width="8" height="8"/><rect x="64" y="40" width="8" height="8"/><rect x="88" y="40" width="8" height="8"/><rect x="48" y="48" width="8" height="8"/><rect x="72" y="48" width="8" height="8"/><rect x="32" y="56" width="8" height="8"/><rect x="56" y="56" width="8" height="8"/><rect x="88" y="56" width="8" height="8"/><rect x="40" y="64" width="8" height="8"/><rect x="64" y="64" width="8" height="8"/><rect x="56" y="72" width="8" height="8"/><rect x="72" y="72" width="8" height="8"/><rect x="88" y="72" width="8" height="8"/><rect x="40" y="88" width="8" height="8"/><rect x="56" y="88" width="8" height="8"/><rect x="72" y="88" width="8" height="8"/></g></svg>';
+  const fakeQrUrl = `data:image/svg+xml,${encodeURIComponent(fakeQrSvg)}`;
   const stickerCells = Array.from({ length: 20 }, () => `<div class="st-cell"><div class="stx">Scan &amp; stamp</div><div class="st-box"><img src="${qrUrl}" alt="Scan"/></div><div class="stx">Win rewards with us</div></div>`).join('');
 
   // The example "0" stamp count and "Alex" / "06/03/26" footer are
@@ -139,6 +141,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__STARBURST__',      starburstText)
     .replaceAll('__STICKER_CELLS__',  stickerCells)
     .replaceAll('__QR_URL__',         qrUrl)
+    .replaceAll('__FAKE_QR_URL__',    fakeQrUrl)
     .replaceAll('__STAMPS_GRID__',    buildStampsGrid(maxStamps, icon))
     .replaceAll('__OFFER_PILL__',     esc(condenseOfferForPill(offerTitle, maxStamps)))
     .replaceAll('__BRAND_MARK__',     brandMark)
@@ -604,7 +607,8 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
    *  so it's unmistakably the thing to scan.
    * ============================ */
   /* "Scan to join" — just the QR itself (no card, border or labels). */
-  .scan-cta { display: flex; justify-content: center; }
+  .scan-cta { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .scan-note { max-width: 300px; margin: 0; text-align: center; font-size: 14px; font-weight: 500; line-height: 1.4; color: rgba(255,255,255,0.92); }
   .scan-cta img { display: block; width: 168px; height: 168px; }
   .size-poster .scan-cta img { width: 196px; height: 196px; }
   /* ===== Instagram square post (1080x1080) ===== */
@@ -709,10 +713,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="dc-field"><span>Member</span><b>Alex</b></div>
           <div class="dc-field dc-reward"><span>Reward</span><b>Free reward</b></div>
         </div>
-        <div class="dc-qr"><img src="__QR_URL__" alt="" /><span>SF00108</span></div>
+        <div class="dc-qr"><img src="__FAKE_QR_URL__" alt="" /><span>SF00108</span></div>
       </div>
       <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#111"/><rect x="12" y="8" width="16" height="15" rx="2.5" fill="#54A0EE"/><rect x="10.5" y="11" width="19" height="15" rx="2.5" fill="#F3C24C"/><rect x="9" y="14" width="22" height="15" rx="2.5" fill="#F17A50"/><path d="M8 20h24a1.5 1.5 0 0 1 1.5 1.5V31A1.5 1.5 0 0 1 32 32.5H8A1.5 1.5 0 0 1 6.5 31v-9.5A1.5 1.5 0 0 1 8 20z" fill="#E9E5DD"/><path d="M15.5 20h9a1 1 0 0 1 1 1c0 2.4-2 3.6-5.5 3.6S14.5 23.4 14.5 21a1 1 0 0 1 1-1z" fill="#111"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="gwclip"><rect width="44" height="40" rx="9"/></clipPath></defs><g clip-path="url(#gwclip)"><rect width="44" height="40" fill="#4285F4"/><rect width="44" height="13" fill="#34A853"/><rect y="8" width="44" height="13" fill="#FBBC04"/><rect y="16" width="44" height="14" fill="#EA4335"/><path d="M0 27c9-4 13-5 22-5s13 1 22 5v13H0z" fill="#4285F4"/></g></svg>Google Wallet</span></div>
-      <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
+      <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /><p class="scan-note">Scan the QR code above to get started — fill out the quick form and save your card to Apple or Google Wallet.</p></div>
     </div>
     <div class="pm-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
@@ -748,10 +752,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="dc-field"><span>Member</span><b>Alex</b></div>
           <div class="dc-field dc-reward"><span>Reward</span><b>Free reward</b></div>
         </div>
-        <div class="dc-qr"><img src="__QR_URL__" alt="" /><span>SF00108</span></div>
+        <div class="dc-qr"><img src="__FAKE_QR_URL__" alt="" /><span>SF00108</span></div>
       </div>
       <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#111"/><rect x="12" y="8" width="16" height="15" rx="2.5" fill="#54A0EE"/><rect x="10.5" y="11" width="19" height="15" rx="2.5" fill="#F3C24C"/><rect x="9" y="14" width="22" height="15" rx="2.5" fill="#F17A50"/><path d="M8 20h24a1.5 1.5 0 0 1 1.5 1.5V31A1.5 1.5 0 0 1 32 32.5H8A1.5 1.5 0 0 1 6.5 31v-9.5A1.5 1.5 0 0 1 8 20z" fill="#E9E5DD"/><path d="M15.5 20h9a1 1 0 0 1 1 1c0 2.4-2 3.6-5.5 3.6S14.5 23.4 14.5 21a1 1 0 0 1 1-1z" fill="#111"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="gwclip"><rect width="44" height="40" rx="9"/></clipPath></defs><g clip-path="url(#gwclip)"><rect width="44" height="40" fill="#4285F4"/><rect width="44" height="13" fill="#34A853"/><rect y="8" width="44" height="13" fill="#FBBC04"/><rect y="16" width="44" height="14" fill="#EA4335"/><path d="M0 27c9-4 13-5 22-5s13 1 22 5v13H0z" fill="#4285F4"/></g></svg>Google Wallet</span></div>
-      <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /></div>
+      <div class="scan-cta"><img src="__QR_URL__" alt="Scan to join" /><p class="scan-note">Scan the QR code above to get started — fill out the quick form and save your card to Apple or Google Wallet.</p></div>
     </div>
     <div class="ps-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
