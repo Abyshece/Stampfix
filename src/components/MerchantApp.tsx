@@ -72,9 +72,11 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
 
   const loadAll = useCallback(async () => {
     if (!user) {
-      // No user yet — make sure we're not stuck on a spinner. The auth
-      // listener will eventually fire and re-run this effect with a user.
-      setLoading(false);
+      // Signed out — the render shows the login form directly via the `!user`
+      // check below, so keep loading=true. That way, the instant a user
+      // appears (e.g. right after login) we show the loader instead of a
+      // one-frame flash of the signup form, until loadAll fetches their data.
+      setLoading(true);
       return;
     }
     setLoading(true);
@@ -393,6 +395,10 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   try { justRegistered = sessionStorage.getItem('sf_just_registered') === '1'; } catch { /* ignore */ }
   if (justRegistered) {
     return <MerchantOnboarding onComplete={loadAll} initialStep="FORM" onBack={onLogout} />;
+  }
+
+  if (!user) {
+    return <MerchantOnboarding onComplete={loadAll} initialStep={startOnLogin ? 'LOGIN' : 'FORM'} onBack={onLogout} />;
   }
 
   if (loading) {

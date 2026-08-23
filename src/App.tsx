@@ -254,6 +254,13 @@ export default function App() {
     return <BrandLoading />;
   }
 
+  // A signed-in, healthy merchant is flipped to the dashboard by the effect
+  // above, which runs on the next tick. Hold the loader through that tick so
+  // the public Landing page doesn't flash for a frame before the dashboard.
+  if (user && hasMerchantRow && !showConfirmed && view !== 'merchant') {
+    return <BrandLoading />;
+  }
+
   // 3) Merchant flow (login form if signed out, dashboard if signed in).
   if (view === 'merchant') {
     return (
