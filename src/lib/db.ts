@@ -879,8 +879,8 @@ export async function adminListNotifications(): Promise<NotificationRow[]> {
   if (error) throw error;
   return (data ?? []) as NotificationRow[];
 }
-export async function adminCreateNotification(title: string, body: string): Promise<void> {
-  const { error } = await supabase.from('notifications').insert({ title, body, published: true });
+export async function adminCreateNotification(title: string, body: string, merchantId?: string): Promise<void> {
+  const { error } = await supabase.from('notifications').insert({ title, body, published: true, merchant_id: merchantId?.trim() || null });
   if (error) throw error;
 }
 export async function adminDeleteNotification(id: string): Promise<void> {

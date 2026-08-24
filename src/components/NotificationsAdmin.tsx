@@ -6,6 +6,7 @@ export function NotificationsAdmin() {
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [merchantId, setMerchantId] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -16,8 +17,8 @@ export function NotificationsAdmin() {
     if (!title.trim() || !body.trim()) return;
     setBusy(true); setMsg(null);
     try {
-      await adminCreateNotification(title.trim(), body.trim());
-      setTitle(''); setBody(''); setMsg('Sent — it is now on every merchant\u2019s bell.');
+      await adminCreateNotification(title.trim(), body.trim(), merchantId.trim() || undefined);
+      setTitle(''); setBody(''); setMerchantId(''); setMsg('Sent — it is now on every merchant\u2019s bell.');
       load();
     } catch (e) { setMsg(e instanceof Error ? e.message : 'Failed to send'); }
     finally { setBusy(false); }
@@ -40,9 +41,10 @@ export function NotificationsAdmin() {
       <div className="rounded-xl border notion-border bg-white p-4 space-y-3">
         <input className={inp} value={title} maxLength={80} placeholder="Title (e.g. New feature: geo-notifications)" onChange={(e) => setTitle(e.target.value)} />
         <textarea className={inp} rows={4} value={body} maxLength={500} placeholder="Message to merchants\u2026" onChange={(e) => setBody(e.target.value)} />
+        <input className={inp} value={merchantId} placeholder="Merchant ID — leave empty to send to all merchants" onChange={(e) => setMerchantId(e.target.value)} />
         <div className="flex items-center gap-3">
           <button onClick={send} disabled={busy} className="inline-flex items-center gap-1.5 bg-[#37352F] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition disabled:opacity-50">
-            <Send className="w-4 h-4" /> {busy ? 'Sending\u2026' : 'Send to all merchants'}
+            <Send className="w-4 h-4" /> {busy ? 'Sending\u2026' : (merchantId.trim() ? 'Send to this merchant' : 'Send to all merchants')}
           </button>
           {msg && <span className="text-xs text-green-700">{msg}</span>}
         </div>
