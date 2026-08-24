@@ -43,7 +43,7 @@ interface MerchantAppProps {
  * snappy without needing a heavyweight data layer like react-query.
  */
 export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [cards, setCards] = useState<UserCard[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -395,6 +395,14 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   try { justRegistered = sessionStorage.getItem('sf_just_registered') === '1'; } catch { /* ignore */ }
   if (justRegistered) {
     return <MerchantOnboarding onComplete={loadAll} initialStep="FORM" onBack={onLogout} />;
+  }
+
+  // Auth still resolving (e.g. right after a refresh) — show the loader, not
+  // the signup form. This useAuth instance starts with user=null until its
+  // getSession() settles, which is what caused the "Create your workspace"
+  // flash on reload.
+  if (authLoading) {
+    return <BrandLoading />;
   }
 
   if (!user) {
