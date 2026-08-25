@@ -57,6 +57,9 @@ export default function App() {
   const [enterOnLogin] = useState<boolean>(
     () => new URLSearchParams(window.location.search).get('login') === '1',
   );
+  // Bumped to force a re-render on in-app navigations where the view state
+  // doesn't change (e.g. leaving /admin while already on 'merchant').
+  const [, setNavTick] = useState(0);
 
   // Read URL params once on mount.
   useEffect(() => {
@@ -196,7 +199,7 @@ export default function App() {
   if (path === '/blog' || path.startsWith('/blog/')) return <Suspense fallback={<BrandLoading />}><BlogPage /></Suspense>;
   if (path === '/savings') return <Suspense fallback={<BrandLoading />}><PaybackCalculatorPage /></Suspense>;
   if (path === '/find-card') return <Suspense fallback={<BrandLoading />}><CardRecovery /></Suspense>;
-  if (path === '/admin') return <Suspense fallback={<BrandLoading />}><AdminPanel onExit={() => { window.history.pushState({}, '', '/'); setView('merchant'); }} /></Suspense>;
+  if (path === '/admin') return <Suspense fallback={<BrandLoading />}><AdminPanel onExit={() => { window.history.pushState({}, '', '/'); setView('merchant'); setNavTick((n) => n + 1); }} /></Suspense>;
   if (path === '/my-card') {
     return (
       <MyCardPage
