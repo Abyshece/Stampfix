@@ -1,6 +1,5 @@
 import { getStaffSession } from '../services/staff';
 import { supabase } from './supabase';
-import { geocodeAddress } from './geocode';
 import type { Campaign, UserCard, ActivityItem, Location, MerchantBilling, Plan } from '../types';
 
 // ---------------------------------------------------------------------
@@ -37,8 +36,6 @@ interface LocationRow {
   campaign_id: string;
   name: string;
   address: string | null;
-  latitude: number | null;
-  longitude: number | null;
   archived: boolean;
 }
 
@@ -106,8 +103,6 @@ const toLocation = (r: LocationRow): Location => ({
   campaignId: r.campaign_id,
   name: r.name,
   address: r.address,
-  latitude: r.latitude,
-  longitude: r.longitude,
   archived: r.archived,
 });
 
@@ -573,15 +568,12 @@ export async function createLocation(input: {
   name: string;
   address?: string | null;
 }): Promise<Location> {
-  const geo = input.address ? await geocodeAddress(input.address) : null;
   const { data, error } = await supabase
     .from('locations')
     .insert({
       campaign_id: input.campaignId,
       name: input.name,
       address: input.address ?? null,
-      latitude: geo?.latitude ?? null,
-      longitude: geo?.longitude ?? null,
     })
     .select('*')
     .single();
@@ -595,13 +587,7 @@ export async function updateLocation(
 ): Promise<Location> {
   const update: Record<string, unknown> = {};
   if (patch.name !== undefined) update.name = patch.name;
-  if (patch.address !== undefined) {
-    update.address = patch.address;
-    // Re-geocode whenever the address changes (clears coords if unresolvable).
-    const geo = patch.address ? await geocodeAddress(patch.address) : null;
-    update.latitude = geo?.latitude ?? null;
-    update.longitude = geo?.longitude ?? null;
-  }
+  if (patch.address !== undefined) update.address = patch.address;
   if (patch.archived !== undefined) update.archived = patch.archived;
   const { data, error } = await supabase
     .from('locations')
@@ -873,8 +859,17 @@ export async function generateBlogWithAI(topic: string): Promise<{ limitReached:
 // ---------------- Broadcast notifications ----------------
 export interface NotificationRow { id: string; title: string; body: string; published: boolean; created_at: string }
 export async function listMerchantNotifications(): Promise<{ items: NotificationRow[]; readIds: Set<string> }> {
+  const { data: auth } = await supabase.auth.getUser();
+  const uid = auth.user?.id;
+  const now = new Date().toISOString();
+  let q = supabase.from('notifications').select('*').eq('published', true);
+  // Scope to broadcasts (merchant_id null) OR this merchant's own — never another
+  // merchant's. Explicit filter so notifications can't leak across accounts even
+  // if the RLS policy is misconfigured.
+  q = uid ? q.or(`merchant_id.is.null,merchant_id.eq.${uid}`) : q.is('merchant_id', null);
+  q = q.or(`deliver_at.is.null,deliver_at.lte.${now}`);
   const [n, r] = await Promise.all([
-    supabase.from('notifications').select('*').eq('published', true).order('created_at', { ascending: false }),
+    q.order('created_at', { ascending: false }),
     supabase.from('notification_reads').select('notification_id'),
   ]);
   if (n.error) throw n.error;
