@@ -25,7 +25,7 @@ import { fetchExtendedKPIs, type ExtendedKPIs } from '../lib/db';
 
 type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
 
-export function AdminPanel() {
+export function AdminPanel({ onExit }: { onExit: () => void }) {
   const { user, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [tab, setTab] = useState<AdminTab>('OVERVIEW');
@@ -145,9 +145,9 @@ export function AdminPanel() {
             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
             Stripe Dashboard
           </a>
-          <a href="/" className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-500 hover:text-[#37352F]">
+          <button onClick={onExit} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-500 hover:text-[#37352F]">
             <ChevronRight className="w-3 h-3" /> Back to main app
-          </a>
+          </button>
           <button
             onClick={() => signOut().then(() => { window.location.href = '/'; })}
             className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-red-50 text-gray-600 hover:text-red-600"

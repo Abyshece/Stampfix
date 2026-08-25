@@ -196,7 +196,7 @@ export default function App() {
   if (path === '/blog' || path.startsWith('/blog/')) return <Suspense fallback={<BrandLoading />}><BlogPage /></Suspense>;
   if (path === '/savings') return <Suspense fallback={<BrandLoading />}><PaybackCalculatorPage /></Suspense>;
   if (path === '/find-card') return <Suspense fallback={<BrandLoading />}><CardRecovery /></Suspense>;
-  if (path === '/admin') return <Suspense fallback={<BrandLoading />}><AdminPanel /></Suspense>;
+  if (path === '/admin') return <Suspense fallback={<BrandLoading />}><AdminPanel onExit={() => { window.history.pushState({}, '', '/'); setView('merchant'); }} /></Suspense>;
   if (path === '/my-card') {
     return (
       <MyCardPage
