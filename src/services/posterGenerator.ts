@@ -128,7 +128,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   const fakeQrUrl = `data:image/svg+xml,${encodeURIComponent(fakeQrSvg)}`;
   const nfc = '<svg class="nfc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 8 A4 4 0 0 1 8 16"/><path d="M8 5 A7 7 0 0 1 8 19"/><path d="M8 2.5 A10 10 0 0 1 8 21.5"/></svg>';
   const nfcTap = `<div class="nfc-tap">${nfc}<span>Tap to sign up</span></div>`;
-  const nfcBig = '<svg class="nfc-big-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><rect x="58" y="26" width="34" height="50" rx="7"/><line x1="68" y1="33" x2="82" y2="33"/><path d="M40 37 Q50 51 40 65"/><path d="M31 31 Q47 51 31 71"/><path d="M22 25 Q44 51 22 77"/></svg>';
+  const nfcBig = '<svg class="nfc-big-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="58" y="22" width="34" height="56" rx="8"/><line x1="68" y1="30" x2="82" y2="30"/><path d="M28 35 A22 22 0 0 1 28 65"/><path d="M34 30 A30 30 0 0 1 34 70"/><path d="M40 25 A38 38 0 0 1 40 75"/></svg>';
   const stickerCells = Array.from({ length: 20 }, () => `<div class="st-cell"><div class="stx nfc-stx">${nfc}Tap or scan</div><div class="st-box"><img src="${qrUrl}" alt="Scan"/></div><div class="stx">Win rewards with us</div></div>`).join('');
 
   // The example "0" stamp count and "Alex" / "06/03/26" footer are
