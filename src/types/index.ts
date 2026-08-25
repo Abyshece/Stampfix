@@ -62,6 +62,8 @@ export interface Location {
   campaignId: string;
   name: string;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   archived: boolean;
 }
 

@@ -179,6 +179,8 @@ export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate, i
                   )}
                 </div>
                 {loc.address && <div className="text-xs text-gray-500 mt-0.5">{loc.address}</div>}
+                {loc.latitude != null && <div className="text-xs text-green-600 mt-0.5">📍 Geo-notification active</div>}
+                {loc.latitude == null && loc.address && <div className="text-xs text-amber-600 mt-0.5">Address couldn't be located — geo-notification off</div>}
               </div>
             )}
             <div className="flex items-center gap-1">

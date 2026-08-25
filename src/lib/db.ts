@@ -1,5 +1,6 @@
 import { getStaffSession } from '../services/staff';
 import { supabase } from './supabase';
+import { geocodeAddress } from './geocode';
 import type { Campaign, UserCard, ActivityItem, Location, MerchantBilling, Plan } from '../types';
 
 // ---------------------------------------------------------------------
@@ -36,6 +37,8 @@ interface LocationRow {
   campaign_id: string;
   name: string;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   archived: boolean;
 }
 
@@ -103,6 +106,8 @@ const toLocation = (r: LocationRow): Location => ({
   campaignId: r.campaign_id,
   name: r.name,
   address: r.address,
+  latitude: r.latitude,
+  longitude: r.longitude,
   archived: r.archived,
 });
 
@@ -568,12 +573,15 @@ export async function createLocation(input: {
   name: string;
   address?: string | null;
 }): Promise<Location> {
+  const geo = input.address ? await geocodeAddress(input.address) : null;
   const { data, error } = await supabase
     .from('locations')
     .insert({
       campaign_id: input.campaignId,
       name: input.name,
       address: input.address ?? null,
+      latitude: geo?.latitude ?? null,
+      longitude: geo?.longitude ?? null,
     })
     .select('*')
     .single();
@@ -587,7 +595,13 @@ export async function updateLocation(
 ): Promise<Location> {
   const update: Record<string, unknown> = {};
   if (patch.name !== undefined) update.name = patch.name;
-  if (patch.address !== undefined) update.address = patch.address;
+  if (patch.address !== undefined) {
+    update.address = patch.address;
+    // Re-geocode whenever the address changes (clears coords if unresolvable).
+    const geo = patch.address ? await geocodeAddress(patch.address) : null;
+    update.latitude = geo?.latitude ?? null;
+    update.longitude = geo?.longitude ?? null;
+  }
   if (patch.archived !== undefined) update.archived = patch.archived;
   const { data, error } = await supabase
     .from('locations')

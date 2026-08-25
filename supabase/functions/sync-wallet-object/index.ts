@@ -156,7 +156,7 @@ interface Card {
 const classIdFor = (campaignId: string) => `${ISSUER_ID}.stampify_${campaignId.replace(/-/g, '')}`;
 const objectIdFor = (cardId: string) => `${ISSUER_ID}.card_${cardId.replace(/-/g, '')}`;
 
-function buildLoyaltyClass(campaign: Campaign) {
+async function buildLoyaltyClass(campaign: Campaign) {
   // Use the merchant's own logo when they've uploaded one to storage (a public
   // https URL). Google can't fetch base64 data URLs, so anything else falls
   // back to the Stampfix logo.
@@ -166,6 +166,18 @@ function buildLoyaltyClass(campaign: Campaign) {
     /^https?:\/\//.test(campaign.logo_image)
       ? campaign.logo_image
       : 'https://stampfix.app/wallet-assets/wallet-logo-v2.png';
+  // Geo-notifications: attach the merchant's geocoded locations to the class
+  // so Google Wallet surfaces the pass when the cardholder is near a shop.
+  let geoLocations: Array<{ latitude: number; longitude: number }> = [];
+  try {
+    const svc = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+    const { data } = await svc.from('locations').select('latitude, longitude')
+      .eq('campaign_id', campaign.id).eq('archived', false)
+      .not('latitude', 'is', null).not('longitude', 'is', null).limit(10);
+    geoLocations = ((data ?? []) as Array<{ latitude: number; longitude: number }>)
+      .filter((l) => typeof l.latitude === 'number' && typeof l.longitude === 'number')
+      .map((l) => ({ latitude: l.latitude, longitude: l.longitude }));
+  } catch { /* geo-notifications are optional */ }
   return {
     id: classIdFor(campaign.id),
     issuerName: campaign.business_name,
@@ -181,6 +193,7 @@ function buildLoyaltyClass(campaign: Campaign) {
     rewardsTierLabel: 'Reward',
     localizedIssuerName: { defaultValue: { language: 'en-US', value: campaign.business_name } },
     localizedProgramName: { defaultValue: { language: 'en-US', value: campaign.business_name } },
+    ...(geoLocations.length ? { locations: geoLocations } : {}),
   };
 }
 
@@ -269,7 +282,7 @@ async function syncObject(accessToken: string, campaign: Campaign, card: Card): 
  * TODO: cache class existence per campaign for the function instance lifetime.
  */
 async function ensureClass(accessToken: string, campaign: Campaign): Promise<void> {
-  const body = buildLoyaltyClass(campaign);
+  const body = await buildLoyaltyClass(campaign);
   const baseUrl = 'https://walletobjects.googleapis.com/walletobjects/v1/loyaltyClass';
   const putRes = await fetch(`${baseUrl}/${encodeURIComponent(body.id)}`, {
     method: 'PUT',

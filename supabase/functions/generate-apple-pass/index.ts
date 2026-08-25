@@ -280,6 +280,24 @@ Deno.serve(async (req) => {
     const currentStamps = card.current_stamps ?? 0;
     const stampsLeft = Math.max(0, maxStamps - currentStamps);
 
+    // Geo-notifications: the merchant's geocoded locations. iOS surfaces the
+    // pass on the lock screen with relevantText when the cardholder is nearby.
+    const { data: geoLocsData } = await supabase
+      .from('locations')
+      .select('latitude, longitude')
+      .eq('campaign_id', card.campaign_id)
+      .eq('archived', false)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+      .limit(10);
+    const passLocations = ((geoLocsData ?? []) as Array<{ latitude: number; longitude: number }>)
+      .filter((l) => typeof l.latitude === 'number' && typeof l.longitude === 'number')
+      .map((l) => ({
+        latitude: l.latitude,
+        longitude: l.longitude,
+        relevantText: `You're near ${businessName} — open your card to collect a stamp!`,
+      }));
+
     // Per-pass authentication token for the PassKit web service. Generated
     // once and stored on the card; the web service validates the
     // `Authorization: ApplePass <token>` header against it on every update
@@ -313,6 +331,7 @@ Deno.serve(async (req) => {
       foregroundColor: hexToRgb(cardText),
       labelColor: hexToRgb(cardText),
       logoText: businessName,
+      ...(passLocations.length ? { locations: passLocations } : {}),
       webServiceURL,
       authenticationToken: authToken,
       storeCard: {
