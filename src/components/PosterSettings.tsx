@@ -261,24 +261,6 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
           Pamphlet
         </button>
         <button
-          onClick={() => handlePreview('poster')}
-          className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
-        >
-          A4 poster
-        </button>
-        <button
-          onClick={() => handlePreview('instagram')}
-          className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
-        >
-          Instagram post
-        </button>
-        <button
-          onClick={() => handlePreview('table')}
-          className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
-        >
-          Table QR (4.5cm)
-        </button>
-        <button
           onClick={() => handlePreview('sticker')}
           className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
         >

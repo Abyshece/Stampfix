@@ -129,7 +129,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   const nfc = '<svg class="nfc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 8 A4 4 0 0 1 8 16"/><path d="M8 5 A7 7 0 0 1 8 19"/><path d="M8 2.5 A10 10 0 0 1 8 21.5"/></svg>';
   const nfcTap = `<div class="nfc-tap">${nfc}<span>Tap to sign up</span></div>`;
   const nfcBig = '<svg class="nfc-big-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="58" y="22" width="34" height="56" rx="8"/><line x1="68" y1="30" x2="82" y2="30"/><path d="M28 35 A22 22 0 0 1 28 65"/><path d="M34 30 A30 30 0 0 1 34 70"/><path d="M40 25 A38 38 0 0 1 40 75"/></svg>';
-  const stickerCells = Array.from({ length: 20 }, () => `<div class="st-cell"><div class="stx nfc-stx">${nfc}Tap or scan</div><div class="st-box"><img src="${qrUrl}" alt="Scan"/></div><div class="stx">Win rewards with us</div></div>`).join('');
+  const stickerCells = Array.from({ length: 20 }, () => `<div class="st-cell"><div class="stx">Scan or tap to join</div><div class="st-row"><div class="st-box"><img src="${qrUrl}" alt="Scan"/></div>${nfcBig}</div><div class="stx">Win rewards with us</div></div>`).join('');
 
   // The example "0" stamp count and "Alex" / "06/03/26" footer are
   // illustrative — they show the customer what a card LOOKS like.
@@ -648,8 +648,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     padding: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;
   }
   .size-table .tb-label { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-  .size-table .tb-box { background: #fff; border-radius: 8px; padding: 6px; margin: 5px 0; }
-  .size-table .tb-box img { width: 96px; height: 96px; display: block; }
+  .size-table .tb-box { background: #fff; border-radius: 8px; padding: 6px; }
+  .size-table .tb-box img { width: 68px; height: 68px; display: block; }
+  .size-table .tb-row { display: flex; align-items: center; gap: 6px; margin: 5px 0; }
+  .size-table .nfc-big-svg { width: 54px; height: 54px; }
   .size-table .tb-biz { font-size: 7px; opacity: 0.9; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* ===== A4 sticker sheet: table QR repeated in a grid ===== */
   @page sticker { size: A4 portrait; margin: 0; }
@@ -665,6 +667,8 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-sticker .st-cell .stx { font-size: 9px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; text-align: center; line-height: 1.1; }
   .size-sticker .st-box { background: #fff; border-radius: 6px; padding: 4px; }
   .size-sticker .st-box img { width: 66px; height: auto; display: block; }
+  .size-sticker .st-row { display: flex; align-items: center; gap: 8px; }
+  .size-sticker .nfc-big-svg { width: 58px; height: 58px; }
 </style>
 </head>
 <body data-size="__SIZE__">
@@ -788,8 +792,8 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
 
   <!-- ============= TABLE QR (45mm) ============= -->
   <div class="size-table">
-    <div class="tb-label">Scan &amp; stamp</div>
-    <div class="tb-box">__NFC_TAP__<img src="__QR_URL__" alt="Scan" /></div>
+    <div class="tb-label">Scan or tap to join</div>
+    <div class="tb-row"><div class="tb-box"><img src="__QR_URL__" alt="Scan" /></div>__NFC_BIG__</div>
     <div class="tb-label">Win rewards with us</div>
   </div>
 
