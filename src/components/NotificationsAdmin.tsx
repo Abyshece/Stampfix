@@ -10,6 +10,8 @@ export function NotificationsAdmin() {
   const [merchantId, setMerchantId] = useState('');
   const [merchants, setMerchants] = useState<MerchantRow[]>([]);
   const [msgErr, setMsgErr] = useState(false);
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -35,6 +37,20 @@ export function NotificationsAdmin() {
     try { await adminDeleteNotification(id); load(); } catch { /* ignore */ }
   };
 
+  const pickMerchant = (m: MerchantRow | null) => {
+    if (!m) { setMerchantId(''); setSearch(''); }
+    else { setMerchantId(m.id); setSearch(`${m.business_name} (${m.merchant_code})`); }
+    setOpen(false);
+  };
+  const q = search.trim().toLowerCase();
+  const filtered = (q
+    ? merchants.filter((m) =>
+        (m.business_name ?? '').toLowerCase().includes(q) ||
+        (m.merchant_code ?? '').toLowerCase().includes(q) ||
+        m.id.toLowerCase().includes(q))
+    : merchants
+  ).slice(0, 40);
+
   const inp = 'w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400';
 
   return (
@@ -47,12 +63,29 @@ export function NotificationsAdmin() {
       <div className="rounded-xl border notion-border bg-white p-4 space-y-3">
         <input className={inp} value={title} maxLength={80} placeholder="Title (e.g. New feature: geo-notifications)" onChange={(e) => setTitle(e.target.value)} />
         <textarea className={inp} rows={4} value={body} maxLength={500} placeholder="Message to merchants\u2026" onChange={(e) => setBody(e.target.value)} />
-        <select className={inp} value={merchantId} onChange={(e) => setMerchantId(e.target.value)}>
-          <option value="">All merchants (broadcast)</option>
-          {merchants.map((m) => (
-            <option key={m.id} value={m.id}>{m.business_name} ({m.merchant_code})</option>
-          ))}
-        </select>
+        <div className="relative">
+          <input
+            className={inp}
+            value={search}
+            placeholder="Search a merchant by name or code — leave empty to send to all"
+            onChange={(e) => { setSearch(e.target.value); setMerchantId(''); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setOpen(false)}
+          />
+          {open && (
+            <div className="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-md border notion-border bg-white shadow-lg">
+              <button type="button" onMouseDown={() => pickMerchant(null)} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b notion-border">
+                All merchants <span className="text-gray-400">(broadcast)</span>
+              </button>
+              {filtered.map((m) => (
+                <button key={m.id} type="button" onMouseDown={() => pickMerchant(m)} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">
+                  {m.business_name} <span className="text-gray-400">({m.merchant_code})</span>
+                </button>
+              ))}
+              {filtered.length === 0 && <div className="px-3 py-2 text-sm text-gray-400">No matches</div>}
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <button onClick={send} disabled={busy} className="inline-flex items-center gap-1.5 bg-[#37352F] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition disabled:opacity-50">
             <Send className="w-4 h-4" /> {busy ? 'Sending\u2026' : (merchantId.trim() ? 'Send to this merchant' : 'Send to all merchants')}
