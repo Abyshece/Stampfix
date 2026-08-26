@@ -1486,15 +1486,9 @@ export function MerchantDashboard({
                       </div>
                       <div className="space-y-2 w-full pt-2">
                         <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-1">Download as</div>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          <button onClick={() => handleDownloadPoster(loc, 'card')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Business card (85×55mm)">
-                            Card
-                          </button>
+                        <div className="grid grid-cols-1 gap-1.5">
                           <button onClick={() => handleDownloadPoster(loc, 'pamphlet')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Pamphlet (A5 landscape)">
                             Pamphlet
-                          </button>
-                          <button onClick={() => handleDownloadPoster(loc, 'poster')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Poster (A4 portrait)">
-                            Poster
                           </button>
                         </div>
                         <button
