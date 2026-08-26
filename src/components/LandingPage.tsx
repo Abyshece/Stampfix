@@ -351,13 +351,24 @@ export function LandingPage({
           Just a simple link that lives in your customer's Apple or Google Wallet.
         </p>
 
-        <div className="flex justify-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-          <button
-            onClick={onEnterMerchantFlow}
-            className="bg-[#37352F] text-white px-8 py-3.5 rounded-lg font-medium text-lg flex items-center justify-center gap-2 hover:bg-[#2F2D28] transition shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transform"
-          >
-            Start for free <ArrowRight className="w-5 h-5" />
-          </button>
+        <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+          <div className="flex justify-center gap-4 flex-wrap">
+            <button
+              onClick={onEnterMerchantFlow}
+              className="bg-[#37352F] text-white px-8 py-3.5 rounded-lg font-medium text-lg flex items-center justify-center gap-2 hover:bg-[#2F2D28] transition shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transform"
+            >
+              Start for free <ArrowRight className="w-5 h-5" />
+            </button>
+            <a
+              href="https://calendar.app.google/WCPgkaPjeoUbkQJq7"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white border notion-border text-[#37352F] px-8 py-3.5 rounded-lg font-medium text-lg flex items-center justify-center hover:border-[#37352F] transition"
+            >
+              Book a demo
+            </a>
+          </div>
+          <p className="text-sm text-gray-500">Takes just 10–12 minutes over Google Meet.</p>
         </div>
 
       </section>

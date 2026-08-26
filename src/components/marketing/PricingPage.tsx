@@ -128,6 +128,26 @@ export function PricingPage() {
         </p>
       </section>
 
+      {/* Enterprise */}
+      <section className="max-w-4xl mx-auto px-6 pb-4">
+        <div className="rounded-xl border notion-border bg-[#F7F7F5] p-8 text-center">
+          <span className="text-xs uppercase tracking-widest font-bold text-gray-400">Enterprise</span>
+          <h2 className="text-2xl md:text-3xl font-serif-display font-semibold mt-2 mb-3">Running a larger chain or franchise?</h2>
+          <p className="text-gray-500 max-w-xl mx-auto mb-6">
+            For bigger businesses with many locations and custom needs, we&apos;ll tailor Stampfix to your rollout and pricing. Book a quick demo and we&apos;ll walk you through it.
+          </p>
+          <a
+            href="https://calendar.app.google/WCPgkaPjeoUbkQJq7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-[#37352F] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#2F2D28] transition"
+          >
+            Contact for demo
+          </a>
+          <p className="text-xs text-gray-400 mt-3">Just 10–12 minutes over Google Meet.</p>
+        </div>
+      </section>
+
       {/* 18 benefits explained */}
       <section className="max-w-6xl mx-auto px-6 py-14">
         <div className="text-center mb-10 md:mb-14">
