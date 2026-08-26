@@ -56,8 +56,8 @@ interface MerchantDashboardProps {
   /** Merchant country, used for currency-aware pricing copy. */
   country?: 'DE' | 'CA' | null;
   onSetActiveLocation: (id: string | null) => void;
-  onAddLocation: (name: string, address?: string) => Promise<void>;
-  onUpdateLocation: (locationId: string, patch: { name?: string; address?: string; archived?: boolean }) => Promise<void>;
+  onAddLocation: (name: string, address?: string, latitude?: number | null, longitude?: number | null) => Promise<void>;
+  onUpdateLocation: (locationId: string, patch: { name?: string; address?: string; latitude?: number | null; longitude?: number | null; archived?: boolean }) => Promise<void>;
   onStampCard: (cardId: string) => void;
   onResetCard: (cardId: string) => void;
   /** Redeems a scanned signed token server-side. Returns the result so the

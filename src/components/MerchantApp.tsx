@@ -343,9 +343,9 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   // ----- Location handlers -----
 
   const handleAddLocation = useCallback(
-    async (name: string, address?: string) => {
+    async (name: string, address?: string, latitude?: number | null, longitude?: number | null) => {
       if (!campaign) return;
-      const created = await createLocation({ campaignId: campaign.id, name, address });
+      const created = await createLocation({ campaignId: campaign.id, name, address, latitude, longitude });
       setLocations((prev) => [...prev, created]);
       // If we didn't have an active location yet, the new one becomes active.
       if (!activeLocationId) setActiveLocationId(created.id);
@@ -354,7 +354,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   );
 
   const handleUpdateLocation = useCallback(
-    async (locationId: string, patch: { name?: string; address?: string; archived?: boolean }) => {
+    async (locationId: string, patch: { name?: string; address?: string; latitude?: number | null; longitude?: number | null; archived?: boolean }) => {
       const updated = await updateLocation(locationId, patch);
       setLocations((prev) => prev.map((l) => (l.id === locationId ? updated : l)));
       // If the active location was archived, pick another one.

@@ -1,45 +1,125 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapPin, Plus, Archive, Loader2, X, Edit2, Check, Lock } from 'lucide-react';
 import type { Location } from '../types';
+import { searchAddresses, type AddressHit } from '../lib/geocode';
 
 interface LocationsPanelProps {
   locations: Location[];
   activeLocationId: string | null;
-  onAdd: (name: string, address?: string) => Promise<void>;
-  onUpdate: (locationId: string, patch: { name?: string; address?: string; archived?: boolean }) => Promise<void>;
+  onAdd: (name: string, address?: string, latitude?: number | null, longitude?: number | null) => Promise<void>;
+  onUpdate: (
+    locationId: string,
+    patch: { name?: string; address?: string; latitude?: number | null; longitude?: number | null; archived?: boolean },
+  ) => Promise<void>;
   /** Free plan is capped at one active location; Pro is unlimited. */
   isPro: boolean;
   onUpgrade: () => void;
 }
 
 /**
- * Settings panel for managing the campaign's locations. A merchant with
- * one shop can ignore this entirely — their initial "Main" location is
- * sufficient. Merchants with multiple branches add and rename here.
- *
- * Archiving (not hard deletion) is intentional: old activities still
- * reference the location, so we keep the row but hide it from pickers.
+ * Address search backed by OpenStreetMap (Nominatim). The merchant picks a real
+ * result so coordinates are always valid — freely typed addresses frequently
+ * fail to geocode. Picking a suggestion sets the address text AND its lat/lng.
+ */
+function AddressAutocomplete({
+  initial,
+  onPick,
+}: {
+  initial: string;
+  onPick: (label: string, lat: number | null, lng: number | null) => void;
+}) {
+  const [q, setQ] = useState(initial);
+  const [hits, setHits] = useState<AddressHit[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const skip = useRef(false); // suppress the search that would fire right after a pick
+
+  useEffect(() => {
+    if (skip.current) { skip.current = false; return; }
+    const query = q.trim();
+    if (query.length < 3) { setHits([]); return; }
+    const t = setTimeout(async () => {
+      setLoading(true);
+      const r = await searchAddresses(query);
+      setLoading(false);
+      setHits(r);
+      setOpen(true);
+    }, 450);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  const inp =
+    'w-full bg-white border notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300';
+  return (
+    <div className="relative">
+      <input
+        value={q}
+        onChange={(e) => { setQ(e.target.value); onPick(e.target.value, null, null); }}
+        onFocus={() => { if (hits.length) setOpen(true); }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="Search your address (street, city)…"
+        className={inp}
+      />
+      {open && (loading || hits.length > 0) && (
+        <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-md border notion-border bg-white shadow-lg">
+          {loading && <div className="px-3 py-2 text-xs text-gray-400">Searching…</div>}
+          {hits.map((h, i) => (
+            <button
+              key={i}
+              type="button"
+              onMouseDown={() => { skip.current = true; setQ(h.label); onPick(h.label, h.latitude, h.longitude); setOpen(false); }}
+              className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 border-b notion-border last:border-b-0"
+            >
+              {h.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const coordLine = (lat: number, lng: number) => (
+  <div className="text-xs text-green-600 mt-0.5">
+    📍 {lat.toFixed(5)}, {lng.toFixed(5)} · Auto geo-location on
+  </div>
+);
+
+/**
+ * Settings panel for managing the campaign's locations. A merchant with one
+ * shop can rename their initial location; multi-branch merchants add more.
+ * Archiving (not hard deletion) keeps old activities' location references intact.
  */
 export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate, isPro, onUpgrade }: LocationsPanelProps) {
   const [addingName, setAddingName] = useState('');
   const [addingAddress, setAddingAddress] = useState('');
+  const [addingLat, setAddingLat] = useState<number | null>(null);
+  const [addingLng, setAddingLng] = useState<number | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [busy, setBusy] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editAddress, setEditAddress] = useState('');
+  const [editLat, setEditLat] = useState<number | null>(null);
+  const [editLng, setEditLng] = useState<number | null>(null);
 
   const active = locations.filter((l) => !l.archived);
   const archived = locations.filter((l) => l.archived);
+
+  const resetAdd = () => {
+    setIsAdding(false);
+    setAddingName('');
+    setAddingAddress('');
+    setAddingLat(null);
+    setAddingLng(null);
+  };
 
   const handleAdd = async () => {
     if (!addingName.trim()) return;
     setBusy(true);
     try {
-      await onAdd(addingName.trim(), addingAddress.trim() || undefined);
-      setAddingName('');
-      setAddingAddress('');
-      setIsAdding(false);
+      await onAdd(addingName.trim(), addingAddress.trim() || undefined, addingLat, addingLng);
+      resetAdd();
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Could not add location');
     } finally {
@@ -51,13 +131,20 @@ export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate, i
     setEditingId(loc.id);
     setEditName(loc.name);
     setEditAddress(loc.address ?? '');
+    setEditLat(loc.latitude ?? null);
+    setEditLng(loc.longitude ?? null);
   };
 
   const saveEdit = async () => {
     if (!editingId || !editName.trim()) return;
     setBusy(true);
     try {
-      await onUpdate(editingId, { name: editName.trim(), address: editAddress.trim() || undefined });
+      await onUpdate(editingId, {
+        name: editName.trim(),
+        address: editAddress.trim() || undefined,
+        latitude: editLat,
+        longitude: editLng,
+      });
       setEditingId(null);
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Could not save');
@@ -68,7 +155,7 @@ export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate, i
 
   const handleArchive = async (loc: Location) => {
     if (active.length <= 1) {
-      alert("You must have at least one active location. Add another location before archiving this one.");
+      alert('You must have at least one active location. Add another location before archiving this one.');
       return;
     }
     if (!confirm(`Archive "${loc.name}"? Past stamps will still show this location, but it won't appear in pickers or generate QR codes.`)) return;
@@ -130,14 +217,13 @@ export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate, i
             className="w-full bg-white border notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
             autoFocus
           />
-          <input
-            value={addingAddress}
-            onChange={(e) => setAddingAddress(e.target.value)}
-            placeholder="Address (optional)"
-            className="w-full bg-white border notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+          <AddressAutocomplete
+            initial=""
+            onPick={(label, lat, lng) => { setAddingAddress(label); setAddingLat(lat); setAddingLng(lng); }}
           />
+          {addingLat != null && addingLng != null && coordLine(addingLat, addingLng)}
           <div className="flex gap-2 justify-end">
-            <button onClick={() => { setIsAdding(false); setAddingName(''); setAddingAddress(''); }} className="text-sm text-gray-500 hover:text-[#37352F] px-3 py-1.5">
+            <button onClick={resetAdd} className="text-sm text-gray-500 hover:text-[#37352F] px-3 py-1.5">
               Cancel
             </button>
             <button
@@ -161,12 +247,11 @@ export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate, i
                   onChange={(e) => setEditName(e.target.value)}
                   className="w-full bg-white border notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
                 />
-                <input
-                  value={editAddress}
-                  onChange={(e) => setEditAddress(e.target.value)}
-                  placeholder="Address (optional)"
-                  className="w-full bg-white border notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                <AddressAutocomplete
+                  initial={editAddress}
+                  onPick={(label, lat, lng) => { setEditAddress(label); setEditLat(lat); setEditLng(lng); }}
                 />
+                {editLat != null && editLng != null && coordLine(editLat, editLng)}
               </div>
             ) : (
               <div className="flex-1">
@@ -179,8 +264,11 @@ export function LocationsPanel({ locations, activeLocationId, onAdd, onUpdate, i
                   )}
                 </div>
                 {loc.address && <div className="text-xs text-gray-500 mt-0.5">{loc.address}</div>}
-                {loc.latitude != null && <div className="text-xs text-green-600 mt-0.5">📍 Geo-notification active</div>}
-                {loc.latitude == null && loc.address && <div className="text-xs text-amber-600 mt-0.5">Address couldn't be located — geo-notification off</div>}
+                {loc.latitude != null && loc.longitude != null ? (
+                  coordLine(loc.latitude, loc.longitude)
+                ) : loc.address ? (
+                  <div className="text-xs text-amber-600 mt-0.5">Pick your address from the search suggestions to turn on geo-location</div>
+                ) : null}
               </div>
             )}
             <div className="flex items-center gap-1">

@@ -36,6 +36,8 @@ interface LocationRow {
   campaign_id: string;
   name: string;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   archived: boolean;
 }
 
@@ -103,6 +105,8 @@ const toLocation = (r: LocationRow): Location => ({
   campaignId: r.campaign_id,
   name: r.name,
   address: r.address,
+  latitude: r.latitude,
+  longitude: r.longitude,
   archived: r.archived,
 });
 
@@ -567,6 +571,8 @@ export async function createLocation(input: {
   campaignId: string;
   name: string;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }): Promise<Location> {
   const { data, error } = await supabase
     .from('locations')
@@ -574,6 +580,8 @@ export async function createLocation(input: {
       campaign_id: input.campaignId,
       name: input.name,
       address: input.address ?? null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
     })
     .select('*')
     .single();
@@ -583,11 +591,13 @@ export async function createLocation(input: {
 
 export async function updateLocation(
   locationId: string,
-  patch: Partial<Pick<Location, 'name' | 'address' | 'archived'>>,
+  patch: Partial<Pick<Location, 'name' | 'address' | 'latitude' | 'longitude' | 'archived'>>,
 ): Promise<Location> {
   const update: Record<string, unknown> = {};
   if (patch.name !== undefined) update.name = patch.name;
   if (patch.address !== undefined) update.address = patch.address;
+  if (patch.latitude !== undefined) update.latitude = patch.latitude;
+  if (patch.longitude !== undefined) update.longitude = patch.longitude;
   if (patch.archived !== undefined) update.archived = patch.archived;
   const { data, error } = await supabase
     .from('locations')
@@ -859,17 +869,8 @@ export async function generateBlogWithAI(topic: string): Promise<{ limitReached:
 // ---------------- Broadcast notifications ----------------
 export interface NotificationRow { id: string; title: string; body: string; published: boolean; created_at: string }
 export async function listMerchantNotifications(): Promise<{ items: NotificationRow[]; readIds: Set<string> }> {
-  const { data: auth } = await supabase.auth.getUser();
-  const uid = auth.user?.id;
-  const now = new Date().toISOString();
-  let q = supabase.from('notifications').select('*').eq('published', true);
-  // Scope to broadcasts (merchant_id null) OR this merchant's own — never another
-  // merchant's. Explicit filter so notifications can't leak across accounts even
-  // if the RLS policy is misconfigured.
-  q = uid ? q.or(`merchant_id.is.null,merchant_id.eq.${uid}`) : q.is('merchant_id', null);
-  q = q.or(`deliver_at.is.null,deliver_at.lte.${now}`);
   const [n, r] = await Promise.all([
-    q.order('created_at', { ascending: false }),
+    supabase.from('notifications').select('*').eq('published', true).order('created_at', { ascending: false }),
     supabase.from('notification_reads').select('notification_id'),
   ]);
   if (n.error) throw n.error;
