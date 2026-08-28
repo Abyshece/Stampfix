@@ -661,6 +661,11 @@ export function MerchantDashboard({
       ? `${window.location.origin}/?campaign=${campaign.id}&location=${locationId}`
       : `${window.location.origin}/?campaign=${campaign.id}`;
 
+  const stampUrlForLocation = (locationId: string | null) =>
+    locationId
+      ? `${window.location.origin}/stamp?campaign=${campaign.id}&location=${locationId}`
+      : `${window.location.origin}/stamp?campaign=${campaign.id}`;
+
   // -------------------- Render --------------------
 
   return (
@@ -1472,7 +1477,8 @@ export function MerchantDashboard({
                   const url = joinUrlForLocation(loc?.id ?? null);
                   const qrId = loc ? `share-qr-${loc.id}` : 'share-qr-code';
                   return (
-                    <div key={loc?.id ?? 'campaign-wide'} className="bg-white p-8 rounded-lg border notion-border shadow-sm flex flex-col items-center text-center space-y-5">
+                    <div key={loc?.id ?? 'campaign-wide'} className="space-y-6">
+                    <div className="bg-white p-8 rounded-lg border notion-border shadow-sm flex flex-col items-center text-center space-y-5">
                       <div className="space-y-1">
                         <h3 className="text-xl font-serif-display font-semibold">Join {campaign.businessName}</h3>
                         {loc && (
@@ -1507,6 +1513,24 @@ export function MerchantDashboard({
                         </button>
                       </div>
                       <div className="text-[10px] text-gray-400 break-all">{url}</div>
+                    </div>
+                    {campaign.stampingMode === 'self_serve' && (
+                      <div className="bg-white p-8 rounded-lg border notion-border shadow-sm flex flex-col items-center text-center space-y-4">
+                        <div className="space-y-1">
+                          <h3 className="text-xl font-serif-display font-semibold">Stamp QR</h3>
+                          <p className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">Keep behind the counter</p>
+                        </div>
+                        <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl max-w-[240px]">
+                          <QRCode value={stampUrlForLocation(loc?.id ?? null)} size={160} />
+                        </div>
+                        {campaign.stampCode ? (
+                          <div className="text-3xl font-bold tracking-[0.3em] text-[#37352F]">{campaign.stampCode}</div>
+                        ) : (
+                          <div className="text-xs text-amber-600">Set a 4-digit stamp code in Settings &rarr; Stamping mode</div>
+                        )}
+                        <p className="text-xs text-gray-500 max-w-[240px]">Customers scan this to collect a stamp (they must be at the shop — location-checked). Show it on request rather than leaving it on public display.</p>
+                      </div>
+                    )}
                     </div>
                   );
                 })}
