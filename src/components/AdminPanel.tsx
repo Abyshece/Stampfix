@@ -2,13 +2,13 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
-  Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell, Pencil,
+  Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell, Pencil, KeyRound,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
 import { NotificationsAdmin } from './NotificationsAdmin';
 import { CustomerActivityLog } from './CustomerActivityLog';
-import { adminDeleteCustomer, adminFreezeCustomer, adminUnfreezeCustomer, adminEditCustomer } from '../lib/db';
+import { adminDeleteCustomer, adminFreezeCustomer, adminUnfreezeCustomer, adminEditCustomer, setRecoveryCode } from '../lib/db';
 import {
   checkIsAdmin, fetchRangedKPIs, listMerchants, listCustomers, listMerchantApprovals, fetchStripeMrr,
   listTickets, listContactMessages,
@@ -897,6 +897,17 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
     catch (e) { alert(e instanceof Error ? e.message : 'Failed to unfreeze customer'); }
     finally { setDelBusy(null); }
   };
+  const handleResetCode = async (id: string) => {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    if (!confirm('Reset this customer\u2019s 6-digit recovery code? A new code will be generated for you to give them \u2014 it replaces their old one.')) return;
+    setDelBusy(id);
+    try {
+      await setRecoveryCode(code, id);
+      alert('New recovery code: ' + code + '\n\nGive this to the customer. They use it with their email to recover their card. Their old code no longer works.');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Could not reset the code');
+    } finally { setDelBusy(null); }
+  };
   const startEdit = (c: CustomerRow) => { setEditingId(c.customer_id); setEditForm({ name: c.customer_name ?? '', email: c.email ?? '', phone: c.phone ?? '' }); };
   const saveEdit = async (id: string) => {
     setEditBusy(true);
@@ -1035,6 +1046,10 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
                                 <button onClick={() => handleUnfreeze(c.customer_id)} disabled={delBusy === c.customer_id}
                                   className="inline-flex items-center gap-1 text-xs text-green-700 border border-green-200 px-2.5 py-1 rounded hover:bg-green-50 disabled:opacity-40">
                                   <RotateCcw className="w-3.5 h-3.5" /> Unfreeze
+                                </button>
+                                <button onClick={() => handleResetCode(c.customer_id)} disabled={delBusy === c.customer_id}
+                                  className="inline-flex items-center gap-1 text-xs text-gray-600 border notion-border px-2.5 py-1 rounded hover:bg-[#F7F7F5] disabled:opacity-40">
+                                  <KeyRound className="w-3.5 h-3.5" /> Reset code
                                 </button>
                                 <button onClick={() => handleDeleteCustomer(c.customer_id)} disabled={delBusy === c.customer_id}
                                   className="inline-flex items-center gap-1 text-xs text-red-600 border border-red-200 px-2.5 py-1 rounded hover:bg-red-50 disabled:opacity-40">

@@ -1,3 +1,4 @@
+import { setRecoveryCode } from '../lib/db';
 import { useEffect, useState } from 'react';
 import { Mail, Loader2, ArrowLeft, Smartphone, LogOut, Bookmark } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -217,6 +218,21 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
     }
   };
 
+  const [newCode, setNewCode] = useState('');
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [codeMsg, setCodeMsg] = useState<string | null>(null);
+  const [codeErr, setCodeErr] = useState(false);
+  const handleChangeCode = async () => {
+    if (newCode.length !== 6) return;
+    setCodeBusy(true); setCodeMsg(null); setCodeErr(false);
+    try {
+      await setRecoveryCode(newCode);
+      setCodeMsg('Recovery code updated.'); setNewCode('');
+    } catch (e) {
+      setCodeErr(true); setCodeMsg(e instanceof Error ? e.message : 'Could not update the code');
+    } finally { setCodeBusy(false); }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     setEmail('');
@@ -390,6 +406,17 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
             })}
           </div>
         )}
+
+        {/* Change recovery code */}
+        <div className="bg-[#F7F7F5] border notion-border rounded-lg p-4 space-y-2">
+          <p className="text-sm font-medium">Change your recovery code</p>
+          <p className="text-xs text-gray-500">The 6-digit code you use with your email to get your card back on a new phone. Set a new one anytime.</p>
+          <div className="flex gap-2 items-center">
+            <input value={newCode} onChange={(e) => setNewCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))} inputMode="numeric" placeholder="New 6-digit code" className="border notion-border rounded px-3 py-2 text-sm w-40 tracking-widest" />
+            <button onClick={handleChangeCode} disabled={codeBusy || newCode.length !== 6} className="text-sm bg-[#37352F] text-white px-3 py-2 rounded disabled:opacity-40">{codeBusy ? 'Saving…' : 'Update'}</button>
+          </div>
+          {codeMsg && <p className={`text-xs ${codeErr ? 'text-red-600' : 'text-green-600'}`}>{codeMsg}</p>}
+        </div>
 
         {/* Bookmark hint — encourages saving the URL for next time */}
         <div className="bg-[#F7F7F5] border notion-border rounded-lg p-3 text-xs text-gray-600 flex gap-2">
