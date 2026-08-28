@@ -31,6 +31,13 @@ export interface Campaign {
   maxStamps: number;
   /** Max stamps one customer can receive per day. 0 = unlimited. */
   maxStampsPerDay?: number;
+  /** 'scanner' = staff scans customer wallet QR (default); 'self_serve' =
+   *  customer scans the counter stamp QR, geofence-gated. */
+  stampingMode?: 'scanner' | 'self_serve';
+  /** Geofence radius (metres) for self-serve stamping. */
+  selfServeRadius?: number;
+  /** 4-digit code printed under the counter stamp QR (manual-entry fallback). */
+  stampCode?: string | null;
   primaryColor: string;
   backgroundColor: string;
   logoText: string;

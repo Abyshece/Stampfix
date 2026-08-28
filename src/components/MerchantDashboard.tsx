@@ -74,7 +74,7 @@ interface MerchantDashboardProps {
   onLogout: () => void;
 }
 
-type SettingsSection = 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'account' | 'links' | 'privacy' | 'danger';
+type SettingsSection = 'stamping' | 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'account' | 'links' | 'privacy' | 'danger';
 type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
 
 /** Each dashboard tab has a real URL so refresh, back/forward and deep links work. */
@@ -1591,6 +1591,7 @@ export function MerchantDashboard({
                   ['wallet',    'Wallet & card'],
                   ['posters',   'Posters & print'],
                   ['locations', 'Locations'],
+                  ['stamping',  'Stamping mode'],
                   ['billing',   'Account & billing'],
                   ['account',   'Login & security'],
                   ['links', 'Links & socials'],
@@ -1619,6 +1620,7 @@ export function MerchantDashboard({
                   wallet:    { title: 'Customise your wallet', hint: 'Controls how the loyalty card looks inside Apple Wallet and Google Wallet — colours, text colour, and the logo at the top. The previews update live; nothing is applied until you press Save.' },
                   posters:   { title: 'Posters & print', hint: 'Download printable material with your QR code: business cards, A5 pamphlets, A4 posters, an Instagram square, and table stickers. Customers scan these to join.' },
                   locations: { title: 'Locations', hint: 'Add each branch so stamps are recorded against the right shop. The Scan screen lets staff pick which location they are working at, and Insights breaks results down per branch.' },
+                  stamping: { title: 'Stamping mode', hint: 'Choose how customers collect stamps — staff scanner, or self-serve where the customer scans your counter QR (device-free, location-checked).' },
                   billing:   { title: 'Account & billing', hint: 'Your plan, invoices, and payment method. The free plan covers your first 10 customers; Pro removes that limit and unlocks branding and multi-location features.' },
                   account:   { title: 'Login & security', hint: 'Change the email address and password you use to sign in. Changing your email requires clicking a confirmation link we send to both your old and new address.' },
                   links:     { title: 'Links & socials', hint: 'Add your website, social profiles, and ordering or delivery links. Each one you fill in becomes a tappable link on the back of the Apple Wallet card and in the Google Wallet card details.' },
@@ -1634,6 +1636,55 @@ export function MerchantDashboard({
                 );
               })()}
 
+            {settingsSection === 'stamping' && (
+              <div className="bg-white rounded-lg border notion-border p-6 space-y-5 max-w-2xl">
+                <div>
+                  <h3 className="text-lg font-semibold">Stamping mode</h3>
+                  <p className="text-sm text-gray-500 mt-1">Choose how customers collect stamps.</p>
+                </div>
+                <div className="space-y-3">
+                  {([
+                    ['scanner', 'Scanner (staff scans)', 'A staff member scans the customer\u2019s wallet QR to give a stamp. Needs a phone at the counter.'],
+                    ['self_serve', 'Self-serve (customer scans)', 'No device needed at the counter. The customer scans your printed stamp QR on their own phone; a location check confirms they\u2019re at the shop.'],
+                  ] as const).map(([mode, title, desc]) => (
+                    <button
+                      key={mode}
+                      onClick={() => setTempSettings({ ...tempSettings, stampingMode: mode })}
+                      className={`w-full text-left p-4 rounded-lg border transition ${
+                        (tempSettings.stampingMode ?? 'scanner') === mode ? 'border-[#37352F] bg-[#F7F7F5]' : 'notion-border hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${(tempSettings.stampingMode ?? 'scanner') === mode ? 'border-[#37352F] bg-[#37352F]' : 'border-gray-300'}`} />
+                        <span className="font-medium text-sm">{title}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 ml-6">{desc}</p>
+                    </button>
+                  ))}
+                </div>
+                {(tempSettings.stampingMode ?? 'scanner') === 'self_serve' && (
+                  <div className="space-y-4 pt-2 border-t notion-border">
+                    <div>
+                      <label className="text-sm font-medium">Location radius (metres)</label>
+                      <p className="text-xs text-gray-500 mb-2">Customers must be within this distance of the shop to get a stamp. 100m recommended (GPS is fuzzy indoors).</p>
+                      <input type="number" min={30} max={1000} value={tempSettings.selfServeRadius ?? 100}
+                        onChange={(e) => setTempSettings({ ...tempSettings, selfServeRadius: Math.max(30, Math.min(1000, Number(e.target.value) || 100)) })}
+                        className="w-32 bg-white border notion-border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Stamp code (4 digits)</label>
+                      <p className="text-xs text-gray-500 mb-2">Printed under your counter stamp QR. A customer can type it if their camera can\u2019t scan.</p>
+                      <input value={tempSettings.stampCode ?? ''} maxLength={4} inputMode="numeric" placeholder="e.g. 4821"
+                        onChange={(e) => setTempSettings({ ...tempSettings, stampCode: e.target.value.replace(/[^0-9]/g, '').slice(0, 4) })}
+                        className="w-32 bg-white border notion-border rounded px-3 py-2 text-sm tracking-widest" />
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end pt-2">
+                  <button onClick={handleSaveSettings} className="bg-[#37352F] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition">Save</button>
+                </div>
+              </div>
+            )}
             {settingsSection === 'links' && (
               <ProLockOverlay locked={!isPro} title="Card links are a Pro feature" onUpgrade={() => setShowUpgradeModal(true)}>
                 <LinksSettings campaign={campaign} onUpdated={(updated) => onUpdateCampaign({ socialLinks: updated.socialLinks })} />

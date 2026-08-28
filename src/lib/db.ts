@@ -19,6 +19,9 @@ interface CampaignRow {
   background_color: string;
   logo_text: string;
   card_pattern: 'solid' | 'dots' | 'grid';
+  stamping_mode?: string | null;
+  self_serve_radius?: number | null;
+  stamp_code?: string | null;
   logo_mode?: 'stampfix' | 'custom' | 'none' | null;
   custom_icon: string;
   logo_image: string | null;
@@ -88,6 +91,9 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   backgroundColor: r.background_color,
   logoText: r.logo_text,
   cardPattern: r.card_pattern,
+  stampingMode: (((r as { stamping_mode?: string }).stamping_mode) as 'scanner' | 'self_serve') ?? 'scanner',
+  selfServeRadius: (r as { self_serve_radius?: number }).self_serve_radius ?? 100,
+  stampCode: (r as { stamp_code?: string | null }).stamp_code ?? null,
   logoMode: r.logo_mode ?? 'stampfix',
   customIcon: r.custom_icon,
   logoImage: r.logo_image,
@@ -249,6 +255,9 @@ export async function updateCampaign(id: string, patch: Partial<Campaign>): Prom
   if (patch.backgroundColor !== undefined) dbPatch.background_color = patch.backgroundColor;
   if (patch.logoText !== undefined) dbPatch.logo_text = patch.logoText;
   if (patch.cardPattern !== undefined) dbPatch.card_pattern = patch.cardPattern;
+  if (patch.stampingMode !== undefined) dbPatch.stamping_mode = patch.stampingMode;
+  if (patch.selfServeRadius !== undefined) dbPatch.self_serve_radius = patch.selfServeRadius;
+  if (patch.stampCode !== undefined) dbPatch.stamp_code = patch.stampCode;
   if (patch.logoMode !== undefined) dbPatch.logo_mode = patch.logoMode;
   if (patch.customIcon !== undefined) dbPatch.custom_icon = patch.customIcon;
   if (patch.logoImage !== undefined) dbPatch.logo_image = patch.logoImage;
