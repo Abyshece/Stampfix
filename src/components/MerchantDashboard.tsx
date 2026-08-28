@@ -1529,7 +1529,21 @@ export function MerchantDashboard({
                           <div className="text-xs text-amber-600">Set a 4-digit stamp code in Settings &rarr; Stamping mode</div>
                         )}
                         <p className="text-xs text-gray-500 max-w-[240px]">Customers scan this to collect a stamp (they must be at the shop — location-checked). Show it on request rather than leaving it on public display.</p>
-                        <div className="text-[10px] text-gray-400 break-all max-w-[240px]">{stampUrlForLocation(loc?.id ?? null)}</div>
+                        {(() => {
+                          const stampUrl = stampUrlForLocation(loc?.id ?? null);
+                          return (
+                            <button
+                              onClick={async () => {
+                                try { await navigator.clipboard.writeText(stampUrl); } catch { /* clipboard may be blocked */ }
+                                setCopiedUrl(stampUrl);
+                                setTimeout(() => setCopiedUrl((c) => (c === stampUrl ? null : c)), 2000);
+                              }}
+                              className="w-full max-w-[240px] flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
+                            >
+                              {copiedUrl === stampUrl ? (<><Check className="w-4 h-4" /> Copied!</>) : 'Copy stamp link (for NFC tag)'}
+                            </button>
+                          );
+                        })()}
                       </div>
                     )}
                     </div>
