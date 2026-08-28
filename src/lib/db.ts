@@ -906,3 +906,35 @@ export async function adminDeleteNotification(id: string): Promise<void> {
   const { error } = await supabase.from('notifications').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ---------------------------------------------------------------------
+// Self-serve stamping (customer scans the counter QR; geofence-gated)
+// ---------------------------------------------------------------------
+export interface SelfServeStampResult {
+  ok: boolean;
+  error?: string;
+  currentStamps?: number;
+  maxStamps?: number;
+  customerName?: string;
+  distance?: number;
+}
+
+export async function selfServeStamp(
+  campaignId: string,
+  locationId: string,
+  lat: number,
+  lng: number,
+  email?: string,
+  code?: string,
+): Promise<SelfServeStampResult> {
+  const { data, error } = await supabase.rpc('self_serve_stamp', {
+    p_campaign: campaignId,
+    p_location: locationId,
+    p_lat: lat,
+    p_lng: lng,
+    p_email: email ?? null,
+    p_code: code ?? null,
+  });
+  if (error) throw error;
+  return (data ?? { ok: false, error: 'network' }) as SelfServeStampResult;
+}
