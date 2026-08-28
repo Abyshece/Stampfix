@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import QRCode from 'react-qr-code';
 import type { Campaign, Location } from '../types';
 
-export type PosterSize = 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker';
+export type PosterSize = 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker' | 'selfscan';
 
 interface BuildPosterInput {
   campaign: Campaign;
@@ -107,7 +107,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://stampfix.app';
   const params = new URLSearchParams({ campaign: campaign.id });
   if (location?.id) params.set('location', location.id);
-  const joinUrl = joinUrlOverride ?? `${origin}/?${params.toString()}`;
+  const joinUrl = joinUrlOverride ?? `${origin}/${input.size === 'selfscan' ? 'stamp' : ''}?${params.toString()}`;
 
   // ----- Build the starburst text dynamically from the offer -----
   // Try to break it into 3-4 short lines so it sits well inside the
@@ -158,7 +158,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__INK_SOFT__',       inkSoft)
     .replaceAll('__VBRAND__',         vbrand)
     .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
-    .replaceAll('__PAGE__',           input.size === 'card' ? '85mm 55mm' : input.size === 'pamphlet' ? '297mm 210mm' : input.size === 'instagram' ? '210mm 210mm' : input.size === 'table' ? '45mm 45mm' : input.size === 'sticker' ? '210mm 297mm' : '210mm 297mm')
+    .replaceAll('__PAGE__',           input.size === 'card' || input.size === 'selfscan' ? '85mm 55mm' : input.size === 'pamphlet' ? '297mm 210mm' : input.size === 'instagram' ? '210mm 210mm' : input.size === 'table' ? '45mm 45mm' : input.size === 'sticker' ? '210mm 297mm' : '210mm 297mm')
     .replaceAll('__SIZE__',           input.size);
 }
 
@@ -303,6 +303,20 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   /* ============================
    *  BUSINESS CARD (85x55mm)
    * ============================ */
+  @page selfscan { size: 85mm 55mm; margin: 0; }
+  .size-selfscan {
+    width: 850px; height: 550px; background: __POSTER_BG__; color: var(--ink);
+    display: flex; align-items: center; gap: 40px; padding: 56px; box-sizing: border-box;
+    margin: 30px auto; box-shadow: 0 8px 24px rgba(0,0,0,0.15); overflow: hidden;
+  }
+  .size-selfscan .ss-qr { background: #fff; padding: 20px; border-radius: 22px; flex-shrink: 0; }
+  .size-selfscan .ss-qr img { width: 300px; height: 300px; display: block; }
+  .size-selfscan .ss-right { flex: 1; }
+  .size-selfscan .ss-eyebrow { font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; opacity: 0.85; margin-bottom: 12px; }
+  .size-selfscan .ss-title { font-size: 60px; font-weight: 900; line-height: 1.02; }
+  .size-selfscan .ss-nfc { margin: 22px 0 14px; }
+  .size-selfscan .ss-nfc .nfc-big-svg { width: 88px; height: 88px; }
+  .size-selfscan .ss-sub { font-size: 22px; font-weight: 600; opacity: 0.85; max-width: 380px; }
   @page card { size: 85mm 55mm; margin: 0; }
   .size-card {
     width: 850px; height: 550px;
@@ -700,6 +714,17 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     <div class="bc-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
 
+  <!-- ============= SELF-SCAN (behind the counter) ============= -->
+  <div class="size-selfscan">
+    <div class="ss-qr"><img src="__QR_URL__" alt="Scan to get a stamp" /></div>
+    <div class="ss-right">
+      <div class="ss-eyebrow">__BUSINESS_NAME__</div>
+      <div class="ss-title">Tap here<br>to get a stamp</div>
+      <div class="ss-nfc">__NFC_BIG__</div>
+      <div class="ss-sub">or scan the code &mdash; you must be at the shop</div>
+    </div>
+  </div>
+
   <!-- ============= A5 PAMPHLET ============= -->
   <div class="size-pamphlet">
     <div class="pm-vbrand">
@@ -805,16 +830,16 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   // the merchant print just the size they downloaded.
   (function() {
     var size = document.body.dataset.size || 'poster';
-    var validSizes = ['card', 'pamphlet', 'poster', 'instagram', 'table', 'sticker'];
+    var validSizes = ['card', 'pamphlet', 'poster', 'instagram', 'table', 'sticker', 'selfscan'];
     if (!validSizes.includes(size)) size = 'poster';
     var sel = '.size-' + size;
-    document.querySelectorAll('.size-card, .size-pamphlet, .size-poster, .size-instagram, .size-table, .size-sticker').forEach(function(el) {
+    document.querySelectorAll('.size-card, .size-pamphlet, .size-poster, .size-instagram, .size-table, .size-sticker, .size-selfscan').forEach(function(el) {
       if (!el.matches(sel)) el.style.display = 'none';
     });
     // Use the right @page rule on print so paper size matches.
     var style = document.createElement('style');
     style.textContent = '@page { size: ' + (
-      size === 'card' ? '85mm 55mm'
+      size === 'card' || size === 'selfscan' ? '85mm 55mm'
       : size === 'pamphlet' ? 'A4 landscape'
       : size === 'instagram' ? '210mm 210mm'
       : size === 'table' ? '45mm 45mm'

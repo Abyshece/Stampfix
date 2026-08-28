@@ -1529,6 +1529,7 @@ export function MerchantDashboard({
                           <div className="text-xs text-amber-600">Set a 4-digit stamp code in Settings &rarr; Stamping mode</div>
                         )}
                         <p className="text-xs text-gray-500 max-w-[240px]">Customers scan this to collect a stamp (they must be at the shop — location-checked). Show it on request rather than leaving it on public display.</p>
+                        <div className="text-[10px] text-gray-400 break-all max-w-[240px]">{stampUrlForLocation(loc?.id ?? null)}</div>
                       </div>
                     )}
                     </div>

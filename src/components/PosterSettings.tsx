@@ -96,7 +96,7 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
   };
 
   /** Render the selected poster to a PNG and download it directly. */
-  const handlePreview = async (size: 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker') => {
+  const handlePreview = async (size: 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker' | 'selfscan') => {
     const html = buildPosterHtml({
       campaign,
       size,
@@ -259,6 +259,12 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
           className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
         >
           Pamphlet
+        </button>
+        <button
+          onClick={() => handlePreview('selfscan')}
+          className="text-xs px-3 py-1.5 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
+        >
+          Self-scan poster
         </button>
         <button
           onClick={() => handlePreview('sticker')}
