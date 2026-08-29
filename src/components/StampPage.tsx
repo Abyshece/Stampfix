@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import { useEffect, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { selfServeStamp } from '../lib/db';
 
 type Phase = 'locating' | 'stamping' | 'success' | 'need_identity' | 'error';
@@ -18,6 +18,34 @@ const ERR: Record<string, string> = {
   denied: "Please allow location access — it confirms you're at the shop.",
   network: "Couldn't reach the server. Check your connection and try again.",
 };
+
+const CONFETTI_COLORS = ['#EA3323', '#F7CE46', '#1132F5', '#75FBFD', '#EA33B6', '#510AF5', '#75FBE2', '#F0A479'];
+
+/** Same confetti rain as the merchant scan celebration; runs for 8 seconds. */
+function StampConfetti() {
+  const pieces = useMemo(
+    () => Array.from({ length: 80 }, (_, i) => {
+      const duration = 2.3 + Math.random() * 1.9;
+      return {
+        id: i, left: Math.random() * 100, delay: -(Math.random() * duration), duration,
+        size: 7 + Math.random() * 9, color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        rotate: Math.random() * 360, round: Math.random() > 0.5,
+      };
+    }),
+    [],
+  );
+  const [on, setOn] = useState(true);
+  useEffect(() => { const t = setTimeout(() => setOn(false), 8000); return () => clearTimeout(t); }, []);
+  if (!on) return null;
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden z-50">
+      <style>{`@keyframes stamp-fall { 0%{transform:translateY(-14vh) rotate(0);opacity:0} 8%{opacity:1} 100%{transform:translateY(112vh) rotate(720deg);opacity:1} }`}</style>
+      {pieces.map((p) => (
+        <span key={p.id} style={{ position: 'absolute', top: 0, left: `${p.left}%`, width: p.size, height: p.size, background: p.color, borderRadius: p.round ? '50%' : 2, transform: `rotate(${p.rotate}deg)`, animation: `stamp-fall ${p.duration}s linear ${p.delay}s infinite` }} />
+      ))}
+    </div>
+  );
+}
 
 function StampShell({ children }: { children: ReactNode }) {
   return (
@@ -104,6 +132,7 @@ export function StampPage() {
     const dots = Array.from({ length: Math.max(result.maxStamps, 1) }, (_, i) => i < result.currentStamps);
     return (
       <StampShell>
+        <StampConfetti />
         <div className="text-6xl mb-2 animate-bounce">🎉</div>
         <h1 className="text-2xl font-serif-display font-semibold mb-1">Stamp added!</h1>
         <p className="text-gray-500 mb-5">{full ? 'Your card is full — claim your reward!' : `${result.currentStamps} of ${result.maxStamps} stamps`}</p>
