@@ -340,7 +340,7 @@ export function LandingPage({
           Lightning fast setup & onboarding
         </div>
 
-        <h1 className="text-4xl md:text-6xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+        <h1 className="text-4xl md:text-5xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight whitespace-nowrap animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           No apps. <br />
           No paper stamp cards. <br />
           No extra hardware. <br />
