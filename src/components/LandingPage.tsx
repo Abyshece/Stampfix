@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowRight, ScanLine, X, Loader2, ArrowLeft, Mail, CheckCircle,
-  BarChart3, Users, Zap, Smartphone, QrCode,
-} from 'lucide-react';
+  BarChart3, Users, Zap, Smartphone, QrCode, Bell, MapPin, ShieldCheck, Tag} from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
 import { LaunchSteps } from './LaunchSteps';
 import { WalletFanVisual, InsightsVisual, StepCard, StatCard } from './FeatureVisuals';
@@ -375,12 +374,31 @@ export function LandingPage({
           </div>
 
           <div className="flex justify-center md:justify-end animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-            <img
-              src="/cafe-hero.jpg"
-              alt="A customer showing their Stampfix loyalty card in Apple Wallet at a café"
-              className="rounded-3xl shadow-2xl w-full max-w-[300px] md:max-w-sm object-cover"
-              loading="eager"
-            />
+            <style>{`@keyframes hero-float{0%,100%{transform:translate(0,0)}25%{transform:translate(7px,-6px)}50%{transform:translate(0,-11px)}75%{transform:translate(-7px,-4px)}}`}</style>
+            <div className="relative">
+              <img
+                src="/cafe-hero.jpg"
+                alt="A customer showing their Stampfix loyalty card in Apple Wallet at a café"
+                className="rounded-3xl shadow-2xl w-full max-w-[300px] md:max-w-sm object-cover"
+                loading="eager"
+              />
+              <div className="hidden md:flex absolute -left-6 top-10 items-center gap-2 bg-white rounded-full px-3.5 py-2 text-sm font-medium text-[#37352F] whitespace-nowrap"
+                   style={{ animation: 'hero-float 5s ease-in-out infinite', boxShadow: '0 0 22px 2px rgba(251,191,36,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
+                <Bell className="w-4 h-4 text-amber-500" /> Push notifications
+              </div>
+              <div className="hidden md:flex absolute -right-6 top-24 items-center gap-2 bg-white rounded-full px-3.5 py-2 text-sm font-medium text-[#37352F] whitespace-nowrap"
+                   style={{ animation: 'hero-float 6s ease-in-out infinite', animationDelay: '1.2s', boxShadow: '0 0 22px 2px rgba(59,130,246,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
+                <MapPin className="w-4 h-4 text-blue-500" /> Multiple locations
+              </div>
+              <div className="hidden md:flex absolute -left-8 bottom-28 items-center gap-2 bg-white rounded-full px-3.5 py-2 text-sm font-medium text-[#37352F] whitespace-nowrap"
+                   style={{ animation: 'hero-float 5.5s ease-in-out infinite', animationDelay: '0.6s', boxShadow: '0 0 22px 2px rgba(34,197,94,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
+                <ShieldCheck className="w-4 h-4 text-green-600" /> GDPR compliant
+              </div>
+              <div className="hidden md:flex absolute -right-4 bottom-12 items-center gap-2 bg-white rounded-full px-3.5 py-2 text-sm font-medium text-[#37352F] whitespace-nowrap"
+                   style={{ animation: 'hero-float 6.5s ease-in-out infinite', animationDelay: '1.8s', boxShadow: '0 0 22px 2px rgba(236,72,153,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
+                <Tag className="w-4 h-4 text-pink-500" /> Cheapest in market
+              </div>
+            </div>
           </div>
         </div>
       </section>
