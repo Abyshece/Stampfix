@@ -34,8 +34,8 @@ function StampShell({ children }: { children: ReactNode }) {
 
 export function StampPage() {
   const params = new URLSearchParams(window.location.search);
-  const campaignId = params.get('campaign') ?? '';
-  const locationId = params.get('location') ?? '';
+  const campaignId = (params.get('campaign') ?? '').trim();
+  const locationId = (params.get('location') ?? '').trim();
 
   const [phase, setPhase] = useState<Phase>('locating');
   const [errKey, setErrKey] = useState('');
