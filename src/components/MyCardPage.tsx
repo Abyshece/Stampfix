@@ -1,5 +1,5 @@
 import { setRecoveryCode } from '../lib/db';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef} from 'react';
 import { Mail, Loader2, ArrowLeft, Smartphone, LogOut, Bookmark } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth, signOut, signUpOrInCustomer } from '../lib/auth';
@@ -153,6 +153,18 @@ export function MyCardPage({ onExit }: { onExit: () => void }) {
   const refresh = () => loadCards();
 
   // ----- Send magic link -----
+  // If arriving from a stamp with the customer's email in the URL and no
+  // session, sign them straight in so they land on their card (no re-typing).
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (authLoading || user || autoRan.current) return;
+    const e = new URLSearchParams(window.location.search).get('e');
+    if (e && e.includes('@')) {
+      autoRan.current = true;
+      signUpOrInCustomer(e, '').catch(() => setEmail(e));
+    }
+  }, [authLoading, user]);
+
   const handleSendLink = async () => {
     setError(null);
     if (!email.trim()) return;

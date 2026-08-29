@@ -141,7 +141,7 @@ export function StampPage() {
             <span key={i} className={`w-6 h-6 rounded-full border-2 ${f ? 'bg-[#37352F] border-[#37352F]' : 'border-gray-300'}`} />
           ))}
         </div>
-        <a href="/my-card" className="bg-[#37352F] text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition">View &amp; save your card</a>
+        <a href={email.trim() ? `/my-card?e=${encodeURIComponent(email.trim())}` : '/my-card'} className="bg-[#37352F] text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition">View &amp; save your card</a>
         <p className="text-xs text-gray-400 mt-3 max-w-xs">Save it to Apple or Google Wallet so it updates on its own next time.</p>
       </StampShell>
     );
