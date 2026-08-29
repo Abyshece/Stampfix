@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback, useMemo, type ReactNode } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { selfServeStamp } from '../lib/db';
 
-type Phase = 'locating' | 'stamping' | 'success' | 'need_identity' | 'error';
+type Phase = 'locating' | 'stamping' | 'success' | 'need_identity' | 'ask_more' | 'pick_count' | 'ask_code' | 'error';
 
 const ERR: Record<string, string> = {
   self_serve_off: "This shop isn't using self-serve stamps right now.",
@@ -47,6 +47,30 @@ function StampConfetti() {
   );
 }
 
+function CountWheel({ max, value, onChange }: { max: number; value: number; onChange: (n: number) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const ITEM = 56;
+  const nums = useMemo(() => Array.from({ length: Math.max(max, 1) }, (_, i) => i + 1), [max]);
+  const onScroll = () => {
+    const el = ref.current; if (!el) return;
+    const n = Math.min(Math.max(max, 1), Math.max(1, Math.round(el.scrollTop / ITEM) + 1));
+    if (n !== value) onChange(n);
+  };
+  return (
+    <div className="relative h-[168px] w-28 mx-auto">
+      <style>{`.cw::-webkit-scrollbar{display:none}`}</style>
+      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-14 rounded-xl bg-[#F7F7F5] pointer-events-none" />
+      <div ref={ref} onScroll={onScroll} className="cw h-full overflow-y-scroll snap-y snap-mandatory relative" style={{ scrollbarWidth: 'none' }}>
+        <div style={{ height: ITEM }} />
+        {nums.map((n) => (
+          <div key={n} style={{ height: ITEM }} className={`snap-center flex items-center justify-center text-3xl font-bold ${n === value ? 'text-[#37352F]' : 'text-gray-300'}`}>{n}</div>
+        ))}
+        <div style={{ height: ITEM }} />
+      </div>
+    </div>
+  );
+}
+
 function StampShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-[#FBFBFA] flex flex-col items-center justify-center px-6 py-12 text-center">
@@ -73,6 +97,9 @@ export function StampPage() {
   const [email, setEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [retry, setRetry] = useState(0);
+  const [count, setCount] = useState(1);
+  const [multiCode, setMultiCode] = useState('');
+  const [codeError, setCodeError] = useState('');
 
   const attempt = useCallback(async (withIdentity: boolean) => {
     if (!coords) return;
@@ -88,6 +115,8 @@ export function StampPage() {
         setPhase('success');
       } else if (r.error === 'card_not_found' && !withIdentity) {
         setPhase('need_identity');
+      } else if (r.error === 'cooldown') {
+        setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 }); setPhase('ask_more');
       } else {
         setErrKey(r.error ?? 'network');
         setErrExtra(r.distance ? ` (~${r.distance}m away)` : '');
@@ -99,6 +128,20 @@ export function StampPage() {
       setSubmitting(false);
     }
   }, [coords, campaignId, locationId, email]);
+
+  const attemptMulti = async () => {
+    if (!coords) return;
+    setSubmitting(true); setCodeError('');
+    try {
+      const r = await selfServeStamp(campaignId, locationId, coords.lat, coords.lng, email.trim() || undefined, multiCode.trim(), count);
+      if (r.ok || r.error === 'card_full') { setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 }); setPhase('success'); }
+      else if (r.error === 'bad_code') { setCodeError("That code isn't right \u2014 ask the cashier again."); }
+      else if (r.error === 'no_code_set') { setCodeError("This shop hasn't set a code yet."); }
+      else { setErrKey(r.error ?? 'network'); setErrExtra(''); setPhase('error'); }
+    } catch (e) { setErrKey('network'); setErrExtra(e instanceof Error ? ': ' + e.message : ''); setPhase('error'); }
+    finally { setSubmitting(false); }
+  };
+  const remaining = result ? Math.max(1, result.maxStamps - result.currentStamps) : 9;
 
   // Request GPS on mount and on each retry.
   useEffect(() => {
@@ -141,6 +184,9 @@ export function StampPage() {
             <span key={i} className={`w-6 h-6 rounded-full border-2 ${f ? 'bg-[#37352F] border-[#37352F]' : 'border-gray-300'}`} />
           ))}
         </div>
+        {(result && result.currentStamps < result.maxStamps) && (
+          <button onClick={() => { setCount(1); setMultiCode(''); setCodeError(''); setPhase('pick_count'); }} className="text-sm text-[#37352F] underline mb-4">Bought multiple orders? Add more stamps</button>
+        )}
         <a href={email.trim() ? `/my-card?e=${encodeURIComponent(email.trim())}` : '/my-card'} className="bg-[#37352F] text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition">View &amp; save your card</a>
         <p className="text-xs text-gray-400 mt-3 max-w-xs">Save it to Apple or Google Wallet so it updates on its own next time.</p>
       </StampShell>
@@ -159,6 +205,46 @@ export function StampPage() {
             className="w-full bg-[#37352F] text-white py-3 rounded-lg font-medium disabled:opacity-50 hover:bg-opacity-90 transition">
             Get my stamp
           </button>
+        </div>
+      </StampShell>
+    );
+  }
+
+  if (phase === 'ask_more') {
+    return (
+      <StampShell>
+        <div className="text-5xl mb-3">🧾</div>
+        <h1 className="text-xl font-serif-display font-semibold mb-1">Already stamped</h1>
+        <p className="text-gray-500 mb-6 max-w-xs">Did you buy more than one? Add the extra stamps for this order.</p>
+        <div className="w-full max-w-xs space-y-2">
+          <button onClick={() => { setCount(1); setMultiCode(''); setCodeError(''); setPhase('pick_count'); }} className="w-full bg-[#37352F] text-white py-3 rounded-lg font-medium">Yes, bought multiple</button>
+          <button onClick={() => setPhase('success')} className="w-full text-gray-500 py-2 text-sm">No, that's all</button>
+        </div>
+      </StampShell>
+    );
+  }
+
+  if (phase === 'pick_count') {
+    return (
+      <StampShell>
+        <h1 className="text-xl font-serif-display font-semibold mb-1">How many more stamps?</h1>
+        <p className="text-gray-500 mb-4 max-w-xs">One per item you bought in this order.</p>
+        <CountWheel max={remaining} value={count} onChange={setCount} />
+        <button onClick={() => setPhase('ask_code')} className="mt-6 bg-[#37352F] text-white px-8 py-3 rounded-lg font-medium">Next</button>
+      </StampShell>
+    );
+  }
+
+  if (phase === 'ask_code') {
+    return (
+      <StampShell>
+        <h1 className="text-xl font-serif-display font-semibold mb-1">Ask the cashier for the code</h1>
+        <p className="text-gray-500 mb-5 max-w-xs">Enter the 4-digit code from the counter to add {count} stamp{count > 1 ? 's' : ''}.</p>
+        <div className="w-full max-w-xs space-y-3">
+          <input value={multiCode} onChange={(e) => setMultiCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))} inputMode="numeric" placeholder="4-digit code" className="w-full border notion-border rounded-lg px-4 py-3 text-center text-2xl tracking-[0.4em]" />
+          {codeError && <p className="text-xs text-red-600">{codeError}</p>}
+          <button onClick={() => void attemptMulti()} disabled={submitting || multiCode.length !== 4} className="w-full bg-[#37352F] text-white py-3 rounded-lg font-medium disabled:opacity-40">{submitting ? 'Adding…' : 'Add stamps'}</button>
+          <button onClick={() => setPhase('pick_count')} className="w-full text-gray-500 py-2 text-sm">Back</button>
         </div>
       </StampShell>
     );

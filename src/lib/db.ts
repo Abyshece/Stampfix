@@ -917,6 +917,7 @@ export interface SelfServeStampResult {
   maxStamps?: number;
   customerName?: string;
   distance?: number;
+  added?: number;
 }
 
 export async function selfServeStamp(
@@ -926,6 +927,7 @@ export async function selfServeStamp(
   lng: number,
   email?: string,
   code?: string,
+  count?: number,
 ): Promise<SelfServeStampResult> {
   const { data, error } = await supabase.rpc('self_serve_stamp', {
     p_campaign: campaignId,
@@ -934,18 +936,14 @@ export async function selfServeStamp(
     p_lng: lng,
     p_email: email ?? null,
     p_code: code ?? null,
+    p_count: count ?? 1,
   });
   if (error) throw error;
   return (data ?? { ok: false, error: 'network' }) as SelfServeStampResult;
 }
 
-/** Set a new 6-digit recovery code (re-hashed server-side, no plaintext stored).
- *  Signed-in customers reset their own; admins pass customerId to reset anyone. */
 export async function setRecoveryCode(newCode: string, customerId?: string): Promise<number> {
-  const { data, error } = await supabase.rpc('set_recovery_code', {
-    p_new_code: newCode,
-    p_customer_id: customerId ?? null,
-  });
+  const { data, error } = await supabase.rpc('set_recovery_code', { p_new_code: newCode, p_customer_id: customerId ?? null });
   if (error) throw error;
   return (data as number) ?? 0;
 }
