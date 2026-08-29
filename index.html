@@ -54,12 +54,56 @@
         color: #37352F;
         background-color: #FFFFFF;
       }
-      .font-serif-display { font-family: 'Lora', serif; }
+      .font-serif-display {
+        font-family: 'Lora', serif;
+        font-optical-sizing: auto; /* let the face adapt its shape to size */
+      }
       .notion-bg { background-color: #F7F7F5; }
       .notion-border { border-color: #E9E9E7; }
       .notion-hover:hover { background-color: #EFEFEE; }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* --- Apple fluid-interface foundations (applies app-wide) --- */
+
+      /* Kill input latency: remove the ~300ms tap delay + grey tap flash on
+         everything interactive, so feedback can be instant on pointer-down. */
+      button, a, [role="button"], summary, label[for],
+      input[type="submit"], input[type="button"] {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Respond on press, not on release. Buttons that don't already define
+         their own :active transform get an instant, tactile scale-in.
+         Springy easing keeps the settle natural rather than linear. */
+      button, [role="button"] {
+        transition: transform 140ms cubic-bezier(0.2, 0, 0, 1);
+      }
+      button:active, [role="button"]:active {
+        transform: scale(0.97);
+      }
+
+      /* Reduced motion: swap slides/springs for gentle cross-fades and drop
+         transforms — comprehension-preserving, vestibular-safe (Apple §14). */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 120ms !important;
+          scroll-behavior: auto !important;
+        }
+        button:active, [role="button"]:active { transform: none; }
+      }
+
+      /* Reduced transparency: make the frosted chrome solid & legible. */
+      @media (prefers-reduced-transparency: reduce) {
+        .backdrop-blur-sm, .backdrop-blur-md, .backdrop-blur-lg {
+          -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+          background-color: #FFFFFF !important;
+        }
+      }
     </style>
   </head>
   <body>

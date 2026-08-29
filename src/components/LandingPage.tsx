@@ -281,7 +281,7 @@ export function LandingPage({
       <PromoBannerBar />
 
       {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border px-6 py-4 flex justify-between items-center">
+      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-md backdrop-saturate-150 border-b notion-border px-6 py-4 flex justify-between items-center">
         <a href="/" aria-label="Stampfix home" className="flex items-center gap-2 font-semibold text-lg text-[#37352F] hover:opacity-80 transition">
           <svg viewBox="0 0 282 90" className="h-6 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
           Stampfix
@@ -355,7 +355,7 @@ export function LandingPage({
           <div className="flex justify-center gap-4 flex-wrap">
             <button
               onClick={onEnterMerchantFlow}
-              className="bg-[#37352F] text-white px-8 py-3.5 rounded-lg font-medium text-lg flex items-center justify-center gap-2 hover:bg-[#2F2D28] transition shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transform"
+              className="bg-[#37352F] text-white px-8 py-3.5 rounded-lg font-medium text-lg flex items-center justify-center gap-2 hover:bg-[#2F2D28] transition duration-150 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transform will-change-transform"
             >
               Start for free <ArrowRight className="w-5 h-5" />
             </button>
@@ -363,7 +363,7 @@ export function LandingPage({
               href="https://calendar.app.google/WCPgkaPjeoUbkQJq7"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-white border notion-border text-[#37352F] px-8 py-3.5 rounded-lg font-medium text-lg flex items-center justify-center hover:border-[#37352F] transition"
+              className="bg-white border notion-border text-[#37352F] px-8 py-3.5 rounded-lg font-medium text-lg flex items-center justify-center hover:border-[#37352F] transition duration-150 active:scale-[0.97] transform will-change-transform"
             >
               Book a demo
             </a>
