@@ -43,7 +43,6 @@ export function StampPage() {
   const [result, setResult] = useState<{ currentStamps: number; maxStamps: number } | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [retry, setRetry] = useState(0);
 
@@ -55,7 +54,6 @@ export function StampPage() {
       const r = await selfServeStamp(
         campaignId, locationId, coords.lat, coords.lng,
         withIdentity ? email.trim() : undefined,
-        withIdentity ? code.trim() : undefined,
       );
       if (r.ok) {
         setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 });
@@ -67,12 +65,12 @@ export function StampPage() {
         setErrExtra(r.distance ? ` (~${r.distance}m away)` : '');
         setPhase('error');
       }
-    } catch {
-      setErrKey('network'); setErrExtra(''); setPhase('error');
+    } catch (e) {
+      setErrKey('network'); setErrExtra(e instanceof Error ? ': ' + e.message : ''); setPhase('error');
     } finally {
       setSubmitting(false);
     }
-  }, [coords, campaignId, locationId, email, code]);
+  }, [coords, campaignId, locationId, email]);
 
   // Request GPS on mount and on each retry.
   useEffect(() => {
@@ -124,13 +122,11 @@ export function StampPage() {
     return (
       <StampShell>
         <h1 className="text-xl font-serif-display font-semibold mb-1">One quick check</h1>
-        <p className="text-gray-500 mb-5 max-w-xs">Enter the email you signed up with and your card code to collect your stamp.</p>
+        <p className="text-gray-500 mb-5 max-w-xs">Just confirm the email you signed up with to collect your stamp.</p>
         <div className="w-full max-w-xs space-y-3">
           <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="you@email.com"
             className="w-full border notion-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Card code (e.g. SF00123)"
-            className="w-full border notion-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
-          <button onClick={() => void attempt(true)} disabled={submitting || !email.trim() || !code.trim()}
+          <button onClick={() => void attempt(true)} disabled={submitting || !email.trim()}
             className="w-full bg-[#37352F] text-white py-3 rounded-lg font-medium disabled:opacity-50 hover:bg-opacity-90 transition">
             Get my stamp
           </button>
