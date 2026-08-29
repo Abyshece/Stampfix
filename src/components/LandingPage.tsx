@@ -333,25 +333,27 @@ export function LandingPage({
       </nav>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-10 pb-2 text-center">
+      <section className="max-w-6xl mx-auto px-6 pt-10 pb-2">
+        <div className="grid md:grid-cols-2 gap-10 items-center">
+          <div className="text-center md:text-left">
         <div className="inline-flex items-center gap-2 bg-[#F7F7F5] border notion-border px-3 py-1 rounded-full text-xs font-medium text-gray-500 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Zap className="w-3 h-3 text-yellow-500 fill-yellow-500" />
           Lightning fast setup & onboarding
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+        <h1 className="text-4xl md:text-6xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           No apps. <br />
           No paper stamp cards. <br />
           No extra hardware. <br />
           <span className="text-gray-400">Just loyalty.</span>
         </h1>
 
-        <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-          Create a digital punch card in 30 seconds. No apps to download. <br className="hidden md:block" />
+        <p className="text-xl text-gray-500 mb-10 max-w-xl mx-auto md:mx-0 leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+          Create a digital punch card in 30 seconds. No apps to download.
           Just a simple link that lives in your customer's Apple or Google Wallet.
         </p>
 
-        <div className="flex flex-col items-center gap-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+        <div className="flex flex-col items-center md:items-start gap-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
           <div className="flex justify-center gap-4 flex-wrap">
             <button
               onClick={onEnterMerchantFlow}
@@ -370,7 +372,17 @@ export function LandingPage({
           </div>
           <p className="text-sm text-gray-500">Takes just 10–12 minutes over Google Meet.</p>
         </div>
+          </div>
 
+          <div className="flex justify-center md:justify-end animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+            <img
+              src="/cafe-hero.jpg"
+              alt="A customer showing their Stampfix loyalty card in Apple Wallet at a café"
+              className="rounded-3xl shadow-2xl w-full max-w-[300px] md:max-w-sm object-cover"
+              loading="eager"
+            />
+          </div>
+        </div>
       </section>
 
       {/* Hero visual — live wallet cards on a straight looping rail */}
