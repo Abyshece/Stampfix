@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
+import { NotFound } from './components/NotFound';
 import { useAuth, signOut } from './lib/auth';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { LandingPage } from './components/LandingPage';
@@ -41,6 +42,26 @@ type View = 'landing' | 'merchant';
 
 /** Merchant dashboard pages that open the merchant flow on a deep link / refresh. */
 const MERCHANT_PATHS = ['/scan', '/customers', '/activity', '/insights', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
+
+const DEFAULT_TITLE = 'Stampfix | Digital Loyalty Cards for Apple & Google Wallet';
+const PAGE_TITLES: Record<string, string> = {
+  '/pricing': 'Pricing | Stampfix',
+  '/features': 'Features | Stampfix',
+  '/about': 'About | Stampfix',
+  '/use-cases': 'Use cases | Stampfix',
+  '/faq': 'FAQ | Stampfix',
+  '/wallet-guide': 'Apple & Google Wallet guide | Stampfix',
+  '/savings': 'Savings calculator | Stampfix',
+  '/find-card': 'Find my card | Stampfix',
+  '/privacy': 'Privacy policy | Stampfix',
+  '/terms': 'Terms of service | Stampfix',
+  '/impressum': 'Impressum | Stampfix',
+  '/dpa': 'Data processing agreement | Stampfix',
+  '/subprocessors': 'Sub-processors | Stampfix',
+  '/cardholder-privacy': 'Cardholder privacy | Stampfix',
+  '/cookies': 'Cookie policy | Stampfix',
+  '/accessibility': 'Accessibility | Stampfix',
+};
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
@@ -182,6 +203,14 @@ export default function App() {
   // Static legal pages — public, no auth needed. Path-based (Vercel SPA
   // rewrites serve index.html for these, then we render the right page).
   const path = window.location.pathname;
+
+  useEffect(() => {
+    if (!path.startsWith('/blog')) document.title = PAGE_TITLES[path] ?? DEFAULT_TITLE;
+    let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.appendChild(link); }
+    link.setAttribute('href', 'https://stampfix.app' + (path === '/' ? '/' : path));
+  }, [path]);
+
   if (path === '/privacy') return <PrivacyPolicy />;
   if (path === '/terms') return <TermsOfService />;
   if (path === '/dpa') return <DataProcessingAgreement />;
@@ -275,6 +304,8 @@ export default function App() {
       </>
     );
   }
+
+  if (path !== '/' && !MERCHANT_PATHS.includes(path)) return <NotFound />;
 
   // 4) Landing.
   return (

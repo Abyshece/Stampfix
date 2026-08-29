@@ -1,0 +1,23 @@
+# Stampfix
+
+Stampfix is a digital loyalty card platform for small businesses. Merchants create a
+digital stamp/punch card; their customers save it to Apple Wallet or Google Wallet —
+no app to download — and collect stamps toward a reward.
+
+## How it works
+- A merchant sets up a loyalty card (stamps required, reward, branding) in about 30 seconds.
+- Customers join by scanning a QR code, then add the card to Apple Wallet or Google Wallet.
+- Staff give stamps by scanning the customer's card, or customers self-serve by scanning /
+  tapping an NFC tag at the counter (verified by location).
+
+## Key pages
+- https://stampfix.app/ — Home
+- https://stampfix.app/features — Features
+- https://stampfix.app/pricing — Pricing
+- https://stampfix.app/use-cases — Use cases
+- https://stampfix.app/faq — FAQ
+- https://stampfix.app/wallet-guide — Apple & Google Wallet guide
+- https://stampfix.app/blog — Blog
+
+## About
+Operated by 17999658 Canada Inc. GDPR-compliant; serves merchants in Canada and Germany.
