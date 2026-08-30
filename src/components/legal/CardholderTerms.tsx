@@ -148,7 +148,7 @@ export function CardholderTerms() {
 
       <LegalH2>14. Contact</LegalH2>
       <p>
-        Questions about these Terms or your loyalty card? Email privacy@stampfix.app for privacy
+        Questions about these Terms or your loyalty card? Email hello@stampfix.app for privacy
         matters or hello@stampfix.app for anything else, or write to 28-16223 23A Ave, Surrey BC
         V3Z 6P4, Canada.
       </p>

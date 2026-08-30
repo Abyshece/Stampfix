@@ -10,7 +10,7 @@ export function Faq() {
       <p>
         Quick answers about Stampfix — the digital loyalty-card platform. If you don't
         find what you need, email us at{' '}
-        <a href="mailto:support@stampfix.app" className="underline">support@stampfix.app</a>.
+        <a href="mailto:hello@stampfix.app" className="underline">hello@stampfix.app</a>.
       </p>
 
       <LegalH2>What is Stampfix?</LegalH2>
@@ -124,7 +124,7 @@ export function Faq() {
 
       <LegalH2>How do I get help?</LegalH2>
       <p>
-        Email <a href="mailto:support@stampfix.app" className="underline">support@stampfix.app</a> and we'll get back to you.
+        Email <a href="mailto:hello@stampfix.app" className="underline">hello@stampfix.app</a> and we'll get back to you.
       </p>
     </LegalPage>
   );

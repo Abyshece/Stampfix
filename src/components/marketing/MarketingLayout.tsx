@@ -6,9 +6,6 @@ import { MobileNav } from '../MobileNav';
 const NAV_LINKS = [
   { href: '/features', label: 'Features' },
   { href: '/pricing', label: 'Pricing' },
-  { href: '/use-cases', label: 'Use cases' },
-  { href: '/savings', label: 'Payback' },
-  { href: '/blog', label: 'Blog' },
   { href: '/about', label: 'About' },
 ];
 
@@ -92,9 +89,6 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
                 { href: '/find-card', label: 'My loyalty card' },
                 { href: '/features', label: 'Features' },
                 { href: '/pricing', label: 'Pricing' },
-                { href: '/use-cases', label: 'Use cases' },
-                { href: '/savings', label: 'Payback' },
-                { href: '/blog', label: 'Blog' },
                 { href: '/about', label: 'About' },
                 { href: '/?login=1', label: 'Log in' },
               ]}
@@ -106,7 +100,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
       {children}
 
       <footer className="border-t notion-border bg-[#FBFBFA] mt-24">
-        <div className="max-w-6xl mx-auto px-6 py-14 grid grid-cols-2 md:grid-cols-4 gap-10">
+        <div className="max-w-6xl mx-auto px-6 py-14 grid grid-cols-2 md:grid-cols-5 gap-10">
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
               <Logo className="h-6 w-auto text-[#37352F]" />
@@ -122,7 +116,11 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
             { href: '/use-cases', label: 'Use cases' },
             { href: '/savings', label: 'Payback' },
             { href: '/wallet-guide', label: 'Apple Wallet guide' },
+          ]} />
+          <FooterCol title="Support" links={[
             { href: '/faq', label: 'FAQ' },
+            { href: '/find-card', label: 'Find my card' },
+            { href: 'mailto:hello@stampfix.app', label: 'Contact us' },
           ]} />
           <FooterCol title="Company" links={[
             { href: '/about', label: 'About' },

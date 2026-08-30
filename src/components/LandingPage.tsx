@@ -288,9 +288,6 @@ export function LandingPage({
         <div className="flex items-center gap-2 md:gap-3 text-sm font-medium">
           <a href="/features" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Features</a>
           <a href="/pricing" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Pricing</a>
-          <a href="/use-cases" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Use cases</a>
-          <a href="/savings" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Payback</a>
-          <a href="/blog" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">Blog</a>
           <a href="/about" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">About</a>
           {/* Customer-facing entry to /my-card. A returning customer who
               Googled "stampfix" and lands here needs an obvious way to
@@ -322,9 +319,6 @@ export function LandingPage({
               { href: '/find-card', label: 'Lost your stamp card? Download it here' },
               { href: '/features', label: 'Features' },
               { href: '/pricing', label: 'Pricing' },
-              { href: '/use-cases', label: 'Use cases' },
-              { href: '/savings', label: 'Payback' },
-              { href: '/blog', label: 'Blog' },
               { href: '/about', label: 'About' },
             ]}
           />

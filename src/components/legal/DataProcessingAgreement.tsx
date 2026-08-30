@@ -121,7 +121,7 @@ export function DataProcessingAgreement() {
 
       <h2>13. Contact</h2>
       <p>
-        For DPA-related questions or data subject requests escalated to Stampfix as Processor, contact: privacy@stampfix.app.
+        For DPA-related questions or data subject requests escalated to Stampfix as Processor, contact: hello@stampfix.app.
       </p>
 
       <p className="text-sm text-gray-500 italic mt-8">

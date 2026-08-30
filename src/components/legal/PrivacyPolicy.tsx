@@ -33,7 +33,7 @@ export function PrivacyPolicy() {
       <p>
         17999658 Canada Inc. (d/b/a Stampfix)<br />
         28-16223 23A Ave, Surrey BC V3Z 6P4, Canada<br />
-        Email: privacy@stampfix.app
+        Email: hello@stampfix.app
       </p>
       <p>
         For individuals in the European Union, our representative pursuant to Article 27 GDPR is:
@@ -228,7 +228,7 @@ export function PrivacyPolicy() {
         Cardholders should direct requests to the Merchant whose program they joined, as that
         Merchant is the controller of their data; we will assist the Merchant in responding. For
         Merchant account data, or to exercise any right directly, contact us at{' '}
-        privacy@stampfix.app.
+        hello@stampfix.app.
       </p>
 
       <LegalH2>9. Security</LegalH2>
@@ -266,7 +266,7 @@ export function PrivacyPolicy() {
       <LegalH2>13. Contact</LegalH2>
       <p>
         Questions about this policy or your personal information? Email{' '}
-        privacy@stampfix.app or write to{' '}
+        hello@stampfix.app or write to{' '}
         28-16223 23A Ave, Surrey BC V3Z 6P4, Canada.
       </p>
 
