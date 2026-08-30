@@ -329,14 +329,14 @@ export function LandingPage({
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-10 pb-2">
-        <div className="grid md:grid-cols-2 gap-10 items-center">
+        <div className="grid md:grid-cols-[1.9fr_1fr] gap-10 items-center">
           <div className="text-center md:text-left">
         <div className="inline-flex items-center gap-2 bg-[#F7F7F5] border notion-border px-3 py-1 rounded-full text-xs font-medium text-gray-500 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <Zap className="w-3 h-3 text-yellow-500 fill-yellow-500" />
           Lightning fast setup & onboarding
         </div>
 
-        <h1 className="text-4xl md:text-5xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight whitespace-nowrap animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+        <h1 className="text-4xl md:text-6xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight md:whitespace-nowrap animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           No apps. <br />
           No paper stamp cards. <br />
           No extra hardware. <br />
