@@ -294,7 +294,6 @@ export function LandingPage({
               Googled "stampfix" and lands here needs an obvious way to
               find their card. Subtle styling (text link) so it doesn't
               compete with the primary merchant Log in CTA. */}
-          <LanguageSwitcher className="hidden sm:inline-flex mr-1" />
           <a
             href="/find-card"
             className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 py-2 md:px-3 transition whitespace-nowrap"
@@ -316,6 +315,7 @@ export function LandingPage({
               Log in
             </button>
           )}
+          <LanguageSwitcher className="hidden sm:block" />
           <MobileNav
             links={[
               { href: '/find-card', label: 'Lost your stamp card? Download it here' },

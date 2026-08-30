@@ -83,9 +83,9 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <LanguageSwitcher className="hidden sm:inline-flex mr-1" />
             <a href="/?login=1" className="text-gray-600 hover:text-[#37352F] px-2 py-2 text-sm transition whitespace-nowrap hidden sm:inline">Log in</a>
             <StartButton className="px-4 py-2 text-sm" />
+            <LanguageSwitcher className="hidden sm:block" />
             <MobileNav
               links={[
                 { href: '/find-card', label: 'My loyalty card' },
