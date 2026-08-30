@@ -328,14 +328,9 @@ export function LandingPage({
       </nav>
 
       {/* Hero */}
-      <section className="max-w-6xl mx-auto px-6 pt-10 pb-2">
+      <section className="max-w-6xl mx-auto px-6 pt-6 pb-2">
         <div className="grid md:grid-cols-[1.9fr_1fr] gap-10 items-center">
           <div className="text-center md:text-left">
-        <div className="inline-flex items-center gap-2 bg-[#F7F7F5] border notion-border px-3 py-1 rounded-full text-xs font-medium text-gray-500 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Zap className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-          Lightning fast setup & onboarding
-        </div>
-
         <h1 className="text-4xl md:text-6xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight md:whitespace-nowrap animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           No apps. <br />
           No paper stamp cards. <br />
@@ -369,29 +364,29 @@ export function LandingPage({
         </div>
           </div>
 
-          <div className="flex justify-center md:justify-end animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+          <div className="flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
             <style>{`@keyframes hero-float{0%,100%{transform:translate(0,0)}25%{transform:translate(7px,-6px)}50%{transform:translate(0,-11px)}75%{transform:translate(-7px,-4px)}}`}</style>
             <div className="relative">
               <img
                 src="/cafe-hero.jpg"
                 alt="A customer showing their Stampfix loyalty card in Apple Wallet at a café"
-                className="rounded-3xl shadow-2xl w-full max-w-[300px] md:max-w-sm object-cover"
+                className="rounded-3xl shadow-xl w-full max-w-[260px] md:max-w-[300px] object-cover"
                 loading="eager"
               />
               <div className="flex absolute top-6 left-1 md:top-10 md:-left-6 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
-                   style={{ animation: 'hero-float 5s ease-in-out infinite', boxShadow: '0 0 22px 2px rgba(251,191,36,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
+                   style={{ animation: 'hero-float 5s ease-in-out infinite', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
                 <Bell className="w-4 h-4 text-amber-500" /> Push notifications
               </div>
               <div className="flex absolute top-16 right-1 md:top-24 md:-right-6 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
-                   style={{ animation: 'hero-float 6s ease-in-out infinite', animationDelay: '1.2s', boxShadow: '0 0 22px 2px rgba(59,130,246,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
+                   style={{ animation: 'hero-float 6s ease-in-out infinite', animationDelay: '1.2s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
                 <MapPin className="w-4 h-4 text-blue-500" /> Multiple locations
               </div>
               <div className="flex absolute bottom-24 left-1 md:bottom-28 md:-left-8 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
-                   style={{ animation: 'hero-float 5.5s ease-in-out infinite', animationDelay: '0.6s', boxShadow: '0 0 22px 2px rgba(34,197,94,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
+                   style={{ animation: 'hero-float 5.5s ease-in-out infinite', animationDelay: '0.6s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
                 <ShieldCheck className="w-4 h-4 text-green-600" /> GDPR compliant
               </div>
               <div className="flex absolute bottom-8 right-1 md:bottom-12 md:-right-4 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
-                   style={{ animation: 'hero-float 6.5s ease-in-out infinite', animationDelay: '1.8s', boxShadow: '0 0 22px 2px rgba(236,72,153,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
+                   style={{ animation: 'hero-float 6.5s ease-in-out infinite', animationDelay: '1.8s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
                 <Tag className="w-4 h-4 text-pink-500" /> Cheapest in market
               </div>
             </div>
