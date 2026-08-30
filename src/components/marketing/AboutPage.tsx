@@ -30,10 +30,10 @@ export function AboutPage() {
       {/* Hero */}
       <section className="max-w-3xl mx-auto px-6 pt-20 pb-12 text-center">
         <Eyebrow>Our story</Eyebrow>
-        <h1 className="text-4xl md:text-6xl font-serif-display font-medium mt-6 mb-5 leading-[1.1] tracking-tight">
+        <h1 className="text-4xl md:text-6xl font-serif-display font-medium mt-6 mb-5 leading-[1.1] tracking-tight text-balance">
           Because your best customers deserve better than a crumpled piece of paper.
         </h1>
-        <p className="text-lg text-gray-500 leading-relaxed">
+        <p className="text-lg text-gray-500 leading-relaxed text-pretty">
           Stampfix is a lightning-fast web tool that gives independent merchants the power of a custom
           loyalty app — entirely through the mobile browser and native digital wallets. No App Store, no paper.
         </p>
