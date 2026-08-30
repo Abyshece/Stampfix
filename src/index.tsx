@@ -12,6 +12,7 @@ import { initSentry, SentryErrorBoundary } from './lib/sentry';
 import { ToastProvider } from './components/ToastProvider';
 import { CookieBanner } from './components/CookieBanner';
 import { getCookieConsent } from './lib/cookieConsent';
+import './i18n';
 
 // Error-monitoring is a consented, non-essential cookie: only start Sentry
 // if the user has opted in. The banner starts it immediately on consent.

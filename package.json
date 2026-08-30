@@ -16,11 +16,13 @@
     "@stripe/stripe-js": "^9.7.0",
     "@supabase/supabase-js": "^2.45.4",
     "html-to-image": "^1.11.13",
+    "i18next": "^26.4.0",
     "jsqr": "^1.4.0",
     "jszip": "3.10.1",
     "lucide-react": "^0.556.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-i18next": "^17.0.12",
     "react-qr-code": "^2.0.18"
   },
   "devDependencies": {
