@@ -382,19 +382,19 @@ export function LandingPage({
                 className="rounded-3xl shadow-2xl w-full max-w-[300px] md:max-w-sm object-cover"
                 loading="eager"
               />
-              <div className="hidden md:flex absolute -left-6 top-10 items-center gap-2 bg-white rounded-full px-3.5 py-2 text-sm font-medium text-[#37352F] whitespace-nowrap"
+              <div className="flex absolute top-6 left-1 md:top-10 md:-left-6 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 5s ease-in-out infinite', boxShadow: '0 0 22px 2px rgba(251,191,36,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
                 <Bell className="w-4 h-4 text-amber-500" /> Push notifications
               </div>
-              <div className="hidden md:flex absolute -right-6 top-24 items-center gap-2 bg-white rounded-full px-3.5 py-2 text-sm font-medium text-[#37352F] whitespace-nowrap"
+              <div className="flex absolute top-16 right-1 md:top-24 md:-right-6 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 6s ease-in-out infinite', animationDelay: '1.2s', boxShadow: '0 0 22px 2px rgba(59,130,246,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
                 <MapPin className="w-4 h-4 text-blue-500" /> Multiple locations
               </div>
-              <div className="hidden md:flex absolute -left-8 bottom-28 items-center gap-2 bg-white rounded-full px-3.5 py-2 text-sm font-medium text-[#37352F] whitespace-nowrap"
+              <div className="flex absolute bottom-24 left-1 md:bottom-28 md:-left-8 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 5.5s ease-in-out infinite', animationDelay: '0.6s', boxShadow: '0 0 22px 2px rgba(34,197,94,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
                 <ShieldCheck className="w-4 h-4 text-green-600" /> GDPR compliant
               </div>
-              <div className="hidden md:flex absolute -right-4 bottom-12 items-center gap-2 bg-white rounded-full px-3.5 py-2 text-sm font-medium text-[#37352F] whitespace-nowrap"
+              <div className="flex absolute bottom-8 right-1 md:bottom-12 md:-right-4 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 6.5s ease-in-out infinite', animationDelay: '1.8s', boxShadow: '0 0 22px 2px rgba(236,72,153,0.45), 0 6px 16px rgba(0,0,0,0.12)' }}>
                 <Tag className="w-4 h-4 text-pink-500" /> Cheapest in market
               </div>
