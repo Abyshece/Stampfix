@@ -1544,6 +1544,9 @@ export function MerchantDashboard({
                             </button>
                           );
                         })()}
+                        <button onClick={() => handleDownloadPoster(loc, 'selfscan')} className="w-full max-w-[240px] flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md bg-[#37352F] text-white font-medium hover:bg-opacity-90 transition">
+                          Download stamp poster
+                        </button>
                       </div>
                     )}
                     </div>

@@ -555,7 +555,6 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     background: __CARD_BG__; color: __CARD_INK__;
     border-radius: 20px; padding: 20px 22px; width: 100%; max-width: 300px; margin: 0 auto;
     box-sizing: border-box;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.18);
     border: 1px solid rgba(0,0,0,0.07);
     display: flex; flex-direction: column; gap: 18px;
   }
