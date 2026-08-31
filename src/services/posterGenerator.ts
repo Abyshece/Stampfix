@@ -144,6 +144,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__STARBURST__',      starburstText)
     .replaceAll('__STICKER_CELLS__',  stickerCells)
     .replaceAll('__QR_URL__',         qrUrl)
+    .replaceAll('__QR_SVG__',         qrSvg)
     .replaceAll('__NFC_TAP__',        nfcTap)
     .replaceAll('__NFC_BIG__',        nfcBig)
     .replaceAll('__FAKE_QR_URL__',    fakeQrUrl)
@@ -361,7 +362,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-card .bc-qr {
     position: relative; z-index: 6;
   }
-  .size-card .bc-qr img { width: 230px; height: 230px; display: block; }
+  .size-card .bc-qr img, .size-card .bc-qr svg { width: 230px; height: 230px; display: block; }
   .size-card .bc-starburst {
     position: absolute; bottom: 14px; right: 14px;
     width: 110px; height: 110px;
@@ -707,9 +708,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
     <div class="bc-right">
       __NFC_TAP__
       <div class="bc-scan-label">Scan to join</div>
-      <div class="bc-qr">
-        <img src="__QR_URL__" alt="Scan to join" />
-      </div>
+      <div class="bc-qr">__QR_SVG__</div>
     </div>
     <div class="bc-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
