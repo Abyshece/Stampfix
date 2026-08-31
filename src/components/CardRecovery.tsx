@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ArrowLeft, Loader2, Info } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
 import { recoverCardsByEmail } from '../lib/db';
+import { submitContactMessage } from '../services/admin';
 import { WalletCard } from './WalletCard';
 import { AddToAppleWalletButton } from './AddToAppleWalletButton';
 
@@ -17,6 +18,22 @@ export function CardRecovery() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<{ card: UserCard; campaign: Campaign }[] | null>(null);
+  const [showContact, setShowContact] = useState(false);
+  const [cName, setCName] = useState('');
+  const [cEmail, setCEmail] = useState('');
+  const [cMsg, setCMsg] = useState("I forgot my 6-digit code and can't recover my loyalty card. Could you please help?");
+  const [cSending, setCSending] = useState(false);
+  const [cSent, setCSent] = useState(false);
+  const [cErr, setCErr] = useState<string | null>(null);
+  const sendContact = async () => {
+    if (!cEmail.trim() || !cMsg.trim()) return;
+    setCSending(true); setCErr(null);
+    try {
+      await submitContactMessage({ name: cName.trim() || 'Customer', email: cEmail.trim(), inquiryType: 'customer_inquiry', message: cMsg.trim() });
+      setCSent(true);
+    } catch (e) { setCErr(e instanceof Error ? e.message : 'Could not send. Please try again.'); }
+    finally { setCSending(false); }
+  };
 
   const submit = async () => {
     setError(null);
@@ -86,6 +103,9 @@ export function CardRecovery() {
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Find my card'}
               </button>
+              <button onClick={() => { setCEmail(email); setShowContact(true); }} className="w-full text-center text-sm text-gray-500 hover:text-[#37352F] transition pt-1">
+                Can&rsquo;t remember your code? Contact us for help
+              </button>
             </div>
           </>
         )}
@@ -111,6 +131,35 @@ export function CardRecovery() {
           </>
         )}
       </div>
+      {showContact && (
+        <div className="fixed inset-0 z-[300] bg-black/40 flex items-center justify-center p-4" onClick={() => setShowContact(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+            {cSent ? (
+              <div className="text-center">
+                <div className="text-4xl mb-2">&#9989;</div>
+                <h3 className="text-lg font-serif-display font-semibold mb-1">Message sent</h3>
+                <p className="text-sm text-gray-500 mb-4">Thanks &mdash; we&rsquo;ll get back to you by email soon.</p>
+                <button onClick={() => { setShowContact(false); setCSent(false); }} className="px-5 py-2.5 rounded-lg bg-[#37352F] text-white text-sm font-medium hover:bg-[#2F2D28] transition">Close</button>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-lg font-serif-display font-semibold mb-1">Contact Stampfix</h3>
+                <p className="text-sm text-gray-500 mb-4">Forgot your 6-digit code? Send us a message and we&rsquo;ll help you get back into your card.</p>
+                <div className="space-y-3">
+                  <input value={cName} onChange={(e) => setCName(e.target.value)} placeholder="Your name" className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400" />
+                  <input value={cEmail} onChange={(e) => setCEmail(e.target.value)} type="email" placeholder="you@email.com" className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400" />
+                  <textarea value={cMsg} onChange={(e) => setCMsg(e.target.value)} rows={3} placeholder="Tell us which shop and your name" className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none" />
+                  {cErr && <p className="text-xs text-red-600">{cErr}</p>}
+                  <button onClick={sendContact} disabled={cSending || !cEmail.trim() || !cMsg.trim()} className="w-full bg-[#37352F] text-white rounded-md py-2.5 text-sm font-medium hover:bg-[#2F2D28] transition disabled:opacity-50 flex items-center justify-center gap-2">
+                    {cSending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send message'}
+                  </button>
+                  <button onClick={() => setShowContact(false)} className="w-full text-sm text-gray-500 py-1 hover:text-[#37352F] transition">Cancel</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
