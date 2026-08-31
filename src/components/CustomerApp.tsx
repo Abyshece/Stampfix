@@ -6,6 +6,7 @@ import { useAuth, signUpOrInCustomer, signOut } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { getCampaignById, getCardForCustomer, createCard } from '../lib/db';
 import { WalletCard } from './WalletCard';
+import { WelcomeModal } from './WelcomeModal';
 import { AddToAppleWalletButton } from './AddToAppleWalletButton';
 import { Turnstile } from './Turnstile';
 import { verifyTurnstile } from '../services/turnstile';
@@ -49,6 +50,17 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  useEffect(() => {
+    if (card && (card.currentStamps ?? 0) === 0) {
+      try { if (localStorage.getItem('sf_welcome_' + card.id) !== '1') setShowWelcome(true); }
+      catch { setShowWelcome(true); }
+    }
+  }, [card]);
+  const dismissWelcome = () => {
+    setShowWelcome(false);
+    if (card) { try { localStorage.setItem('sf_welcome_' + card.id, '1'); } catch { /* ignore */ } }
+  };
 
   // 1) Load campaign on mount
   useEffect(() => {
@@ -472,6 +484,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-start pt-12 p-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 overflow-y-auto">
+        {showWelcome && <WelcomeModal onDismiss={dismissWelcome} />}
         <div className="text-center mb-8 space-y-2">
           <h1 className="text-3xl font-serif-display font-semibold">Your Digital Card</h1>
           <p className="text-gray-500 text-sm max-w-xs mx-auto">
