@@ -5,7 +5,7 @@ type Phase = 'locating' | 'stamping' | 'success' | 'need_identity' | 'ask_more' 
 
 const ERR: Record<string, string> = {
   self_serve_off: "This shop isn't using self-serve stamps right now.",
-  too_far: "You're too far from the shop. Come a bit closer and try again.",
+  too_far: "Hmm, that didn't work. Please try again, or ask a staff member if it keeps happening.",
   no_location: "This shop hasn't set its location yet, so we can't confirm you're here.",
   daily_cap: "You've already collected your stamp for today. See you next time!",
   cooldown: "You just got a stamp — please wait a little before the next one.",
@@ -119,7 +119,7 @@ export function StampPage() {
         setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 }); setPhase('ask_more');
       } else {
         setErrKey(r.error ?? 'network');
-        setErrExtra(r.distance ? ` (~${r.distance}m away)` : '');
+        setErrExtra('');
         setPhase('error');
       }
     } catch (e) {
