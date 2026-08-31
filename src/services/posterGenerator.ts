@@ -742,6 +742,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="pm-step"><div class="pm-cb"></div><div class="text">Scan the QR code</div></div>
           <div class="pm-step"><div class="pm-cb"></div><div class="text">Register your name &amp; email</div></div>
           <div class="pm-step"><div class="pm-cb"></div><div class="text">Save card to Apple or Google Wallet</div></div>
+          <div class="pm-step"><div class="pm-cb"></div><div class="text">Get a stamp on every order &amp; earn rewards</div></div>
           <div class="pm-step"><div class="pm-stepi">__ICON__</div><div class="text">Enjoy!</div></div>
         </div>
       </div>
@@ -782,6 +783,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <div class="ps-step"><div class="ps-cb"></div><div class="text">Scan the QR code</div></div>
         <div class="ps-step"><div class="ps-cb"></div><div class="text">Register your name &amp; email</div></div>
         <div class="ps-step"><div class="ps-cb"></div><div class="text">Save card to Apple or Google Wallet</div></div>
+        <div class="ps-step"><div class="ps-cb"></div><div class="text">Get a stamp on every order &amp; earn rewards</div></div>
         <div class="ps-step"><div class="ps-stepi">__ICON__</div><div class="text">Enjoy your reward!</div></div>
       </div>
     </div>
