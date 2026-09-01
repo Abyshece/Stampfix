@@ -213,6 +213,20 @@ function OverviewTab() {
       .catch((e) => setExtErr(e?.message ? String(e.message) : String(e)));
   }, [fromDate, toDate, appliedMerchant]);
 
+  const applyMerchantSearch = async () => {
+    const q = merchantSearch.trim();
+    if (!q) { setAppliedMerchant(null); return; }
+    // Already a UUID? use it directly.
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q)) { setAppliedMerchant(q); return; }
+    // Otherwise resolve the merchant code / email / name to a UUID.
+    try {
+      const matches = await listMerchants(q);
+      const exact = matches.find((m) => (m.merchant_code ?? '').toLowerCase() === q.toLowerCase()) ?? matches[0];
+      if (exact) { setAppliedMerchant(exact.id); }
+      else { setExt(null); setExtErr(`No merchant found for "${q}". Try their code (e.g. STF-0031), email, or name.`); }
+    } catch (e) { setExt(null); setExtErr(e instanceof Error ? e.message : 'Search failed'); }
+  };
+
   return (
     <div className="space-y-6">
       <header>
@@ -299,11 +313,11 @@ function OverviewTab() {
                 <input
                   value={merchantSearch}
                   onChange={(e) => setMerchantSearch(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') setAppliedMerchant(merchantSearch.trim() || null); }}
-                  placeholder="Merchant ID (UUID) — blank = all"
+                  onKeyDown={(e) => { if (e.key === 'Enter') void applyMerchantSearch(); }}
+                  placeholder="Merchant code (e.g. STF-0031), email or name — blank = all"
                   className="bg-[#F7F7F5] border notion-border rounded px-2 py-1.5 text-xs w-full sm:w-64"
                 />
-                <button onClick={() => setAppliedMerchant(merchantSearch.trim() || null)}
+                <button onClick={() => void applyMerchantSearch()}
                   className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white">Search</button>
                 {appliedMerchant && (
                   <button onClick={() => { setMerchantSearch(''); setAppliedMerchant(null); }}
