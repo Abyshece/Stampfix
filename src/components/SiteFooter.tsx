@@ -21,6 +21,14 @@ function FooterCol({ title, links }: { title: string; links: { href: string; lab
 export function SiteFooter({ onCookieSettings }: { onCookieSettings?: () => void }) {
   return (
     <footer className="border-t notion-border bg-[#FBFBFA] mt-24">
+      <div className="max-w-6xl mx-auto px-6 pt-12">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Loyalty for every kind of business</h3>
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          {['Café', 'Restaurant', 'Bakery', 'Ice cream', 'Snack bar', 'Pizzeria', 'Bar & club', 'Florist', 'Nail studio', 'Hairdresser', 'Barbershop', 'Tattoo studio', 'Gym', 'Retail'].map((s) => (
+            <a key={s} href="/use-cases" className="text-sm text-gray-500 hover:text-[#37352F] transition">{s}</a>
+          ))}
+        </div>
+      </div>
       <div className="max-w-6xl mx-auto px-6 py-14 grid grid-cols-2 md:grid-cols-5 gap-10">
         <div className="col-span-2 md:col-span-1">
           <div className="flex items-center gap-2 mb-3">

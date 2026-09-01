@@ -13,7 +13,7 @@ const en = {
   },
   hero: {
     l1: 'No apps.', l2: 'No paper stamp cards.', l3: 'No extra hardware.', l4: 'Just loyalty.',
-    subtitle: "Create a digital punch card in 30 seconds. No apps to download. Just a simple link that lives in your customer's Apple or Google Wallet.",
+    subtitle: "Create a digital stamp card in 30 seconds. No apps to download. Just a simple link that lives in your customer's Apple or Google Wallet.",
     startFree: 'Start for free', bookDemo: 'Book a demo', demoNote: 'Takes just 10–12 minutes over Google Meet.',
     pillNotif: 'Push notifications', pillLoc: 'Multiple locations', pillGdpr: 'GDPR compliant', pillCheap: 'Cheapest in market',
   },
@@ -35,5 +35,7 @@ const en = {
     cta: 'See what paper cards cost you',
     v2: 'Unlimited', v3: 'Cancel anytime', s1: 'Setup & hardware', s2: 'Customers & cards', s3: 'No contract',
   },
+  shops: { heading: 'Made for your shop', subtitle: 'Whether café, bakery, salon or gym — Stampfix adapts to your business.' },
+  industries: { cafe: 'Café', restaurant: 'Restaurant', bakery: 'Bakery', iceCream: 'Ice cream', snackBar: 'Snack bar', pizzeria: 'Pizzeria', bar: 'Bar & club', florist: 'Florist', nailStudio: 'Nail studio', hairdresser: 'Hairdresser', barbershop: 'Barbershop', tattoo: 'Tattoo studio', gym: 'Gym', retail: 'Retail' },
 };
 export default en;

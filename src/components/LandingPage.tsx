@@ -30,6 +30,14 @@ type AuthMode = 'LOGIN' | 'FORGOT_PASSWORD' | 'RESET_SENT';
 import { MobileNav } from './MobileNav';
 import { reopenCookieBanner } from '../lib/cookieConsent';
 
+const INDUSTRIES = [
+  { key: 'cafe', icon: '☕' }, { key: 'restaurant', icon: '🍽️' }, { key: 'bakery', icon: '🥐' },
+  { key: 'iceCream', icon: '🍦' }, { key: 'snackBar', icon: '🌮' }, { key: 'pizzeria', icon: '🍕' },
+  { key: 'bar', icon: '🍸' }, { key: 'florist', icon: '🌸' }, { key: 'nailStudio', icon: '💅' },
+  { key: 'hairdresser', icon: '✂️' }, { key: 'barbershop', icon: '💈' }, { key: 'tattoo', icon: '🎨' },
+  { key: 'gym', icon: '💪' }, { key: 'retail', icon: '🛍️' },
+];
+
 export function LandingPage({
   onEnterMerchantFlow,
   isAuthenticated,
@@ -414,6 +422,21 @@ export function LandingPage({
             <div className="text-4xl font-serif-display font-semibold mb-1">100%</div>
             <div className="text-sm text-gray-500 uppercase tracking-widest font-medium">{t('social.custom')}</div>
           </div>
+        </div>
+      </section>
+
+      {/* Made for your shop */}
+      <section className="max-w-5xl mx-auto px-6 py-20 text-center">
+        <style>{`@keyframes shop-pop{0%{opacity:0;transform:translateY(12px) scale(0.92)}100%{opacity:1;transform:translateY(0) scale(1)}}@keyframes shop-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}`}</style>
+        <h2 className="text-3xl md:text-5xl font-serif-display font-medium mb-4 tracking-tight text-balance">{t('shops.heading')}</h2>
+        <p className="text-lg text-gray-500 mb-10 max-w-2xl mx-auto text-pretty">{t('shops.subtitle')}</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          {INDUSTRIES.map((ind, i) => (
+            <div key={ind.key} className="inline-flex items-center gap-2 bg-white border notion-border rounded-full px-4 py-2.5 text-sm font-medium text-[#37352F] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition" style={{ animation: `shop-pop 0.5s ease-out ${i * 55}ms both` }}>
+              <span className="text-lg" style={{ display: 'inline-block', animation: `shop-bob 3s ease-in-out ${i * 180}ms infinite` }}>{ind.icon}</span>
+              {t(`industries.${ind.key}`)}
+            </div>
+          ))}
         </div>
       </section>
 
