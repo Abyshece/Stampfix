@@ -36,6 +36,6 @@ const en = {
     v2: 'Unlimited', v3: 'Cancel anytime', s1: 'Setup & hardware', s2: 'Customers & cards', s3: 'No contract',
   },
   shops: { heading: 'Made for your shop', subtitle: 'Whether café, bakery, salon or gym — Stampfix adapts to your business.' },
-  industries: { cafe: 'Café', restaurant: 'Restaurant', bakery: 'Bakery', iceCream: 'Ice cream', snackBar: 'Snack bar', pizzeria: 'Pizzeria', bar: 'Bar & club', florist: 'Florist', nailStudio: 'Nail studio', hairdresser: 'Hairdresser', barbershop: 'Barbershop', tattoo: 'Tattoo studio', gym: 'Gym', retail: 'Retail' },
+  industries: { cafe: 'Café', restaurant: 'Restaurant', bakery: 'Bakery', iceCream: 'Ice cream', snackBar: 'Snack bar', pizzeria: 'Pizzeria', bar: 'Bar & club', florist: 'Florist', nailStudio: 'Nail studio', hairdresser: 'Hairdresser', barbershop: 'Barbershop', tattoo: 'Tattoo studio', gym: 'Gym', retail: 'Retail', doner: 'Döner shop', bubbleTea: 'Bubble tea & juice', foodTruck: 'Food truck', lashBrow: 'Lash & brow', spa: 'Spa & massage', carWash: 'Car wash', dogGrooming: 'Dog grooming', dryCleaner: 'Dry cleaner', yoga: 'Yoga & Pilates' },
 };
 export default en;

@@ -36,6 +36,9 @@ const INDUSTRIES = [
   { key: 'bar', icon: '🍸' }, { key: 'florist', icon: '🌸' }, { key: 'nailStudio', icon: '💅' },
   { key: 'hairdresser', icon: '✂️' }, { key: 'barbershop', icon: '💈' }, { key: 'tattoo', icon: '🎨' },
   { key: 'gym', icon: '💪' }, { key: 'retail', icon: '🛍️' },
+  { key: 'doner', icon: '🥙' }, { key: 'bubbleTea', icon: '🧋' }, { key: 'foodTruck', icon: '🚚' },
+  { key: 'lashBrow', icon: '👁️' }, { key: 'spa', icon: '💆' }, { key: 'carWash', icon: '🚗' },
+  { key: 'dogGrooming', icon: '🐶' }, { key: 'dryCleaner', icon: '👔' }, { key: 'yoga', icon: '🧘' },
 ];
 
 export function LandingPage({
