@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './MarketingLayout';
-import { Wallet, BellRing, BarChart3, ShieldCheck, Smartphone, RefreshCw } from 'lucide-react';
+import { Wallet, BellRing, BarChart3, ShieldCheck, Smartphone, RefreshCw, ChevronDown } from 'lucide-react';
+import { BENEFITS } from './PricingPage';
 
 /** Fire once when the element scrolls into view. */
 function useInView<T extends HTMLElement>(threshold = 0.2) {
@@ -50,6 +51,34 @@ function StepBox({ s, i }: { s: (typeof STEPS)[number]; i: number }) {
       <div className="text-5xl font-serif-display font-semibold leading-none mb-3" style={{ color: s.c }}>{s.n}</div>
       <h3 className="text-lg font-semibold mb-2">{s.title}</h3>
       <p className="text-sm text-gray-600 leading-relaxed">{s.body}</p>
+    </div>
+  );
+}
+
+function FeatureAccordion({ items }: { items: { title: string; body: string }[] }) {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <div className="max-w-3xl mx-auto border-t notion-border">
+      {items.map((item, i) => {
+        const isOpen = open === i;
+        return (
+          <div key={item.title} className="border-b notion-border">
+            <button
+              onClick={() => setOpen(isOpen ? null : i)}
+              className="w-full flex items-center justify-between gap-6 py-5 text-left group"
+              aria-expanded={isOpen}
+            >
+              <span className="text-lg md:text-xl font-medium text-[#37352F] group-hover:opacity-70 transition-opacity">{item.title}</span>
+              <ChevronDown className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <div className={`grid transition-all duration-300 ease-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+              <div className="overflow-hidden">
+                <p className="text-gray-500 leading-relaxed pb-6 pr-10 text-[15px] md:text-base">{item.body}</p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -108,11 +137,13 @@ export function FeaturesPage() {
         </div>
       </section>
 
-      {/* Feature grid */}
+      {/* Every feature, explained (accordion) */}
       <section className="max-w-5xl mx-auto px-6 py-12">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES.map((f, i) => <FeatureBox key={f.title} f={f} i={i} />)}
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-serif-display font-medium tracking-tight text-balance">Everything you get</h2>
+          <p className="text-gray-500 mt-3 max-w-xl mx-auto">Tap any feature to see how it helps your shop.</p>
         </div>
+        <FeatureAccordion items={BENEFITS} />
       </section>
 
       {/* We handle the tech — animated rainbow gradient border */}

@@ -32,7 +32,7 @@ const PRO = [
  * business — framed around getting customers back and marketing, not features.
  * Icons use the wallet-card palette and animate continuously.
  */
-const BENEFITS = [
+export const BENEFITS = [
   { icon: Smartphone,  c: '#75FBFD', fg: '#1A1A1A', anim: 'pf-fl', title: 'Your phone is the scanner', body: 'Start today with the device already in your pocket. No hardware to buy, install, or maintain — money that stays in your business.' },
   { icon: Zap,         c: '#EA3323', fg: '#FFFFFF', anim: 'pf-pu', title: 'Live in 1–2 minutes', body: 'No setup fees, no onboarding calls. Design your card and start stamping before your next customer walks in.' },
   { icon: Globe,       c: '#510AF5', fg: '#FCFF54', anim: 'pf-sp', title: 'No app to download', body: 'Kill the biggest reason loyalty programs fail. Customers add the pass to the wallet they already use — no install, no signup, no friction at the counter.' },
