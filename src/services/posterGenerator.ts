@@ -41,7 +41,7 @@ interface BuildPosterInput {
  *     service (api.qrserver.com), which is free and reliable
  */
 const POSTER_DE: [string, string][] = [
-  ['<h1 class="pm-headline">SCAN<br>&amp; SAVE</h1>', '<h1 class="pm-headline" style="font-size:48px;line-height:1.1;letter-spacing:-1px;text-transform:none;max-width:450px;margin-bottom:16px">Deine Digitale Treuekarte</h1>'],
+  ['<h1 class="pm-headline">SCAN<br>&amp; SAVE</h1>', '<h1 class="pm-headline" style="font-size:62px;line-height:1.08;letter-spacing:-1.5px;text-transform:none;max-width:450px;margin-bottom:14px">Deine Digitale Treuekarte</h1>'],
   ['SCAN<br>&amp; SAVE', 'Deine Digitale Treuekarte'],
   ['Scan the QR code or tap your phone to get started &mdash; fill out the quick form and save your card to Apple or Google Wallet.', 'Scanne den QR-Code oder leg dein Handy auf, um zu starten &mdash; füll das kurze Formular aus und speichere deine Karte in Apple oder Google Wallet.'],
   ['Get a stamp on every order and earn a reward once your card is full.', 'Sammle bei jeder Bestellung einen Stempel und sichere dir eine Belohnung, sobald deine Karte voll ist.'],
@@ -58,6 +58,7 @@ const POSTER_DE: [string, string][] = [
   ['POWERED BY', 'BEREITGESTELLT VON'],
   ['Tap here', 'Hier tippen'],
   ['to get a stamp', 'für einen Stempel'],
+  ['or scan the code &mdash; you must be at the shop', 'oder Code scannen &middot; sammle bei jeder Bestellung Stempel &amp; Belohnungen'],
   ['or scan the code', 'oder Code scannen'],
   ['Enjoy!', 'Viel Spaß!'],
 ];
