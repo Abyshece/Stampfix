@@ -48,7 +48,7 @@ const POSTER_DE: [string, string][] = [
   ['Save card to Apple or Google Wallet', 'Speichere deine Karte in Apple oder Google Wallet'],
   ['Get a stamp on every order &amp; earn rewards', 'Sammle bei jeder Bestellung Stempel &amp; Belohnungen'],
   ['Register your name &amp; email', 'Gib deinen Namen &amp; E-Mail ein'],
-  ['Scan the QR code', 'Scanne den QR-Code'],
+  ['<div class="text">Scan the QR code</div>', '<div class="text">Scanne den QR-Code oder leg dein Handy auf</div>'],
   ['No app to download', 'Keine App nötig'],
   ['HOW TO SIGN UP', 'SO MELDEST DU DICH AN'], ['How to sign up', 'So meldest du dich an'],
   ['SCAN TO JOIN', 'ZUM BEITRETEN SCANNEN'], ['Scan to join', 'Zum Beitreten scannen'],
