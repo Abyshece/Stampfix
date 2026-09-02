@@ -474,7 +474,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-pamphlet .pm-right {
     flex: 1; position: relative; padding-right: 50px;
     display: flex; flex-direction: column; gap: 22px;
-    align-items: center; justify-content: center;
+    align-items: center; justify-content: flex-start;
   }
   .size-pamphlet .pm-starburst {
     position: absolute; top: 14px; right: 16px;
@@ -658,6 +658,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
    * ============================ */
   /* "Scan to join" — just the QR itself (no card, border or labels). */
   .scan-cta { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .size-pamphlet .scan-cta { margin-top: auto; }
   .scan-note { max-width: 300px; margin: 0; text-align: center; font-size: 14px; font-weight: 500; line-height: 1.4; color: rgba(255,255,255,0.92); }
   .nfc-tap { display: inline-flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
   .nfc-ic { width: 19px; height: 19px; flex-shrink: 0; }
@@ -794,7 +795,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <div class="dc-qr"><img src="__FAKE_QR_URL__" alt="" /><span>SF00108</span></div>
       </div>
       <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#111"/><rect x="12" y="8" width="16" height="15" rx="2.5" fill="#54A0EE"/><rect x="10.5" y="11" width="19" height="15" rx="2.5" fill="#F3C24C"/><rect x="9" y="14" width="22" height="15" rx="2.5" fill="#F17A50"/><path d="M8 20h24a1.5 1.5 0 0 1 1.5 1.5V31A1.5 1.5 0 0 1 32 32.5H8A1.5 1.5 0 0 1 6.5 31v-9.5A1.5 1.5 0 0 1 8 20z" fill="#E9E5DD"/><path d="M15.5 20h9a1 1 0 0 1 1 1c0 2.4-2 3.6-5.5 3.6S14.5 23.4 14.5 21a1 1 0 0 1 1-1z" fill="#111"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="gwclip"><rect width="44" height="40" rx="9"/></clipPath></defs><g clip-path="url(#gwclip)"><rect width="44" height="40" fill="#4285F4"/><rect width="44" height="13" fill="#34A853"/><rect y="8" width="44" height="13" fill="#FBBC04"/><rect y="16" width="44" height="14" fill="#EA4335"/><path d="M0 27c9-4 13-5 22-5s13 1 22 5v13H0z" fill="#4285F4"/></g></svg>Google Wallet</span></div>
-      <div class="scan-cta"><div class="scan-choices"><div class="scan-opt"><div class="scan-qr">__QR_SVG__</div><span>Scan the code</span></div><div class="scan-or">OR</div><div class="scan-opt">__NFC_BIG__<span>Tap your phone</span></div></div><p class="scan-note">Scan the QR code or tap your phone to get started — fill out the quick form and save your card to Apple or Google Wallet.</p></div>
+      <div class="scan-cta"><div class="scan-choices"><div class="scan-opt"><div class="scan-qr">__QR_SVG__</div><span>Scan the code</span></div><div class="scan-or">OR</div><div class="scan-opt">__NFC_BIG__<span>Tap your phone</span></div></div></div>
     </div>
     <div class="pm-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
@@ -834,7 +835,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <div class="dc-qr"><img src="__FAKE_QR_URL__" alt="" /><span>SF00108</span></div>
       </div>
       <div class="wallet-compat"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#111"/><rect x="12" y="8" width="16" height="15" rx="2.5" fill="#54A0EE"/><rect x="10.5" y="11" width="19" height="15" rx="2.5" fill="#F3C24C"/><rect x="9" y="14" width="22" height="15" rx="2.5" fill="#F17A50"/><path d="M8 20h24a1.5 1.5 0 0 1 1.5 1.5V31A1.5 1.5 0 0 1 32 32.5H8A1.5 1.5 0 0 1 6.5 31v-9.5A1.5 1.5 0 0 1 8 20z" fill="#E9E5DD"/><path d="M15.5 20h9a1 1 0 0 1 1 1c0 2.4-2 3.6-5.5 3.6S14.5 23.4 14.5 21a1 1 0 0 1 1-1z" fill="#111"/></svg>Apple Wallet</span><span class="wc-dot">·</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="gwclip"><rect width="44" height="40" rx="9"/></clipPath></defs><g clip-path="url(#gwclip)"><rect width="44" height="40" fill="#4285F4"/><rect width="44" height="13" fill="#34A853"/><rect y="8" width="44" height="13" fill="#FBBC04"/><rect y="16" width="44" height="14" fill="#EA4335"/><path d="M0 27c9-4 13-5 22-5s13 1 22 5v13H0z" fill="#4285F4"/></g></svg>Google Wallet</span></div>
-      <div class="scan-cta"><div class="scan-choices"><div class="scan-opt"><div class="scan-qr">__QR_SVG__</div><span>Scan the code</span></div><div class="scan-or">OR</div><div class="scan-opt">__NFC_BIG__<span>Tap your phone</span></div></div><p class="scan-note">Scan the QR code or tap your phone to get started — fill out the quick form and save your card to Apple or Google Wallet.</p></div>
+      <div class="scan-cta"><div class="scan-choices"><div class="scan-opt"><div class="scan-qr">__QR_SVG__</div><span>Scan the code</span></div><div class="scan-or">OR</div><div class="scan-opt">__NFC_BIG__<span>Tap your phone</span></div></div></div>
     </div>
     <div class="ps-powered">POWERED BY __BRAND_MARK__<strong>STAMPFIX.APP</strong></div>
   </div>
