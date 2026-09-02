@@ -41,15 +41,16 @@ interface BuildPosterInput {
  *     service (api.qrserver.com), which is free and reliable
  */
 const POSTER_DE: [string, string][] = [
-  ['SCAN<br>&amp; SAVE', 'SCANNEN<br>&amp; SPEICHERN'],
-  ['Scan the QR code or tap your phone to get started &mdash; fill out the quick form and save your card to Apple or Google Wallet.', 'QR-Code scannen oder Handy auflegen, um zu starten &mdash; kurzes Formular ausfüllen und Karte in Apple oder Google Wallet speichern.'],
-  ['Get a stamp on every order and earn a reward once your card is full.', 'Sammeln Sie bei jeder Bestellung einen Stempel und erhalten Sie eine Belohnung, sobald Ihre Karte voll ist.'],
-  ['Save card to Apple or Google Wallet', 'Karte in Apple oder Google Wallet speichern'],
-  ['Get a stamp on every order &amp; earn rewards', 'Bei jeder Bestellung stempeln &amp; Belohnungen sammeln'],
-  ['Register your name &amp; email', 'Name &amp; E-Mail eingeben'],
-  ['Scan the QR code', 'QR-Code scannen'],
+  ['<h1 class="pm-headline">SCAN<br>&amp; SAVE</h1>', '<h1 class="pm-headline" style="font-size:48px;line-height:1.1;letter-spacing:-1px;text-transform:none;max-width:450px;margin-bottom:16px">Deine Digitale Treuekarte</h1>'],
+  ['SCAN<br>&amp; SAVE', 'Deine Digitale Treuekarte'],
+  ['Scan the QR code or tap your phone to get started &mdash; fill out the quick form and save your card to Apple or Google Wallet.', 'Scanne den QR-Code oder leg dein Handy auf, um zu starten &mdash; füll das kurze Formular aus und speichere deine Karte in Apple oder Google Wallet.'],
+  ['Get a stamp on every order and earn a reward once your card is full.', 'Sammle bei jeder Bestellung einen Stempel und sichere dir eine Belohnung, sobald deine Karte voll ist.'],
+  ['Save card to Apple or Google Wallet', 'Speichere deine Karte in Apple oder Google Wallet'],
+  ['Get a stamp on every order &amp; earn rewards', 'Sammle bei jeder Bestellung Stempel &amp; Belohnungen'],
+  ['Register your name &amp; email', 'Gib deinen Namen &amp; E-Mail ein'],
+  ['Scan the QR code', 'Scanne den QR-Code'],
   ['No app to download', 'Keine App nötig'],
-  ['HOW TO SIGN UP', 'SO MELDEN SIE SICH AN'], ['How to sign up', 'So melden Sie sich an'],
+  ['HOW TO SIGN UP', 'SO MELDEST DU DICH AN'], ['How to sign up', 'So meldest du dich an'],
   ['SCAN TO JOIN', 'ZUM BEITRETEN SCANNEN'], ['Scan to join', 'Zum Beitreten scannen'],
   ['SCAN THE CODE', 'CODE SCANNEN'], ['Scan the code', 'Code scannen'],
   ['TAP YOUR PHONE', 'HANDY AUFLEGEN'], ['Tap your phone', 'Handy auflegen'],
@@ -771,7 +772,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
           <div class="pm-step"><div class="pm-cb"></div><div class="text">Register your name &amp; email</div></div>
           <div class="pm-step"><div class="pm-cb"></div><div class="text">Save card to Apple or Google Wallet</div></div>
           <div class="pm-step"><div class="pm-cb"></div><div class="text">Get a stamp on every order &amp; earn rewards</div></div>
-          <div class="pm-step"><div class="pm-stepi">__ICON__</div><div class="text">Enjoy!</div></div>
+          <div class="pm-step"><div class="pm-cb"></div><div class="text">Enjoy!</div></div>
         </div>
       </div>
     </div>
@@ -812,7 +813,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
         <div class="ps-step"><div class="ps-cb"></div><div class="text">Register your name &amp; email</div></div>
         <div class="ps-step"><div class="ps-cb"></div><div class="text">Save card to Apple or Google Wallet</div></div>
         <div class="ps-step"><div class="ps-cb"></div><div class="text">Get a stamp on every order &amp; earn rewards</div></div>
-        <div class="ps-step"><div class="ps-stepi">__ICON__</div><div class="text">Enjoy your reward!</div></div>
+        <div class="ps-step"><div class="ps-cb"></div><div class="text">Enjoy your reward!</div></div>
       </div>
     </div>
     <div class="ps-rail">

@@ -1770,34 +1770,8 @@ export function MerchantDashboard({
 
             {settingsSection === 'posters' && (
             <div className="border notion-border rounded-lg p-6 space-y-4">
-              <h3 className="font-medium">Poster icon</h3>
-                    <div className="space-y-1 relative">
-                      <label className="text-xs font-bold text-gray-400 uppercase">Custom Icon</label>
-                      <p className="text-xs text-gray-400">Shown on your printed posters and pamphlets.</p>
-                      <div className="flex gap-2">
-                        <input value={tempSettings.customIcon}
-                          onChange={(e) => setTempSettings({ ...tempSettings, customIcon: e.target.value })}
-                          className="w-full bg-[#F7F7F5] border notion-border rounded px-3 py-2 text-sm" />
-                        <button onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                          className="px-3 bg-white border notion-border rounded hover:bg-gray-50 transition flex items-center justify-center text-gray-500">
-                          <Smile className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {showEmojiPicker && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)}></div>
-                          <div className="absolute top-full right-0 mt-2 z-50 bg-white border notion-border shadow-xl rounded-lg p-2 w-64 h-64 overflow-y-auto grid grid-cols-5 gap-1">
-                            {EMOJI_LIST.map((emoji) => (
-                              <button key={emoji}
-                                onClick={() => { setTempSettings({ ...tempSettings, customIcon: emoji }); setShowEmojiPicker(false); }}
-                                className="w-10 h-10 flex items-center justify-center text-xl hover:bg-gray-100 rounded transition">
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
+              <h3 className="font-medium">Posters &amp; pamphlets</h3>
+              <p className="text-sm text-gray-500">Download your printable posters and pamphlets &mdash; in English or German &mdash; from the <span className="font-medium">Share &amp; Promote</span> tab.</p>
             </div>
             )}
 
