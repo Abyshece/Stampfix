@@ -473,8 +473,8 @@ export function MerchantDashboard({
    *  by services/posterGenerator and includes the merchant's offer,
    *  branding color (or gradient from posterColor), icon, business name,
    *  and a per-location QR code. */
-  const handleDownloadPoster = (location: Location | null, size: PosterSize = 'pamphlet') => {
-    const html = buildPosterHtml({ campaign, location, size });
+  const handleDownloadPoster = (location: Location | null, size: PosterSize = 'pamphlet', lang: 'en' | 'de' = 'en') => {
+    const html = buildPosterHtml({ campaign, location, size, lang });
     void downloadPosterPng(html, size, `stampfix-${size}-poster.png`);
     // Onboarding: downloading any poster from the Share tab counts as
     // the poster-downloaded milestone. Fire and forget.
@@ -1492,9 +1492,12 @@ export function MerchantDashboard({
                       </div>
                       <div className="space-y-2 w-full pt-2">
                         <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-1">Download as</div>
-                        <div className="grid grid-cols-1 gap-1.5">
+                        <div className="grid grid-cols-2 gap-1.5">
                           <button onClick={() => handleDownloadPoster(loc, 'pamphlet')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Pamphlet (A5 landscape)">
-                            Pamphlet
+                            Pamphlet · EN
+                          </button>
+                          <button onClick={() => handleDownloadPoster(loc, 'pamphlet', 'de')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Flyer (A5, Deutsch)">
+                            Pamphlet · DE
                           </button>
                         </div>
                         <button
@@ -1545,7 +1548,10 @@ export function MerchantDashboard({
                           );
                         })()}
                         <button onClick={() => handleDownloadPoster(loc, 'selfscan')} className="w-full max-w-[240px] flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md bg-[#37352F] text-white font-medium hover:bg-opacity-90 transition">
-                          Download stamp poster
+                          Download stamp poster · EN
+                        </button>
+                        <button onClick={() => handleDownloadPoster(loc, 'selfscan', 'de')} className="w-full max-w-[240px] flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md bg-[#37352F] text-white font-medium hover:bg-opacity-90 transition">
+                          Stempel-Poster · DE
                         </button>
                       </div>
                     )}

@@ -16,6 +16,8 @@ interface BuildPosterInput {
   /** Allow callers to override the poster's join URL (e.g. for the
    *  Settings live-preview when no real location exists yet). */
   joinUrlOverride?: string;
+  /** Language of the poster text ('de' swaps the copy to German). */
+  lang?: 'en' | 'de';
   /** Optional override for the background. Used by the live preview in
    *  Settings — the user picks a color and we re-render before saving. */
   posterBgOverride?: string;
@@ -38,6 +40,27 @@ interface BuildPosterInput {
  *   - The QR code is a separate <img> we generate via a third-party
  *     service (api.qrserver.com), which is free and reliable
  */
+const POSTER_DE: [string, string][] = [
+  ['SCAN<br>&amp; SAVE', 'SCANNEN<br>&amp; SPEICHERN'],
+  ['Scan the QR code or tap your phone to get started &mdash; fill out the quick form and save your card to Apple or Google Wallet.', 'QR-Code scannen oder Handy auflegen, um zu starten &mdash; kurzes Formular ausfüllen und Karte in Apple oder Google Wallet speichern.'],
+  ['Get a stamp on every order and earn a reward once your card is full.', 'Sammeln Sie bei jeder Bestellung einen Stempel und erhalten Sie eine Belohnung, sobald Ihre Karte voll ist.'],
+  ['Save card to Apple or Google Wallet', 'Karte in Apple oder Google Wallet speichern'],
+  ['Get a stamp on every order &amp; earn rewards', 'Bei jeder Bestellung stempeln &amp; Belohnungen sammeln'],
+  ['Register your name &amp; email', 'Name &amp; E-Mail eingeben'],
+  ['Scan the QR code', 'QR-Code scannen'],
+  ['No app to download', 'Keine App nötig'],
+  ['HOW TO SIGN UP', 'SO MELDEN SIE SICH AN'], ['How to sign up', 'So melden Sie sich an'],
+  ['SCAN TO JOIN', 'ZUM BEITRETEN SCANNEN'], ['Scan to join', 'Zum Beitreten scannen'],
+  ['SCAN THE CODE', 'CODE SCANNEN'], ['Scan the code', 'Code scannen'],
+  ['TAP YOUR PHONE', 'HANDY AUFLEGEN'], ['Tap your phone', 'Handy auflegen'],
+  ['WORKS WITH', 'FUNKTIONIERT MIT'], ['Works with', 'Funktioniert mit'],
+  ['POWERED BY', 'BEREITGESTELLT VON'],
+  ['Tap here', 'Hier tippen'],
+  ['to get a stamp', 'für einen Stempel'],
+  ['or scan the code', 'oder Code scannen'],
+  ['Enjoy!', 'Viel Spaß!'],
+];
+
 export function buildPosterHtml(input: BuildPosterInput): string {
   const { campaign, location, joinUrlOverride, posterBgOverride, cardColorOverride } = input;
 
@@ -135,7 +158,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   // illustrative — they show the customer what a card LOOKS like.
   // Real customers fill them with their own data after signup.
 
-  return PAGE_TEMPLATE
+  const __html = PAGE_TEMPLATE
     .replaceAll('__POSTER_BG__',      posterBg)
     .replaceAll('__BUSINESS_NAME__',  esc(businessName))
     .replaceAll('__VERTICAL_BRAND__', esc(verticalBrand))
@@ -161,6 +184,12 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
     .replaceAll('__PAGE__',           input.size === 'card' || input.size === 'selfscan' ? '85mm 55mm' : input.size === 'pamphlet' ? '297mm 210mm' : input.size === 'instagram' ? '210mm 210mm' : input.size === 'table' ? '45mm 45mm' : input.size === 'sticker' ? '210mm 297mm' : '210mm 297mm')
     .replaceAll('__SIZE__',           input.size);
+  if (input.lang === 'de') {
+    let out = __html;
+    for (const [en, de] of POSTER_DE) out = out.split(en).join(de);
+    return out;
+  }
+  return __html;
 }
 
 // ---------------------------------------------------------------------
