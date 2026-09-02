@@ -126,6 +126,15 @@ export async function downloadTableQrPng(c: PC, bg?: string | null) {
  * preview drop-shadow, and captures just the poster element.
  */
 export async function downloadPosterPng(html: string, size: string, filename: string): Promise<void> {
+  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // iOS Safari ignores <a download> (nothing saves). Open a tab NOW — while we
+  // still have the user gesture — and show the finished image there so the user
+  // can long-press and pick "Save to Photos".
+  const iosWin = isIOS ? window.open('', '_blank') : null;
+  if (iosWin) {
+    iosWin.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preparing…</title><body style="margin:0;font:16px -apple-system,system-ui;color:#555;text-align:center"><p style="padding:28px 20px">Preparing your poster…</p></body>');
+  }
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:1600px;height:2400px;border:0;background:#fff;';
@@ -145,11 +154,18 @@ export async function downloadPosterPng(html: string, size: string, filename: st
     el.style.boxShadow = 'none';
     el.style.margin = '0';
     const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' });
-    const a = document.createElement('a');
-    a.download = filename;
-    a.href = dataUrl;
-    a.click();
+    if (iosWin) {
+      iosWin.document.open();
+      iosWin.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + filename + '</title><body style="margin:0;background:#faf9f7;font:15px -apple-system,system-ui;color:#444;text-align:center"><p style="margin:0;padding:12px 16px">Press and hold the image, then tap <b>Save to Photos</b> or <b>Add to Files</b>.</p><img src="' + dataUrl + '" style="display:block;max-width:100%;height:auto;margin:0 auto"></body>');
+      iosWin.document.close();
+    } else {
+      const a = document.createElement('a');
+      a.download = filename;
+      a.href = dataUrl;
+      a.click();
+    }
   } catch (err) {
+    if (iosWin) { try { iosWin.close(); } catch { /* ignore */ } }
     console.error('[poster png]', err);
     alert('Could not generate the poster image. Please try again.');
   } finally {
