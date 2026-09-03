@@ -520,7 +520,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   }
   .size-loyalty .ly-vbrand { position: absolute; left: 0; top: 0; bottom: 0; width: 42px; display: flex; align-items: center; justify-content: center; z-index: 5; }
   .size-loyalty .ly-vbrand span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 13px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; white-space: nowrap; opacity: 0.5; }
-  .size-loyalty .ly-pb { position: absolute; top: 44px; left: 58px; display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; opacity: 0.72; z-index: 3; }
+  .size-loyalty .ly-pb { position: absolute; top: 44px; left: 58px; display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #FFFFFF; opacity: 1; z-index: 3; }
   .size-loyalty .ly-pb svg { height: 11px; width: auto; }
   .size-loyalty .ly-top { position: absolute; top: 66px; left: 58px; right: 30px; z-index: 2; }
   .size-loyalty .ly-headline { font-size: 45px; font-weight: 800; line-height: 1.0; letter-spacing: -1px; margin: 0; max-width: 380px; }
@@ -539,7 +539,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-loyalty .ly-div { align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 4px 0; }
   .size-loyalty .ly-div .ln { width: 2px; flex: 1; background: currentColor; opacity: 0.3; }
   .size-loyalty .ly-div .or { font-size: 14px; font-weight: 800; opacity: 0.7; }
-  .size-loyalty .ly-wallet { position: absolute; top: 524px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 13px; font-weight: 600; z-index: 2; }
+  .size-loyalty .ly-wallet { position: absolute; top: 490px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 13px; font-weight: 600; z-index: 2; }
   .size-loyalty .ly-wallet svg { height: 20px; width: auto; }
   .size-loyalty .ly-wallet .wc-item { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
   .size-loyalty .ly-wallet .wc-dot { opacity: 0.5; }
