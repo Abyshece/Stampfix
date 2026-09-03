@@ -528,7 +528,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-loyalty .ly-sub { font-size: 14px; font-weight: 500; line-height: 1.4; opacity: 0.9; margin: 0; }
   .size-loyalty .ly-badge { position: absolute; top: 64px; right: 22px; width: 92px; height: 92px; z-index: 4; }
   .size-loyalty .ly-badge svg { width: 92px; height: 92px; }
-  .size-loyalty .ly-scan { position: absolute; top: 296px; left: 42px; right: 32px; display: flex; align-items: center; justify-content: center; gap: 20px; z-index: 2; }
+  .size-loyalty .ly-scan { position: absolute; top: 282px; left: 42px; right: 32px; display: flex; align-items: center; justify-content: center; gap: 20px; z-index: 2; }
   .size-loyalty .ly-opt { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
   .size-loyalty .ly-opt > span { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #FBBF24; }
   .size-loyalty .ly-opt small { font-size: 10.5px; font-weight: 500; opacity: 0.85; line-height: 1.3; max-width: 150px; }
