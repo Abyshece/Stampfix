@@ -543,16 +543,16 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-loyalty .ly-wallet svg { height: 20px; width: auto; }
   .size-loyalty .ly-wallet .wc-item { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
   .size-loyalty .ly-wallet .wc-dot { opacity: 0.5; }
-  .size-loyalty .ly-card { position: absolute; left: 40px; right: 40px; bottom: -26px; max-width: none; width: auto; margin: 0; background: #FFFFFF; color: #1A1A1F; border: none; border-radius: 24px; padding: 24px 26px 34px; gap: 20px; box-shadow: 0 -14px 44px rgba(0,0,0,0.30); }
-  .size-loyalty .ly-card .dc-name { font-size: 22px; gap: 10px; color: #1A1A1F; }
+  .size-loyalty .ly-card { position: absolute; left: 40px; right: 40px; bottom: -26px; max-width: none; width: auto; margin: 0; background: __CARD_BG__; color: __CARD_INK__; border: none; border-radius: 24px; padding: 24px 26px 34px; gap: 20px; box-shadow: 0 -14px 44px rgba(0,0,0,0.30); }
+  .size-loyalty .ly-card .dc-name { font-size: 22px; gap: 10px; }
   .size-loyalty .ly-card .dc-name svg { height: 22px !important; width: auto; }
-  .size-loyalty .ly-card .dc-sl span { font-size: 10px; color: #8A8A90; }
-  .size-loyalty .ly-card .dc-sl b { font-size: 30px; color: #1A1A1F; }
+  .size-loyalty .ly-card .dc-sl span { font-size: 10px; }
+  .size-loyalty .ly-card .dc-sl b { font-size: 30px; }
   .size-loyalty .ly-card .dc-stamps { gap: 16px; }
-  .size-loyalty .ly-card .dc-shape { width: 42px; height: 42px; color: #1A1A1F; }
+  .size-loyalty .ly-card .dc-shape { width: 42px; height: 42px; }
   .size-loyalty .ly-card .dc-shape.cx i { height: 8px; }
-  .size-loyalty .ly-card .dc-field span { font-size: 10px; color: #8A8A90; }
-  .size-loyalty .ly-card .dc-field b { font-size: 17px; color: #1A1A1F; }
+  .size-loyalty .ly-card .dc-field span { font-size: 10px; }
+  .size-loyalty .ly-card .dc-field b { font-size: 17px; }
 
   /* ============================
    *  A4 POSTER (210x297mm portrait)
