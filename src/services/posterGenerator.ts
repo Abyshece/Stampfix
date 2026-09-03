@@ -528,7 +528,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-loyalty .ly-sub { font-size: 14px; font-weight: 500; line-height: 1.4; opacity: 0.9; margin: 0; }
   .size-loyalty .ly-badge { position: absolute; top: 64px; right: 22px; width: 92px; height: 92px; z-index: 4; }
   .size-loyalty .ly-badge svg { width: 92px; height: 92px; }
-  .size-loyalty .ly-scan { position: absolute; top: 282px; left: 42px; right: 32px; display: flex; align-items: center; justify-content: center; gap: 20px; z-index: 2; }
+  .size-loyalty .ly-scan { position: absolute; top: 268px; left: 42px; right: 32px; display: flex; align-items: center; justify-content: center; gap: 20px; z-index: 2; }
   .size-loyalty .ly-opt { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
   .size-loyalty .ly-opt > span { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #FBBF24; }
   .size-loyalty .ly-opt small { font-size: 10.5px; font-weight: 500; opacity: 0.85; line-height: 1.3; max-width: 150px; }
@@ -539,11 +539,11 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-loyalty .ly-div { align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 4px 0; }
   .size-loyalty .ly-div .ln { width: 2px; flex: 1; background: currentColor; opacity: 0.3; }
   .size-loyalty .ly-div .or { font-size: 14px; font-weight: 800; opacity: 0.7; }
-  .size-loyalty .ly-wallet { position: absolute; top: 490px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 13px; font-weight: 600; z-index: 2; }
+  .size-loyalty .ly-wallet { position: absolute; top: 470px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 13px; font-weight: 600; z-index: 2; }
   .size-loyalty .ly-wallet svg { height: 20px; width: auto; }
   .size-loyalty .ly-wallet .wc-item { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
   .size-loyalty .ly-wallet .wc-dot { opacity: 0.5; }
-  .size-loyalty .ly-card { position: absolute; left: 40px; right: 40px; bottom: -26px; max-width: none; width: auto; margin: 0; background: __CARD_BG__; color: __CARD_INK__; border: none; border-radius: 24px; padding: 24px 26px 34px; gap: 20px; box-shadow: 0 -14px 44px rgba(0,0,0,0.30); }
+  .size-loyalty .ly-card { position: absolute; left: 40px; right: 40px; bottom: 14px; max-width: none; width: auto; margin: 0; background: __CARD_BG__; color: __CARD_INK__; border: none; border-radius: 24px; padding: 24px 26px 34px; gap: 20px; box-shadow: 0 -14px 44px rgba(0,0,0,0.30); }
   .size-loyalty .ly-card .dc-name { font-size: 22px; gap: 10px; }
   .size-loyalty .ly-card .dc-name svg { height: 22px !important; width: auto; }
   .size-loyalty .ly-card .dc-sl span { font-size: 10px; }
