@@ -1493,10 +1493,10 @@ export function MerchantDashboard({
                       <div className="space-y-2 w-full pt-2">
                         <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-1">Download as</div>
                         <div className="grid grid-cols-2 gap-1.5">
-                          <button onClick={() => handleDownloadPoster(loc, 'pamphlet')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Pamphlet (A5 landscape)">
+                          <button onClick={() => handleDownloadPoster(loc, 'loyalty')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Pamphlet (A5 landscape)">
                             Pamphlet · EN
                           </button>
-                          <button onClick={() => handleDownloadPoster(loc, 'pamphlet', 'de')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Flyer (A5, Deutsch)">
+                          <button onClick={() => handleDownloadPoster(loc, 'loyalty', 'de')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Flyer (A5, Deutsch)">
                             Pamphlet · DE
                           </button>
                         </div>

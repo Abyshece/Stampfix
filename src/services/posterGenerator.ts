@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import QRCode from 'react-qr-code';
 import type { Campaign, Location } from '../types';
 
-export type PosterSize = 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker' | 'selfscan';
+export type PosterSize = 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker' | 'selfscan' | 'loyalty';
 
 interface BuildPosterInput {
   campaign: Campaign;
@@ -41,6 +41,19 @@ interface BuildPosterInput {
  *     service (api.qrserver.com), which is free and reliable
  */
 const POSTER_DE: [string, string][] = [
+  ['<h1 class="ly-headline">Your Loyalty Card</h1>', '<h1 class="ly-headline">Deine Digitale Treuekarte</h1>'],
+  ['Scan or tap your phone to register and save the card to your wallet. Collect stamps with every order to fill your card and unlock your reward.', 'Registriere dich per Scan oder Handy-Auflegen und speichere die Karte im Wallet. Sammle bei jeder Bestellung Stempel, um deine Karte zu füllen und deine Belohnung freizuschalten.'],
+  ['>READY IN<', '>FERTIG IN<'],
+  ['>SECONDS<', '>SEKUNDEN<'],
+  ['<span>Scan</span>', '<span>Scannen</span>'],
+  ['<span>Tap &middot; NFC</span>', '<span>Auflegen &middot; NFC</span>'],
+  ['Scan the code to save your card to your wallet.', 'Scanne den Code, um deine Karte im Wallet zu speichern.'],
+  ['Tap your phone to save your card to your wallet.', 'Leg dein Handy auf, um deine Karte im Wallet zu speichern.'],
+  ['<span>Stamps left</span>', '<span>Stempel übrig</span>'],
+  ['<span>Member</span>', '<span>Mitglied</span>'],
+  ['<span>Reward</span>', '<span>Belohnung</span>'],
+  ['<b>Free reward</b>', '<b>Gratis-Belohnung</b>'],
+  ['<span>OR</span>', '<span>ODER</span>'],
   ['<h1 class="pm-headline">SCAN<br>&amp; SAVE</h1>', '<h1 class="pm-headline" style="font-size:62px;line-height:1.08;letter-spacing:-1.5px;text-transform:none;max-width:450px;margin-bottom:14px">Deine Digitale Treuekarte</h1>'],
   ['SCAN<br>&amp; SAVE', 'Deine Digitale Treuekarte'],
   ['Scan the QR code or tap your phone to get started — fill out the quick form and save your card to Apple or Google Wallet.', 'Scanne den QR-Code oder leg dein Handy auf, um zu starten &mdash; füll das kurze Formular aus und speichere deine Karte in Apple oder Google Wallet.'],
@@ -184,7 +197,8 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__INK_SOFT__',       inkSoft)
     .replaceAll('__VBRAND__',         vbrand)
     .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
-    .replaceAll('__PAGE__',           input.size === 'card' || input.size === 'selfscan' ? '85mm 55mm' : input.size === 'pamphlet' ? '297mm 210mm' : input.size === 'instagram' ? '210mm 210mm' : input.size === 'table' ? '45mm 45mm' : input.size === 'sticker' ? '210mm 297mm' : '210mm 297mm')
+    .replaceAll('__LOYALTY_STAMPS__', buildDummyStamps(6))
+    .replaceAll('__PAGE__',           input.size === 'card' || input.size === 'selfscan' ? '85mm 55mm' : input.size === 'pamphlet' ? '297mm 210mm' : input.size === 'instagram' ? '210mm 210mm' : input.size === 'table' ? '45mm 45mm' : input.size === 'sticker' ? '210mm 297mm' : input.size === 'loyalty' ? '148mm 210mm' : '210mm 297mm')
     .replaceAll('__SIZE__',           input.size);
   if (input.lang === 'de') {
     let out = __html;
@@ -499,6 +513,46 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   }
   .size-pamphlet .pm-powered strong { color: var(--ink); }
 
+  /* ===== A5 LOYALTY POSTER (palette-driven) ===== */
+  .size-loyalty {
+    width: 560px; height: 794px; background: __POSTER_BG__; color: var(--ink);
+    position: relative; overflow: hidden; margin: 30px auto; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+  .size-loyalty .ly-vbrand { position: absolute; left: 0; top: 0; bottom: 0; width: 42px; display: flex; align-items: center; justify-content: center; z-index: 5; }
+  .size-loyalty .ly-vbrand span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 13px; font-weight: 700; letter-spacing: 5px; text-transform: uppercase; white-space: nowrap; opacity: 0.5; }
+  .size-loyalty .ly-pb { position: absolute; top: 24px; left: 58px; display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; opacity: 0.72; z-index: 3; }
+  .size-loyalty .ly-pb svg { height: 11px; width: auto; }
+  .size-loyalty .ly-top { position: absolute; top: 42px; left: 58px; right: 30px; z-index: 2; }
+  .size-loyalty .ly-headline { font-size: 54px; font-weight: 800; line-height: 0.96; letter-spacing: -1.5px; margin: 0; }
+  .size-loyalty .ly-accent { width: 62px; height: 5px; border-radius: 3px; background: #FBBF24; margin: 15px 0 12px; }
+  .size-loyalty .ly-sub { font-size: 12.5px; font-weight: 500; line-height: 1.45; opacity: 0.9; margin: 0; }
+  .size-loyalty .ly-badge { position: absolute; top: 44px; right: 26px; width: 104px; height: 104px; z-index: 4; }
+  .size-loyalty .ly-badge svg { width: 104px; height: 104px; }
+  .size-loyalty .ly-scan { position: absolute; top: 250px; left: 42px; right: 32px; display: flex; align-items: center; justify-content: center; gap: 20px; z-index: 2; }
+  .size-loyalty .ly-opt { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+  .size-loyalty .ly-opt > span { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #FBBF24; }
+  .size-loyalty .ly-opt small { font-size: 10.5px; font-weight: 500; opacity: 0.85; line-height: 1.3; max-width: 150px; }
+  .size-loyalty .ly-qr { background: #fff; padding: 11px; border-radius: 13px; line-height: 0; }
+  .size-loyalty .ly-qr svg { width: 118px; height: 118px; display: block; }
+  .size-loyalty .ly-nfc { width: 108px; height: 108px; display: flex; align-items: center; justify-content: center; }
+  .size-loyalty .ly-nfc svg { width: 90px; height: 90px; }
+  .size-loyalty .ly-div { width: 2px; align-self: stretch; min-height: 120px; background: currentColor; opacity: 0.3; position: relative; }
+  .size-loyalty .ly-div span { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: __POSTER_BG__; padding: 5px 3px; font-size: 14px; font-weight: 800; opacity: 0.75; }
+  .size-loyalty .ly-wallet { position: absolute; top: 468px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 9px; font-size: 13px; font-weight: 600; z-index: 2; }
+  .size-loyalty .ly-wallet svg { height: 20px; width: auto; }
+  .size-loyalty .ly-wallet .wc-item { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
+  .size-loyalty .ly-wallet .wc-dot { opacity: 0.5; }
+  .size-loyalty .ly-card { position: absolute; left: 40px; right: 40px; bottom: -26px; max-width: none; width: auto; margin: 0; background: #FFFFFF; color: #1A1A1F; border: none; border-radius: 24px; padding: 24px 26px 34px; gap: 20px; box-shadow: 0 -14px 44px rgba(0,0,0,0.30); }
+  .size-loyalty .ly-card .dc-name { font-size: 22px; gap: 10px; color: #1A1A1F; }
+  .size-loyalty .ly-card .dc-name svg { height: 22px !important; width: auto; }
+  .size-loyalty .ly-card .dc-sl span { font-size: 10px; color: #8A8A90; }
+  .size-loyalty .ly-card .dc-sl b { font-size: 30px; color: #1A1A1F; }
+  .size-loyalty .ly-card .dc-stamps { gap: 16px; }
+  .size-loyalty .ly-card .dc-shape { width: 42px; height: 42px; color: #1A1A1F; }
+  .size-loyalty .ly-card .dc-shape.cx i { height: 8px; }
+  .size-loyalty .ly-card .dc-field span { font-size: 10px; color: #8A8A90; }
+  .size-loyalty .ly-card .dc-field b { font-size: 17px; color: #1A1A1F; }
+
   /* ============================
    *  A4 POSTER (210x297mm portrait)
    * ============================ */
@@ -759,6 +813,33 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   </div>
 
   <!-- ============= A5 PAMPHLET ============= -->
+  <div class="size-loyalty">
+    <div class="ly-vbrand"><span>__BUSINESS_NAME_RAW__</span></div>
+    <div class="ly-pb">Powered by __BRAND_MARK__ Stampfix</div>
+    <div class="ly-badge"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50.0,2.0 57.4,12.7 68.4,5.7 71.1,18.4 83.9,16.1 81.6,28.9 94.3,31.6 87.3,42.6 98.0,50.0 87.3,57.4 94.3,68.4 81.6,71.1 83.9,83.9 71.1,81.6 68.4,94.3 57.4,87.3 50.0,98.0 42.6,87.3 31.6,94.3 28.9,81.6 16.1,83.9 18.4,71.1 5.7,68.4 12.7,57.4 2.0,50.0 12.7,42.6 5.7,31.6 18.4,28.9 16.1,16.1 28.9,18.4 31.6,5.7 42.6,12.7" fill="#FBBF24"/><text x="50" y="38" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="800" fill="#1A1A1F">READY IN</text><text x="50" y="60" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="26" font-weight="800" fill="#1A1A1F">15</text><text x="50" y="76" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="800" fill="#1A1A1F">SECONDS</text></svg></div>
+    <div class="ly-top">
+      <h1 class="ly-headline">Your Loyalty Card</h1>
+      <div class="ly-accent"></div>
+      <p class="ly-sub">Scan or tap your phone to register and save the card to your wallet. Collect stamps with every order to fill your card and unlock your reward.</p>
+    </div>
+    <div class="ly-scan">
+      <div class="ly-opt"><div class="ly-qr">__QR_SVG__</div><span>Scan</span><small>Scan the code to save your card to your wallet.</small></div>
+      <div class="ly-div"><span>OR</span></div>
+      <div class="ly-opt"><div class="ly-nfc">__NFC_BIG__</div><span>Tap &middot; NFC</span><small>Tap your phone to save your card to your wallet.</small></div>
+    </div>
+    <div class="ly-wallet"><span class="wc-label">Works with</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#111"/><rect x="12" y="8" width="16" height="15" rx="2.5" fill="#54A0EE"/><rect x="10.5" y="11" width="19" height="15" rx="2.5" fill="#F3C24C"/><rect x="9" y="14" width="22" height="15" rx="2.5" fill="#F17A50"/><path d="M8 20h24a1.5 1.5 0 0 1 1.5 1.5V31A1.5 1.5 0 0 1 32 32.5H8A1.5 1.5 0 0 1 6.5 31v-9.5A1.5 1.5 0 0 1 8 20z" fill="#E9E5DD"/><path d="M15.5 20h9a1 1 0 0 1 1 1c0 2.4-2 3.6-5.5 3.6S14.5 23.4 14.5 21a1 1 0 0 1 1-1z" fill="#111"/></svg>Apple Wallet</span><span class="wc-dot">&middot;</span><span class="wc-item"><svg class="wc-ic" viewBox="0 0 44 40" xmlns="http://www.w3.org/2000/svg"><defs><clipPath id="gwclip2"><rect width="44" height="40" rx="9"/></clipPath></defs><g clip-path="url(#gwclip2)"><rect width="44" height="40" fill="#4285F4"/><rect width="44" height="13" fill="#34A853"/><rect y="8" width="44" height="13" fill="#FBBC04"/><rect y="16" width="44" height="14" fill="#EA4335"/><path d="M0 27c9-4 13-5 22-5s13 1 22 5v13H0z" fill="#4285F4"/></g></svg>Google Wallet</span></div>
+    <div class="dummy-card ly-card">
+      <div class="dc-top">
+        <div class="dc-name">__CARD_MARK__<span>__BUSINESS_NAME_RAW__</span></div>
+        <div class="dc-sl"><span>Stamps left</span><b>2</b></div>
+      </div>
+      <div class="dc-stamps">__DUMMY_STAMPS__</div>
+      <div class="dc-bottom">
+        <div class="dc-field"><span>Member</span><b>Laura</b></div>
+        <div class="dc-field dc-reward"><span>Reward</span><b>Free reward</b></div>
+      </div>
+    </div>
+  </div>
   <div class="size-pamphlet">
     <div class="pm-vbrand">
       <span>__VERTICAL_BRAND__</span>
@@ -865,10 +946,10 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   // the merchant print just the size they downloaded.
   (function() {
     var size = document.body.dataset.size || 'poster';
-    var validSizes = ['card', 'pamphlet', 'poster', 'instagram', 'table', 'sticker', 'selfscan'];
+    var validSizes = ['card', 'pamphlet', 'poster', 'instagram', 'table', 'sticker', 'selfscan', 'loyalty'];
     if (!validSizes.includes(size)) size = 'poster';
     var sel = '.size-' + size;
-    document.querySelectorAll('.size-card, .size-pamphlet, .size-poster, .size-instagram, .size-table, .size-sticker, .size-selfscan').forEach(function(el) {
+    document.querySelectorAll('.size-card, .size-pamphlet, .size-poster, .size-instagram, .size-table, .size-sticker, .size-selfscan, .size-loyalty').forEach(function(el) {
       if (!el.matches(sel)) el.style.display = 'none';
     });
     // Use the right @page rule on print so paper size matches.
@@ -879,6 +960,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
       : size === 'instagram' ? '210mm 210mm'
       : size === 'table' ? '45mm 45mm'
       : size === 'sticker' ? 'A4 portrait'
+      : size === 'loyalty' ? 'A5 portrait'
       : 'A4 portrait'
     ) + '; margin: 0; }';
     document.head.appendChild(style);
