@@ -8,6 +8,11 @@ function setMetaDescription(content: string) {
   if (!m) { m = document.createElement('meta'); m.setAttribute('name', 'description'); document.head.appendChild(m); }
   m.setAttribute('content', content);
 }
+function setCanonical(href: string) {
+  let l = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+  if (!l) { l = document.createElement('link'); l.setAttribute('rel', 'canonical'); document.head.appendChild(l); }
+  l.setAttribute('href', href);
+}
 function setArticleJsonLd(obj: Record<string, unknown>) {
   document.getElementById('blog-jsonld')?.remove();
   const s = document.createElement('script');
@@ -178,9 +183,11 @@ export function BlogPage() {
   useEffect(() => {
     if (!post) return;
     const prev = document.title;
+    const canonical = `https://stampfix.app/blog/${post.slug}`;
     document.title = `${post.title} \u2014 Stampfix`;
     setMetaDescription(post.excerpt);
-    setArticleJsonLd({ '@context': 'https://schema.org', '@type': 'Article', headline: post.title, description: post.excerpt, author: { '@type': 'Organization', name: 'Stampfix' }, publisher: { '@type': 'Organization', name: 'Stampfix' } });
+    setCanonical(canonical);
+    setArticleJsonLd({ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.title, description: post.excerpt, datePublished: post.date, dateModified: post.date, url: canonical, mainEntityOfPage: { '@type': 'WebPage', '@id': canonical }, author: { '@type': 'Organization', name: 'Stampfix', url: 'https://stampfix.app' }, publisher: { '@type': 'Organization', name: 'Stampfix', url: 'https://stampfix.app' } });
     return () => { document.title = prev; document.getElementById('blog-jsonld')?.remove(); };
   }, [post]);
   if (slug && !post && dbPosts === null) {

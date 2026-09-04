@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Trash2, Eye, Plus, Loader2 } from 'lucide-react';
 import {
-  listAllBlogPosts, upsertBlogPost, deleteBlogPost, generateBlogWithAI,
+  listAllBlogPosts, upsertBlogPost, deleteBlogPost,
   type BlogPostRow,
 } from '../lib/db';
 
@@ -13,30 +13,14 @@ const blank = { id: '', slug: '', title: '', excerpt: '', tag: 'Guide', read_min
 export function BlogAdmin() {
   const [posts, setPosts] = useState<BlogPostRow[]>([]);
   const [form, setForm] = useState<typeof blank>({ ...blank });
-  const [topic, setTopic] = useState('');
-  const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  const [limitReached, setLimitReached] = useState(false);
 
   const load = () => listAllBlogPosts().then(setPosts).catch((e) => setErr(e.message));
   useEffect(() => { load(); }, []);
 
   const set = (k: keyof typeof blank, v: string | number | boolean) => setForm((f) => ({ ...f, [k]: v }));
-
-  const generate = async () => {
-    if (!topic.trim()) return;
-    setGenerating(true); setErr(null); setMsg(null); setLimitReached(false);
-    try {
-      const res = await generateBlogWithAI(topic.trim());
-      if (res.limitReached) { setLimitReached(true); return; }
-      const p = res.post!;
-      setForm({ id: '', slug: p.slug || slugify(p.title), title: p.title, excerpt: p.excerpt, tag: p.tag || 'Guide', read_mins: p.readMins || 4, content: p.content, published: false });
-      setMsg('Draft generated — review and publish.');
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Generation failed'); }
-    finally { setGenerating(false); }
-  };
 
   const save = async (publish: boolean) => {
     if (!form.title.trim() || !form.content.trim()) { setErr('Title and content are required.'); return; }
@@ -68,26 +52,7 @@ export function BlogAdmin() {
     <div className="max-w-3xl space-y-8">
       <div>
         <h2 className="text-xl font-serif-display font-semibold text-[#37352F]">Blog</h2>
-        <p className="text-sm text-gray-500">Generate an SEO post with AI, review it, and publish to the website.</p>
-      </div>
-
-      {/* AI generator */}
-      <div className="rounded-xl border notion-border bg-white p-4 space-y-3">
-        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Generate with AI</label>
-        <div className="flex gap-2">
-          <input className={inp} value={topic} onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. How cafés can win back lapsed customers with loyalty" />
-          <button onClick={generate} disabled={generating || !topic.trim()}
-            className="flex-shrink-0 inline-flex items-center gap-1.5 bg-[#37352F] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition disabled:opacity-50">
-            {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {generating ? 'Writing…' : 'Generate'}
-          </button>
-        </div>
-        {limitReached && (
-          <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-sm text-red-700">
-            <strong>Daily AI limit reached.</strong> Gemini&rsquo;s free quota (1,500 requests/day on Flash) is used up. Try again later, or tomorrow if you hit the daily cap &mdash; or write the post manually below.
-          </div>
-        )}
+        <p className="text-sm text-gray-500">Write and publish SEO-optimised posts to the website.</p>
       </div>
 
       {/* Editor */}
