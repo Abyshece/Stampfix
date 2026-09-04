@@ -7,6 +7,7 @@ import { Loader2, Check, Link as LinkIcon } from 'lucide-react';
 // sync-wallet-object) which read the same keys from campaign.social_links.
 const LINK_FIELDS: { key: string; label: string; placeholder: string }[] = [
   { key: 'website',   label: 'Website',      placeholder: 'yourbusiness.com' },
+  { key: 'googleReview', label: 'Leave a review', placeholder: 'Your Google review link' },
   { key: 'order',     label: 'Order online', placeholder: 'order.yourbusiness.com' },
   { key: 'delivery',  label: 'Delivery',     placeholder: 'Lieferando / Uber Eats / DoorDash link' },
   { key: 'instagram', label: 'Instagram',    placeholder: 'instagram.com/yourbusiness' },
