@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { selfServeStamp } from '../lib/db';
+import { playScanSound } from '../lib/scanSounds';
 
 type Phase = 'locating' | 'stamping' | 'success' | 'need_identity' | 'ask_more' | 'pick_count' | 'ask_code' | 'error';
 
@@ -112,7 +113,7 @@ export function StampPage() {
       );
       if (r.ok) {
         setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 });
-        setPhase('success');
+        setPhase('success'); playScanSound('stamp');
       } else if (r.error === 'card_not_found' && !withIdentity) {
         setPhase('need_identity');
       } else if (r.error === 'cooldown') {
@@ -134,7 +135,7 @@ export function StampPage() {
     setSubmitting(true); setCodeError('');
     try {
       const r = await selfServeStamp(campaignId, locationId, coords.lat, coords.lng, email.trim() || undefined, multiCode.trim(), count);
-      if (r.ok || r.error === 'card_full') { setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 }); setPhase('success'); }
+      if (r.ok || r.error === 'card_full') { setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 }); setPhase('success'); playScanSound(r.error === 'card_full' ? 'last' : 'stamp'); }
       else if (r.error === 'bad_code') { setCodeError("That code isn't right \u2014 ask the cashier again."); }
       else if (r.error === 'no_code_set') { setCodeError("This shop hasn't set a code yet."); }
       else { setErrKey(r.error ?? 'network'); setErrExtra(''); setPhase('error'); }
