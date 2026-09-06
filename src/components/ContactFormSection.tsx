@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Mail, Loader2, Check } from 'lucide-react';
 import { submitContactMessage } from '../services/admin';
+import { useTranslation } from 'react-i18next';
 
 type Inquiry = 'merchant_inquiry' | 'customer_inquiry' | 'partnership' | 'other';
 
@@ -22,6 +23,7 @@ const CARD_LINEAR = 'linear-gradient(90deg, #75FBFD, #1132F5, #510AF5, #EA33B6, 
  * through verify-turnstile (the function and flow already exist).
  */
 export function ContactFormSection() {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [businessName, setBusinessName] = useState('');
@@ -46,7 +48,7 @@ export function ContactFormSection() {
       });
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send. Please try again.');
+      setError(err instanceof Error ? err.message : t('contact.error', { defaultValue: 'Could not send. Please try again.' }));
     } finally {
       setSending(false);
     }
@@ -60,9 +62,9 @@ export function ContactFormSection() {
           <div className="w-12 h-12 bg-green-100 rounded-full mx-auto flex items-center justify-center">
             <Check className="w-6 h-6 text-green-600" strokeWidth={3} />
           </div>
-          <h2 className="text-2xl font-serif-display font-semibold">Got it — thanks!</h2>
+          <h2 className="text-2xl font-serif-display font-semibold">{t('contact.sentTitle', { defaultValue: 'Got it — thanks!' })}</h2>
           <p className="text-sm text-gray-500">
-            We'll get back to you at <strong className="text-[#37352F]">{email}</strong> within 1-2 business days.
+            {t('contact.sentA', { defaultValue: "We'll get back to you at" })} <strong className="text-[#37352F]">{email}</strong> {t('contact.sentB', { defaultValue: 'within 1-2 business days.' })}
           </p>
         </div>
       </section>
@@ -74,38 +76,38 @@ export function ContactFormSection() {
       <div className="pointer-events-none absolute inset-0 opacity-40 blur-3xl" style={{ background: CARD_WASH }} />
       <div className="relative max-w-3xl mx-auto">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Get in touch</h2>
+          <h2 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">{t('contact.title', { defaultValue: 'Get in touch' })}</h2>
           <p className="text-sm text-gray-500 max-w-md mx-auto">
-            Questions about getting started, partnerships, or something else? Drop us a line and we'll reply within 1-2 business days.
+            {t('contact.sub', { defaultValue: "Questions about getting started, partnerships, or something else? Drop us a line and we'll reply within 1-2 business days." })}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="relative bg-white text-[#37352F] rounded-xl p-6 md:p-8 space-y-4 shadow-2xl border notion-border overflow-hidden">
           <div className="h-1.5 -mx-6 md:-mx-8 -mt-6 md:-mt-8 mb-2" style={{ background: CARD_LINEAR }} />
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Your name" required>
+            <Field label={t('contact.name', { defaultValue: 'Your name' })} required>
               <input
                 type="text" value={name} onChange={(e) => setName(e.target.value)}
-                placeholder="Jane Smith"
+                placeholder={t('contact.phName', { defaultValue: 'Jane Smith' })}
                 className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
               />
             </Field>
-            <Field label="Email" required>
+            <Field label={t('contact.email', { defaultValue: 'Email' })} required>
               <input
                 type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t('contact.phEmail', { defaultValue: 'you@example.com' })}
                 className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
               />
             </Field>
           </div>
 
-          <Field label="I'm interested in" required>
+          <Field label={t('contact.interest', { defaultValue: "I'm interested in" })} required>
             <div className="grid grid-cols-2 gap-2">
               {[
-                ['merchant_inquiry', 'Becoming a merchant'],
-                ['customer_inquiry', 'A customer question'],
-                ['partnership', 'Partnership'],
-                ['other', 'Something else'],
+                ['merchant_inquiry', t('contact.optMerchant', { defaultValue: 'Becoming a merchant' })],
+                ['customer_inquiry', t('contact.optCustomer', { defaultValue: 'A customer question' })],
+                ['partnership', t('contact.optPartnership', { defaultValue: 'Partnership' })],
+                ['other', t('contact.optOther', { defaultValue: 'Something else' })],
               ].map(([val, label]) => (
                 <button
                   key={val} type="button"
@@ -123,19 +125,19 @@ export function ContactFormSection() {
           </Field>
 
           {inquiry === 'merchant_inquiry' && (
-            <Field label="Business name (optional)">
+            <Field label={t('contact.businessName', { defaultValue: 'Business name (optional)' })}>
               <input
                 type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="Your shop, salon, restaurant, etc."
+                placeholder={t('contact.phBusiness', { defaultValue: 'Your shop, salon, restaurant, etc.' })}
                 className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20"
               />
             </Field>
           )}
 
-          <Field label="Message" required>
+          <Field label={t('contact.message', { defaultValue: 'Message' })} required>
             <textarea
               value={message} onChange={(e) => setMessage(e.target.value)}
-              rows={4} placeholder="Tell us a bit about what you're looking for..."
+              rows={4} placeholder={t('contact.phMessage', { defaultValue: "Tell us a bit about what you're looking for..." })}
               className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/20 resize-none"
             />
           </Field>
@@ -149,7 +151,7 @@ export function ContactFormSection() {
             disabled={!name || !email || !message || sending}
             className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-4 h-4" /> Send message</>}
+            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Mail className="w-4 h-4" /> {t('contact.send', { defaultValue: 'Send message' })}</>}
           </button>
         </form>
       </div>
