@@ -3,11 +3,12 @@ import { LanguageSwitcher } from '../LanguageSwitcher';
 import { ArrowRight, Instagram, Linkedin } from 'lucide-react';
 import { Logo } from '../Logo';
 import { MobileNav } from '../MobileNav';
+import { useTranslation } from 'react-i18next';
 
 const NAV_LINKS = [
-  { href: '/features', label: 'Features' },
-  { href: '/pricing', label: 'Pricing' },
-  { href: '/about', label: 'About' },
+  { href: '/features', label: 'Features', tkey: 'nav.features' },
+  { href: '/pricing', label: 'Pricing', tkey: 'nav.pricing' },
+  { href: '/about', label: 'About', tkey: 'nav.about' },
 ];
 
 /** Primary charcoal CTA used across marketing pages. Links home, where signup lives. */
@@ -63,6 +64,7 @@ export function Eyebrow({ children }: { children: ReactNode }) {
  * one site, not bolt-ons.
  */
 export function MarketingLayout({ children, active }: { children: ReactNode; active?: string }) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-white text-[#37352F] font-sans selection:bg-[#37352F] selection:text-white">
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border">
@@ -78,21 +80,21 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
                 href={l.href}
                 className={`transition ${active === l.href ? 'text-[#37352F] font-medium' : 'text-gray-500 hover:text-[#37352F]'}`}
               >
-                {l.label}
+                {t(l.tkey, { defaultValue: l.label })}
               </a>
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <a href="/?login=1" className="text-gray-600 hover:text-[#37352F] px-2 py-2 text-sm transition whitespace-nowrap hidden sm:inline">Log in</a>
-            <StartButton className="px-4 py-2 text-sm" />
+            <a href="/?login=1" className="text-gray-600 hover:text-[#37352F] px-2 py-2 text-sm transition whitespace-nowrap hidden sm:inline">{t('nav.login', { defaultValue: 'Log in' })}</a>
+            <StartButton label={t('nav.startFree', { defaultValue: 'Start for free' })} className="px-4 py-2 text-sm" />
             <LanguageSwitcher className="hidden sm:block" />
             <MobileNav
               links={[
-                { href: '/find-card', label: 'My loyalty card' },
-                { href: '/features', label: 'Features' },
-                { href: '/pricing', label: 'Pricing' },
-                { href: '/about', label: 'About' },
-                { href: '/?login=1', label: 'Log in' },
+                { href: '/find-card', label: t('nav.myCard', { defaultValue: 'My loyalty card' }) },
+                { href: '/features', label: t('nav.features', { defaultValue: 'Features' }) },
+                { href: '/pricing', label: t('nav.pricing', { defaultValue: 'Pricing' }) },
+                { href: '/about', label: t('nav.about', { defaultValue: 'About' }) },
+                { href: '/?login=1', label: t('nav.login', { defaultValue: 'Log in' }) },
               ]}
             />
           </div>
