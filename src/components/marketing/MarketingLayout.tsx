@@ -111,42 +111,42 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
               <span className="font-semibold">Stampfix</span>
             </div>
             <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
-              No apps to download. No paper to lose. Just loyalty — living right next to their Apple&nbsp;Pay and Google&nbsp;Pay.
+              {t('footer.tagline', { defaultValue: 'No apps to download. No paper to lose. Just loyalty — living right next to their Apple\u00a0Pay and Google\u00a0Pay.' })}
             </p>
           </div>
-          <FooterCol title="Product" links={[
-            { href: '/features', label: 'Features' },
-            { href: '/pricing', label: 'Pricing' },
-            { href: '/use-cases', label: 'Use cases' },
-            { href: '/savings', label: 'Payback' },
-            { href: '/wallet-guide', label: 'Apple Wallet guide' },
+          <FooterCol title={t('footer.product', { defaultValue: 'Product' })} links={[
+            { href: '/features', label: t('nav.features', { defaultValue: 'Features' }) },
+            { href: '/pricing', label: t('nav.pricing', { defaultValue: 'Pricing' }) },
+            { href: '/use-cases', label: t('footer.useCases', { defaultValue: 'Use cases' }) },
+            { href: '/savings', label: t('footer.payback', { defaultValue: 'Payback' }) },
+            { href: '/wallet-guide', label: t('footer.walletGuide', { defaultValue: 'Apple Wallet guide' }) },
           ]} />
-          <FooterCol title="Support" links={[
-            { href: '/faq', label: 'FAQ' },
-            { href: '/find-card', label: 'Find my card' },
-            { href: 'mailto:hello@stampfix.app', label: 'Contact us' },
+          <FooterCol title={t('footer.support', { defaultValue: 'Support' })} links={[
+            { href: '/faq', label: t('footer.faq', { defaultValue: 'FAQ' }) },
+            { href: '/find-card', label: t('footer.findCard', { defaultValue: 'Find my card' }) },
+            { href: 'mailto:hello@stampfix.app', label: t('footer.contactUs', { defaultValue: 'Contact us' }) },
           ]} />
-          <FooterCol title="Company" links={[
-            { href: '/about', label: 'About' },
-            { href: '/blog', label: 'Blog' },
+          <FooterCol title={t('footer.company', { defaultValue: 'Company' })} links={[
+            { href: '/about', label: t('nav.about', { defaultValue: 'About' }) },
+            { href: '/blog', label: t('footer.blog', { defaultValue: 'Blog' }) },
           ]} />
-          <FooterCol title="Legal" links={[
-            { href: '/privacy', label: 'Privacy' },
-            { href: '/cardholder-privacy', label: 'Cardholder Privacy' },
-            { href: '/terms', label: 'Terms' },
-            { href: '/dpa', label: 'DPA' },
-            { href: '/impressum', label: 'Impressum' },
-            { href: '/cookies', label: 'Cookies' },
-            { href: '/accessibility', label: 'Accessibility' },
+          <FooterCol title={t('footer.legal', { defaultValue: 'Legal' })} links={[
+            { href: '/privacy', label: t('footer.privacy', { defaultValue: 'Privacy' }) },
+            { href: '/cardholder-privacy', label: t('footer.cardholderPrivacy', { defaultValue: 'Cardholder Privacy' }) },
+            { href: '/terms', label: t('footer.terms', { defaultValue: 'Terms' }) },
+            { href: '/dpa', label: t('footer.dpa', { defaultValue: 'DPA' }) },
+            { href: '/impressum', label: t('footer.impressum', { defaultValue: 'Impressum' }) },
+            { href: '/cookies', label: t('footer.cookies', { defaultValue: 'Cookies' }) },
+            { href: '/accessibility', label: t('footer.accessibility', { defaultValue: 'Accessibility' }) },
           ]} />
         </div>
         <div className="max-w-6xl mx-auto px-6 py-6 border-t notion-border text-sm text-gray-400 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span>&copy; 2026 Stampfix</span>
+          <span>{t('footer.rights', { defaultValue: '© 2026 Stampfix' })}</span>
           <div className="flex items-center gap-4">
             <a href="https://www.instagram.com/stampfix.app/" target="_blank" rel="noopener" aria-label="Instagram" className="hover:text-[#37352F] transition"><Instagram className="w-5 h-5" /></a>
             <a href="https://www.linkedin.com/company/feemoji-app/" target="_blank" rel="noopener" aria-label="LinkedIn" className="hover:text-[#37352F] transition"><Linkedin className="w-5 h-5" /></a>
           </div>
-          <span>Keep them coming back, friction-free.</span>
+          <span>{t('footer.tagline2', { defaultValue: 'Keep them coming back, friction-free.' })}</span>
         </div>
       </footer>
     </div>

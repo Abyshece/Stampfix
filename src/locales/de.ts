@@ -148,5 +148,16 @@ const de = {
     r2k: 'Speichern', r2v: 'Sie tippt auf „In Apple Wallet speichern". Die Karte ist jetzt auf ihrem Handy, neben ihren Bordkarten und Bankkarten.',
     r3k: 'Zurückkehren', r3v: 'Nächste Woche geht sie vorbei. Ihr Handy vibriert: Sie hat eine Stempelkarte bei Ihnen. Sie kommt herein, doppelklickt, um die Karte aufzurufen, bekommt Stempel zwei und geht lächelnd.',
   },
+  footer: {
+    everyBusiness: 'Treue für jede Art von Geschäft',
+    tagline: 'Keine Apps zum Herunterladen. Kein Papier zum Verlieren. Nur Treue – direkt neben Apple\u00a0Pay und Google\u00a0Pay.',
+    product: 'Produkt', support: 'Support', company: 'Unternehmen', legal: 'Rechtliches',
+    useCases: 'Anwendungsfälle', payback: 'Amortisation', walletGuide: 'Apple Wallet Anleitung',
+    faq: 'FAQ', findCard: 'Karte finden', contactUs: 'Kontakt', blog: 'Blog',
+    privacy: 'Datenschutz', cardholderPrivacy: 'Datenschutz für Karteninhaber', terms: 'AGB', dpa: 'AVV', impressum: 'Impressum', cookies: 'Cookies', accessibility: 'Barrierefreiheit',
+    cookieSettings: 'Cookie-Einstellungen',
+    rights: '© 2026 Stampfix',
+    tagline2: 'Damit sie reibungslos wiederkommen.',
+  },
 };
 export default de;
