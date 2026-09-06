@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './MarketingLayout';
 import { Wallet, BellRing, BarChart3, ShieldCheck, Smartphone, RefreshCw, ChevronDown } from 'lucide-react';
 import { BENEFITS } from './PricingPage';
+import { useTranslation } from 'react-i18next';
 
 /** Fire once when the element scrolls into view. */
 function useInView<T extends HTMLElement>(threshold = 0.2) {
@@ -102,23 +103,24 @@ function FeatureBox({ f, i }: { f: (typeof FEATURES)[number]; i: number }) {
 }
 
 export function FeaturesPage() {
+  const { t } = useTranslation();
   return (
     <MarketingLayout active="/features">
       <section className="max-w-3xl mx-auto px-6 pt-20 pb-10 text-center">
-        <Eyebrow>Features</Eyebrow>
+        <Eyebrow>{t('features.eyebrow', { defaultValue: 'Features' })}</Eyebrow>
         <h1 className="text-4xl md:text-6xl font-serif-display font-medium mt-6 mb-5 leading-[1.1] tracking-tight">
-          The loyalty program your customers will actually use.
+          {t('features.h1', { defaultValue: 'The loyalty program your customers will actually use.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          Enterprise-grade retention on a local-business budget — your brand, right next to their Apple&nbsp;Pay.
+          {t('features.sub', { defaultValue: 'Enterprise-grade retention on a local-business budget — your brand, right next to their Apple\u00a0Pay.' })}
         </p>
       </section>
 
       {/* How it works 1-2-3 */}
       <section className="max-w-5xl mx-auto px-6 py-12">
-        <h2 className="text-center text-2xl font-serif-display font-semibold mb-10">How it works</h2>
+        <h2 className="text-center text-2xl font-serif-display font-semibold mb-10">{t('features.how', { defaultValue: 'How it works' })}</h2>
         <div className="grid md:grid-cols-3 gap-5">
-          {STEPS.map((s, i) => <StepBox key={s.n} s={s} i={i} />)}
+          {STEPS.map((s, i) => <StepBox key={s.n} s={{ ...s, title: t(`features.steps.${i}.title`, { defaultValue: s.title }), body: t(`features.steps.${i}.body`, { defaultValue: s.body }) }} i={i} />)}
         </div>
       </section>
 
@@ -128,11 +130,9 @@ export function FeaturesPage() {
           className="border notion-border rounded-3xl p-8 md:p-10"
           style={{ background: 'linear-gradient(135deg, #ECFEFF 0%, #F5F3FF 45%, #FFF7ED 100%)' }}
         >
-          <h2 className="text-2xl font-serif-display font-semibold mb-3">The secret weapon: native wallets</h2>
+          <h2 className="text-2xl font-serif-display font-semibold mb-3">{t('features.walletH2', { defaultValue: 'The secret weapon: native wallets' })}</h2>
           <p className="text-gray-600 leading-relaxed">
-            This is where Stampfix goes from a cool web tool to a retention strategy. The moment a customer saves
-            your card to Apple Wallet or Google Wallet, your brand lives on their phone forever — front and center,
-            impossible to lose, and quietly reminding them to come back.
+            {t('features.walletBody', { defaultValue: 'This is where Stampfix goes from a cool web tool to a retention strategy. The moment a customer saves your card to Apple Wallet or Google Wallet, your brand lives on their phone forever — front and center, impossible to lose, and quietly reminding them to come back.' })}
           </p>
         </div>
       </section>
@@ -140,17 +140,17 @@ export function FeaturesPage() {
       {/* Every feature, explained (accordion) */}
       <section className="max-w-5xl mx-auto px-6 py-12">
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-serif-display font-medium tracking-tight text-balance">Everything you get</h2>
-          <p className="text-gray-500 mt-3 max-w-xl mx-auto">Tap any feature to see how it helps your shop.</p>
+          <h2 className="text-3xl md:text-4xl font-serif-display font-medium tracking-tight text-balance">{t('features.everyH2', { defaultValue: 'Everything you get' })}</h2>
+          <p className="text-gray-500 mt-3 max-w-xl mx-auto">{t('features.everySub', { defaultValue: 'Tap any feature to see how it helps your shop.' })}</p>
         </div>
-        <FeatureAccordion items={BENEFITS} />
+        <FeatureAccordion items={BENEFITS.map((b, i) => ({ ...b, title: t(`ben.b${i}.title`, { defaultValue: b.title }), body: t(`ben.b${i}.body`, { defaultValue: b.body }) }))} />
       </section>
 
       {/* We handle the tech — animated rainbow gradient border */}
       <GradientBanner
-        title="We handle the tech. You handle the counter."
-        subtitle="Premium customer retention, minimal monthly cost. No setup fees, no app development."
-        buttonLabel="Start your free trial"
+        title={t('features.bannerTitle', { defaultValue: 'We handle the tech. You handle the counter.' })}
+        subtitle={t('features.bannerSub', { defaultValue: 'Premium customer retention, minimal monthly cost. No setup fees, no app development.' })}
+        buttonLabel={t('features.bannerCta', { defaultValue: 'Start your free trial' })}
       />
     </MarketingLayout>
   );

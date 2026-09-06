@@ -4,6 +4,7 @@ import {
   FileDown, Gauge, Link2, MapPin, BellRing, ShieldCheck, Printer, LifeBuoy, Sparkles, TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { proMonthly, type MerchantCountry } from '../../lib/pricing';
 
 const FREE = [
@@ -56,15 +57,16 @@ export const BENEFITS = [
 export function PricingPage() {
   const [country, setCountry] = useState<MerchantCountry>('CA');
   const { amount, symbol } = proMonthly(country);
+  const { t } = useTranslation();
   return (
     <MarketingLayout active="/pricing">
       <section className="max-w-3xl mx-auto px-6 pt-20 pb-8 text-center">
-        <Eyebrow>Pricing</Eyebrow>
+        <Eyebrow>{t('pricing.eyebrow', { defaultValue: 'Pricing' })}</Eyebrow>
         <h1 className="text-4xl md:text-6xl font-serif-display font-medium mt-6 mb-5 leading-[1.1] tracking-tight">
-          Start free. Upgrade when it pays for itself.
+          {t('pricing.h1', { defaultValue: 'Start free. Upgrade when it pays for itself.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          One simple plan when you’re ready — no per-customer fees, no contracts, cancel anytime.
+          {t('pricing.sub', { defaultValue: 'One simple plan when you’re ready — no per-customer fees, no contracts, cancel anytime.' })}
         </p>
       </section>
 
@@ -78,7 +80,7 @@ export function PricingPage() {
                 onClick={() => setCountry(c)}
                 className={`px-4 py-1.5 rounded-md transition ${country === c ? 'bg-[#37352F] text-white font-medium' : 'text-gray-600 hover:text-[#37352F]'}`}
               >
-                {c === 'CA' ? 'CA$ · Canada' : '€ · Germany'}
+                {c === 'CA' ? t('pricing.planCA', { defaultValue: 'CA$ · Canada' }) : t('pricing.planDE', { defaultValue: '€ · Germany' })}
               </button>
             ))}
           </div>
@@ -86,55 +88,55 @@ export function PricingPage() {
         <div className="grid md:grid-cols-2 gap-6 items-stretch">
           {/* Free */}
           <div className="border notion-border rounded-2xl p-8 flex flex-col bg-white">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Free</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('pricing.freeName', { defaultValue: 'Free' })}</div>
             <div className="mt-3 flex items-baseline gap-1">
               <span className="text-5xl font-serif-display font-semibold">{symbol}0</span>
-              <span className="text-gray-500 text-sm">/month</span>
+              <span className="text-gray-500 text-sm">{t('pricing.month', { defaultValue: '/month' })}</span>
             </div>
-            <p className="text-gray-500 mt-2 text-sm">Everything you need to launch a loyalty card and start stamping.</p>
+            <p className="text-gray-500 mt-2 text-sm">{t('pricing.freeDesc', { defaultValue: 'Everything you need to launch a loyalty card and start stamping.' })}</p>
             <ul className="mt-6 space-y-3 flex-1">
-              {FREE.map((f) => (
+              {FREE.map((f, i) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#37352F]">
                   <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" strokeWidth={3} />
-                  <span>{f}</span>
+                  <span>{t(`pricing.free.${i}`, { defaultValue: f })}</span>
                 </li>
               ))}
             </ul>
-            <StartButton label="Start for free" className="mt-8 w-full py-3" />
+            <StartButton label={t('pricing.startFree', { defaultValue: 'Start for free' })} className="mt-8 w-full py-3" />
           </div>
 
           {/* Pro */}
           <div className="relative border-2 border-[#37352F] rounded-2xl p-8 flex flex-col bg-white shadow-lg">
-            <span className="absolute -top-3 left-8 bg-[#37352F] text-white text-[11px] font-semibold px-3 py-1 rounded-full uppercase tracking-wide">Most popular</span>
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pro</div>
+            <span className="absolute -top-3 left-8 bg-[#37352F] text-white text-[11px] font-semibold px-3 py-1 rounded-full uppercase tracking-wide">{t('pricing.popular', { defaultValue: 'Most popular' })}</span>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('pricing.proName', { defaultValue: 'Pro' })}</div>
             <div className="mt-3 flex items-baseline gap-1">
               <span className="text-5xl font-serif-display font-semibold">{symbol}{amount}</span>
-              <span className="text-gray-500 text-sm">/month</span>
+              <span className="text-gray-500 text-sm">{t('pricing.month', { defaultValue: '/month' })}</span>
             </div>
-            <p className="text-gray-500 mt-2 text-sm">Everything in Free, plus the full toolkit.{country === 'DE' ? ' Prices include VAT.' : ''}</p>
+            <p className="text-gray-500 mt-2 text-sm">{t('pricing.proDesc', { defaultValue: 'Everything in Free, plus the full toolkit.' })}{country === 'DE' ? t('pricing.proVat', { defaultValue: ' Prices include VAT.' }) : ''}</p>
             <ul className="mt-6 space-y-3 flex-1">
-              {PRO.map((f) => (
+              {PRO.map((f, i) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#37352F]">
                   <Check className="w-4 h-4 text-[#37352F] flex-shrink-0 mt-0.5" strokeWidth={3} />
-                  <span>{f}</span>
+                  <span>{t(`pricing.pro.${i}`, { defaultValue: f })}</span>
                 </li>
               ))}
             </ul>
-            <StartButton label="Start free, upgrade anytime" className="mt-8 w-full py-3" />
+            <StartButton label={t('pricing.proCta', { defaultValue: 'Start free, upgrade anytime' })} className="mt-8 w-full py-3" />
           </div>
         </div>
         <p className="text-center text-xs text-gray-400 mt-5">
-          No card details needed to start. You only upgrade once Stampfix is already working for you.
+          {t('pricing.noCard', { defaultValue: 'No card details needed to start. You only upgrade once Stampfix is already working for you.' })}
         </p>
       </section>
 
       {/* Enterprise */}
       <section className="max-w-4xl mx-auto px-6 pb-4">
         <div className="rounded-xl border notion-border bg-[#F7F7F5] p-8 text-center">
-          <span className="text-xs uppercase tracking-widest font-bold text-gray-400">Enterprise</span>
-          <h2 className="text-2xl md:text-3xl font-serif-display font-semibold mt-2 mb-3">Running a larger chain or franchise?</h2>
+          <span className="text-xs uppercase tracking-widest font-bold text-gray-400">{t('pricing.entEyebrow', { defaultValue: 'Enterprise' })}</span>
+          <h2 className="text-2xl md:text-3xl font-serif-display font-semibold mt-2 mb-3">{t('pricing.entH2', { defaultValue: 'Running a larger chain or franchise?' })}</h2>
           <p className="text-gray-500 max-w-xl mx-auto mb-6">
-            For bigger businesses with many locations and custom needs, we&apos;ll tailor Stampfix to your rollout and pricing. Book a quick demo and we&apos;ll walk you through it.
+            {t('pricing.entBody', { defaultValue: 'For bigger businesses with many locations and custom needs, we’ll tailor Stampfix to your rollout and pricing. Book a quick demo and we’ll walk you through it.' })}
           </p>
           <a
             href="https://calendar.app.google/WCPgkaPjeoUbkQJq7"
@@ -142,21 +144,21 @@ export function PricingPage() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-[#37352F] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#2F2D28] transition"
           >
-            Contact for demo
+            {t('pricing.entCta', { defaultValue: 'Contact for demo' })}
           </a>
-          <p className="text-xs text-gray-400 mt-3">Just 10–12 minutes over Google Meet.</p>
+          <p className="text-xs text-gray-400 mt-3">{t('pricing.entNote', { defaultValue: 'Just 10–12 minutes over Google Meet.' })}</p>
         </div>
       </section>
 
       {/* 18 benefits explained */}
       <section className="max-w-6xl mx-auto px-6 py-14">
         <div className="text-center mb-10 md:mb-14">
-          <span className="text-xs uppercase tracking-widest font-bold text-gray-400">What Pro gives you</span>
+          <span className="text-xs uppercase tracking-widest font-bold text-gray-400">{t('pricing.benEyebrow', { defaultValue: 'What Pro gives you' })}</span>
           <h2 className="text-3xl md:text-4xl font-serif-display font-semibold mt-2 mb-4">
-            Every feature, and what it does for your business
+            {t('pricing.benH2', { defaultValue: 'Every feature, and what it does for your business' })}
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            Pro isn’t a longer feature list for its own sake — each of these is built to bring customers back and take work off your plate.
+            {t('pricing.benSub', { defaultValue: 'Pro isn’t a longer feature list for its own sake — each of these is built to bring customers back and take work off your plate.' })}
           </p>
         </div>
 
@@ -166,17 +168,17 @@ export function PricingPage() {
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm" style={{ background: b.c, color: b.fg }}>
                 <b.icon className={`w-6 h-6 ${b.anim}`} strokeWidth={2.2} style={{ animationDelay: `${(i % 6) * 0.15}s` }} />
               </div>
-              <h3 className="font-semibold text-[#37352F] leading-snug">{b.title}</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">{b.body}</p>
+              <h3 className="font-semibold text-[#37352F] leading-snug">{t(`ben.b${i}.title`, { defaultValue: b.title })}</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">{t(`ben.b${i}.body`, { defaultValue: b.body })}</p>
             </div>
           ))}
         </div>
       </section>
 
       <GradientBanner
-        title="Try it free. See the repeat visits."
-        subtitle="Set up your first loyalty card in minutes — no card details, no commitment."
-        buttonLabel="Start for free"
+        title={t('pricing.bannerTitle', { defaultValue: 'Try it free. See the repeat visits.' })}
+        subtitle={t('pricing.bannerSub', { defaultValue: 'Set up your first loyalty card in minutes — no card details, no commitment.' })}
+        buttonLabel={t('pricing.bannerCta', { defaultValue: 'Start for free' })}
       />
 
       <style>{`
