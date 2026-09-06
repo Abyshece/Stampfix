@@ -10,6 +10,7 @@ import { useAuth } from '../lib/auth';
 import { NotificationBell } from './NotificationBell';
 import { SupportModal } from './SupportModal';
 import { markApprovalBannerSeen, getCardById, logMerchantActivity } from '../lib/db';
+import { useTranslation } from 'react-i18next';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
 import { ScanCelebration } from './ScanCelebration';
@@ -127,6 +128,7 @@ export function MerchantDashboard({
   onStampCard, onResetCard, onRedeemToken, onUpdateCampaign,
   onAddCustomer, onDeleteCustomer, onBlockCustomer, onMarkOnboardingStep, onLogout,
 }: MerchantDashboardProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>(
     () => pathToTab(window.location.pathname) || (sessionStorage.getItem('sf_active_tab') as Tab) || 'DASHBOARD',
   );
@@ -747,18 +749,18 @@ export function MerchantDashboard({
         </div>
         <div className="flex-1 overflow-y-auto py-2">
           <div className="px-3 mb-2">
-            <div className="text-xs font-semibold text-gray-400 mb-1 px-2">Workspace</div>
+            <div className="text-xs font-semibold text-gray-400 mb-1 px-2">{t('dash.nav.workspace', { defaultValue: 'Workspace' })}</div>
             {([
-              ['DASHBOARD', ScanLine, 'Scanner'],
-              ['CUSTOMERS', Users, 'Customers'],
-              ['ACTIVITY', History, 'Activity'],
-              ['ANALYTICS', BarChart3, 'Insights'],
-              ['VALUE', TrendingUp, 'Payback'],
-              ['STAFF', Users, 'Staff'],
-              ['PREVIEW', Eye, 'Preview Card'],
-              ['SHARE', Share, 'Share & Promote'],
-              ['SETTINGS', Settings, 'Settings'],
-              ['HELP', LifeBuoy, 'Get help'],
+              ['DASHBOARD', ScanLine, t('dash.nav.scanner', { defaultValue: 'Scanner' })],
+              ['CUSTOMERS', Users, t('dash.nav.customers', { defaultValue: 'Customers' })],
+              ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
+              ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
+              ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Payback' })],
+              ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
+              ['PREVIEW', Eye, t('dash.nav.previewCard', { defaultValue: 'Preview Card' })],
+              ['SHARE', Share, t('dash.nav.sharePromote', { defaultValue: 'Share & Promote' })],
+              ['SETTINGS', Settings, t('dash.nav.settings', { defaultValue: 'Settings' })],
+              ['HELP', LifeBuoy, t('dash.nav.getHelp', { defaultValue: 'Get help' })],
             ] as const).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
               <button key={id} onClick={() => handleTabChange(id)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition ${
@@ -776,7 +778,7 @@ export function MerchantDashboard({
                 onClick={() => { window.location.href = '/admin'; }}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition hover:bg-[#EFEFEE] text-gray-600"
               >
-                <Shield className="w-4 h-4" /> Admin
+                <Shield className="w-4 h-4" /> {t('dash.nav.admin', { defaultValue: 'Admin' })}
               </button>
             )}
           </div>
@@ -795,13 +797,13 @@ export function MerchantDashboard({
                 <div className="w-6 h-6 rounded-full bg-amber-400/20 flex items-center justify-center flex-shrink-0">
                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 </div>
-                <span className="text-sm font-semibold">Upgrade to Pro</span>
+                <span className="text-sm font-semibold">{t('dash.nav.upgradeTitle', { defaultValue: 'Upgrade to Pro' })}</span>
               </div>
               <p className="text-[11px] text-gray-300 leading-snug">
-                Unlock unlimited customers and unlock more.
+                {t('dash.nav.upgradeBody', { defaultValue: 'Unlock unlimited customers and unlock more.' })}
               </p>
               <div className="mt-2 text-[10px] font-medium text-amber-300 group-hover:text-amber-200 inline-flex items-center gap-0.5">
-                See plans <ArrowRight className="w-3 h-3" />
+                {t('dash.nav.seePlans', { defaultValue: 'See plans' })} <ArrowRight className="w-3 h-3" />
               </div>
             </button>
           </div>
@@ -809,7 +811,7 @@ export function MerchantDashboard({
 
         <div className="p-3 border-t notion-border">
           <button onClick={onLogout} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-red-50 text-gray-600 hover:text-red-600">
-            <LogOut className="w-4 h-4" /> Log out
+            <LogOut className="w-4 h-4" /> {t('dash.nav.logout', { defaultValue: 'Log out' })}
           </button>
         </div>
       </aside>
@@ -827,7 +829,7 @@ export function MerchantDashboard({
         <div className="hidden md:flex items-center text-sm text-gray-400 mb-6 gap-2">
           <span>{campaign.businessName}</span>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-[#37352F] font-medium capitalize">{activeTab.toLowerCase()}</span>
+          <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab.toLowerCase() })}</span>
         </div>
 
         {/* Account approval status banner */}
@@ -876,8 +878,8 @@ export function MerchantDashboard({
                 Total vertical footprint above the scanner: ~60px on mobile. */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3 mb-2 md:mb-0 flex-shrink-0">
               <div className="min-w-0">
-                <h1 className="text-xl md:text-2xl font-serif-display font-semibold truncate">Hi, {campaign.businessName || 'there'}</h1>
-                <p className="text-[11px] md:text-xs text-gray-400 truncate">You are logged in as {user?.email ?? '—'}</p>
+                <h1 className="text-xl md:text-2xl font-serif-display font-semibold truncate">{t('dash.scan.hi', { defaultValue: 'Hi,' })} {campaign.businessName || t('dash.scan.there', { defaultValue: 'there' })}</h1>
+                <p className="text-[11px] md:text-xs text-gray-400 truncate">{t('dash.scan.loggedInAs', { defaultValue: 'You are logged in as' })} {user?.email ?? '—'}</p>
               </div>
               <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
               <NotificationBell />
@@ -895,7 +897,7 @@ export function MerchantDashboard({
                     className="text-xs md:text-sm font-medium text-[#37352F] bg-transparent focus:outline-none cursor-pointer max-w-[130px] truncate"
                     title="Who is on shift"
                   >
-                    <option value="">Staff…</option>
+                    <option value="">{t('dash.scan.staffOpt', { defaultValue: 'Staff…' })}</option>
                     {staffRoster.map((r) => (
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
@@ -927,10 +929,10 @@ export function MerchantDashboard({
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <h3 className="font-semibold flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-500" /> Get Started
+                      <Sparkles className="w-4 h-4 text-amber-500" /> {t('dash.scan.getStarted', { defaultValue: 'Get Started' })}
                     </h3>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      Three small steps to your first stamp.
+                      {t('dash.scan.getStartedSub', { defaultValue: 'Three small steps to your first stamp.' })}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -941,21 +943,21 @@ export function MerchantDashboard({
                       onClick={() => onMarkOnboardingStep({ checklist_dismissed: true })}
                       className="text-[11px] text-gray-400 hover:text-[#37352F] transition"
                     >
-                      Skip for now
+                      {t('dash.scan.skipForNow', { defaultValue: 'Skip for now' })}
                     </button>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <ChecklistItem
                     done={!!onboarding.poster_downloaded}
-                    label="Download your QR poster"
-                    actionLabel="Go to Share & Promote"
+                    label={t('dash.scan.cl1', { defaultValue: 'Download your QR poster' })}
+                    actionLabel={t('dash.scan.cl1a', { defaultValue: 'Go to Share & Promote' })}
                     onClick={() => handleTabChange('SHARE')}
                   />
                   <ChecklistItem
                     done={!!onboarding.test_signup_done}
-                    label="Try the customer flow yourself"
-                    actionLabel="Open in new tab"
+                    label={t('dash.scan.cl2', { defaultValue: 'Try the customer flow yourself' })}
+                    actionLabel={t('dash.scan.cl2a', { defaultValue: 'Open in new tab' })}
                     onClick={async () => {
                       const primary = activeLocations[0];
                       const url = primary
@@ -967,8 +969,8 @@ export function MerchantDashboard({
                   />
                   <ChecklistItem
                     done={!!onboarding.first_stamp_given}
-                    label="Give your first stamp"
-                    actionLabel="Open scanner"
+                    label={t('dash.scan.cl3', { defaultValue: 'Give your first stamp' })}
+                    actionLabel={t('dash.scan.cl3a', { defaultValue: 'Open scanner' })}
                     onClick={() => setIsScannerOpen(true)}
                   />
                 </div>
@@ -1005,7 +1007,7 @@ export function MerchantDashboard({
                     {scanResult.card && (
                       <div className="text-center space-y-1">
                         <p className="text-gray-900 font-medium">{scanResult.card.customerName}</p>
-                        <p className="text-gray-500 text-sm">{scanResult.card.currentStamps} / {scanResult.card.maxStampsSnapshot ?? campaign.maxStamps} Stamps</p>
+                        <p className="text-gray-500 text-sm">{scanResult.card.currentStamps} / {scanResult.card.maxStampsSnapshot ?? campaign.maxStamps} {t('dash.scan.stamps', { defaultValue: 'Stamps' })}</p>
                       </div>
                     )}
                   </div>
@@ -1021,8 +1023,8 @@ export function MerchantDashboard({
                       <Camera className="w-8 h-8 text-gray-400 group-hover:text-[#37352F] transition" />
                     </div>
                     <div className="space-y-1">
-                      <h3 className="font-semibold text-lg">Tap to Activate Scanner</h3>
-                      <p className="text-sm text-gray-400">Camera access required</p>
+                      <h3 className="font-semibold text-lg">{t('dash.scan.tapActivate', { defaultValue: 'Tap to Activate Scanner' })}</h3>
+                      <p className="text-sm text-gray-400">{t('dash.scan.cameraRequired', { defaultValue: 'Camera access required' })}</p>
                     </div>
                   </div>
                 )}
@@ -1031,14 +1033,14 @@ export function MerchantDashboard({
                   <div className="flex gap-2">
                     <input
                       className="flex-1 bg-[#F7F7F5] border notion-border rounded px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-                      placeholder="Or enter Customer ID / Email..."
+                      placeholder={t('dash.scan.manualPlaceholder', { defaultValue: 'Or enter Customer ID / Email...' })}
                       value={manualId}
                       onChange={(e) => setManualId(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleManualStamp()}
                     />
                     <button onClick={handleManualStamp} className="text-white px-6 py-3 rounded text-sm font-medium hover:bg-opacity-90 transition shadow-sm active:scale-95"
                       style={{ backgroundColor: campaign.primaryColor }}>
-                      Stamp
+                      {t('dash.scan.stampBtn', { defaultValue: 'Stamp' })}
                     </button>
                   </div>
                 </div>
@@ -1635,16 +1637,16 @@ export function MerchantDashboard({
               {/* Settings sub-navigation */}
               <nav className="w-full md:w-52 flex-shrink-0 flex md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-1 md:pb-0">
                 {([
-                  ['general',   'General'],
-                  ['wallet',    'Wallet & card'],
-                  ['posters',   'Posters & print'],
-                  ['locations', 'Locations'],
-                  ['stamping',  'Stamping mode'],
-                  ['billing',   'Account & billing'],
-                  ['account',   'Login & security'],
-                  ['links', 'Links & socials'],
-                  ['privacy',   'Privacy & data'],
-                  ['danger',    'Danger zone'],
+                  ['general',   t('dash.settings.general', { defaultValue: 'General' })],
+                  ['wallet',    t('dash.settings.wallet', { defaultValue: 'Wallet & card' })],
+                  ['posters',   t('dash.settings.posters', { defaultValue: 'Posters & print' })],
+                  ['locations', t('dash.settings.locations', { defaultValue: 'Locations' })],
+                  ['stamping',  t('dash.settings.stamping', { defaultValue: 'Stamping mode' })],
+                  ['billing',   t('dash.settings.billing', { defaultValue: 'Account & billing' })],
+                  ['account',   t('dash.settings.account', { defaultValue: 'Login & security' })],
+                  ['links', t('dash.settings.links', { defaultValue: 'Links & socials' })],
+                  ['privacy',   t('dash.settings.privacy', { defaultValue: 'Privacy & data' })],
+                  ['danger',    t('dash.settings.danger', { defaultValue: 'Danger zone' })],
                 ] as const).map(([id, label]) => (
                   <button
                     key={id}
@@ -1664,16 +1666,16 @@ export function MerchantDashboard({
               <div className="flex-1 min-w-0 space-y-8">
               {(() => {
                 const meta: Record<SettingsSection, { title: string; hint: string }> = {
-                  general:   { title: 'General', hint: 'Your business name, the reward you offer, and how many stamps a customer needs. These appear on every card you issue, so changing them updates what new customers see.' },
-                  wallet:    { title: 'Customise your wallet', hint: 'Controls how the loyalty card looks inside Apple Wallet and Google Wallet — colours, text colour, and the logo at the top. The previews update live; nothing is applied until you press Save.' },
-                  posters:   { title: 'Posters & print', hint: 'Download printable material with your QR code: business cards, A5 pamphlets, A4 posters, an Instagram square, and table stickers. Customers scan these to join.' },
-                  locations: { title: 'Locations', hint: 'Add each branch so stamps are recorded against the right shop. The Scan screen lets staff pick which location they are working at, and Insights breaks results down per branch.' },
-                  stamping: { title: 'Stamping mode', hint: 'Choose how customers collect stamps — staff scanner, or self-serve where the customer scans your counter QR (device-free, location-checked).' },
-                  billing:   { title: 'Account & billing', hint: 'Your plan, invoices, and payment method. The free plan covers your first 10 customers; Pro removes that limit and unlocks branding and multi-location features.' },
-                  account:   { title: 'Login & security', hint: 'Change the email address and password you use to sign in. Changing your email requires clicking a confirmation link we send to both your old and new address.' },
-                  links:     { title: 'Links & socials', hint: 'Add your website, social profiles, and ordering or delivery links. Each one you fill in becomes a tappable link on the back of the Apple Wallet card and in the Google Wallet card details.' },
-                  privacy:   { title: 'Privacy & data', hint: 'Your business registration details (needed for GDPR and your Impressum), the privacy notice your customers see at signup, and a full export of your data.' },
-                  danger:    { title: 'Danger zone', hint: 'Permanent actions. Deleting your account removes your cards, customers, and history — this cannot be undone.' },
+                  general:   { title: t('dash.settings.generalTitle', { defaultValue: 'General' }), hint: t('dash.settings.generalHint', { defaultValue: 'Your business name, the reward you offer, and how many stamps a customer needs. These appear on every card you issue, so changing them updates what new customers see.' }) },
+                  wallet:    { title: t('dash.settings.walletTitle', { defaultValue: 'Customise your wallet' }), hint: t('dash.settings.walletHint', { defaultValue: 'Controls how the loyalty card looks inside Apple Wallet and Google Wallet — colours, text colour, and the logo at the top. The previews update live; nothing is applied until you press Save.' }) },
+                  posters:   { title: t('dash.settings.postersTitle', { defaultValue: 'Posters & print' }), hint: t('dash.settings.postersHint', { defaultValue: 'Download printable material with your QR code: business cards, A5 pamphlets, A4 posters, an Instagram square, and table stickers. Customers scan these to join.' }) },
+                  locations: { title: t('dash.settings.locationsTitle', { defaultValue: 'Locations' }), hint: t('dash.settings.locationsHint', { defaultValue: 'Add each branch so stamps are recorded against the right shop. The Scan screen lets staff pick which location they are working at, and Insights breaks results down per branch.' }) },
+                  stamping: { title: t('dash.settings.stampingTitle', { defaultValue: 'Stamping mode' }), hint: t('dash.settings.stampingHint', { defaultValue: 'Choose how customers collect stamps — staff scanner, or self-serve where the customer scans your counter QR (device-free, location-checked).' }) },
+                  billing:   { title: t('dash.settings.billingTitle', { defaultValue: 'Account & billing' }), hint: t('dash.settings.billingHint', { defaultValue: 'Your plan, invoices, and payment method. The free plan covers your first 10 customers; Pro removes that limit and unlocks branding and multi-location features.' }) },
+                  account:   { title: t('dash.settings.accountTitle', { defaultValue: 'Login & security' }), hint: t('dash.settings.accountHint', { defaultValue: 'Change the email address and password you use to sign in. Changing your email requires clicking a confirmation link we send to both your old and new address.' }) },
+                  links:     { title: t('dash.settings.linksTitle', { defaultValue: 'Links & socials' }), hint: t('dash.settings.linksHint', { defaultValue: 'Add your website, social profiles, and ordering or delivery links. Each one you fill in becomes a tappable link on the back of the Apple Wallet card and in the Google Wallet card details.' }) },
+                  privacy:   { title: t('dash.settings.privacyTitle', { defaultValue: 'Privacy & data' }), hint: t('dash.settings.privacyHint', { defaultValue: 'Your business registration details (needed for GDPR and your Impressum), the privacy notice your customers see at signup, and a full export of your data.' }) },
+                  danger:    { title: t('dash.settings.dangerTitle', { defaultValue: 'Danger zone' }), hint: t('dash.settings.dangerHint', { defaultValue: 'Permanent actions. Deleting your account removes your cards, customers, and history — this cannot be undone.' }) },
                 };
                 const m = meta[settingsSection];
                 return (
@@ -2034,9 +2036,9 @@ export function MerchantDashboard({
       <div className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t notion-border z-50 pb-safe">
         <div className="flex justify-around items-center h-16">
           {([
-            ['DASHBOARD', ScanLine, 'Scan'],
-            ['CUSTOMERS', Users, 'People'],
-            ['ANALYTICS', BarChart3, 'Insights'],
+            ['DASHBOARD', ScanLine, t('dash.nav.scan', { defaultValue: 'Scan' })],
+            ['CUSTOMERS', Users, t('dash.nav.people', { defaultValue: 'People' })],
+            ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
           ] as const).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
             <button key={id} onClick={() => handleTabChange(id)}
               className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
@@ -2051,7 +2053,7 @@ export function MerchantDashboard({
               ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE', 'STAFF'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <Menu className="w-6 h-6" />
-            <span className="text-[10px] font-medium">More</span>
+            <span className="text-[10px] font-medium">{t('dash.nav.more', { defaultValue: 'More' })}</span>
           </button>
         </div>
       </div>
@@ -2063,13 +2065,13 @@ export function MerchantDashboard({
             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
             <div className="grid grid-cols-4 gap-4 mb-4">
               {([
-                ['ACTIVITY', History, 'Activity'],
-                ['VALUE', TrendingUp, 'Payback'],
-                ['STAFF', Users, 'Staff'],
-                ['SHARE', Share, 'Share'],
-                ['PREVIEW', Eye, 'Preview'],
-                ['SETTINGS', Settings, 'Settings'],
-                ['HELP', LifeBuoy, 'Get help'],
+                ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
+                ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Payback' })],
+                ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
+                ['SHARE', Share, t('dash.nav.share', { defaultValue: 'Share' })],
+                ['PREVIEW', Eye, t('dash.nav.preview', { defaultValue: 'Preview' })],
+                ['SETTINGS', Settings, t('dash.nav.settings', { defaultValue: 'Settings' })],
+                ['HELP', LifeBuoy, t('dash.nav.getHelp', { defaultValue: 'Get help' })],
               ] as const).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
                 <button key={id} onClick={() => handleTabChange(id)}
                   className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${
@@ -2091,7 +2093,7 @@ export function MerchantDashboard({
                   <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gray-100 text-gray-600">
                     <Shield className="w-6 h-6" />
                   </div>
-                  <span className="text-xs font-medium">Admin</span>
+                  <span className="text-xs font-medium">{t('dash.nav.admin', { defaultValue: 'Admin' })}</span>
                 </button>
               )}
             </div>
