@@ -641,6 +641,7 @@ const de = {
     },
     signup: {
       errAcceptAll: 'Bitte akzeptieren Sie die AGB, die Datenschutzerklärung und den Auftragsverarbeitungsvertrag, um fortzufahren.',
+      errInvalidEmail: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
       errSecurity: 'Bitte schließen Sie die Sicherheitsprüfung ab.',
       errSecurityFailed: 'Sicherheitsprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.',
       errSignup: 'Registrierung fehlgeschlagen',

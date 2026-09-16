@@ -125,6 +125,14 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const handleSignup = async () => {
     setError(null);
     if (!busName || !email || !password || !country) return;
+    // Genuine email-format check: reject anything that isn't name@domain.tld
+    // (missing @, missing domain/TLD, stray spaces, ...) before sign-up.
+    const emailTrimmed = email.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailTrimmed)) {
+      setError(t('dash.signup.errInvalidEmail', { defaultValue: 'Please enter a valid email address.' }));
+      return;
+    }
+    if (emailTrimmed !== email) setEmail(emailTrimmed);
     if (!termsAccepted || !privacyAccepted || !dpaAccepted) {
       setError(t('dash.signup.errAcceptAll', { defaultValue: 'Please accept the Terms, Privacy Policy, and Data Processing Agreement to continue.' }));
       return;
@@ -146,7 +154,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
         return;
       }
       const { needsEmailConfirmation } = await signUpMerchant(
-        email, password, busName, country, marketingOptIn, phone,
+        emailTrimmed, password, busName, country, marketingOptIn, phone,
       );
       // Consent audit trail — record the three required acceptances.
       logConsent({ subjectType: 'merchant', document: 'terms', version: CONSENT_VERSIONS.terms });
@@ -172,7 +180,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
         // to the empty signup form (which looked like the page reloading).
         try {
           sessionStorage.setItem('sf_just_registered', '1');
-          sessionStorage.setItem('sf_registered_email', email);
+          sessionStorage.setItem('sf_registered_email', emailTrimmed);
           sessionStorage.setItem('sf_registered_business', busName);
         } catch { /* ignore */ }
         // Create the campaign (starts as 'pending' review), then sign out so

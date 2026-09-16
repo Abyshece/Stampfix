@@ -1,11 +1,11 @@
 // supabase/functions/push-apple-update/index.ts
 //
-// Sends an empty APNs push to every device registered for a card's pass.
-// The empty push wakes Apple Wallet, which then calls the web service
+// Sends a Wallet-update push to every device registered for a card's pass.
+// The push wakes Apple Wallet, which then calls the web service
 // (apple-wallet-webservice) to pull the refreshed .pkpass.
 //
-// Called whenever a card's stamp count / status changes (see the DB trigger
-// in the runbook, or call it from your stamping flow).
+// Called whenever a card's stamp count / status changes (DB trigger
+// notify_wallet_on_card_change on public.cards).
 //
 // Secrets required:
 //   APNS_AUTH_KEY_P8  -> contents of the AuthKey_XXXX.p8 file (PEM, PKCS#8)
@@ -78,29 +78,40 @@ Deno.serve(async (req) => {
 
     let pushed = 0;
     const stale: string[] = [];
+    const errors: Array<{ status: number; reason: string }> = [];
     for (const r of regs) {
       // Apple Wallet always uses the PRODUCTION APNs host, even during dev.
       const resp = await fetch(`https://api.push.apple.com/3/device/${r.push_token}`, {
         method: 'POST',
         headers: {
           authorization: `bearer ${jwt}`,
+          // Wallet routes the push by the pass type id in apns-topic — there
+          // is no app bundle id involved.
           'apns-topic': topic,
+          // Standard header set for a silent Wallet wake-up.
           'apns-push-type': 'background',
           'apns-priority': '5',
           // Store-and-retry for 24h if the device is briefly offline/asleep,
           // instead of APNs dropping the push after a single attempt.
           'apns-expiration': String(Math.floor(Date.now() / 1000) + 86400),
         },
-        // content-available:1 is the signal that makes iOS actually wake Wallet
-        // to fetch the updated pass. An empty '{}' payload gets aggressively
-        // coalesced/dropped, which is why updates only appeared on manual refresh.
-        body: JSON.stringify({ aps: { 'content-available': 1 } }),
+        // A Wallet update push MUST carry an empty JSON dictionary as its
+        // payload — per Apple's "Updating a Pass" guide and Apple DTS. Wallet
+        // treats it purely as a "something changed, come re-fetch" wake-up and
+        // then pulls the fresh .pkpass from the web service. The previous
+        // `{ aps: { 'content-available': 1 } }` was an app silent-push payload
+        // that APNs accepted (status 200) but Wallet ignored — which is exactly
+        // why the pass only updated on a manual pull-to-refresh.
+        body: JSON.stringify({ aps: {} }),
       });
       if (resp.ok) {
         pushed++;
       } else {
         const text = await resp.text().catch(() => '');
         console.warn('[push-apple-update] APNs', resp.status, text);
+        let reason = text;
+        try { reason = (JSON.parse(text) as { reason?: string }).reason ?? text; } catch { /* keep raw */ }
+        errors.push({ status: resp.status, reason });
         // 410 = token no longer valid; clean it up.
         if (resp.status === 410) stale.push(r.push_token);
       }
@@ -110,7 +121,9 @@ Deno.serve(async (req) => {
       await supabase.from('apple_wallet_registrations').delete().in('push_token', stale);
     }
 
-    return json({ pushed, devices: regs.length });
+    // Surface APNs failures in the response (and logs) so a bad push can never
+    // masquerade as success again.
+    return json({ pushed, devices: regs.length, ...(errors.length ? { errors } : {}) });
   } catch (e) {
     console.error('[push-apple-update]', e);
     return json({ error: e instanceof Error ? e.message : 'Unknown error' }, 500);
