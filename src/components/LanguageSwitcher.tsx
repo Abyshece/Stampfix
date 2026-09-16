@@ -8,6 +8,7 @@ const LABELS: Record<'en' | 'de', string> = { en: 'English', de: 'Deutsch' };
 export function LanguageSwitcher({ className = '' }: { className?: string }) {
   const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const lang: 'en' | 'de' = (i18n.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en';
 
@@ -15,6 +16,18 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
     void i18n.changeLanguage(l);
     try { localStorage.setItem('lang', l); } catch { /* ignore */ }
     setOpen(false);
+  };
+
+  // Open toward whichever side keeps the menu on-screen: right-aligned when the
+  // button sits in the right half of the viewport (menu extends left), otherwise
+  // left-aligned. Keeps it fully visible on mobile and laptop, wherever the
+  // switcher is placed (left-hand dashboard header, right-hand customer header).
+  const toggle = () => {
+    if (!open && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setAlignRight(rect.left > window.innerWidth / 2);
+    }
+    setOpen((o) => !o);
   };
 
   useEffect(() => {
@@ -27,7 +40,7 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
   return (
     <div ref={ref} className={`relative ${className}`}>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-[#37352F] px-2 py-2 transition"
         aria-haspopup="true" aria-expanded={open} aria-label="Change language"
       >
@@ -36,7 +49,7 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute right-0 mt-1 w-36 bg-white border notion-border rounded-lg shadow-lg py-1 z-50">
+        <div className={`absolute ${alignRight ? 'right-0' : 'left-0'} mt-1 w-36 max-w-[calc(100vw-1.5rem)] bg-white border notion-border rounded-lg shadow-lg py-1 z-50`}>
           {(['en', 'de'] as const).map((l) => (
             <button
               key={l}
