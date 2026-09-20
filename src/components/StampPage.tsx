@@ -18,6 +18,7 @@ const ERR: Record<string, string> = {
   invalid: "This stamp link is invalid.",
   no_geo: "Your browser can't share location, which is needed to get a stamp.",
   denied: "Please allow location access — it confirms you're at the shop.",
+  unavailable: "We couldn't pin your location. Check that Location Services are on in your phone's settings (not just the browser), then tap Try again.",
   network: "Couldn't reach the server. Check your connection and try again.",
 };
 
@@ -152,8 +153,18 @@ export function StampPage() {
     if (!('geolocation' in navigator)) { setErrKey('no_geo'); setPhase('error'); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => { setErrKey('denied'); setPhase('error'); },
-      { enableHighAccuracy: true, timeout: 15000 },
+      (err) => {
+        // Only code 1 (PERMISSION_DENIED) is a real permission problem. Codes 2
+        // (POSITION_UNAVAILABLE) and 3 (TIMEOUT) happen constantly on Android
+        // indoors, so we must NOT tell the customer to fix a permission that is
+        // already granted — that was the bug.
+        setErrKey(err.code === 1 ? 'denied' : 'unavailable');
+        setPhase('error');
+      },
+      // Low accuracy uses Wi-Fi / cell towers: it resolves in ~1s and works
+      // indoors (a cafe), unlike GPS, which often can't get a fix and times out.
+      // maximumAge lets a recent fix be reused instead of forcing a fresh lock.
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 },
     );
   }, [campaignId, locationId, retry]);
 
@@ -257,7 +268,7 @@ export function StampPage() {
     <StampShell>
       <div className="text-4xl mb-3">😕</div>
       <p className="text-gray-600 max-w-xs mb-6">{t(`cust.stamp.err.${errKey}`, { defaultValue: ERR[errKey] ?? t('cust.stamp.generic', { defaultValue: 'Something went wrong. Please try again.' }) }) + errExtra}</p>
-      {(errKey === 'too_far' || errKey === 'denied' || errKey === 'network') && (
+      {(errKey === 'too_far' || errKey === 'denied' || errKey === 'network' || errKey === 'unavailable') && (
         <button onClick={tryAgain} className="bg-[#37352F] text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition">{t('cust.stamp.tryAgain', { defaultValue: 'Try again' })}</button>
       )}
     </StampShell>

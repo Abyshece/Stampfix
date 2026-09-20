@@ -923,6 +923,7 @@ const de = {
         invalid: 'Dieser Stempel-Link ist ungültig.',
         no_geo: 'Ihr Browser kann den Standort nicht teilen, der zum Sammeln eines Stempels benötigt wird.',
         denied: 'Bitte erlauben Sie den Standortzugriff – er bestätigt, dass Sie im Geschäft sind.',
+        unavailable: 'Wir konnten Ihren Standort nicht ermitteln. Bitte prüfen Sie, ob die Ortungsdienste in den Handy-Einstellungen aktiviert sind (nicht nur im Browser), und versuchen Sie es erneut.',
         network: 'Server nicht erreichbar. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
       },
       badCode: 'Der Code stimmt nicht – fragen Sie erneut an der Kasse.',
