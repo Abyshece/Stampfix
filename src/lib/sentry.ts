@@ -36,7 +36,14 @@ export function initSentry() {
     // (Meta) injects a script that, on pagehide, calls window.webkit.messageHandlers
     // to message native iOS. When that bridge isn't present it throws — it never
     // affects the user, so we don't report it.
-    ignoreErrors: [/webkit\.messageHandlers/i, 'sendDataToNative', 'sendPageHideMessage'],
+    // Stale code-split chunk after a deploy: the app auto-reloads to recover
+    // (see the vite:preloadError handler in index.tsx), so this is expected noise.
+    ignoreErrors: [
+      /webkit\.messageHandlers/i, 'sendDataToNative', 'sendPageHideMessage',
+      /Failed to fetch dynamically imported module/i,
+      /Importing a module script failed/i,
+      /error loading dynamically imported module/i,
+    ],
     // Only the React integration + replay. We deliberately skip BrowserTracing
     // (performance monitoring) for v1 — it doubles the quota and we don't
     // have a performance story to investigate yet.
