@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
 
     const { data: card, error: cardErr } = await supabase
       .from('cards')
-      .select('id, customer_name, customer_code, current_stamps, rewards_redeemed, offer_title_snapshot, max_stamps_snapshot, campaign_id, apple_auth_token')
+      .select('id, customer_name, customer_code, current_stamps, rewards_redeemed, offer_title_snapshot, max_stamps_snapshot, campaign_id, apple_auth_token, wallet_message, wallet_message_at')
       .eq('id', cardId)
       .maybeSingle();
     if (cardErr || !card) {
@@ -278,6 +278,15 @@ Deno.serve(async (req) => {
     const cardBg = campaign?.background_color || '#f0ece1';
     const cardText = campaign?.card_text_color || '#1d3458';
     const currentStamps = card.current_stamps ?? 0;
+    // Latest merchant offer (CRM broadcast). Rendered as an invisible-until-
+    // flipped back field with changeMessage '%@' so a NEW offer fires a
+    // lock-screen notification. Auto-expires 24h after it was sent so it never
+    // lingers on the card.
+    const offerRaw = (card.wallet_message as string | null)?.trim() || '';
+    const offerAt = card.wallet_message_at as string | null;
+    const offerFresh = Boolean(offerRaw) && Boolean(offerAt) &&
+      (Date.now() - new Date(offerAt as string).getTime()) < 24 * 60 * 60 * 1000;
+    const offerMsg = offerFresh ? offerRaw : '';
     const stampsLeft = Math.max(0, maxStamps - currentStamps);
 
     // Geo-notifications: the merchant's geocoded locations. iOS surfaces the
@@ -364,6 +373,7 @@ Deno.serve(async (req) => {
         // Shown on the back of the pass (tap the ••• button). Wallet renders the
         // date in the customer's own time zone via dateStyle/timeStyle.
         backFields: [
+          ...(offerMsg ? [{ key: 'latestOffer', label: 'Latest offer', value: offerMsg, changeMessage: '%@' }] : []),
           ...linkFields,
           {
             key: 'updated',

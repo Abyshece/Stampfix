@@ -4,8 +4,8 @@ import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, Merch
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download,
-} from 'lucide-react';
+  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone } from 'lucide-react';
+import { OffersPanel } from './OffersPanel';
 import { useAuth } from '../lib/auth';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -77,7 +77,7 @@ interface MerchantDashboardProps {
 }
 
 type SettingsSection = 'stamping' | 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'account' | 'links' | 'privacy' | 'danger';
-type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
+type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'OFFERS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
 
 /** Each dashboard tab has a real URL so refresh, back/forward and deep links work. */
 const TAB_PATH: Record<Tab, string> = {
@@ -85,6 +85,7 @@ const TAB_PATH: Record<Tab, string> = {
   CUSTOMERS: '/customers',
   ACTIVITY: '/activity',
   ANALYTICS: '/insights',
+  OFFERS: '/offers',
   VALUE: '/payback',
   STAFF: '/staff',
   PREVIEW: '/preview-card',
@@ -756,6 +757,7 @@ export function MerchantDashboard({
               ['CUSTOMERS', Users, t('dash.nav.customers', { defaultValue: 'Customers' })],
               ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
               ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
+              ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Offers' })],
               ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Payback' })],
               ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
               ['PREVIEW', Eye, t('dash.nav.previewCard', { defaultValue: 'Preview Card' })],
@@ -1605,6 +1607,9 @@ export function MerchantDashboard({
         )}
 
         {/* --- SETTINGS --- */}
+        {activeTab === 'OFFERS' && (
+          <OffersPanel campaignId={campaign.id} businessName={campaign.businessName} />
+        )}
         {activeTab === 'STAFF' && (
           !isPro ? (
             <ProFeatureLock
@@ -2049,7 +2054,7 @@ export function MerchantDashboard({
           ))}
           <button onClick={() => setShowMobileMoreMenu(true)}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE', 'STAFF'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
+              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE', 'STAFF', 'OFFERS'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <Menu className="w-6 h-6" />
             <span className="text-[10px] font-medium">{t('dash.nav.more', { defaultValue: 'More' })}</span>
@@ -2064,6 +2069,7 @@ export function MerchantDashboard({
             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
             <div className="grid grid-cols-4 gap-4 mb-4">
               {([
+                ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Offers' })],
                 ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
                 ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Payback' })],
                 ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
