@@ -105,19 +105,35 @@ Deno.serve(async (req) => {
         const pushToken = body.pushToken;
         if (!pushToken) return new Response('pushToken required', { status: 400 });
 
-        const { data: existing } = await supabase
+        // Store the push token. Update-then-insert rather than upsert, so it
+        // works whatever the table's key is, and CHECK the result: answering
+        // 201 after a failed write tells iOS it's registered, so it never
+        // retries, and that card never gets another update push.
+        const { data: updatedRows, error: updErr } = await supabase
           .from('apple_wallet_registrations')
-          .select('device_library_identifier')
+          .update({ push_token: pushToken, pass_type_identifier: passTypeId })
           .eq('device_library_identifier', deviceId)
           .eq('serial_number', serial)
-          .maybeSingle();
-
-        await supabase.from('apple_wallet_registrations').upsert({
-          device_library_identifier: deviceId,
-          pass_type_identifier: passTypeId,
-          serial_number: serial,
-          push_token: pushToken,
-        });
+          .select('device_library_identifier');
+        if (updErr) {
+          console.error('[apple-wallet-webservice] registration update failed:', updErr);
+          return new Response('Registration failed', { status: 500 });
+        }
+        const existing = (updatedRows?.length ?? 0) > 0;
+        if (!existing) {
+          const { error: insErr } = await supabase.from('apple_wallet_registrations').insert({
+            device_library_identifier: deviceId,
+            pass_type_identifier: passTypeId,
+            serial_number: serial,
+            push_token: pushToken,
+          });
+          // 23505 = a concurrent registration of the same pass won the race.
+          if (insErr && insErr.code !== '23505') {
+            console.error('[apple-wallet-webservice] registration insert failed:', insErr);
+            return new Response('Registration failed', { status: 500 });
+          }
+        }
+        console.log('[apple-wallet-webservice] registered device for pass:', JSON.stringify({ serial, existing }));
 
         // Immediately sync the pass to current state. Covers brand-new cards
         // that were stamped *before* the device finished registering — that

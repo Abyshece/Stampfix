@@ -36,8 +36,15 @@ function env(name: string, fallback?: string): string {
   throw new Error(`Missing required secret: ${name}`);
 }
 
+// CORS so the merchant dashboard can call this straight after a stamp.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
 function b64url(bytes: ArrayBuffer | Uint8Array): string {
   const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -102,6 +109,7 @@ async function isAuthorized(
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
     const supabase = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'));
     if (!(await isAuthorized(req, supabase.auth))) {
