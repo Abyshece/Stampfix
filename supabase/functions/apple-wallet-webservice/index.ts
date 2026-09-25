@@ -202,13 +202,18 @@ Deno.serve(async (req) => {
         if (changed.length === 0) return new Response(null, { status: 204 });
 
         const lastUpdated = String(Math.max(0, ...changed.map((c) => Date.parse(c.passkit_last_updated) || 0)));
-        return json({ lastUpdated, serialNumbers: changed.map((c) => c.id) });
+        return new Response(JSON.stringify({ lastUpdated, serialNumbers: changed.map((c) => c.id) }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        });
       }
     }
 
-    // ---- GET /v1/passes/{passType}/{serial}
+    // ---- GET (or HEAD) /v1/passes/{passType}/{serial}
+    // HEAD is answered too: Wallet has been seen probing the pass URL with
+    // HEAD, and it used to fall through to the 404 fallback below.
     const passIdx = lower.indexOf('passes');
-    if (req.method === 'GET' && passIdx >= 0) {
+    if ((req.method === 'GET' || req.method === 'HEAD') && passIdx >= 0) {
       const serial = parts[passIdx + 2];
       if (!serial) return new Response('Not found', { status: 404 });
       if (!(await validate(serial))) return new Response('Unauthorized', { status: 401 });
@@ -221,10 +226,22 @@ Deno.serve(async (req) => {
       if (!card) return new Response('Not found', { status: 404 });
 
       const lastModified = new Date(card.passkit_last_updated);
+      // no-store: without it, a response carrying Last-Modified is
+      // heuristically cacheable, so iOS could re-serve an old copy of the
+      // pass from its HTTP cache instead of asking us after an update push.
+      const passHeaders = {
+        'Content-Type': 'application/vnd.apple.pkpass',
+        'Last-Modified': lastModified.toUTCString(),
+        'Cache-Control': 'no-store',
+      };
       const ims = req.headers.get('if-modified-since');
+      console.log('[apple-wallet-webservice] pass request:', JSON.stringify({
+        method: req.method, serial, ims, lastModified: lastModified.toISOString(),
+      }));
       if (ims && new Date(ims).getTime() >= Math.floor(lastModified.getTime() / 1000) * 1000) {
-        return new Response(null, { status: 304 });
+        return new Response(null, { status: 304, headers: { 'Last-Modified': passHeaders['Last-Modified'], 'Cache-Control': 'no-store' } });
       }
+      if (req.method === 'HEAD') return new Response(null, { status: 200, headers: passHeaders });
 
       // Reuse generate-apple-pass to build the .pkpass (no code duplication).
       const passResp = await fetch(`${env('SUPABASE_URL')}/functions/v1/generate-apple-pass?cardId=${encodeURIComponent(serial)}`);
@@ -233,13 +250,7 @@ Deno.serve(async (req) => {
         return new Response('Pass build failed', { status: 500 });
       }
       const bytes = new Uint8Array(await passResp.arrayBuffer());
-      return new Response(bytes, {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/vnd.apple.pkpass',
-          'Last-Modified': lastModified.toUTCString(),
-        },
-      });
+      return new Response(bytes, { status: 200, headers: passHeaders });
     }
 
     // ---- Fallback: echo what we actually received so routing is debuggable.

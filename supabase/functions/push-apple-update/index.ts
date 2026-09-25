@@ -145,9 +145,17 @@ Deno.serve(async (req) => {
           // Wallet routes the push by the pass type id in apns-topic — there
           // is no app bundle id involved.
           'apns-topic': topic,
-          // Standard header set for a silent Wallet wake-up.
-          'apns-push-type': 'background',
-          'apns-priority': '5',
+          // Deliver NOW. This used to be push-type `background` + priority 5,
+          // which Apple defines as "send based on power considerations on the
+          // user's device": the phone may hold the push back (and background
+          // pushes are throttled), so the pass only changed on pull-to-refresh.
+          // Every version of this function used 5 and none auto-updated.
+          // Wallet pushes predate push types and were always high priority;
+          // node-apn, which most working Wallet servers use, sends priority 10
+          // and no background type. `alert` is the type that allows 10 (and
+          // watchOS requires an explicit type for the Watch's registration).
+          'apns-push-type': 'alert',
+          'apns-priority': '10',
           // Store-and-retry for 24h if the device is briefly offline/asleep,
           // instead of APNs dropping the push after a single attempt.
           'apns-expiration': String(Math.floor(Date.now() / 1000) + 86400),
