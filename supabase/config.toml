@@ -9,3 +9,8 @@ verify_jwt = false
 
 [functions.apple-wallet-webservice]
 verify_jwt = false
+
+# Authorizes callers itself. Gateway JWT checks reject the DB trigger's
+# service-role key once it rotates, so Apple Wallet pushes never go out.
+[functions.push-apple-update]
+verify_jwt = false

@@ -38,6 +38,36 @@ function appleToken(req: Request): string | null {
   return m ? m[1].trim() : null;
 }
 
+// Read a query param from the RAW query string. URLSearchParams applies form
+// decoding, which turns a literal '+' into a space. iOS sends the update tag
+// back without escaping '+', so the old ISO tags ("...+00:00") arrived as
+// "... 00:00", parsed as Invalid Date, and every push-triggered update check
+// answered 204 "nothing changed". decodeURIComponent leaves '+' alone.
+function rawQueryParam(url: URL, name: string): string | null {
+  for (const pair of url.search.replace(/^\?/, '').split('&')) {
+    const eq = pair.indexOf('=');
+    if ((eq < 0 ? pair : pair.slice(0, eq)) !== name) continue;
+    const value = eq < 0 ? '' : pair.slice(eq + 1);
+    try { return decodeURIComponent(value); } catch { return value; }
+  }
+  return null;
+}
+
+// Update tag -> epoch ms. Tags we issue are plain epoch-ms digits (like
+// Apple's own example), so there is nothing for a URL to mangle. Passes
+// already on devices still hold an old ISO tag; accept those too, restoring a
+// '+' that arrived as a space. Returns null when the tag is unreadable.
+function tagToMs(tag: string | null): number | null {
+  const t = (tag ?? '').trim();
+  if (!t) return null;
+  if (/^\d+$/.test(t)) {
+    const n = Number(t);
+    return n < 1e11 ? n * 1000 : n; // tolerate a seconds tag too
+  }
+  const ms = Date.parse(t.replace(/ /g, '+'));
+  return Number.isNaN(ms) ? null : ms;
+}
+
 Deno.serve(async (req) => {
   const supabase = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'));
   const passTypeId = env('APPLE_PASS_TYPE_ID', 'pass.app.stampfix.loyalty');
@@ -75,19 +105,35 @@ Deno.serve(async (req) => {
         const pushToken = body.pushToken;
         if (!pushToken) return new Response('pushToken required', { status: 400 });
 
-        const { data: existing } = await supabase
+        // Store the push token. Update-then-insert rather than upsert, so it
+        // works whatever the table's key is, and CHECK the result: answering
+        // 201 after a failed write tells iOS it's registered, so it never
+        // retries, and that card never gets another update push.
+        const { data: updatedRows, error: updErr } = await supabase
           .from('apple_wallet_registrations')
-          .select('device_library_identifier')
+          .update({ push_token: pushToken, pass_type_identifier: passTypeId })
           .eq('device_library_identifier', deviceId)
           .eq('serial_number', serial)
-          .maybeSingle();
-
-        await supabase.from('apple_wallet_registrations').upsert({
-          device_library_identifier: deviceId,
-          pass_type_identifier: passTypeId,
-          serial_number: serial,
-          push_token: pushToken,
-        });
+          .select('device_library_identifier');
+        if (updErr) {
+          console.error('[apple-wallet-webservice] registration update failed:', updErr);
+          return new Response('Registration failed', { status: 500 });
+        }
+        const existing = (updatedRows?.length ?? 0) > 0;
+        if (!existing) {
+          const { error: insErr } = await supabase.from('apple_wallet_registrations').insert({
+            device_library_identifier: deviceId,
+            pass_type_identifier: passTypeId,
+            serial_number: serial,
+            push_token: pushToken,
+          });
+          // 23505 = a concurrent registration of the same pass won the race.
+          if (insErr && insErr.code !== '23505') {
+            console.error('[apple-wallet-webservice] registration insert failed:', insErr);
+            return new Response('Registration failed', { status: 500 });
+          }
+        }
+        console.log('[apple-wallet-webservice] registered device for pass:', JSON.stringify({ serial, existing }));
 
         // Immediately sync the pass to current state. Covers brand-new cards
         // that were stamped *before* the device finished registering — that
@@ -124,9 +170,13 @@ Deno.serve(async (req) => {
         return new Response('ok', { status: 200 });
       }
 
-      // GET (no serial) — list serials updated since the given tag.
+      // GET (no serial) — list serials updated since the given tag. This is
+      // the FIRST call Wallet makes after an update push (pull-to-refresh
+      // skips it and fetches the pass directly), so a wrong 204 here silently
+      // kills every automatic update and its lock-screen notification.
       if (req.method === 'GET' && !serial) {
-        const since = url.searchParams.get('passesUpdatedSince');
+        const since = rawQueryParam(url, 'passesUpdatedSince');
+        const sinceMs = tagToMs(since);
         const { data: regs } = await supabase
           .from('apple_wallet_registrations')
           .select('serial_number')
@@ -140,15 +190,18 @@ Deno.serve(async (req) => {
           .in('id', serials);
         if (!cards || cards.length === 0) return new Response(null, { status: 204 });
 
-        const sinceDate = since ? new Date(since) : null;
-        const changed = sinceDate
-          ? cards.filter((c) => new Date(c.passkit_last_updated) > sinceDate)
-          : cards;
+        // No tag, or one we can't read: list every pass on the device rather
+        // than claim nothing changed. Wallet then fetches each one with
+        // If-Modified-Since, so unchanged passes just get a cheap 304.
+        const changed = sinceMs === null
+          ? cards
+          : cards.filter((c) => Date.parse(c.passkit_last_updated) > sinceMs);
+        console.log('[apple-wallet-webservice] updatable passes:', JSON.stringify({
+          since, sinceMs, returned: changed.length, registered: cards.length,
+        }));
         if (changed.length === 0) return new Response(null, { status: 204 });
 
-        const lastUpdated = changed
-          .map((c) => c.passkit_last_updated)
-          .reduce((a, b) => (new Date(b) > new Date(a) ? b : a));
+        const lastUpdated = String(Math.max(0, ...changed.map((c) => Date.parse(c.passkit_last_updated) || 0)));
         return json({ lastUpdated, serialNumbers: changed.map((c) => c.id) });
       }
     }

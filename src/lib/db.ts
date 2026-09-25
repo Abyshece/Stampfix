@@ -403,14 +403,27 @@ export async function createCard(input: {
   return card;
 }
 
-/** Tell the customer's wallet passes their card changed. push-apple-update
- *  pushes to Apple Wallet (and bumps passkit_last_updated so pull-to-refresh
- *  works); sync-wallet-object refreshes the Google Wallet object. Fire-and-
- *  forget — a wallet hiccup must never break stamping. */
 // Apple + Google Wallet passes are refreshed by the server-side DB trigger
 // `trg_wallet_on_card_change`, which fires on every cards UPDATE — including
-// admin-initiated changes. We deliberately do NOT invoke the wallet functions
-// from the client too; doing so tripled the edge-function calls per stamp.
+// admin-initiated changes. Google is left to the trigger alone.
+//
+// Apple also gets one direct call from here: the trigger authenticates with a
+// Vault-stored key that goes stale on key rotation, and when that happens
+// Apple passes silently stop auto-updating (only pull-to-refresh works). A
+// scanned Wallet QR lands in addStamp / redeemReward, so pushing here makes
+// the update independent of the trigger. A duplicate push is harmless.
+function pushAppleWalletUpdate(cardId: string): void {
+  supabase.functions
+    .invoke('push-apple-update', { body: { cardId } })
+    .then(({ error }) => {
+      // eslint-disable-next-line no-console
+      if (error) console.warn('[wallet] apple push failed:', error.message);
+    })
+    .catch((e) => {
+      // eslint-disable-next-line no-console
+      console.warn('[wallet] apple push threw:', e);
+    });
+}
 
 export async function addStamp(
   cardId: string,
@@ -426,6 +439,7 @@ export async function addStamp(
   const rows = (data ?? []) as CardRow[];
   if (rows.length > 0) {
     const updated = toCard(rows[0]);
+    pushAppleWalletUpdate(updated.id);
     await logActivity(updated.campaignId, updated.id, updated.customerName, 'STAMP', 'manual_dashboard', {
       reason: opts?.reason ?? null,
       isOverride: opts?.isOverride ?? false,
@@ -463,6 +477,7 @@ export async function redeemReward(cardId: string): Promise<UserCard> {
     .single();
   if (error) throw error;
   const updated = toCard(data as CardRow);
+  pushAppleWalletUpdate(updated.id);
   await logActivity(updated.campaignId, updated.id, updated.customerName, 'REDEEM');
   return updated;
 }
