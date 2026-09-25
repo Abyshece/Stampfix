@@ -68,7 +68,7 @@ function tagToMs(tag: string | null): number | null {
   return Number.isNaN(ms) ? null : ms;
 }
 
-Deno.serve(async (req) => {
+async function handle(req: Request, note: Record<string, unknown>): Promise<Response> {
   const supabase = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'));
   const passTypeId = env('APPLE_PASS_TYPE_ID', 'pass.app.stampfix.loyalty');
 
@@ -89,6 +89,7 @@ Deno.serve(async (req) => {
     if (req.method === 'POST' && lower.includes('log') && !lower.includes('devices') && !lower.includes('passes')) {
       const body = await req.json().catch(() => ({}));
       console.log('[apple-wallet-webservice] device log:', JSON.stringify(body));
+      note.deviceLog = body;
       return new Response('ok', { status: 200 });
     }
 
@@ -134,6 +135,7 @@ Deno.serve(async (req) => {
           }
         }
         console.log('[apple-wallet-webservice] registered device for pass:', JSON.stringify({ serial, existing }));
+        note.existingRegistration = existing;
 
         // Immediately sync the pass to current state. Covers brand-new cards
         // that were stamped *before* the device finished registering — that
@@ -199,6 +201,7 @@ Deno.serve(async (req) => {
         console.log('[apple-wallet-webservice] updatable passes:', JSON.stringify({
           since, sinceMs, returned: changed.length, registered: cards.length,
         }));
+        Object.assign(note, { sinceMs, returned: changed.map((c) => c.id), registered: cards.length });
         if (changed.length === 0) return new Response(null, { status: 204 });
 
         const lastUpdated = String(Math.max(0, ...changed.map((c) => Date.parse(c.passkit_last_updated) || 0)));
@@ -238,6 +241,7 @@ Deno.serve(async (req) => {
       console.log('[apple-wallet-webservice] pass request:', JSON.stringify({
         method: req.method, serial, ims, lastModified: lastModified.toISOString(),
       }));
+      note.lastModified = lastModified.toISOString();
       if (ims && new Date(ims).getTime() >= Math.floor(lastModified.getTime() / 1000) * 1000) {
         return new Response(null, { status: 304, headers: { 'Last-Modified': passHeaders['Last-Modified'], 'Cache-Control': 'no-store' } });
       }
@@ -262,4 +266,41 @@ Deno.serve(async (req) => {
     console.error('[apple-wallet-webservice]', e);
     return new Response('Internal error', { status: 500 });
   }
+}
+
+// Record every request Wallet makes, and what we answered, in
+// public.wallet_debug_log, so the whole round-trip after a stamp can be read
+// back with one SQL query (the device's side is otherwise invisible). The
+// auth token is never stored. Recording can never break a request.
+Deno.serve(async (req) => {
+  const note: Record<string, unknown> = {};
+  let res: Response;
+  try {
+    res = await handle(req, note);
+  } catch (e) {
+    console.error('[apple-wallet-webservice]', e);
+    note.error = e instanceof Error ? e.message : String(e);
+    res = new Response('Internal error', { status: 500 });
+  }
+  try {
+    const url = new URL(req.url);
+    const db = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'));
+    const { error } = await db.from('wallet_debug_log').insert({
+      source: 'webservice',
+      method: req.method,
+      path: url.pathname,
+      status: res.status,
+      detail: {
+        ...note,
+        query: url.search || null,
+        ifModifiedSince: req.headers.get('if-modified-since'),
+        hasAuth: req.headers.has('authorization'),
+        userAgent: req.headers.get('user-agent'),
+      },
+    });
+    if (error) console.warn('[apple-wallet-webservice] debug log insert failed:', error.message);
+  } catch (e) {
+    console.warn('[apple-wallet-webservice] debug log failed:', e);
+  }
+  return res;
 });
