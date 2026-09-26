@@ -935,6 +935,7 @@ const de = {
     stamp: {
       err: {
         self_serve_off: 'Dieses Geschäft nutzt derzeit keine Selbstbedienungs-Stempel.',
+        self_serve_off_named: '{{shop}} nutzt derzeit keine Selbstbedienungs-Stempel.',
         too_far: 'Hmm, das hat nicht geklappt. Bitte versuchen Sie es erneut oder fragen Sie einen Mitarbeiter, falls es weiterhin auftritt.',
         no_location: 'Dieses Geschäft hat seinen Standort noch nicht festgelegt, daher können wir nicht bestätigen, dass Sie hier sind.',
         daily_cap: 'Sie haben Ihren Stempel für heute bereits gesammelt. Bis zum nächsten Mal!',

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { selfServeStamp } from '../lib/db';
+import { supabase } from '../lib/supabase';
 import { playScanSound } from '../lib/scanSounds';
 import { useTranslation } from 'react-i18next';
 
@@ -74,14 +75,17 @@ function CountWheel({ max, value, onChange }: { max: number; value: number; onCh
   );
 }
 
-function StampShell({ children }: { children: ReactNode }) {
+function StampShell({ children, shop }: { children: ReactNode; shop?: string | null }) {
   return (
     <div className="min-h-screen bg-[#FBFBFA] flex flex-col items-center justify-center px-6 py-12 text-center">
-      <div className="flex items-center gap-2 mb-8 text-[#37352F]">
+      <div className={`flex items-center gap-2 text-[#37352F] ${shop ? 'mb-3' : 'mb-8'}`}>
         <span className="w-3 h-3 bg-[#37352F]" />
         <span className="w-3 h-3 bg-[#37352F] rounded-full" />
         <span className="font-bold text-lg leading-none">&#10005;</span>
       </div>
+      {/* Which shop this QR belongs to. Without it, a QR from a different shop
+          (e.g. an old poster) fails with no clue why. */}
+      {shop && <p className="text-sm font-medium text-gray-500 mb-8">{shop}</p>}
       {children}
     </div>
   );
@@ -104,6 +108,23 @@ export function StampPage() {
   const [count, setCount] = useState(1);
   const [multiCode, setMultiCode] = useState('');
   const [codeError, setCodeError] = useState('');
+  const [shopName, setShopName] = useState<string | null>(null);
+  const [locationName, setLocationName] = useState<string | null>(null);
+
+  // Name the shop (and branch) the QR points at. Both tables are publicly
+  // readable, same as the signup page. Best-effort: stamping never waits on it.
+  useEffect(() => {
+    if (!campaignId) return;
+    let live = true;
+    void supabase.from('campaigns').select('business_name').eq('id', campaignId).maybeSingle()
+      .then(({ data }) => { if (live) setShopName((data as { business_name?: string } | null)?.business_name?.trim() || null); });
+    if (locationId) {
+      void supabase.from('locations').select('name').eq('id', locationId).maybeSingle()
+        .then(({ data }) => { if (live) setLocationName((data as { name?: string } | null)?.name?.trim() || null); });
+    }
+    return () => { live = false; };
+  }, [campaignId, locationId]);
+  const shopLabel = shopName ? (locationName ? `${shopName} · ${locationName}` : shopName) : null;
 
   const attempt = useCallback(async (withIdentity: boolean) => {
     if (!coords) return;
@@ -177,7 +198,7 @@ export function StampPage() {
 
   if (phase === 'locating' || phase === 'stamping') {
     return (
-      <StampShell>
+      <StampShell shop={shopLabel}>
         <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-[#37352F] rounded-full mb-4" />
         <p className="text-gray-500">{phase === 'locating' ? t('cust.stamp.locating', { defaultValue: "Checking you're at the shop…" }) : t('cust.stamp.stamping', { defaultValue: 'Adding your stamp…' })}</p>
       </StampShell>
@@ -188,7 +209,7 @@ export function StampPage() {
     const full = result.currentStamps >= result.maxStamps;
     const dots = Array.from({ length: Math.max(result.maxStamps, 1) }, (_, i) => i < result.currentStamps);
     return (
-      <StampShell>
+      <StampShell shop={shopLabel}>
         <StampConfetti />
         <div className="text-6xl mb-2 animate-bounce">🎉</div>
         <h1 className="text-2xl font-serif-display font-semibold mb-1">{t('cust.stamp.added', { defaultValue: 'Stamp added!' })}</h1>
@@ -209,7 +230,7 @@ export function StampPage() {
 
   if (phase === 'need_identity') {
     return (
-      <StampShell>
+      <StampShell shop={shopLabel}>
         <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.quickCheck', { defaultValue: 'One quick check' })}</h1>
         <p className="text-gray-500 mb-5 max-w-xs">{t('cust.stamp.confirmEmail', { defaultValue: 'Just confirm the email you signed up with to collect your stamp.' })}</p>
         <div className="w-full max-w-xs space-y-3">
@@ -226,7 +247,7 @@ export function StampPage() {
 
   if (phase === 'ask_more') {
     return (
-      <StampShell>
+      <StampShell shop={shopLabel}>
         <div className="text-5xl mb-3">🧾</div>
         <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.alreadyStamped', { defaultValue: 'Already stamped' })}</h1>
         <p className="text-gray-500 mb-6 max-w-xs">{t('cust.stamp.boughtMoreQ', { defaultValue: 'Did you buy more than one? Add the extra stamps for this order.' })}</p>
@@ -240,7 +261,7 @@ export function StampPage() {
 
   if (phase === 'pick_count') {
     return (
-      <StampShell>
+      <StampShell shop={shopLabel}>
         <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.howManyMore', { defaultValue: 'How many more stamps?' })}</h1>
         <p className="text-gray-500 mb-4 max-w-xs">{t('cust.stamp.onePerItem', { defaultValue: 'One per item you bought in this order.' })}</p>
         <CountWheel max={remaining} value={count} onChange={setCount} />
@@ -251,7 +272,7 @@ export function StampPage() {
 
   if (phase === 'ask_code') {
     return (
-      <StampShell>
+      <StampShell shop={shopLabel}>
         <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.askCode', { defaultValue: 'Ask the cashier for the code' })}</h1>
         <p className="text-gray-500 mb-5 max-w-xs">{t(`cust.stamp.enterCode${count > 1 ? 'Other' : 'One'}`, { count, defaultValue: count > 1 ? 'Enter the 4-digit code from the counter to add {{count}} stamps.' : 'Enter the 4-digit code from the counter to add {{count}} stamp.' })}</p>
         <div className="w-full max-w-xs space-y-3">
@@ -265,9 +286,13 @@ export function StampPage() {
   }
 
   return (
-    <StampShell>
+    <StampShell shop={shopLabel}>
       <div className="text-4xl mb-3">😕</div>
-      <p className="text-gray-600 max-w-xs mb-6">{t(`cust.stamp.err.${errKey}`, { defaultValue: ERR[errKey] ?? t('cust.stamp.generic', { defaultValue: 'Something went wrong. Please try again.' }) }) + errExtra}</p>
+      <p className="text-gray-600 max-w-xs mb-6">{
+        errKey === 'self_serve_off' && shopName
+          ? t('cust.stamp.err.self_serve_off_named', { shop: shopName, defaultValue: "{{shop}} isn't using self-serve stamps right now." })
+          : t(`cust.stamp.err.${errKey}`, { defaultValue: ERR[errKey] ?? t('cust.stamp.generic', { defaultValue: 'Something went wrong. Please try again.' }) }) + errExtra
+      }</p>
       {(errKey === 'too_far' || errKey === 'denied' || errKey === 'network' || errKey === 'unavailable') && (
         <button onClick={tryAgain} className="bg-[#37352F] text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition">{t('cust.stamp.tryAgain', { defaultValue: 'Try again' })}</button>
       )}
