@@ -375,7 +375,20 @@ Deno.serve(async (req) => {
         // Shown on the back of the pass (tap the ••• button). Wallet renders the
         // date in the customer's own time zone via dateStyle/timeStyle.
         backFields: [
-          ...(offerMsg ? [{ key: 'latestOffer', label: 'Latest offer', value: offerMsg, changeMessage: '%@' }] : []),
+          {
+            key: 'latestOffer',
+            label: 'Latest offer',
+            // ALWAYS present. Apple fires the changeMessage lock-screen banner
+            // only when a field's VALUE CHANGES between pass versions — never
+            // when a field first appears (a new field updates the pass
+            // silently). So the field must exist with a prior value for a new
+            // offer to notify. Default to the shop's standing offer when there's
+            // no active campaign message, and attach changeMessage ONLY while a
+            // fresh message is showing, so the value reverting to the default
+            // when it expires doesn't fire a blank banner.
+            value: offerMsg || offerTitle,
+            ...(offerMsg ? { changeMessage: '%@' } : {}),
+          },
           ...linkFields,
           {
             key: 'updated',
