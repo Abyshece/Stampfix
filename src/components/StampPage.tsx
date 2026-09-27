@@ -8,7 +8,9 @@ type Phase = 'locating' | 'stamping' | 'success' | 'need_identity' | 'ask_more' 
 
 const ERR: Record<string, string> = {
   self_serve_off: "This shop isn't using self-serve stamps right now.",
-  too_far: "Hmm, that didn't work. Please try again, or ask a staff member if it keeps happening.",
+  too_far: "We couldn't confirm you're at the shop. Step inside or closer to the counter and tap Try again. If it keeps happening, ask a staff member.",
+  imprecise: "Your phone is only sharing an approximate location. Turn on Precise Location (iPhone: Settings › Privacy & Security › Location Services › Safari Websites › Precise Location), then tap Try again.",
+  location_archived: "This stamp QR is no longer in use. Please ask a staff member for the current one.",
   no_location: "This shop hasn't set its location yet, so we can't confirm you're here.",
   daily_cap: "You've already collected your stamp for today. See you next time!",
   cooldown: "You just got a stamp — please wait a little before the next one.",
@@ -91,6 +93,19 @@ function StampShell({ children, shop }: { children: ReactNode; shop?: string | n
   );
 }
 
+// The email a customer without a signed-in session identified with, kept on
+// their phone so the next visit stamps straight away. Best-effort only.
+const emailKey = (campaignId: string) => `stampfix_stamp_email:${campaignId}`;
+function readSavedEmail(campaignId: string): string {
+  try { return localStorage.getItem(emailKey(campaignId)) ?? ''; } catch { return ''; }
+}
+function saveEmail(campaignId: string, email: string | null) {
+  try {
+    if (email) localStorage.setItem(emailKey(campaignId), email);
+    else localStorage.removeItem(emailKey(campaignId));
+  } catch { /* storage blocked: they type it next time */ }
+}
+
 export function StampPage() {
   const { t } = useTranslation();
   const params = new URLSearchParams(window.location.search);
@@ -100,9 +115,14 @@ export function StampPage() {
   const [phase, setPhase] = useState<Phase>('locating');
   const [errKey, setErrKey] = useState('');
   const [errExtra, setErrExtra] = useState('');
-  const [result, setResult] = useState<{ currentStamps: number; maxStamps: number } | null>(null);
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [email, setEmail] = useState('');
+  // added = stamps this visit put on the card (0 when it only shows the card).
+  const [result, setResult] = useState<{ currentStamps: number; maxStamps: number; added: number } | null>(null);
+  const [coords, setCoords] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  // After a "too far" answer, the next fix is a fresh high-accuracy one.
+  const [precise, setPrecise] = useState(false);
+  const [limit, setLimit] = useState<'cooldown' | 'daily_cap'>('cooldown');
+  const [email, setEmail] = useState(() => readSavedEmail(campaignId));
+  const [identityError, setIdentityError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [retry, setRetry] = useState(0);
   const [count, setCount] = useState(1);
@@ -126,24 +146,38 @@ export function StampPage() {
   }, [campaignId, locationId]);
   const shopLabel = shopName ? (locationName ? `${shopName} · ${locationName}` : shopName) : null;
 
-  const attempt = useCallback(async (withIdentity: boolean) => {
+  // `typed` = the customer just entered the email themselves (vs. the one
+  // saved on this phone, or none), so a miss is worth telling them about.
+  const attempt = useCallback(async (typed: boolean) => {
     if (!coords) return;
+    const id = email.trim();
     setPhase('stamping');
     setSubmitting(true);
+    setIdentityError('');
     try {
-      const r = await selfServeStamp(
-        campaignId, locationId, coords.lat, coords.lng,
-        withIdentity ? email.trim() : undefined,
-      );
+      const r = await selfServeStamp(campaignId, locationId, coords.lat, coords.lng, id || undefined);
       if (r.ok) {
-        setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 });
-        setPhase('success'); playScanSound('stamp');
-      } else if (r.error === 'card_not_found' && !withIdentity) {
+        if (id) saveEmail(campaignId, id);
+        const current = r.currentStamps ?? 0, max = r.maxStamps ?? 0;
+        setResult({ currentStamps: current, maxStamps: max, added: r.added ?? 1 });
+        setPhase('success'); playScanSound(current >= max ? 'last' : 'stamp');
+      } else if (r.error === 'card_not_found') {
+        if (typed) {
+          saveEmail(campaignId, null);
+          setIdentityError(t('cust.stamp.noCardForEmail', { defaultValue: "We couldn't find a card with that email here. Check the spelling, or join below if you're new." }));
+        }
         setPhase('need_identity');
-      } else if (r.error === 'cooldown') {
-        setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 }); setPhase('ask_more');
+      } else if (r.error === 'cooldown' || r.error === 'daily_cap') {
+        setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0, added: 0 });
+        setLimit(r.error); setPhase('ask_more');
+      } else if (r.error === 'too_far' && !precise) {
+        // The first fix is a quick, possibly cached one (it can be from before
+        // the customer walked in). Check once more with a fresh, precise fix
+        // before saying they're not at the shop.
+        setCoords(null); setPrecise(true); setPhase('locating');
       } else {
-        setErrKey(r.error ?? 'network');
+        const imprecise = r.error === 'too_far' && coords.accuracy > 500;
+        setErrKey(imprecise ? 'imprecise' : r.error ?? 'network');
         setErrExtra('');
         setPhase('error');
       }
@@ -152,14 +186,20 @@ export function StampPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [coords, campaignId, locationId, email]);
+  }, [coords, campaignId, locationId, email, precise, t]);
 
   const attemptMulti = async () => {
     if (!coords) return;
     setSubmitting(true); setCodeError('');
     try {
       const r = await selfServeStamp(campaignId, locationId, coords.lat, coords.lng, email.trim() || undefined, multiCode.trim(), count);
-      if (r.ok || r.error === 'card_full') { setResult({ currentStamps: r.currentStamps ?? 0, maxStamps: r.maxStamps ?? 0 }); setPhase('success'); playScanSound(r.error === 'card_full' ? 'last' : 'stamp'); }
+      if (r.ok || r.error === 'card_full') {
+        const current = r.currentStamps ?? 0, max = r.maxStamps ?? 0;
+        // Show the stamps from this visit: the single one plus the extras.
+        setResult((prev) => ({ currentStamps: current, maxStamps: max, added: (prev?.added ?? 0) + (r.ok ? r.added ?? count : 0) }));
+        setPhase('success');
+        if (r.ok) playScanSound(current >= max ? 'last' : 'stamp');
+      }
       else if (r.error === 'bad_code') { setCodeError(t('cust.stamp.badCode', { defaultValue: "That code isn't right — ask the cashier again." })); }
       else if (r.error === 'no_code_set') { setCodeError(t('cust.stamp.noCodeSet', { defaultValue: "This shop hasn't set a code yet." })); }
       else { setErrKey(r.error ?? 'network'); setErrExtra(''); setPhase('error'); }
@@ -173,23 +213,29 @@ export function StampPage() {
     if (!campaignId || !locationId) { setErrKey('invalid'); setPhase('error'); return; }
     if (!('geolocation' in navigator)) { setErrKey('no_geo'); setPhase('error'); return; }
     navigator.geolocation.getCurrentPosition(
-      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
       (err) => {
         // Only code 1 (PERMISSION_DENIED) is a real permission problem. Codes 2
         // (POSITION_UNAVAILABLE) and 3 (TIMEOUT) happen constantly on Android
         // indoors, so we must NOT tell the customer to fix a permission that is
-        // already granted — that was the bug.
-        setErrKey(err.code === 1 ? 'denied' : 'unavailable');
+        // already granted — that was the bug. When the precise re-check can't
+        // get a fix, the quick fix already said "too far", so say that.
+        setErrKey(err.code === 1 ? 'denied' : precise ? 'too_far' : 'unavailable');
         setPhase('error');
       },
-      // Low accuracy uses Wi-Fi / cell towers: it resolves in ~1s and works
-      // indoors (a cafe), unlike GPS, which often can't get a fix and times out.
-      // maximumAge lets a recent fix be reused instead of forcing a fresh lock.
-      { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 },
+      // First try: low accuracy uses Wi-Fi / cell towers, resolves in ~1s and
+      // works indoors (a cafe), unlike GPS, which often can't get a fix; a fix
+      // up to 5 minutes old is reused. After a "too far", ask for a fresh,
+      // high-accuracy fix instead: the reused one may be from before the
+      // customer arrived.
+      precise
+        ? { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        : { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 },
     );
-  }, [campaignId, locationId, retry]);
+  }, [campaignId, locationId, retry, precise]);
 
-  // Auto-attempt (signed-in path) once we have coordinates.
+  // Auto-attempt once we have coordinates: the signed-in customer's card, or
+  // the email saved on this phone from an earlier visit.
   useEffect(() => {
     if (coords && phase === 'locating') void attempt(false);
   }, [coords, phase, attempt]);
@@ -208,18 +254,25 @@ export function StampPage() {
   if (phase === 'success' && result) {
     const full = result.currentStamps >= result.maxStamps;
     const dots = Array.from({ length: Math.max(result.maxStamps, 1) }, (_, i) => i < result.currentStamps);
+    const added = result.added > 0;
     return (
       <StampShell shop={shopLabel}>
-        <StampConfetti />
-        <div className="text-6xl mb-2 animate-bounce">🎉</div>
-        <h1 className="text-2xl font-serif-display font-semibold mb-1">{t('cust.stamp.added', { defaultValue: 'Stamp added!' })}</h1>
+        {/* Celebrate only when this visit really added a stamp; "No, that's
+            all" after an earlier stamp just shows the card. */}
+        {added && <StampConfetti />}
+        <div className={`text-6xl mb-2 ${added ? 'animate-bounce' : ''}`}>{added ? '🎉' : '✅'}</div>
+        <h1 className="text-2xl font-serif-display font-semibold mb-1">{
+          !added ? t('cust.stamp.allSet', { defaultValue: "You're all set" })
+            : result.added > 1 ? t('cust.stamp.addedMany', { count: result.added, defaultValue: '{{count}} stamps added!' })
+            : t('cust.stamp.added', { defaultValue: 'Stamp added!' })
+        }</h1>
         <p className="text-gray-500 mb-5">{full ? t('cust.stamp.cardFull', { defaultValue: 'Your card is full — claim your reward!' }) : t('cust.stamp.ofStamps', { current: result.currentStamps, max: result.maxStamps, defaultValue: '{{current}} of {{max}} stamps' })}</p>
         <div className="flex flex-wrap justify-center gap-2 max-w-[240px] mb-8">
           {dots.map((f, i) => (
             <span key={i} className={`w-6 h-6 rounded-full border-2 ${f ? 'bg-[#37352F] border-[#37352F]' : 'border-gray-300'}`} />
           ))}
         </div>
-        {(result && result.currentStamps < result.maxStamps) && (
+        {added && result.currentStamps < result.maxStamps && (
           <button onClick={() => { setCount(1); setMultiCode(''); setCodeError(''); setPhase('pick_count'); }} className="text-sm text-[#37352F] underline mb-4">{t('cust.stamp.boughtMultiple', { defaultValue: 'Bought multiple orders? Add more stamps' })}</button>
         )}
         <a href={email.trim() ? `/my-card?e=${encodeURIComponent(email.trim())}` : '/my-card'} className="bg-[#37352F] text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition">{t('cust.stamp.viewSave', { defaultValue: 'View & save your card' })}</a>
@@ -233,27 +286,43 @@ export function StampPage() {
       <StampShell shop={shopLabel}>
         <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.quickCheck', { defaultValue: 'One quick check' })}</h1>
         <p className="text-gray-500 mb-5 max-w-xs">{t('cust.stamp.confirmEmail', { defaultValue: 'Just confirm the email you signed up with to collect your stamp.' })}</p>
-        <div className="w-full max-w-xs space-y-3">
-          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={t('cust.stamp.emailPh', { defaultValue: 'you@email.com' })}
+        <form className="w-full max-w-xs space-y-3" onSubmit={(e) => { e.preventDefault(); if (!submitting && email.trim()) void attempt(true); }}>
+          <input value={email} onChange={(e) => { setEmail(e.target.value); setIdentityError(''); }} type="email" autoComplete="email" placeholder={t('cust.stamp.emailPh', { defaultValue: 'you@email.com' })}
             className="w-full border notion-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300" />
-          <button onClick={() => void attempt(true)} disabled={submitting || !email.trim()}
+          {identityError && <p className="text-xs text-red-600">{identityError}</p>}
+          <button type="submit" disabled={submitting || !email.trim()}
             className="w-full bg-[#37352F] text-white py-3 rounded-lg font-medium disabled:opacity-50 hover:bg-opacity-90 transition">
             {t('cust.stamp.getStamp', { defaultValue: 'Get my stamp' })}
           </button>
-        </div>
+        </form>
+        {/* Someone scanning the stamp QR before they have a card needs a way in. */}
+        <a href={`/?campaign=${encodeURIComponent(campaignId)}&location=${encodeURIComponent(locationId)}`} className="mt-6 text-sm text-[#37352F] underline">
+          {t('cust.stamp.joinCta', { defaultValue: 'New here? Get your loyalty card first' })}
+        </a>
       </StampShell>
     );
   }
 
   if (phase === 'ask_more') {
+    const daily = limit === 'daily_cap';
     return (
       <StampShell shop={shopLabel}>
         <div className="text-5xl mb-3">🧾</div>
-        <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.alreadyStamped', { defaultValue: 'Already stamped' })}</h1>
-        <p className="text-gray-500 mb-6 max-w-xs">{t('cust.stamp.boughtMoreQ', { defaultValue: 'Did you buy more than one? Add the extra stamps for this order.' })}</p>
+        <h1 className="text-xl font-serif-display font-semibold mb-1">{
+          daily ? t('cust.stamp.todayCollected', { defaultValue: "Today's stamp is collected" }) : t('cust.stamp.alreadyStamped', { defaultValue: 'Already stamped' })
+        }</h1>
+        <p className="text-gray-500 mb-6 max-w-xs">{
+          daily
+            ? t('cust.stamp.dailyMoreQ', { defaultValue: "You've already collected your stamp for today. Bought more? Ask the cashier for the code to add the extra stamps." })
+            : t('cust.stamp.boughtMoreQ', { defaultValue: 'Did you buy more than one? Add the extra stamps for this order.' })
+        }</p>
         <div className="w-full max-w-xs space-y-2">
-          <button onClick={() => { setCount(1); setMultiCode(''); setCodeError(''); setPhase('pick_count'); }} className="w-full bg-[#37352F] text-white py-3 rounded-lg font-medium">{t('cust.stamp.yesMultiple', { defaultValue: 'Yes, bought multiple' })}</button>
-          <button onClick={() => setPhase('success')} className="w-full text-gray-500 py-2 text-sm">{t('cust.stamp.noThatsAll', { defaultValue: "No, that's all" })}</button>
+          <button onClick={() => { setCount(1); setMultiCode(''); setCodeError(''); setPhase('pick_count'); }} className="w-full bg-[#37352F] text-white py-3 rounded-lg font-medium">{
+            daily ? t('cust.stamp.addWithCode', { defaultValue: 'Add stamps with a code' }) : t('cust.stamp.yesMultiple', { defaultValue: 'Yes, bought multiple' })
+          }</button>
+          <button onClick={() => setPhase('success')} className="w-full text-gray-500 py-2 text-sm">{
+            daily ? t('cust.stamp.ok', { defaultValue: 'OK' }) : t('cust.stamp.noThatsAll', { defaultValue: "No, that's all" })
+          }</button>
         </div>
       </StampShell>
     );
@@ -293,7 +362,7 @@ export function StampPage() {
           ? t('cust.stamp.err.self_serve_off_named', { shop: shopName, defaultValue: "{{shop}} isn't using self-serve stamps right now." })
           : t(`cust.stamp.err.${errKey}`, { defaultValue: ERR[errKey] ?? t('cust.stamp.generic', { defaultValue: 'Something went wrong. Please try again.' }) }) + errExtra
       }</p>
-      {(errKey === 'too_far' || errKey === 'denied' || errKey === 'network' || errKey === 'unavailable') && (
+      {(errKey === 'too_far' || errKey === 'imprecise' || errKey === 'denied' || errKey === 'network' || errKey === 'unavailable') && (
         <button onClick={tryAgain} className="bg-[#37352F] text-white px-6 py-3 rounded-lg font-medium hover:bg-opacity-90 transition">{t('cust.stamp.tryAgain', { defaultValue: 'Try again' })}</button>
       )}
     </StampShell>

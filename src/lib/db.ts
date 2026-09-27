@@ -932,7 +932,14 @@ export interface SelfServeStampResult {
   maxStamps?: number;
   customerName?: string;
   distance?: number;
+  radius?: number;
   added?: number;
+}
+
+/** The phone's IANA time zone. The customer is at the shop, so this is the
+ *  shop's local day for the daily stamp limit. */
+function deviceTimeZone(): string | null {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; } catch { return null; }
 }
 
 export async function selfServeStamp(
@@ -952,6 +959,7 @@ export async function selfServeStamp(
     p_email: email ?? null,
     p_code: code ?? null,
     p_count: count ?? 1,
+    p_tz: deviceTimeZone(),
   });
   if (error) throw error;
   return (data ?? { ok: false, error: 'network' }) as SelfServeStampResult;
