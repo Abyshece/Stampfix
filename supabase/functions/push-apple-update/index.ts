@@ -156,14 +156,16 @@ Deno.serve(async (req) => {
     const jwt = await makeApnsJwt(env('APPLE_TEAM_ID', 'CL2ADKJNSU'), env('APNS_KEY_ID'), key);
     const topic = env('APPLE_PASS_TYPE_ID', 'pass.app.stampfix.loyalty');
 
-    // Header profile: exactly what node-apn sends by default (priority 10, no
-    // apns-push-type), the setup behind the published working Wallet servers.
-    // Every earlier version used background + 5 ("deliver based on power
-    // considerations") and never auto-updated. Both are overridable via the
-    // APNS_PUSH_TYPE / APNS_PRIORITY secrets to test a profile without a
-    // redeploy; the debug log records which profile each push used.
-    const pushType = Deno.env.get('APNS_PUSH_TYPE') ?? '';
-    const priority = Deno.env.get('APNS_PRIORITY') || '10';
+    // Header profile: background + priority 5 with an `{"aps":{}}` body. Live
+    // logs (27 Sep) show this reaching the iPhone within 1-2 s: Wallet called
+    // the changed-passes endpoint right after each push. Auto-updates failed
+    // only because that endpoint answered 204 (the '+' in the old ISO tag).
+    // Overridable via the APNS_PUSH_TYPE / APNS_PRIORITY secrets without a
+    // redeploy (APNS_PUSH_TYPE=none omits the header); the debug log records
+    // which profile each push used.
+    const pushTypeEnv = Deno.env.get('APNS_PUSH_TYPE') || 'background';
+    const pushType = pushTypeEnv === 'none' ? '' : pushTypeEnv;
+    const priority = Deno.env.get('APNS_PRIORITY') || '5';
 
     let pushed = 0;
     const stale: string[] = [];
@@ -184,11 +186,10 @@ Deno.serve(async (req) => {
           // instead of APNs dropping the push after a single attempt.
           'apns-expiration': String(Math.floor(Date.now() / 1000) + 86400),
         },
-        // A Wallet update push carries an empty JSON dictionary — literally
-        // `{}` — per Apple's "Updating a Pass" guide and Apple DTS. Wallet
-        // treats it purely as "something changed, come re-fetch": it then asks
-        // apple-wallet-webservice which passes changed and pulls those.
-        body: '{}',
+        // Wallet treats the push purely as "something changed, come re-fetch":
+        // it then asks apple-wallet-webservice which passes changed and pulls
+        // those. This exact body is the one proven to work in production.
+        body: JSON.stringify({ aps: {} }),
       });
       const result: Record<string, unknown> = {
         device: String(r.device_library_identifier ?? '').slice(0, 8),
