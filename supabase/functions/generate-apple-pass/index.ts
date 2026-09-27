@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
 
     const { data: card, error: cardErr } = await supabase
       .from('cards')
-      .select('id, customer_name, customer_code, current_stamps, rewards_redeemed, offer_title_snapshot, max_stamps_snapshot, campaign_id, apple_auth_token, wallet_message, wallet_message_at')
+      .select('id, customer_name, customer_code, current_stamps, rewards_redeemed, offer_title_snapshot, max_stamps_snapshot, campaign_id, apple_auth_token, wallet_message, wallet_message_at, wallet_message_until')
       .eq('id', cardId)
       .maybeSingle();
     if (cardErr || !card) {
@@ -278,14 +278,16 @@ Deno.serve(async (req) => {
     const cardBg = campaign?.background_color || '#f0ece1';
     const cardText = campaign?.card_text_color || '#1d3458';
     const currentStamps = card.current_stamps ?? 0;
-    // Latest merchant offer (CRM broadcast). Rendered as an invisible-until-
-    // flipped back field with changeMessage '%@' so a NEW offer fires a
-    // lock-screen notification. Auto-expires 24h after it was sent so it never
-    // lingers on the card.
+    // Latest merchant offer (marketing campaign). Rendered as a back field
+    // with changeMessage '%@' so a NEW offer fires a lock-screen notification.
+    // It stays until the campaign's wallet_message_until (its end date), or
+    // 24h after it was sent when no end date is set, so it never lingers.
     const offerRaw = (card.wallet_message as string | null)?.trim() || '';
     const offerAt = card.wallet_message_at as string | null;
-    const offerFresh = Boolean(offerRaw) && Boolean(offerAt) &&
-      (Date.now() - new Date(offerAt as string).getTime()) < 24 * 60 * 60 * 1000;
+    const offerUntil = card.wallet_message_until as string | null;
+    const offerFresh = Boolean(offerRaw) && Boolean(offerAt) && (offerUntil
+      ? Date.now() < new Date(offerUntil).getTime()
+      : (Date.now() - new Date(offerAt as string).getTime()) < 24 * 60 * 60 * 1000);
     const offerMsg = offerFresh ? offerRaw : '';
     const stampsLeft = Math.max(0, maxStamps - currentStamps);
 

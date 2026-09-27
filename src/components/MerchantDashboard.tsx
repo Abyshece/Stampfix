@@ -5,7 +5,7 @@ import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
   RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone } from 'lucide-react';
-import { OffersPanel } from './OffersPanel';
+import { CampaignsPanel } from './CampaignsPanel';
 import { useAuth } from '../lib/auth';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -85,7 +85,7 @@ const TAB_PATH: Record<Tab, string> = {
   CUSTOMERS: '/customers',
   ACTIVITY: '/activity',
   ANALYTICS: '/insights',
-  OFFERS: '/offers',
+  OFFERS: '/campaigns',
   VALUE: '/payback',
   STAFF: '/staff',
   PREVIEW: '/preview-card',
@@ -96,6 +96,7 @@ const TAB_PATH: Record<Tab, string> = {
 const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'posters', 'locations', 'billing', 'account', 'links', 'privacy', 'danger'];
 function pathToTab(path: string): Tab | null {
   if (path === '/settings' || path.startsWith('/settings/')) return 'SETTINGS';
+  if (path === '/offers') return 'OFFERS'; // old links to the former Offers tab
   const e = (Object.entries(TAB_PATH) as [Tab, string][]).find(([, p]) => p === path);
   return e ? e[0] : null;
 }
@@ -757,7 +758,7 @@ export function MerchantDashboard({
               ['CUSTOMERS', Users, t('dash.nav.customers', { defaultValue: 'Customers' })],
               ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
               ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
-              ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Offers' })],
+              ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Campaigns' })],
               ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Payback' })],
               ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
               ['PREVIEW', Eye, t('dash.nav.previewCard', { defaultValue: 'Preview Card' })],
@@ -1608,7 +1609,7 @@ export function MerchantDashboard({
 
         {/* --- SETTINGS --- */}
         {activeTab === 'OFFERS' && (
-          <OffersPanel campaignId={campaign.id} businessName={campaign.businessName} />
+          <CampaignsPanel campaignId={campaign.id} businessName={campaign.businessName} locations={locations} />
         )}
         {activeTab === 'STAFF' && (
           !isPro ? (
@@ -2069,7 +2070,7 @@ export function MerchantDashboard({
             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
             <div className="grid grid-cols-4 gap-4 mb-4">
               {([
-                ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Offers' })],
+                ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Campaigns' })],
                 ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
                 ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Payback' })],
                 ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],

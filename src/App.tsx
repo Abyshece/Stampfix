@@ -41,7 +41,7 @@ import { BrandLoading } from './components/BrandLoading';
 type View = 'landing' | 'merchant';
 
 /** Merchant dashboard pages that open the merchant flow on a deep link / refresh. */
-const MERCHANT_PATHS = ['/scan', '/customers', '/activity', '/insights', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
+const MERCHANT_PATHS = ['/scan', '/customers', '/activity', '/insights', '/campaigns', '/offers', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
 
 const DEFAULT_TITLE = 'Stampfix | Digital Loyalty Cards for Apple & Google Wallet';
 const PAGE_TITLES: Record<string, string> = {
