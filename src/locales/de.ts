@@ -238,6 +238,7 @@ const de = {
       dangerTitle: 'Gefahrenzone', dangerHint: 'Dauerhafte Aktionen. Das Löschen Ihres Kontos entfernt Ihre Karten, Kunden und Historie – dies kann nicht rückgängig gemacht werden.',
     },
     scan: {
+      errFull: 'Diese Karte ist bereits voll – lösen Sie zuerst die Belohnung ein.', errNotFull: 'Diese Karte ist noch nicht voll, es gibt noch keine Belohnung.', errFrozen: 'Stempeln ist für dieses Konto vorübergehend deaktiviert. Bitte wenden Sie sich an den Support.', errInactive: 'Dieses Konto ist nicht aktiv.', errSignedOut: 'Sie wurden abgemeldet. Bitte melden Sie sich erneut an.',
       hi: 'Hallo,', there: 'da',
       loggedInAs: 'Sie sind angemeldet als',
       staffOpt: 'Mitarbeiter…',
@@ -857,6 +858,7 @@ const de = {
     },
     promo: { dismissBanner: 'Banner ausblenden' },
     shell: {
+      loadFailedTitle: 'Ihr Dashboard konnte nicht geladen werden', loadFailedBody: 'Prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut. Ihre Daten sind sicher.', retry: 'Erneut versuchen', signOut: 'Abmelden',
       errStamp: 'Stempel fehlgeschlagen', errReset: 'Zurücksetzen fehlgeschlagen', errStatus: 'Statusaktualisierung fehlgeschlagen', errDelete: 'Löschen fehlgeschlagen', errAddCustomer: 'Kunde konnte nicht hinzugefügt werden', errUpdate: 'Aktualisierung fehlgeschlagen',
       thisCustomer: 'Dieser Kunde',
     },

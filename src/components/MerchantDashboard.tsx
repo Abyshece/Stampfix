@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, MerchantBilling } from '../types';
 import {
@@ -10,7 +10,8 @@ import { useAuth } from '../lib/auth';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { SupportModal } from './SupportModal';
-import { markApprovalBannerSeen, getCardById, logMerchantActivity } from '../lib/db';
+import { markApprovalBannerSeen, logMerchantActivity } from '../lib/db';
+import type { ScanOutcome } from '../lib/scanOutcome';
 import { useTranslation } from 'react-i18next';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
@@ -60,15 +61,16 @@ interface MerchantDashboardProps {
   onSetActiveLocation: (id: string | null) => void;
   onAddLocation: (name: string, address?: string, latitude?: number | null, longitude?: number | null) => Promise<void>;
   onUpdateLocation: (locationId: string, patch: { name?: string; address?: string; latitude?: number | null; longitude?: number | null; archived?: boolean }) => Promise<void>;
-  onStampCard: (cardId: string) => void;
-  onResetCard: (cardId: string) => void;
-  /** Redeems a scanned signed token server-side. Returns the result so the
-   *  scanner can show a toast. Throws if the token is invalid/expired/replayed. */
-  onRedeemToken: (token: string) => Promise<{
-    action: 'STAMP' | 'REDEEM';
-    card: { id: string; customerName: string; currentStamps: number; rewardsRedeemed: number; status: 'ACTIVE' | 'BLOCKED' };
-  }>;
-  onUpdateCampaign: (patch: Partial<Campaign>) => void;
+  /** Stamp / redeem / scan a card. Each resolves with what actually happened
+   *  (after any daily-limit prompt), so the UI only celebrates real stamps. */
+  onStampCard: (cardId: string) => Promise<ScanOutcome>;
+  onResetCard: (cardId: string) => Promise<ScanOutcome>;
+  /** Wallet-QR scan or typed code: stamps, or redeems when the card is full. */
+  onScanCard: (cardId: string, source: 'qr' | 'manual_dashboard') => Promise<ScanOutcome>;
+  /** Redeems a scanned signed token server-side. */
+  onRedeemToken: (token: string) => Promise<ScanOutcome>;
+  /** Resolves true when the change was saved. */
+  onUpdateCampaign: (patch: Partial<Campaign>) => Promise<boolean>;
   onAddCustomer: (data: { firstName: string; surname: string; email: string }) => void;
   onDeleteCustomer: (cardId: string) => void;
   onBlockCustomer: (cardId: string) => void;
@@ -93,7 +95,7 @@ const TAB_PATH: Record<Tab, string> = {
   SHARE: '/promote',
   HELP: '/help',
 };
-const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'posters', 'locations', 'billing', 'account', 'links', 'privacy', 'danger'];
+const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'stamping', 'posters', 'locations', 'billing', 'account', 'links', 'privacy', 'danger'];
 function pathToTab(path: string): Tab | null {
   if (path === '/settings' || path.startsWith('/settings/')) return 'SETTINGS';
   if (path === '/offers') return 'OFFERS'; // old links to the former Offers tab
@@ -128,7 +130,7 @@ const EMOJI_LIST = [
 export function MerchantDashboard({
   campaign, cards, activities, locations, activeLocationId, onboarding, billing, country,
   onSetActiveLocation, onAddLocation, onUpdateLocation,
-  onStampCard, onResetCard, onRedeemToken, onUpdateCampaign,
+  onStampCard, onResetCard, onScanCard, onRedeemToken, onUpdateCampaign,
   onAddCustomer, onDeleteCustomer, onBlockCustomer, onMarkOnboardingStep, onLogout,
 }: MerchantDashboardProps) {
   const { t } = useTranslation();
@@ -279,9 +281,50 @@ export function MerchantDashboard({
     setShowMobileMoreMenu(false);
   };
 
-  const handleManualStamp = () => {
+  /** Shows the outcome of a stamp / redeem in the scan banner (and, for a
+   *  success, the celebration). Nothing is shown before the server answers. */
+  const showScanOutcome = (out: ScanOutcome) => {
+    if (out.cancelled) return;
+    if (out.ok && out.card) {
+      const local = cards.find((c) => c.id === out.card!.id);
+      setScanResult({
+        status: 'success',
+        card: {
+          id: out.card.id,
+          campaignId: campaign.id,
+          customerName: out.card.customerName || local?.customerName || '',
+          email: local?.email ?? '',
+          currentStamps: out.card.currentStamps,
+          rewardsRedeemed: out.card.rewardsRedeemed ?? local?.rewardsRedeemed ?? 0,
+          status: out.card.status ?? 'ACTIVE',
+          maxStampsSnapshot: out.card.maxStamps || local?.maxStampsSnapshot || null,
+          joinedAt: local?.joinedAt ?? new Date(),
+        },
+        message: out.message,
+      });
+    } else {
+      setScanResult({ status: 'error', message: out.message });
+    }
+    setTimeout(() => setScanResult(null), 2500);
+  };
+
+  // One scan / stamp at a time, so a double tap can't fire two requests.
+  const scanBusy = useRef(false);
+  const [busyCards, setBusyCards] = useState<Set<string>>(() => new Set());
+  const runCardAction = async (cardId: string, fn: () => Promise<ScanOutcome>) => {
+    if (busyCards.has(cardId)) return;
+    setBusyCards((prev) => new Set(prev).add(cardId));
+    try {
+      const out = await fn();
+      if (!out.ok && !out.cancelled) toast.error(out.message);
+    } finally {
+      setBusyCards((prev) => { const next = new Set(prev); next.delete(cardId); return next; });
+    }
+  };
+
+  const handleManualStamp = async () => {
     const q = manualId.trim().toLowerCase();
-    if (!q) return;
+    if (!q || scanBusy.current) return;
     const target = cards.find(
       (c) =>
         (c.customerCode ?? '').toLowerCase() === q ||
@@ -291,19 +334,17 @@ export function MerchantDashboard({
     );
     if (!target) {
       setScanResult({ status: 'error', message: 'Customer not found' });
-    } else if (target.status === 'BLOCKED') {
-      setScanResult({ status: 'error', message: 'This card is blocked' });
-    } else {
-      onStampCard(target.id);
-      const newStamps = target.currentStamps + 1;
-      setScanResult({
-        status: 'success',
-        card: { ...target, currentStamps: newStamps },
-        message: newStamps >= (target.maxStampsSnapshot ?? campaign.maxStamps) ? 'Reward Unlocked!' : 'Stamp Added',
-      });
-      setManualId('');
+      setTimeout(() => setScanResult(null), 2500);
+      return;
     }
-    setTimeout(() => setScanResult(null), 2500);
+    scanBusy.current = true;
+    try {
+      const out = await onScanCard(target.id, 'manual_dashboard');
+      if (out.ok) setManualId('');
+      showScanOutcome(out);
+    } finally {
+      scanBusy.current = false;
+    }
   };
 
   /**
@@ -312,96 +353,35 @@ export function MerchantDashboard({
    * busy queue should be able to scan one customer after another without
    * tapping anything between.
    *
-   * Two QR formats are supported:
-   *  - Signed token (preferred, rotates every 30s) — sent to the server
-   *    for verification + stamping. Server is authoritative.
-   *  - Plain cardId (legacy, used by already-saved Google Wallet passes)
-   *    — handled client-side as before. Still safe because RLS ensures
-   *    merchants can only stamp cards in their own campaign, but it does
-   *    NOT defend against screenshot replay. The token path does.
+   * Two QR formats are supported, both applied server-side:
+   *  - Signed token (web card, rotates every 30s): verified for expiry and
+   *    replay, then stamped.
+   *  - Plain card id (Apple / Google Wallet passes).
+   * Either way the server decides stamp vs. redeem from the card's real
+   * count, enforces the daily limit and the shop's ownership of the card.
    */
   const handleScan = async (payload: string) => {
+    if (scanBusy.current) return;
     const parsed = parseCardQRPayload(payload);
     if (!parsed) {
       setScanResult({ status: 'error', message: "That doesn't look like a Stampfix card" });
       setTimeout(() => setScanResult(null), 2500);
       return;
     }
-
-    if (parsed.kind === 'token') {
-      try {
-        const result = await onRedeemToken(parsed.token);
-        setScanResult({
-          status: 'success',
-          card: {
-            id: result.card.id,
-            campaignId: campaign.id,
-            customerName: result.card.customerName,
-            email: '',
-            currentStamps: result.card.currentStamps,
-            rewardsRedeemed: result.card.rewardsRedeemed,
-            status: result.card.status,
-            maxStampsSnapshot: cards.find((c) => c.id === result.card.id)?.maxStampsSnapshot ?? null,
-            joinedAt: new Date(),
-          },
-          message: result.action === 'REDEEM'
-            ? 'Reward Redeemed'
-            : result.card.currentStamps >= (cards.find((c) => c.id === result.card.id)?.maxStampsSnapshot ?? campaign.maxStamps)
-              ? 'Reward Unlocked!'
-              : 'Stamp Added',
-        });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Stamp failed';
-        setScanResult({ status: 'error', message: msg });
-      }
-      setTimeout(() => setScanResult(null), 2500);
-      return;
-    }
-
-    // Legacy cardId path — for wallet passes that encode the plain cardId.
-    // Re-read the card fresh from the DB so the stamp-vs-redeem decision is
-    // never made on a stale local count (which would send an already-full card
-    // down the stamp branch and never redeem).
-    const local = cards.find((c) => c.id === parsed.cardId);
-    let target = local ?? null;
+    scanBusy.current = true;
     try {
-      const fresh = await getCardById(parsed.cardId);
-      if (fresh) target = fresh;
-    } catch {
-      /* fall back to local state */
+      const out = parsed.kind === 'token'
+        ? await onRedeemToken(parsed.token)
+        : await onScanCard(parsed.cardId, 'qr');
+      showScanOutcome(out);
+    } finally {
+      scanBusy.current = false;
     }
-    if (!target) {
-      setScanResult({ status: 'error', message: 'This card is from a different café' });
-      setTimeout(() => setScanResult(null), 2500);
-      return;
-    }
-    if (target.status === 'BLOCKED') {
-      setScanResult({ status: 'error', message: 'This card is blocked', card: target });
-      setTimeout(() => setScanResult(null), 2500);
-      return;
-    }
-    const goal = target.maxStampsSnapshot ?? campaign.maxStamps;
-    if (target.currentStamps >= goal) {
-      onResetCard(target.id);
-      setScanResult({
-        status: 'success',
-        card: { ...target, currentStamps: 0, rewardsRedeemed: target.rewardsRedeemed + 1 },
-        message: 'Reward Redeemed',
-      });
-    } else {
-      onStampCard(target.id);
-      const newStamps = target.currentStamps + 1;
-      setScanResult({
-        status: 'success',
-        card: { ...target, currentStamps: newStamps },
-        message: newStamps >= goal ? 'Reward Unlocked!' : 'Stamp Added',
-      });
-    }
-    setTimeout(() => setScanResult(null), 2500);
   };
 
-  const handleSaveSettings = () => {
-    onUpdateCampaign(tempSettings);
+  const handleSaveSettings = async () => {
+    const saved = await onUpdateCampaign(tempSettings);
+    if (!saved) return; // the failure was already reported
     setSettingsSaved(true);
     toast.success('Settings saved');
     setTimeout(() => setSettingsSaved(false), 3000);
@@ -1285,11 +1265,11 @@ export function MerchantDashboard({
                     <div className="flex items-center gap-1">
                       {card.status !== 'BLOCKED' && (
                         card.currentStamps >= (card.maxStampsSnapshot ?? campaign.maxStamps) ? (
-                          <button onClick={() => onResetCard(card.id)} className="px-3 h-8 rounded-full bg-green-50 text-green-600 text-xs font-semibold flex items-center justify-center">
+                          <button onClick={() => void runCardAction(card.id, () => onResetCard(card.id))} disabled={busyCards.has(card.id)} className="px-3 h-8 rounded-full bg-green-50 text-green-600 text-xs font-semibold flex items-center justify-center disabled:opacity-50">
                             {t('dash.customers.redeem', { defaultValue: 'Redeem' })}
                           </button>
                         ) : (
-                          <button onClick={() => onStampCard(card.id)} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                          <button onClick={() => void runCardAction(card.id, () => onStampCard(card.id))} disabled={busyCards.has(card.id)} className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center disabled:opacity-50">
                             <Plus className="w-4 h-4" />
                           </button>
                         )
@@ -1371,9 +1351,9 @@ export function MerchantDashboard({
                           {card.status !== 'BLOCKED' && (
                             <>
                               {card.currentStamps >= cardMax ? (
-                                <button onClick={() => onResetCard(card.id)} className="text-green-600 hover:underline text-xs font-medium">{t('dash.customers.redeem', { defaultValue: 'Redeem' })}</button>
+                                <button onClick={() => void runCardAction(card.id, () => onResetCard(card.id))} disabled={busyCards.has(card.id)} className="text-green-600 hover:underline text-xs font-medium disabled:opacity-50">{t('dash.customers.redeem', { defaultValue: 'Redeem' })}</button>
                               ) : (
-                                <button onClick={() => onStampCard(card.id)} className="text-blue-600 hover:underline text-xs font-medium">{t('dash.customers.addStamp', { defaultValue: '+Stamp' })}</button>
+                                <button onClick={() => void runCardAction(card.id, () => onStampCard(card.id))} disabled={busyCards.has(card.id)} className="text-blue-600 hover:underline text-xs font-medium disabled:opacity-50">{t('dash.customers.addStamp', { defaultValue: '+Stamp' })}</button>
                               )}
                               <div className="h-4 w-px bg-gray-200 mx-1"></div>
                             </>

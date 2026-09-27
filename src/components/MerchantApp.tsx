@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, MerchantBilling, Plan } from '../types';
 import { useAuth, signOut } from '../lib/auth';
 import { supabase } from '../lib/supabase';
-import { checkDailyCap } from '../services/stampGuard';
+import { getStaffSession } from '../services/staff';
 import { useTranslation } from 'react-i18next';
 import { StampReasonModal } from './StampReasonModal';
 import {
@@ -11,8 +11,8 @@ import {
   listCardsForCampaign,
   listActivities,
   updateCampaign,
-  addStamp,
-  redeemReward,
+  merchantScan,
+  type ScanResult,
   setCardStatus,
   deleteCard,
   createCard,
@@ -25,6 +25,7 @@ import {
   logMerchantActivity,
 } from '../lib/db';
 import { redeemStampToken } from '../services/stampToken';
+import { scanErrorMessage, scanSuccessMessage, type ScanOutcome } from '../lib/scanOutcome';
 import { MerchantOnboarding, consumePendingCampaign } from './MerchantOnboarding';
 import { MerchantDashboard } from './MerchantDashboard';
 import { BrandLoading } from './BrandLoading';
@@ -63,6 +64,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     else localStorage.removeItem('stampfix_active_location_id');
   }, []);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Log one "login" activity per browser session for the admin activity feed.
   useEffect(() => {
@@ -82,6 +84,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       return;
     }
     setLoading(true);
+    setLoadError(null);
     try {
       let c = await getCampaignByMerchant(user.id);
       // If the user just confirmed their email, they may have a pending
@@ -121,14 +124,10 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       }
     } catch (err) {
       console.error('[merchant] loadAll failed:', err);
-      // Don't leave the user stuck on a spinner if the DB is unreachable
-      // or the schema isn't applied. Show the onboarding screen instead;
-      // they can sign out from there.
-      setCampaign(null);
-      setCards([]);
-      setActivities([]);
-      setLocations([]);
-      setOnboarding({});
+      // Show a retry screen. Falling back to the onboarding form (as before)
+      // told an existing merchant to create their program again whenever the
+      // network blipped.
+      setLoadError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
@@ -189,59 +188,88 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     setActivities(acts);
   }, [campaign]);
 
-  const [pendingStamp, setPendingStamp] = useState<
-    { cardId: string; customerName: string; stampsToday: number; cap: number } | null
-  >(null);
-
-  // Applies the stamp. `reason` is recorded for overrides so the activity log
-  // always explains the unusual ones.
-  const applyStamp = useCallback(
-    async (cardId: string, reason?: string | null, isOverride = false) => {
-      if (!campaign) return;
+  const handleMarkOnboardingStep = useCallback(
+    async (patch: Partial<OnboardingState>) => {
+      if (!user) return;
+      // Optimistic local update so UI feels instant.
+      setOnboarding((prev) => ({ ...prev, ...patch }));
       try {
-        const card = cards.find((c) => c.id === cardId);
-        const updated = await addStamp(cardId, card?.maxStampsSnapshot ?? campaign.maxStamps, { reason, isOverride });
-        setCards((prev) => prev.map((c) => (c.id === cardId ? updated : c)));
-        refreshActivities();
+        const updated = await setOnboardingFlag(user.id, patch);
+        setOnboarding(updated);
       } catch (err) {
-        alert(err instanceof Error ? err.message : t('dash.shell.errStamp', { defaultValue: 'Stamp failed' }));
+        console.warn('[onboarding] flag update failed:', err);
+        // Best-effort; the wizard is non-critical.
       }
     },
-    [campaign, refreshActivities, cards],
+    [user],
+  );
+
+  // Daily-limit prompt. runScan awaits the merchant's answer: a reason
+  // (stamp anyway, recorded as an override) or null (cancelled).
+  const [capPrompt, setCapPrompt] = useState<
+    { customerName: string; stampsToday: number; cap: number; resolve: (reason: string | null) => void } | null
+  >(null);
+  const askReason = useCallback(
+    (info: { customerName: string; stampsToday: number; cap: number }) =>
+      new Promise<string | null>((resolve) => setCapPrompt({ ...info, resolve })),
+    [],
+  );
+
+  /** Applies a scan result to the local card list, activity feed and onboarding. */
+  const applyScan = useCallback((r: Extract<ScanResult, { ok: true }>) => {
+    setCards((prev) => prev.map((c) => (c.id === r.card.id
+      ? { ...c, currentStamps: r.card.currentStamps, rewardsRedeemed: r.card.rewardsRedeemed, status: r.card.status, maxStampsSnapshot: r.card.maxStamps }
+      : c)));
+    void refreshActivities();
+    if (r.action === 'STAMP' && !onboarding.first_stamp_given) {
+      handleMarkOnboardingStep({ first_stamp_given: true });
+    }
+  }, [refreshActivities, onboarding.first_stamp_given, handleMarkOnboardingStep]);
+
+  /**
+   * Every staff stamp and reward goes through here: the Wallet-QR scan, the
+   * manual code box and the customer list. The server applies it atomically;
+   * at the daily limit the merchant is asked for a reason first. Resolves
+   * with what actually happened, so the dashboard only celebrates real stamps.
+   */
+  const runScan = useCallback(
+    async (cardId: string, action: 'auto' | 'stamp' | 'redeem', source: 'qr' | 'manual_dashboard'): Promise<ScanOutcome> => {
+      if (!campaign) return { ok: false, message: t('dash.shell.errStamp', { defaultValue: 'Stamp failed' }) };
+      const base = { action, source, locationId: activeLocationId, campaignId: campaign.id } as const;
+      try {
+        let r = await merchantScan(cardId, base);
+        if (!r.ok && r.error === 'daily_cap') {
+          const reason = await askReason({
+            customerName: r.card?.customerName || t('dash.shell.thisCustomer', { defaultValue: 'This customer' }),
+            stampsToday: r.stampsToday ?? 0,
+            cap: r.cap ?? 0,
+          });
+          if (!reason) return { ok: false, cancelled: true, message: '' };
+          r = await merchantScan(cardId, { ...base, action: 'stamp', reason, override: true });
+        }
+        if (r.ok) {
+          applyScan(r);
+          return { ok: true, action: r.action, card: r.card, message: scanSuccessMessage(r) };
+        }
+        return { ok: false, message: scanErrorMessage(r.error, t) };
+      } catch (err) {
+        return { ok: false, message: err instanceof Error ? err.message : t('dash.shell.errStamp', { defaultValue: 'Stamp failed' }) };
+      }
+    },
+    [campaign, activeLocationId, askReason, applyScan],
   );
 
   const handleStampCard = useCallback(
-    async (cardId: string) => {
-      if (!campaign) return;
-      const card = cards.find((c) => c.id === cardId);
-      const cap = campaign.maxStampsPerDay ?? 1;
-      const check = await checkDailyCap(cardId, cap);
-      if (check.atCap) {
-        // Over the daily limit — make the person say why before it goes through.
-        setPendingStamp({
-          cardId,
-          customerName: card?.customerName ?? t('dash.shell.thisCustomer', { defaultValue: 'This customer' }),
-          stampsToday: check.stampsToday,
-          cap: check.cap,
-        });
-        return;
-      }
-      applyStamp(cardId);
-    },
-    [campaign, cards, applyStamp],
+    (cardId: string, source: 'qr' | 'manual_dashboard' = 'manual_dashboard') => runScan(cardId, 'stamp', source),
+    [runScan],
   );
-
   const handleResetCard = useCallback(
-    async (cardId: string) => {
-      try {
-        const updated = await redeemReward(cardId);
-        setCards((prev) => prev.map((c) => (c.id === cardId ? updated : c)));
-        refreshActivities();
-      } catch (err) {
-        alert(err instanceof Error ? err.message : t('dash.shell.errReset', { defaultValue: 'Reset failed' }));
-      }
-    },
-    [refreshActivities],
+    (cardId: string) => runScan(cardId, 'redeem', 'manual_dashboard'),
+    [runScan],
+  );
+  const handleScanCard = useCallback(
+    (cardId: string) => runScan(cardId, 'auto', 'qr'),
+    [runScan],
   );
 
   const handleBlockCustomer = useCallback(
@@ -291,21 +319,6 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     [campaign, refreshActivities],
   );
 
-  const handleMarkOnboardingStep = useCallback(
-    async (patch: Partial<OnboardingState>) => {
-      if (!user) return;
-      // Optimistic local update so UI feels instant.
-      setOnboarding((prev) => ({ ...prev, ...patch }));
-      try {
-        const updated = await setOnboardingFlag(user.id, patch);
-        setOnboarding(updated);
-      } catch (err) {
-        console.warn('[onboarding] flag update failed:', err);
-        // Best-effort; the wizard is non-critical.
-      }
-    },
-    [user],
-  );
 
   /**
    * Redeems a signed stamp token via the Edge Function. Server is
@@ -318,28 +331,37 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
    * activity row with which branch did the stamping.
    */
   const handleRedeemToken = useCallback(
-    async (token: string) => {
-      const result = await redeemStampToken(token, activeLocationId);
-      setCards((prev) =>
-        prev.map((c) =>
-          c.id === result.card.id
-            ? {
-                ...c,
-                currentStamps: result.card.currentStamps,
-                rewardsRedeemed: result.card.rewardsRedeemed,
-                status: result.card.status,
-              }
-            : c,
-        ),
-      );
-      refreshActivities();
-      // Onboarding: a successful stamp counts as the first-stamp milestone.
-      if (!onboarding.first_stamp_given) {
-        handleMarkOnboardingStep({ first_stamp_given: true });
+    async (token: string): Promise<ScanOutcome> => {
+      if (!campaign) return { ok: false, message: t('dash.shell.errStamp', { defaultValue: 'Stamp failed' }) };
+      try {
+        const r = await redeemStampToken(token, activeLocationId, getStaffSession(campaign.id));
+        if (r.ok) {
+          applyScan(r);
+          return { ok: true, action: r.action, card: r.card, message: scanSuccessMessage(r) };
+        }
+        if (r.error === 'daily_cap' && r.card?.id) {
+          // The token is spent; continue with the card id (same checks, server-side).
+          const reason = await askReason({
+            customerName: r.card.customerName || t('dash.shell.thisCustomer', { defaultValue: 'This customer' }),
+            stampsToday: r.stampsToday ?? 0,
+            cap: r.cap ?? 0,
+          });
+          if (!reason) return { ok: false, cancelled: true, message: '' };
+          const again = await merchantScan(r.card.id, {
+            action: 'stamp', source: 'qr', locationId: activeLocationId, campaignId: campaign.id, reason, override: true,
+          });
+          if (again.ok) {
+            applyScan(again);
+            return { ok: true, action: again.action, card: again.card, message: scanSuccessMessage(again) };
+          }
+          return { ok: false, message: scanErrorMessage(again.error, t) };
+        }
+        return { ok: false, message: r.error === 'token' ? (r.message ?? 'Stamp failed') : scanErrorMessage(r.error, t) };
+      } catch (err) {
+        return { ok: false, message: err instanceof Error ? err.message : t('dash.shell.errStamp', { defaultValue: 'Stamp failed' }) };
       }
-      return result;
     },
-    [refreshActivities, activeLocationId, onboarding.first_stamp_given, handleMarkOnboardingStep],
+    [campaign, activeLocationId, askReason, applyScan],
   );
 
   // ----- Location handlers -----
@@ -369,13 +391,15 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   );
 
   const handleUpdateCampaign = useCallback(
-    async (patch: Partial<Campaign>) => {
-      if (!campaign) return;
+    async (patch: Partial<Campaign>): Promise<boolean> => {
+      if (!campaign) return false;
       try {
         const updated = await updateCampaign(campaign.id, patch);
         setCampaign(updated);
+        return true;
       } catch (err) {
         alert(err instanceof Error ? err.message : t('dash.shell.errUpdate', { defaultValue: 'Update failed' }));
+        return false;
       }
     },
     [campaign],
@@ -415,6 +439,25 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
     return <BrandLoading />;
   }
 
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white p-6 text-center">
+        <div className="max-w-sm space-y-4">
+          <h1 className="text-xl font-serif-display font-semibold">{t('dash.shell.loadFailedTitle', { defaultValue: 'We couldn’t load your dashboard' })}</h1>
+          <p className="text-sm text-gray-500">{t('dash.shell.loadFailedBody', { defaultValue: 'Check your internet connection and try again. Your data is safe.' })}</p>
+          <div className="flex gap-2 justify-center">
+            <button onClick={() => void loadAll()} className="bg-[#37352F] text-white px-5 py-2.5 rounded-md text-sm font-medium hover:bg-opacity-90">
+              {t('dash.shell.retry', { defaultValue: 'Try again' })}
+            </button>
+            <button onClick={() => void handleLogout()} className="px-5 py-2.5 rounded-md text-sm border notion-border hover:bg-[#F7F7F5]">
+              {t('dash.shell.signOut', { defaultValue: 'Sign out' })}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!campaign) {
     return <MerchantOnboarding onComplete={loadAll} initialStep={startOnLogin ? 'LOGIN' : 'FORM'} onBack={onLogout} />;
   }
@@ -439,6 +482,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         onAddLocation={handleAddLocation}
         onUpdateLocation={handleUpdateLocation}
         onStampCard={handleStampCard}
+        onScanCard={handleScanCard}
         onResetCard={handleResetCard}
         onRedeemToken={handleRedeemToken}
         onUpdateCampaign={handleUpdateCampaign}
@@ -462,18 +506,14 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
         />
       )}
 
-      {pendingStamp && (
+      {capPrompt && (
         <StampReasonModal
-          customerName={pendingStamp.customerName}
+          customerName={capPrompt.customerName}
           atCap
-          stampsToday={pendingStamp.stampsToday}
-          cap={pendingStamp.cap}
-          onCancel={() => setPendingStamp(null)}
-          onConfirm={async (reason) => {
-            const p = pendingStamp;
-            setPendingStamp(null);
-            await applyStamp(p.cardId, reason, true);
-          }}
+          stampsToday={capPrompt.stampsToday}
+          cap={capPrompt.cap}
+          onCancel={() => { capPrompt.resolve(null); setCapPrompt(null); }}
+          onConfirm={(reason) => { capPrompt.resolve(reason); setCapPrompt(null); }}
         />
       )}
     </>

@@ -373,7 +373,9 @@ export async function createCard(input: {
       campaign_id: input.campaignId,
       customer_id: input.customerId ?? null,
       customer_name: input.customerName,
-      email: input.email,
+      // Lower-case so a card the shop adds by hand matches the customer's
+      // own signup later (claimMyCard) and the one-card-per-email rule.
+      email: input.email.trim().toLowerCase(),
       joined_at_location_id: input.joinedAtLocationId ?? null,
       offer_title_snapshot: campaign.offer_title,
       max_stamps_snapshot: campaign.max_stamps,
@@ -410,7 +412,7 @@ export async function createCard(input: {
 // Apple also gets one direct call from here: the trigger authenticates with a
 // Vault-stored key that goes stale on key rotation, and when that happens
 // Apple passes silently stop auto-updating (only pull-to-refresh works). A
-// scanned Wallet QR lands in addStamp / redeemReward, so pushing here makes
+// scanned Wallet QR lands in merchantScan, so pushing here makes
 // the update independent of the trigger. A duplicate push is harmless.
 function pushAppleWalletUpdate(cardId: string): void {
   supabase.functions
@@ -425,61 +427,91 @@ function pushAppleWalletUpdate(cardId: string): void {
     });
 }
 
-export async function addStamp(
-  cardId: string,
-  maxStamps: number,
-  opts?: { reason?: string | null; isOverride?: boolean },
-): Promise<UserCard> {
-  // Atomic increment via RPC. The guards (not blocked, under the frozen goal,
-  // caller owns the campaign) run inside a single UPDATE, so a double-click or
-  // two staff stamping at once can never double-count or lose an update.
-  // Returns the updated row, or nothing when the card was full / blocked.
-  const { data, error } = await supabase.rpc('add_stamp_atomic', { p_card_id: cardId, p_max: maxStamps });
-  if (error) throw error;
-  const rows = (data ?? []) as CardRow[];
-  if (rows.length > 0) {
-    const updated = toCard(rows[0]);
-    pushAppleWalletUpdate(updated.id);
-    await logActivity(updated.campaignId, updated.id, updated.customerName, 'STAMP', 'manual_dashboard', {
-      reason: opts?.reason ?? null,
-      isOverride: opts?.isOverride ?? false,
-    });
-    return updated;
-  }
-  // No row updated: card was full, blocked, or not owned by the caller.
-  const { data: cur, error: curErr } = await supabase.from('cards').select('*').eq('id', cardId).maybeSingle();
-  if (curErr) throw curErr;
-  if (!cur) throw new Error('Card not found.');
-  const row = cur as CardRow;
-  if (row.status === 'BLOCKED') throw new Error('Card is blocked');
-  return toCard(row); // already full — unchanged
+export type ScanError =
+  | 'not_found' | 'blocked' | 'daily_cap' | 'card_full' | 'not_full'
+  | 'merchant_frozen' | 'merchant_inactive' | 'not_signed_in';
+
+export interface ScanCard {
+  id: string;
+  customerName: string;
+  currentStamps: number;
+  rewardsRedeemed?: number;
+  status?: 'ACTIVE' | 'BLOCKED';
+  maxStamps: number;
 }
 
-export async function redeemReward(cardId: string): Promise<UserCard> {
-  const { data: existing, error: fetchErr } = await supabase
-    .from('cards')
-    .select('*')
-    .eq('id', cardId)
-    .maybeSingle();
-  if (fetchErr) throw fetchErr;
-  if (!existing) throw new Error('Card not found.');
-  const row = existing as CardRow;
-  if (row.status === 'BLOCKED') throw new Error('Card is blocked');
+export type ScanResult =
+  | { ok: true; action: 'STAMP' | 'REDEEM'; override: boolean; card: ScanCard & { rewardsRedeemed: number; status: 'ACTIVE' | 'BLOCKED' } }
+  | { ok: false; error: ScanError | string; card?: ScanCard; stampsToday?: number; cap?: number; message?: string };
 
-  const { data, error } = await supabase
-    .from('cards')
-    .update({
-      current_stamps: 0,
-      rewards_redeemed: row.rewards_redeemed + 1,
-    })
-    .eq('id', cardId)
-    .select('*')
-    .single();
+/**
+ * Stamps or redeems a card for the signed-in merchant, in one atomic
+ * server-side step (merchant_scan): ownership, blocked cards, the daily
+ * limit, the stamp itself and its activity-log row all happen together, so
+ * a stamp can never be saved without its log entry or be double-counted.
+ * action 'auto' stamps, or redeems when the card is full.
+ * Going past the daily limit needs override + a reason (recorded).
+ */
+export async function merchantScan(
+  cardId: string,
+  opts: {
+    action?: 'auto' | 'stamp' | 'redeem';
+    locationId?: string | null;
+    source?: 'qr' | 'manual_dashboard';
+    reason?: string | null;
+    override?: boolean;
+    campaignId?: string;
+  } = {},
+): Promise<ScanResult> {
+  const staff = opts.campaignId ? getStaffSession(opts.campaignId) : null;
+  const { data, error } = await supabase.rpc('merchant_scan', {
+    p_card_id: cardId,
+    p_action: opts.action ?? 'auto',
+    p_location_id: opts.locationId ?? null,
+    p_source: opts.source ?? 'manual_dashboard',
+    p_reason: opts.reason ?? null,
+    p_override: opts.override ?? false,
+    p_staff_id: staff?.id ?? null,
+    p_staff_name: staff?.name ?? null,
+    p_tz: deviceTimeZone(),
+  });
   if (error) throw error;
-  const updated = toCard(data as CardRow);
-  pushAppleWalletUpdate(updated.id);
-  await logActivity(updated.campaignId, updated.id, updated.customerName, 'REDEEM');
-  return updated;
+  const r = data as ScanResult;
+  if (r?.ok) pushAppleWalletUpdate(r.card.id);
+  return r ?? { ok: false, error: 'not_found' };
+}
+
+/**
+ * Saves the signup form (name, phone, 6-digit recovery code, consent) before
+ * the account is created. The database hashes the recovery code onto the
+ * customer's new card, so they can restore it on another phone later.
+ */
+export async function stashPendingSignup(input: {
+  email: string; campaignId: string; firstName: string; surname?: string | null;
+  phone?: string | null; code?: string | null; locationId?: string | null;
+  termsAccepted: boolean; marketingOptIn: boolean;
+}): Promise<void> {
+  const { error } = await supabase.rpc('stash_pending_signup', {
+    p_email: input.email,
+    p_campaign: input.campaignId,
+    p_first_name: input.firstName,
+    p_surname: input.surname ?? null,
+    p_phone: input.phone ?? null,
+    p_code: input.code ?? null,
+    p_location: input.locationId ?? null,
+    p_terms: input.termsAccepted,
+    p_marketing: input.marketingOptIn,
+  });
+  if (error) throw error;
+}
+
+/** Links a card the shop created by hand (same email, no owner yet) to the
+ *  signed-in customer. Returns it, or null when there is none to claim. */
+export async function claimMyCard(campaignId: string): Promise<UserCard | null> {
+  const { data, error } = await supabase.rpc('claim_my_card', { p_campaign: campaignId });
+  if (error) throw error;
+  const row = ((data ?? []) as CardRow[])[0];
+  return row ? toCard(row) : null;
 }
 
 export async function setCardStatus(

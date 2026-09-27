@@ -1,31 +1,32 @@
 // supabase/functions/redeem-stamp-token/index.ts
 //
-// Verifies a stamp token from a scanned QR code and applies the stamp
-// atomically server-side. Replaces the client-side "find card and add
-// stamp" path with one that's authoritative and replay-protected.
+// Verifies a stamp token from a scanned QR code (the rotating QR on the
+// customer's web card), then stamps or redeems through merchant_scan — the
+// same atomic database step as every other staff scan. merchant_scan checks
+// that the card belongs to the caller's shop, that it isn't blocked, the
+// shop's daily stamp limit, and writes the activity row with the stamp.
 //
 // Required secret:
 //   STAMP_TOKEN_SECRET   - must match the one used by issue-stamp-token
 //
-// Auth: the *merchant* whose campaign owns the card.
-// RLS-enforced: a merchant for campaign A can't stamp a card in campaign B.
+// Auth: the *merchant* whose campaign owns the card (their JWT is passed on
+// to merchant_scan, so auth.uid() is the merchant).
 //
 // Request body:
-//   { token: string }
+//   { token: string, locationId?: string, staffId?: string, staffName?: string, tz?: string }
 //
 // Response (200):
-//   { ok: true, action: 'STAMP' | 'REDEEM', card: { id, currentStamps, rewardsRedeemed, status, customerName } }
+//   { ok: true, action: 'STAMP' | 'REDEEM', override, card: { id, customerName,
+//     currentStamps, rewardsRedeemed, status, maxStamps } }
+//   (card also carries the older snake_case names for clients before Sep 2026)
 //
-// Errors:
+// Errors ({ error: message, code?, card?, stampsToday?, cap? }):
 //   400 token malformed / wrong signature
 //   401 not authenticated
-//   403 you don't own this card's campaign / card blocked / token already used
-//   404 card no longer exists
+//   403 token already used / card blocked / account frozen or inactive
+//   404 card not found or from another shop       (code 'not_found')
+//   409 daily stamp limit reached                  (code 'daily_cap')
 //   410 token expired
-//
-// Action semantics:
-//   - If currentStamps < maxStamps: increment (STAMP)
-//   - If currentStamps >= maxStamps: redeem the reward (REDEEM)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
@@ -117,7 +118,7 @@ Deno.serve(async (req) => {
   const { data: { user }, error: userErr } = await userClient.auth.getUser();
   if (userErr || !user) return json(401, { error: 'Not authenticated' });
 
-  let body: { token?: string; locationId?: string | null };
+  let body: { token?: string; locationId?: string | null; staffId?: string | null; staffName?: string | null; tz?: string | null };
   try { body = await req.json(); } catch { return json(400, { error: 'Invalid JSON' }); }
   if (!body.token) return json(400, { error: 'token is required' });
 
@@ -145,88 +146,61 @@ Deno.serve(async (req) => {
     return json(500, { error: 'Internal error' });
   }
 
-  // Now look up the card through the merchant's RLS context. This ensures
-  // a merchant for campaign A can't stamp a card in campaign B — RLS does
-  // not return rows the user can't access, so the .single() will fail.
-  // We pull both the card's snapshot fields AND the campaign's current
-  // values — the snapshot drives the active cycle; the current values
-  // re-snapshot the card if this stamp triggers a reward redemption.
-  const { data: card, error: cardErr } = await userClient
-    .from('cards')
-    .select('id, campaign_id, customer_name, email, current_stamps, rewards_redeemed, status, offer_title_snapshot, max_stamps_snapshot, custom_icon_snapshot, campaigns(max_stamps, business_name, offer_title, custom_icon, merchant_id, merchants(status))')
-    .eq('id', cardId)
-    .single();
-  if (cardErr || !card) return json(404, { error: 'Card not found or not yours to stamp' });
-  if (card.status === 'BLOCKED') return json(403, { error: 'Card is blocked' });
-
-  // deno-lint-ignore no-explicit-any
-  const campaignData = (card as any).campaigns ?? {};
-  // deno-lint-ignore no-explicit-any
-  const merchantStatus = (campaignData?.merchants?.status) as string | undefined;
-  if (merchantStatus && merchantStatus !== 'active') {
-    return json(403, {
-      error: merchantStatus === 'frozen'
-        ? 'Stamping is temporarily disabled for this merchant. Please contact support.'
-        : 'This merchant account is not active.',
-    });
-  }
-  const businessName = campaignData.business_name ?? 'a merchant';
-
-  // The card's snapshot drives THIS cycle. Fallback to campaign values
-  // for cards created before the snapshot migration (defensive — the
-  // migration backfilled all existing rows, but belt-and-braces).
-  // deno-lint-ignore no-explicit-any
-  const cardAny = card as any;
-  const activeMaxStamps = cardAny.max_stamps_snapshot ?? campaignData.max_stamps ?? 6;
-  const activeOfferTitle = cardAny.offer_title_snapshot ?? campaignData.offer_title ?? '';
-
-  let action: 'STAMP' | 'REDEEM';
-  let newStamps: number;
-  let newRedeemed: number;
-  // After REDEEM we re-snapshot to the merchant's CURRENT campaign
-  // values so the next cycle reflects the current offer. After STAMP
-  // we leave the snapshot alone.
-  let snapshotUpdate: Record<string, unknown> = {};
-
-  if (card.current_stamps >= activeMaxStamps) {
-    action = 'REDEEM';
-    newStamps = 0;
-    newRedeemed = card.rewards_redeemed + 1;
-    // Re-snapshot to the merchant's current offer for the next cycle.
-    // The customer just earned their reward; their NEXT card reflects
-    // whatever the merchant is currently promoting.
-    snapshotUpdate = {
-      offer_title_snapshot: campaignData.offer_title ?? activeOfferTitle,
-      max_stamps_snapshot:  campaignData.max_stamps  ?? activeMaxStamps,
-      custom_icon_snapshot: campaignData.custom_icon ?? cardAny.custom_icon_snapshot,
-    };
-  } else {
-    action = 'STAMP';
-    newStamps = card.current_stamps + 1;
-    newRedeemed = card.rewards_redeemed;
-  }
-
-  // Apply the update through the merchant's RLS context too.
-  const { data: updated, error: updErr } = await userClient
-    .from('cards')
-    .update({
-      current_stamps: newStamps,
-      rewards_redeemed: newRedeemed,
-      ...snapshotUpdate,
-    })
-    .eq('id', cardId)
-    .select('id, customer_name, current_stamps, rewards_redeemed, status')
-    .single();
-  if (updErr || !updated) {
-    console.error('card update failed:', updErr);
+  // Stamp or redeem in one atomic step, as the merchant.
+  const { data: scan, error: scanErr } = await userClient.rpc('merchant_scan', {
+    p_card_id: cardId,
+    p_action: 'auto',
+    p_location_id: body.locationId ?? null,
+    p_source: 'qr',
+    p_staff_id: body.staffId ?? null,
+    p_staff_name: body.staffName ?? null,
+    p_tz: body.tz ?? null,
+  });
+  if (scanErr || !scan) {
+    console.error('merchant_scan failed:', scanErr);
     return json(500, { error: 'Could not apply stamp' });
   }
+  // deno-lint-ignore no-explicit-any
+  const r = scan as any;
+  if (!r.ok) {
+    const code = String(r.error ?? 'error');
+    const card = r.card ?? undefined;
+    switch (code) {
+      case 'not_found':
+        return json(404, { code, error: 'This card is from a different café' });
+      case 'blocked':
+        return json(403, { code, error: 'This card is blocked' });
+      case 'merchant_frozen':
+        return json(403, { code, error: 'Stamping is temporarily disabled for this merchant. Please contact support.' });
+      case 'merchant_inactive':
+        return json(403, { code, error: 'This merchant account is not active.' });
+      case 'daily_cap':
+        return json(409, {
+          code, card, stampsToday: r.stampsToday, cap: r.cap,
+          error: `${card?.customerName ?? 'This customer'} already got ${r.stampsToday} stamp${r.stampsToday === 1 ? '' : 's'} today (daily limit ${r.cap}).`,
+        });
+      default:
+        return json(409, { code, card, error: 'Could not apply stamp' });
+    }
+  }
 
-  // Tell the customer's wallet passes the card changed. push-apple-update
-  // sends the Apple Wallet push AND bumps passkit_last_updated (so manual
-  // pull-to-refresh works too); sync-wallet-object refreshes the Google
-  // Wallet object. Awaited so the calls dispatch before this serverless
-  // function exits, but best-effort — a wallet failure never fails the stamp.
+  const c = r.card;
+  const card = {
+    id: c.id,
+    customerName: c.customerName,
+    currentStamps: c.currentStamps,
+    rewardsRedeemed: c.rewardsRedeemed,
+    status: c.status,
+    maxStamps: c.maxStamps,
+    // Older clients read these names.
+    customer_name: c.customerName,
+    current_stamps: c.currentStamps,
+    rewards_redeemed: c.rewardsRedeemed,
+  };
+
+  // Tell the customer's wallet passes the card changed. The database trigger
+  // does this too; this direct call keeps Apple updates working even if the
+  // trigger's stored key goes stale. Best-effort: never fails the stamp.
   try {
     const walletHeaders = {
       'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
@@ -246,42 +220,20 @@ Deno.serve(async (req) => {
     console.error('[redeem-stamp-token] wallet notify dispatch failed:', walletErr);
   }
 
-  // Log the activity. Best-effort. Records the location if the merchant's
-  // scanner is operating as a specific branch.
-  // source='qr' because this path is only reached via QR scan + token; the
-  // actor is the customer (the one whose scanner triggered the token), but
-  // because of how RLS works here we capture the *merchant's* user.id as
-  // the actor — they're the one whose scanner produced the stamp.
-  await userClient.from('activities').insert({
-    campaign_id: card.campaign_id,
-    card_id: cardId,
-    customer_name: updated.customer_name,
-    type: action,
-    location_id: body.locationId ?? null,
-    source: 'qr',
-    actor_user_id: user.id,
-  });
-
-  // Fire retention email when the customer is one stamp away from their
-  // reward. This is the single highest-leverage moment in the loyalty
-  // loop — they're motivated to come back, and a small nudge often
-  // works. Best-effort: if Resend is misconfigured we don't fail the
-  // stamp. Only sends on STAMP (not REDEEM) and only at exactly the
-  // "one away" boundary so the customer doesn't get spammed.
-  // Uses the card's snapshot values so the email matches what the
-  // customer sees on their actual card.
-  if (action === 'STAMP' && newStamps === activeMaxStamps - 1 && card.email) {
+  // Retention email when the customer is exactly one stamp from the reward.
+  // Best-effort: a mail problem never fails the stamp.
+  if (r.action === 'STAMP' && c.currentStamps === c.maxStamps - 1 && c.email) {
     sendOneAwayEmail({
-      to: card.email,
-      customerName: updated.customer_name,
-      businessName,
-      offerTitle: activeOfferTitle,
-      currentStamps: newStamps,
-      maxStamps: activeMaxStamps,
+      to: c.email,
+      customerName: c.customerName,
+      businessName: r.businessName ?? 'a merchant',
+      offerTitle: c.offerTitle ?? '',
+      currentStamps: c.currentStamps,
+      maxStamps: c.maxStamps,
     }).catch((err) => console.warn('[notify] one-away email failed:', err));
   }
 
-  return json(200, { ok: true, action, card: updated });
+  return json(200, { ok: true, action: r.action, override: Boolean(r.override), card });
 });
 
 // ---------------------------------------------------------------------

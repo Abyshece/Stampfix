@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Loader2, LogOut, Info } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
 import { useAuth, signUpOrInCustomer, signOut } from '../lib/auth';
 import { supabase } from '../lib/supabase';
-import { getCampaignById, getCardForCustomer, createCard } from '../lib/db';
+import { getCampaignById, getCardForCustomer, createCard, stashPendingSignup, claimMyCard } from '../lib/db';
 import { WalletCard } from './WalletCard';
 import { WelcomeModal } from './WelcomeModal';
 import { AddToAppleWalletButton } from './AddToAppleWalletButton';
@@ -103,6 +103,9 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
           return;
         }
         let existing = await getCardForCustomer(campaign.id, user.id);
+        // A card the shop already created for this email (added by hand at
+        // the counter) becomes theirs, stamps included.
+        if (!existing) existing = await claimMyCard(campaign.id).catch(() => null);
         if (!existing) {
           // Resolve signup details. Three sources, in priority order:
           //   1. sessionStorage (same-tab signup → magic link click)
@@ -207,23 +210,24 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
         marketingOptIn,
       }));
 
+      // The database hashes the recovery code (and saves the phone) onto the
+      // customer's new card from this row, so it must be saved before the
+      // account is created. (It used to be a direct upsert that the table's
+      // permissions rejected, so no card got a recovery code.)
       try {
-        const { error: pendingErr } = await supabase
-          .from('pending_customer_signups')
-          .upsert({
-            email: formData.email.trim().toLowerCase(),
-            campaign_id: campaignId,
-            first_name: formData.firstName,
-            surname: formData.surname || null,
-            phone: formData.phone.trim() || null,
-            recovery_code: formData.code,
-            joined_location_id: joinedLocationId ?? null,
-            terms_accepted: termsAccepted,
-            marketing_opt_in: marketingOptIn,
-          }, { onConflict: 'email,campaign_id' });
-        if (pendingErr) console.warn('[signup] could not persist pending row:', pendingErr);
+        await stashPendingSignup({
+          email: formData.email.trim().toLowerCase(),
+          campaignId,
+          firstName: formData.firstName,
+          surname: formData.surname || null,
+          phone: formData.phone.trim() || null,
+          code: formData.code,
+          locationId: joinedLocationId ?? null,
+          termsAccepted,
+          marketingOptIn,
+        });
       } catch (e) {
-        console.warn('[signup] pending persist threw:', e);
+        console.warn('[signup] could not save signup details:', e);
       }
 
       // Frictionless: create the account (or sign in if returning) and log

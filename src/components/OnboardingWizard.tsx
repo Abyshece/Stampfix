@@ -15,7 +15,7 @@ interface OnboardingWizardProps {
   /** Called whenever a step's outcome should be saved to the server. */
   onMarkStep: (patch: Partial<OnboardingState>) => Promise<void>;
   /** Persist the loyalty reward set in the first step. */
-  onUpdateCampaign: (patch: Partial<Campaign>) => Promise<void>;
+  onUpdateCampaign: (patch: Partial<Campaign>) => Promise<unknown>;
   /** Called to close the wizard (after completion or skip). */
   onClose: () => void;
 }
