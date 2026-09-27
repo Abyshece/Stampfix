@@ -1091,15 +1091,19 @@ export function MerchantDashboard({
                             </span>
                             {act.source && (
                               <span className={`text-[10px] uppercase tracking-wider font-semibold px-1.5 py-0.5 rounded ${
-                                act.source === 'qr' ? 'bg-green-50 text-green-700' :
+                                act.source === 'qr' || act.source === 'self_serve' ? 'bg-green-50 text-green-700' :
                                 act.source === 'manual_dashboard' ? 'bg-amber-50 text-amber-700' :
                                 'bg-gray-100 text-gray-600'
                               }`} title={
                                 act.source === 'qr' ? t('dash.activity.srcQrTitle', { defaultValue: 'Triggered by a real QR scan' })
                                   : act.source === 'manual_dashboard' ? t('dash.activity.srcManualTitle', { defaultValue: 'Manually clicked in the dashboard' })
+                                  : act.source === 'self_serve' ? t('dash.activity.srcSelfTitle', { defaultValue: 'The customer scanned your stamp QR at the shop (location-checked)' })
                                   : act.source
                               }>
-                                {act.source === 'qr' ? t('dash.activity.srcQr', { defaultValue: 'QR scan' }) : act.source === 'manual_dashboard' ? t('dash.activity.srcManual', { defaultValue: 'Manual' }) : act.source}
+                                {act.source === 'qr' ? t('dash.activity.srcQr', { defaultValue: 'QR scan' })
+                                  : act.source === 'manual_dashboard' ? t('dash.activity.srcManual', { defaultValue: 'Manual' })
+                                  : act.source === 'self_serve' ? t('dash.activity.srcSelf', { defaultValue: 'Self-serve' })
+                                  : act.source}
                               </span>
                             )}
                             {act.locationName && (
@@ -1722,6 +1726,19 @@ export function MerchantDashboard({
                 </div>
                 {(tempSettings.stampingMode ?? 'scanner') === 'self_serve' && (
                   <div className="space-y-4 pt-2 border-t notion-border">
+                    {(() => {
+                      // Self-serve checks the customer is near the location, so
+                      // a location without a map position can't give stamps.
+                      const unmapped = activeLocations.filter((l) => l.latitude == null || l.longitude == null);
+                      return unmapped.length > 0 && (
+                        <div className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-md px-3 py-2">
+                          {t('dash.set.unmappedLocations', {
+                            names: unmapped.map((l) => l.name).join(', '),
+                            defaultValue: 'Self-serve stamps won’t work at {{names}} yet: add the street address in Settings \u203a Locations so we can check customers are there.',
+                          })}
+                        </div>
+                      );
+                    })()}
                     <div>
                       <label className="text-sm font-medium">{t('dash.set.radiusLabel', { defaultValue: 'Location radius (metres)' })}</label>
                       <p className="text-xs text-gray-500 mb-2">{t('dash.set.radiusHint', { defaultValue: 'Customers must be within this distance of the shop to get a stamp. 100m recommended (GPS is fuzzy indoors).' })}</p>
@@ -1731,7 +1748,7 @@ export function MerchantDashboard({
                     </div>
                     <div>
                       <label className="text-sm font-medium">{t('dash.set.codeLabel', { defaultValue: 'Stamp code (4 digits)' })}</label>
-                      <p className="text-xs text-gray-500 mb-2">{t('dash.set.codeHint', { defaultValue: 'Printed under your counter stamp QR. A customer can type it if their camera can\u2019t scan.' })}</p>
+                      <p className="text-xs text-gray-500 mb-2">{t('dash.set.codeHint2', { defaultValue: 'Give it to a customer who bought more than one item, so they can add the extra stamps (it also lets them go past the daily limit). Keep it private; it is not printed on the poster.' })}</p>
                       <input value={tempSettings.stampCode ?? ''} maxLength={4} inputMode="numeric" placeholder={t('dash.set.codePh', { defaultValue: 'e.g. 4821' })}
                         onChange={(e) => setTempSettings({ ...tempSettings, stampCode: e.target.value.replace(/[^0-9]/g, '').slice(0, 4) })}
                         className="w-32 bg-white border notion-border rounded px-3 py-2 text-sm tracking-widest" />

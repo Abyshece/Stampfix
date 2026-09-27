@@ -113,8 +113,9 @@ export interface ActivityItem {
   locationName?: string | null;
   /** How this activity was triggered. 'qr' = real customer scan,
    *  'manual_dashboard' = merchant clicked +stamp, 'admin' = platform
-   *  ops, 'webhook' = third-party. Null on pre-audit-trail rows. */
-  source?: 'qr' | 'manual_dashboard' | 'admin' | 'webhook' | null;
+   *  ops, 'webhook' = third-party, 'self_serve' = customer scanned the
+   *  shop's stamp QR. Null on pre-audit-trail rows. */
+  source?: 'qr' | 'manual_dashboard' | 'admin' | 'webhook' | 'self_serve' | null;
   /** auth.users.id of whoever performed the action. */
   actorUserId?: string | null;
 }
