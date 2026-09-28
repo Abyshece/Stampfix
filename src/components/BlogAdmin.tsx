@@ -24,6 +24,7 @@ export function BlogAdmin() {
 
   const save = async (publish: boolean) => {
     if (!form.title.trim() || !form.content.trim()) { setErr('Title and content are required.'); return; }
+    const wasLive = !!form.id && form.published;
     setSaving(true); setErr(null); setMsg(null);
     try {
       const saved = await upsertBlogPost({
@@ -33,7 +34,9 @@ export function BlogAdmin() {
         read_mins: Number(form.read_mins) || 4, content: form.content, published: publish,
       });
       setForm({ ...saved });
-      setMsg(publish ? 'Published — it is now live on /blog.' : 'Draft saved.');
+      setMsg(publish
+        ? (wasLive ? 'Saved — the live post is updated.' : 'Published — it is now live on /blog.')
+        : (wasLive ? 'Unpublished — saved as a draft, no longer on /blog.' : 'Draft saved.'));
       load();
     } catch (e) { setErr(e instanceof Error ? e.message : 'Save failed'); }
     finally { setSaving(false); }
@@ -45,6 +48,9 @@ export function BlogAdmin() {
     try { await deleteBlogPost(p.id); if (form.id === p.id) setForm({ ...blank }); load(); }
     catch (e) { setErr(e instanceof Error ? e.message : 'Delete failed'); }
   };
+
+  // Editing a post that's already live: "Save draft" would take it off the site.
+  const live = !!form.id && form.published;
 
   const inp = 'w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400';
 
@@ -69,8 +75,8 @@ export function BlogAdmin() {
         <input className={inp} value={form.excerpt} maxLength={170} placeholder="Meta excerpt (~155 chars)" onChange={(e) => set('excerpt', e.target.value)} />
         <textarea className={`${inp} font-mono text-xs`} rows={14} value={form.content} placeholder="HTML body (<p>, <h2>, <ul>…)" onChange={(e) => set('content', e.target.value)} />
         <div className="flex items-center gap-2">
-          <button onClick={() => save(false)} disabled={saving} className="px-4 py-2 rounded-md text-sm font-medium border notion-border hover:bg-[#F7F7F5] transition disabled:opacity-50">Save draft</button>
-          <button onClick={() => save(true)} disabled={saving} className="px-4 py-2 rounded-md text-sm font-medium bg-[#37352F] text-white hover:bg-opacity-90 transition disabled:opacity-50">{saving ? 'Saving…' : 'Publish'}</button>
+          <button onClick={() => save(false)} disabled={saving} className="px-4 py-2 rounded-md text-sm font-medium border notion-border hover:bg-[#F7F7F5] transition disabled:opacity-50">{live ? 'Unpublish' : 'Save draft'}</button>
+          <button onClick={() => save(true)} disabled={saving} className="px-4 py-2 rounded-md text-sm font-medium bg-[#37352F] text-white hover:bg-opacity-90 transition disabled:opacity-50">{saving ? 'Saving…' : live ? 'Save changes' : 'Publish'}</button>
           {form.slug && <a href={`/blog/${form.slug}`} target="_blank" rel="noopener" className="ml-auto inline-flex items-center gap-1 text-xs text-gray-500 hover:text-[#37352F]"><Eye className="w-3.5 h-3.5" /> Preview</a>}
         </div>
         {err && <p className="text-xs text-red-600">{err}</p>}

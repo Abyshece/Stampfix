@@ -923,7 +923,7 @@ export async function generateBlogWithAI(topic: string): Promise<{ limitReached:
 }
 
 // ---------------- Broadcast notifications ----------------
-export interface NotificationRow { id: string; title: string; body: string; published: boolean; created_at: string }
+export interface NotificationRow { id: string; title: string; body: string; published: boolean; created_at: string; merchant_id?: string | null }
 export async function listMerchantNotifications(): Promise<{ items: NotificationRow[]; readIds: Set<string> }> {
   const [n, r] = await Promise.all([
     supabase.from('notifications').select('*').eq('published', true).order('created_at', { ascending: false }),
@@ -941,7 +941,7 @@ export async function markNotificationsRead(ids: string[], merchantId: string): 
   if (error) throw error;
 }
 export async function adminListNotifications(): Promise<NotificationRow[]> {
-  const { data, error } = await supabase.from('notifications').select('*').is('merchant_id', null).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as NotificationRow[];
 }

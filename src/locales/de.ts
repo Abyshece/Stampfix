@@ -875,6 +875,7 @@ const de = {
       errEnter: 'Geben Sie die E-Mail und den 6-stelligen Code ein, die Sie bei der Anmeldung verwendet haben.',
       errNotFound: 'Keine Karte für diese E-Mail und diesen Code gefunden. Überprüfen Sie beides und versuchen Sie es erneut.',
       errGeneric: 'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',
+      errTooMany: 'Zu viele Versuche. Bitte warten Sie eine Stunde und versuchen Sie es erneut.',
       home: 'Startseite',
       lostTitle: 'Stempelkarte verloren?',
       lostSub: 'Geben Sie die E-Mail und den 6-stelligen Code ein, die Sie bei der Anmeldung festgelegt haben, und wir holen Ihre Karte zurück.',

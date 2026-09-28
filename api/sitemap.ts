@@ -10,7 +10,13 @@ async function sb(query: string): Promise<any[] | null> {
 }
 export default async function handler(): Promise<Response> {
   const rows = (await sb('blog_posts?published=eq.true&select=slug,created_at&order=created_at.desc')) || [];
-  const pages = ['/', '/pricing', '/features', '/about', '/faq', '/blog'];
+  const pages = [
+    '/', '/pricing', '/features', '/about', '/faq', '/use-cases', '/savings', '/wallet-guide', '/blog',
+    // Posts written into the site itself (BlogPage.tsx), not stored in the database.
+    '/blog/end-of-paper-punch-card', '/blog/hidden-cost-of-paper-punch-cards',
+    '/blog/why-nobody-downloads-your-app', '/blog/apple-wallet-vs-native-apps',
+    '/privacy', '/terms', '/impressum', '/dpa', '/subprocessors', '/cookies', '/cardholder-privacy', '/accessibility',
+  ];
   const staticUrls = pages.map((p) => `<url><loc>${SITE}${p}</loc></url>`).join('');
   const postUrls = rows
     .map((p: any) => `<url><loc>${SITE}/blog/${p.slug}</loc>${p.created_at ? `<lastmod>${new Date(p.created_at).toISOString()}</lastmod>` : ''}</url>`)

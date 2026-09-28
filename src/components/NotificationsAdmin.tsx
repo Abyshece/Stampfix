@@ -21,11 +21,18 @@ export function NotificationsAdmin() {
   const send = async () => {
     if (!title.trim() || !body.trim()) return;
     const target = merchantId.trim();
+    // Typed a name but never picked it from the list: don't fall back to
+    // sending it to every merchant.
+    if (!target && search.trim()) {
+      setMsgErr(true);
+      setMsg('Pick the merchant from the list, or clear the box to send to all merchants.');
+      return;
+    }
     const targetName = merchants.find((m) => m.id === target)?.business_name;
     setBusy(true); setMsg(null); setMsgErr(false);
     try {
       await adminCreateNotification(title.trim(), body.trim(), target || undefined);
-      setTitle(''); setBody(''); setMerchantId('');
+      setTitle(''); setBody(''); setMerchantId(''); setSearch('');
       setMsg(target ? `Sent to ${targetName ?? 'that merchant'}.` : 'Sent to all merchants.');
       load();
     } catch (e) { setMsgErr(true); setMsg(e instanceof Error ? e.message : 'Failed to send'); }
@@ -34,7 +41,8 @@ export function NotificationsAdmin() {
 
   const remove = async (id: string) => {
     if (!confirm('Delete this notification for everyone?')) return;
-    try { await adminDeleteNotification(id); load(); } catch { /* ignore */ }
+    try { await adminDeleteNotification(id); load(); }
+    catch (e) { setMsgErr(true); setMsg(e instanceof Error ? e.message : 'Failed to delete'); }
   };
 
   const pickMerchant = (m: MerchantRow | null) => {
@@ -102,7 +110,11 @@ export function NotificationsAdmin() {
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold text-[#37352F]">{n.title}</div>
                 <div className="text-xs text-gray-500 whitespace-pre-wrap">{n.body}</div>
-                <div className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</div>
+                <div className="text-[10px] text-gray-400 mt-1">
+                  {new Date(n.created_at).toLocaleString()} · {n.merchant_id
+                    ? `To ${merchants.find((m) => m.id === n.merchant_id)?.business_name ?? 'one merchant'}`
+                    : 'To all merchants'}
+                </div>
               </div>
               <button onClick={() => remove(n.id)} className="text-gray-400 hover:text-red-600 flex-shrink-0" aria-label="Delete"><Trash2 className="w-4 h-4" /></button>
             </div>
