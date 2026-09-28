@@ -500,7 +500,7 @@ function DailyTrendChart({ series }: { series: Array<{ date: Date; count: number
   };
   return (
     <div className="space-y-2">
-      <div className="flex items-end gap-1 h-32">
+      <div className="flex items-stretch gap-1 h-32">
         {series.map((s, i) => {
           const h = (s.count / max) * 100;
           return (
@@ -555,7 +555,7 @@ function DayOfWeekChart({ counts }: { counts: number[] }) {
   const labels = [t('dash.insights.dowSun', { defaultValue: 'Sun' }), t('dash.insights.dowMon', { defaultValue: 'Mon' }), t('dash.insights.dowTue', { defaultValue: 'Tue' }), t('dash.insights.dowWed', { defaultValue: 'Wed' }), t('dash.insights.dowThu', { defaultValue: 'Thu' }), t('dash.insights.dowFri', { defaultValue: 'Fri' }), t('dash.insights.dowSat', { defaultValue: 'Sat' })];
   const max = Math.max(1, ...counts);
   return (
-    <div className="flex items-end gap-3 h-32">
+    <div className="flex items-stretch gap-3 h-32">
       {counts.map((c, i) => {
         const h = (c / max) * 100;
         const isPeak = c === max && c > 0;
