@@ -166,7 +166,7 @@ function GoogleCard({ s }: { s: PreviewSettings }) {
   );
 }
 
-export function WalletLivePreview({ settings }: { settings: PreviewSettings }) {
+export function WalletLivePreview({ settings, note }: { settings: PreviewSettings; note?: string }) {
   const { t } = useTranslation();
   return (
     <div className="mb-6">
@@ -175,7 +175,7 @@ export function WalletLivePreview({ settings }: { settings: PreviewSettings }) {
         <AppleCard s={settings} />
         <GoogleCard s={settings} />
       </div>
-      <p className="text-xs text-gray-400 mt-3">Real Apple Wallet and Google Wallet layouts. Press Save to apply colours to real cards.</p>
+      <p className="text-xs text-gray-400 mt-3">{note ?? 'Real Apple Wallet and Google Wallet layouts. Press Save to apply colours to real cards.'}</p>
     </div>
   );
 }
