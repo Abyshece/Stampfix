@@ -38,20 +38,23 @@ export function MerchantBannerView({ banner, german = false, onCta, onDismiss }:
   const hasCta = !!text.cta && !!(banner.cta_tab || banner.cta_url);
   return (
     <div role="region" aria-label={t('dash.banner.label', { defaultValue: 'Announcement from Stampfix' })}
-      className={`${style.bar} rounded-lg px-4 py-2.5 flex items-center gap-3 text-sm shadow-sm`}>
-      <Megaphone className="w-4 h-4 opacity-80 flex-shrink-0" />
-      <div className="flex-1 min-w-0 flex items-center gap-x-2 gap-y-1 flex-wrap">
-        <span className="font-medium">{text.headline}</span>
-        {text.body && <span className="opacity-85 text-xs">{text.body}</span>}
+      className={`${style.bar} rounded-lg px-4 py-2.5 flex items-start sm:items-center gap-3 text-sm shadow-sm`}>
+      <Megaphone className="w-4 h-4 opacity-80 flex-shrink-0 mt-0.5 sm:mt-0" />
+      {/* On phones the button sits under the text so the headline keeps the full width. */}
+      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+        <div className="flex-1 min-w-0 flex items-center gap-x-2 gap-y-1 flex-wrap break-words">
+          <span className="font-medium">{text.headline}</span>
+          {text.body && <span className="opacity-85 text-xs">{text.body}</span>}
+        </div>
+        {hasCta && (
+          <button type="button" onClick={onCta}
+            className={`self-start sm:self-auto flex-shrink-0 inline-flex items-center gap-1 bg-white ${style.button} text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white/90 transition`}>
+            {text.cta} <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
-      {hasCta && (
-        <button type="button" onClick={onCta}
-          className={`flex-shrink-0 inline-flex items-center gap-1 bg-white ${style.button} text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-white/90 transition`}>
-          {text.cta} <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      )}
       <button type="button" onClick={onDismiss}
-        className="opacity-70 hover:opacity-100 flex-shrink-0 -mr-1"
+        className="opacity-70 hover:opacity-100 flex-shrink-0 p-1.5 -m-1.5"
         aria-label={t('dash.promo.dismissBanner', { defaultValue: 'Dismiss banner' })}>
         <X className="w-4 h-4" />
       </button>

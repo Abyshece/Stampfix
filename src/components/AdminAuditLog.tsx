@@ -91,16 +91,22 @@ export function AdminAuditLog({ targetId, compact = false }: { targetId?: string
     <div className="border notion-border rounded-lg overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="bg-[#F7F7F5] text-gray-500 text-left text-xs uppercase tracking-wider">
-          <tr><th className="px-3 py-2">Time</th><th className="px-3 py-2">Admin</th><th className="px-3 py-2">What</th><th className="px-3 py-2">On</th></tr>
+          <tr><th className="hidden md:table-cell px-3 py-2">Time</th><th className="hidden md:table-cell px-3 py-2">Admin</th><th className="px-3 py-2">What</th><th className="hidden md:table-cell px-3 py-2">On</th></tr>
         </thead>
         <tbody className="divide-y notion-border">
           {rows.length === 0 && <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">No admin changes recorded yet. Every change made from this panel shows up here.</td></tr>}
           {rows.map((r) => (
             <tr key={r.id} className="hover:bg-[#FBFBFA]">
-              <td className="px-3 py-2 whitespace-nowrap text-gray-500">{new Date(r.created_at).toLocaleString()}</td>
-              <td className="px-3 py-2 text-gray-600" title={r.admin_email ?? ''}>{who(r.admin_email)}</td>
-              <td className="px-3 py-2">{describeAuditAction(r)}</td>
-              <td className="px-3 py-2 text-gray-600">{r.target_label ?? '—'}</td>
+              <td className="hidden md:table-cell px-3 py-2 whitespace-nowrap text-gray-500">{new Date(r.created_at).toLocaleString()}</td>
+              <td className="hidden md:table-cell px-3 py-2 text-gray-600" title={r.admin_email ?? ''}>{who(r.admin_email)}</td>
+              <td className="px-3 py-2">
+                {describeAuditAction(r)}
+                {/* Phones: who, on what and when, under the action */}
+                <div className="md:hidden text-xs text-gray-500 mt-0.5 break-words">
+                  {r.target_label ?? '—'} · {who(r.admin_email)} · {new Date(r.created_at).toLocaleString()}
+                </div>
+              </td>
+              <td className="hidden md:table-cell px-3 py-2 text-gray-600">{r.target_label ?? '—'}</td>
             </tr>
           ))}
         </tbody>

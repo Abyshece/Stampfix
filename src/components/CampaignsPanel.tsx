@@ -393,7 +393,7 @@ export function CampaignsPanel({ campaignId, businessName, locations, showIntro 
             return (
               <div key={c.id} className="border notion-border rounded-xl p-4 sm:p-5">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-[#F7F7F5] flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-[#F7F7F5] hidden sm:flex items-center justify-center shrink-0">
                     {c.kind === 'manual' ? <Send className="w-4 h-4 text-[#37352F]" /> : <Zap className="w-4 h-4 text-[#37352F]" />}
                   </div>
                   <div className="min-w-0 flex-1">

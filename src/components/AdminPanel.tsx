@@ -588,12 +588,12 @@ function B2BTab({ readOnly }: { readOnly: boolean }) {
       )}
 
       <form onSubmit={(e) => { e.preventDefault(); load(search.trim()); }} className="flex gap-2">
-        <div className="flex-1 flex items-center bg-white border notion-border rounded-md px-3">
-          <Search className="w-4 h-4 text-gray-400" />
+        <div className="flex-1 min-w-0 flex items-center bg-white border notion-border rounded-md px-3">
+          <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <input
             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="STF-0001, email, business name, or registered company..."
-            className="flex-1 px-2 py-2 bg-transparent outline-none text-sm"
+            className="flex-1 min-w-0 px-2 py-2 bg-transparent outline-none text-sm"
           />
         </div>
         <button type="submit" className="bg-[#37352F] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">
@@ -621,19 +621,19 @@ function B2BTab({ readOnly }: { readOnly: boolean }) {
         <DeletedMerchantsList readOnly={readOnly} onRestored={() => { void load(search); refreshDeletedCount(); }} />
       ) : loading ? <Loader /> : shown.length === 0 ? <Empty msg="No merchants match this filter." /> : (
         <div className="bg-white border notion-border rounded-lg overflow-x-auto">
-          <table className="w-full min-w-[1100px] text-sm">
+          <table className="w-full md:min-w-[1100px] text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
               <tr>
-                <th className="px-3 py-2 text-left">Code</th>
+                <th className="hidden md:table-cell px-3 py-2 text-left">Code</th>
                 <th className="px-3 py-2 text-left">Business / contact</th>
-                <th className="px-2 py-2 text-left">Country</th>
-                <th className="px-2 py-2 text-left">Plan</th>
-                <th className="px-2 py-2 text-left">Status</th>
-                <th className="px-2 py-2 text-right">Customers</th>
-                <th className="px-2 py-2 text-right">MRR</th>
-                <th className="px-2 py-2 text-right">Total</th>
-                <th className="px-2 py-2 text-left">Joined on</th>
-                <th className="px-2 py-2 text-left">Last login</th>
+                <th className="hidden md:table-cell px-2 py-2 text-left">Country</th>
+                <th className="hidden md:table-cell px-2 py-2 text-left">Plan</th>
+                <th className="hidden md:table-cell px-2 py-2 text-left">Status</th>
+                <th className="hidden md:table-cell px-2 py-2 text-right">Customers</th>
+                <th className="hidden md:table-cell px-2 py-2 text-right">MRR</th>
+                <th className="hidden md:table-cell px-2 py-2 text-right">Total</th>
+                <th className="hidden md:table-cell px-2 py-2 text-left">Joined on</th>
+                <th className="hidden md:table-cell px-2 py-2 text-left">Last login</th>
                 <th className="px-2 py-2 text-center">Actions</th>
               </tr>
             </thead>
@@ -646,13 +646,14 @@ function B2BTab({ readOnly }: { readOnly: boolean }) {
                       onClick={() => setExpandedId(isOpen ? null : m.id)}
                       className="border-t notion-border hover:bg-[#FBFBFA] align-top cursor-pointer"
                     >
-                      <td className="px-3 py-3 font-mono text-xs whitespace-nowrap">{m.merchant_code}</td>
+                      <td className="hidden md:table-cell px-3 py-3 font-mono text-xs whitespace-nowrap">{m.merchant_code}</td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <div>
-                            <div className="font-medium truncate max-w-[220px]">{m.business_name || '—'}</div>
-                            <div className="text-xs text-gray-500 truncate max-w-[220px]">{m.email}</div>
-                            {m.phone && <div className="text-xs text-gray-500 truncate max-w-[220px]">📞 {m.phone}</div>}
+                          <div className="min-w-0">
+                            <div className="md:hidden font-mono text-[10px] text-gray-400">{m.merchant_code}</div>
+                            <div className="font-medium truncate max-w-[190px] md:max-w-[220px]">{m.business_name || '—'}</div>
+                            <div className="text-xs text-gray-500 truncate max-w-[190px] md:max-w-[220px]">{m.email}</div>
+                            {m.phone && <div className="text-xs text-gray-500 truncate max-w-[190px] md:max-w-[220px]">📞 {m.phone}</div>}
                             {m.registered_company_name && (
                               <div className="text-[10px] text-gray-400 truncate max-w-[220px]" title={m.registered_company_name}>
                                 {m.registered_company_name}
@@ -668,24 +669,33 @@ function B2BTab({ readOnly }: { readOnly: boolean }) {
                           )}
                           {m.admin_notes && <span title={m.admin_notes} className="text-[10px] text-gray-400">📝</span>}
                         </div>
+                        {/* Phones: the columns hidden on small screens, in one line */}
+                        <div className="md:hidden mt-1.5 flex items-center gap-1.5 flex-wrap text-[11px] text-gray-500">
+                          <span className={`font-semibold px-1.5 py-0.5 rounded ${m.plan === 'pro' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>{m.plan.toUpperCase()}</span>
+                          {m.is_comped && <span className="font-semibold text-purple-700">COMPED</span>}
+                          <StatusBadge status={m.status} />
+                          <span>· {m.card_count} customer{m.card_count === 1 ? '' : 's'}</span>
+                          <span>· {m.country ?? '—'}</span>
+                          <span>· login {m.last_login_at ? relativeTime(new Date(m.last_login_at)) : 'never'}</span>
+                        </div>
                       </td>
-                      <td className="px-2 py-3 text-gray-500 text-xs">{m.country ?? '—'}</td>
-                      <td className="px-2 py-3">
+                      <td className="hidden md:table-cell px-2 py-3 text-gray-500 text-xs">{m.country ?? '—'}</td>
+                      <td className="hidden md:table-cell px-2 py-3">
                         <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${
                           m.plan === 'pro' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
                         }`}>{m.plan.toUpperCase()}</span>
                         {m.is_comped && <div className="text-[10px] font-semibold text-purple-700 mt-1" title="Pro without a Stripe subscription">COMPED</div>}
                       </td>
-                      <td className="px-2 py-3"><StatusBadge status={m.status} /></td>
-                      <td className="px-2 py-3 text-right font-medium text-sm">{m.card_count}</td>
-                      <td className="px-2 py-3 text-right text-xs text-gray-600">{m.is_comped ? <span className="text-purple-700">Comped</span> : formatCents(m.estimated_mrr_cents, m.country)}</td>
-                      <td className="px-2 py-3 text-right text-xs text-gray-600">{m.is_comped ? '—' : formatCents(m.estimated_total_cents, m.country)}</td>
-                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">{new Date(m.created_at).toLocaleDateString()}</td>
-                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
+                      <td className="hidden md:table-cell px-2 py-3"><StatusBadge status={m.status} /></td>
+                      <td className="hidden md:table-cell px-2 py-3 text-right font-medium text-sm">{m.card_count}</td>
+                      <td className="hidden md:table-cell px-2 py-3 text-right text-xs text-gray-600">{m.is_comped ? <span className="text-purple-700">Comped</span> : formatCents(m.estimated_mrr_cents, m.country)}</td>
+                      <td className="hidden md:table-cell px-2 py-3 text-right text-xs text-gray-600">{m.is_comped ? '—' : formatCents(m.estimated_total_cents, m.country)}</td>
+                      <td className="hidden md:table-cell px-2 py-3 text-xs text-gray-500 whitespace-nowrap">{new Date(m.created_at).toLocaleDateString()}</td>
+                      <td className="hidden md:table-cell px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
                         {m.last_login_at ? relativeTime(new Date(m.last_login_at)) : 'Never'}
                       </td>
                       <td className="px-2 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="inline-flex items-center gap-0.5">
+                        <div className="grid grid-cols-2 md:inline-flex items-center gap-0.5">
                           {busyId === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                             <>
                               <IconButton
@@ -719,7 +729,7 @@ function B2BTab({ readOnly }: { readOnly: boolean }) {
                     </tr>
                     {isOpen && (
                       <tr className="bg-[#F7F7F5]">
-                        <td colSpan={11} className="px-4 py-4">
+                        <td colSpan={11} className="px-3 md:px-4 py-4">
                           <MerchantDetailPanel merchant={m} onChanged={() => load(search)} onViewAs={() => setViewAsId(m.id)} />
                         </td>
                       </tr>
@@ -830,7 +840,7 @@ function MerchantDetailPanel({ merchant, onChanged, onViewAs }: { merchant: Merc
               : 'bg-amber-100 text-amber-700'
           }`}>{approval ?? 'pending'}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => changeApproval('approved')} disabled={approvalBusy || approval === 'approved'}
             className="bg-green-600 text-white text-xs px-3 py-1.5 rounded hover:bg-green-700 disabled:opacity-40">Approve</button>
           <button onClick={() => changeApproval('rejected')} disabled={approvalBusy || approval === 'rejected'}
@@ -939,7 +949,7 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   return (
     <div className="flex justify-between gap-3">
       <span className="text-gray-500 whitespace-nowrap">{label}</span>
-      <span className="text-gray-900 text-right truncate">{value}</span>
+      <span className="text-gray-900 text-right truncate min-w-0">{value}</span>
     </div>
   );
 }
@@ -1063,13 +1073,13 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
       </header>
 
       <div className="flex gap-2 flex-wrap">
-        <form onSubmit={(e) => { e.preventDefault(); load(); }} className="flex-1 flex gap-2 min-w-0">
-          <div className="flex-1 flex items-center bg-white border notion-border rounded-md px-3">
-            <Search className="w-4 h-4 text-gray-400" />
+        <form onSubmit={(e) => { e.preventDefault(); load(); }} className="w-full sm:w-auto sm:flex-1 flex gap-2 min-w-0">
+          <div className="flex-1 min-w-0 flex items-center bg-white border notion-border rounded-md px-3">
+            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
             <input
               type="text" value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="SF00001, email, or name..."
-              className="flex-1 px-2 py-2 bg-transparent outline-none text-sm"
+              className="flex-1 min-w-0 px-2 py-2 bg-transparent outline-none text-sm"
             />
           </div>
           <button type="submit" className="bg-[#37352F] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">
@@ -1083,7 +1093,7 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
         </button>
         <select
           value={merchantFilter} onChange={(e) => setMerchantFilter(e.target.value)}
-          className="bg-white border notion-border rounded-md px-3 py-2 text-sm"
+          className="flex-1 sm:flex-none min-w-0 bg-white border notion-border rounded-md px-3 py-2 text-sm"
         >
           <option value="">All merchants</option>
           {merchants.map((m) => (
@@ -1103,19 +1113,19 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
 
       {loading ? <Loader /> : c2shown.length === 0 ? <Empty msg="No customers match this filter." /> : (
         <div className="bg-white border notion-border rounded-lg overflow-x-auto">
-          <table className="w-full min-w-[1100px] text-sm">
+          <table className="w-full md:min-w-[1100px] text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
               <tr>
-                <th className="px-3 py-2 text-left">ID</th>
+                <th className="hidden md:table-cell px-3 py-2 text-left">ID</th>
                 <th className="px-3 py-2 text-left">Name</th>
-                <th className="px-3 py-2 text-left">Email</th>
-                <th className="px-2 py-2 text-left">Joined on</th>
-                <th className="px-2 py-2 text-right">Cards</th>
-                <th className="px-3 py-2 text-left">Current campaigns</th>
-                <th className="px-2 py-2 text-right">Stamps</th>
-                <th className="px-2 py-2 text-right">Rewards</th>
-                <th className="px-2 py-2 text-left">Last stamp</th>
-                <th className="px-2 py-2 text-left">Last login</th>
+                <th className="hidden md:table-cell px-3 py-2 text-left">Email</th>
+                <th className="hidden md:table-cell px-2 py-2 text-left">Joined on</th>
+                <th className="hidden md:table-cell px-2 py-2 text-right">Cards</th>
+                <th className="hidden md:table-cell px-3 py-2 text-left">Current campaigns</th>
+                <th className="hidden md:table-cell px-2 py-2 text-right">Stamps</th>
+                <th className="hidden md:table-cell px-2 py-2 text-right">Rewards</th>
+                <th className="hidden md:table-cell px-2 py-2 text-left">Last stamp</th>
+                <th className="hidden md:table-cell px-2 py-2 text-left">Last login</th>
               </tr>
             </thead>
             <tbody>
@@ -1127,22 +1137,37 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
                       onClick={() => setExpandedId(isOpen ? null : c.customer_id)}
                       className="border-t notion-border hover:bg-[#FBFBFA] align-top cursor-pointer"
                     >
-                      <td className="px-3 py-3 font-mono text-xs whitespace-nowrap">
+                      <td className="hidden md:table-cell px-3 py-3 font-mono text-xs whitespace-nowrap">
                         {c.customer_code}
                         {c.any_deletion_pending && (
                           <span className="ml-1 inline-block w-1.5 h-1.5 bg-red-500 rounded-full align-middle" title="Deletion pending on at least one card" />
                         )}
                       </td>
-                      <td className="px-3 py-3 font-medium text-sm">{c.customer_name || '—'}</td>
-                      <td className="px-3 py-3 text-xs text-gray-600">
+                      <td className="px-3 py-3 font-medium text-sm">
+                        <div className="md:hidden font-mono text-[10px] font-normal text-gray-400">
+                          {c.customer_code}
+                          {c.any_deletion_pending && <span className="ml-1.5 text-amber-700">· deletion pending</span>}
+                        </div>
+                        {c.customer_name || '—'}
+                        {/* Phones: the columns hidden on small screens */}
+                        <div className="md:hidden font-normal text-xs text-gray-600 break-all">
+                          {c.email || '—'}
+                          {c.phone && <div className="text-gray-400">📞 {c.phone}</div>}
+                        </div>
+                        <div className="md:hidden mt-1 font-normal text-[11px] text-gray-500">
+                          {c.cards_in_wallet} card{c.cards_in_wallet === 1 ? '' : 's'} · {c.total_stamps} stamp{c.total_stamps === 1 ? '' : 's'} · {c.total_rewards_redeemed} reward{c.total_rewards_redeemed === 1 ? '' : 's'}
+                          {' · '}last stamp {c.last_stamp_at ? relativeTime(new Date(c.last_stamp_at)) : 'never'}
+                        </div>
+                      </td>
+                      <td className="hidden md:table-cell px-3 py-3 text-xs text-gray-600">
                         {c.email || '—'}
                         {c.phone && <div className="text-gray-400">📞 {c.phone}</div>}
                       </td>
-                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
+                      <td className="hidden md:table-cell px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
                         {new Date(c.active_since).toLocaleDateString()}
                       </td>
-                      <td className="px-2 py-3 text-right font-medium text-sm">{c.cards_in_wallet}</td>
-                      <td className="px-3 py-3 text-xs text-gray-600">
+                      <td className="hidden md:table-cell px-2 py-3 text-right font-medium text-sm">{c.cards_in_wallet}</td>
+                      <td className="hidden md:table-cell px-3 py-3 text-xs text-gray-600">
                         {(c.cards_detail ?? []).slice(0, 2).map((d, i) => (
                           <div key={i} className="truncate max-w-[220px]" title={`${d.merchant_name}: ${d.current_offer} (${d.current_stamps}/${d.max_stamps ?? '?'})`}>
                             <span className="font-medium">{d.merchant_name}:</span>{' '}
@@ -1153,9 +1178,9 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
                           <div className="text-[10px] text-gray-400">+ {(c.cards_detail ?? []).length - 2} more</div>
                         )}
                       </td>
-                      <td className="px-2 py-3 text-right text-gray-500 text-sm">{c.total_stamps}</td>
-                      <td className="px-2 py-3 text-right text-gray-500 text-sm">{c.total_rewards_redeemed}</td>
-                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
+                      <td className="hidden md:table-cell px-2 py-3 text-right text-gray-500 text-sm">{c.total_stamps}</td>
+                      <td className="hidden md:table-cell px-2 py-3 text-right text-gray-500 text-sm">{c.total_rewards_redeemed}</td>
+                      <td className="hidden md:table-cell px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
                         {c.last_stamp_at ? (
                           <div>
                             <div>{relativeTime(new Date(c.last_stamp_at))}</div>
@@ -1163,13 +1188,13 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
                           </div>
                         ) : '—'}
                       </td>
-                      <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
+                      <td className="hidden md:table-cell px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
                         {c.last_login_at ? relativeTime(new Date(c.last_login_at)) : 'Never'}
                       </td>
                     </tr>
                     {isOpen && (
                       <tr className="bg-[#F7F7F5]">
-                        <td colSpan={10} className="px-4 py-4">
+                        <td colSpan={10} className="px-3 md:px-4 py-4">
                           <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Card-by-card detail</div>
                             {!readOnly && (
@@ -1298,7 +1323,7 @@ function ReportsTab({ source, title, subtitle }: { source: 'merchant' | 'custome
         <p className="text-gray-500 text-sm">{subtitle}</p>
       </header>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['open', 'in_progress', 'resolved', 'dismissed', ''] as const).map((s) => (
           <button
             key={s}
@@ -1420,7 +1445,7 @@ function ContactTab() {
         <p className="text-gray-500 text-sm">Messages submitted via the public contact form on stampfix.app.</p>
       </header>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['new', 'replied', 'archived', ''] as const).map((s) => (
           <button
             key={s}

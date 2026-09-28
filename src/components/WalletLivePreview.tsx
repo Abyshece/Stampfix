@@ -70,10 +70,10 @@ function AppleCard({ s }: { s: PreviewSettings }) {
   const left = Math.max(0, MAX - filled);
   const mode = s.logoMode ?? 'stampfix';
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center max-w-full">
       <div
         className="relative flex flex-col overflow-hidden rounded-[22px] px-4 pt-4 pb-4 shadow-[0_16px_36px_-14px_rgba(20,20,30,0.35)]"
-        style={{ width: 268, minHeight: 374, background: bg, color: ink }}
+        style={{ width: 268, maxWidth: '100%', minHeight: 374, background: bg, color: ink }}
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2 min-w-0">
@@ -127,10 +127,10 @@ function GoogleCard({ s }: { s: PreviewSettings }) {
   const div = isDark(bg) ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.14)';
   const label = { opacity: 0.75 };
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center max-w-full">
       <div
         className="relative flex flex-col overflow-hidden rounded-[24px] px-5 pt-4 pb-6 shadow-[0_16px_36px_-14px_rgba(20,20,30,0.35)]"
-        style={{ width: 300, background: bg, color: ink }}
+        style={{ width: 300, maxWidth: '100%', background: bg, color: ink }}
       >
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center justify-center rounded-full shrink-0 overflow-hidden" style={{ width: 34, height: 34, background: '#2E2E2E' }}>
