@@ -147,7 +147,8 @@ export function QRScanner({ onScan, onClose, debounceMs = 2000 }: QRScannerProps
 
       {/* Viewfinder overlay */}
       <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-        <div className="w-64 h-64 relative">
+        {/* Aiming frame: 256px, smaller when the camera view is short. */}
+        <div className="h-64 max-h-[55%] aspect-square relative">
           <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-xl" />
           <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-xl" />
           <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-xl" />

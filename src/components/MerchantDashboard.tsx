@@ -868,7 +868,7 @@ export function MerchantDashboard({
 
         {/* --- DASHBOARD / SCANNER --- */}
         {activeTab === 'DASHBOARD' && (
-          <div className="flex flex-col h-[calc(100vh-7rem)] md:h-[calc(100vh-5rem)] md:space-y-3 relative">
+          <div className="flex flex-col scan-h md:space-y-3 relative">
             {/* Compact header: title + inline location selector on the same row.
                 No description text, no big margins — this page exists for one
                 action (scan) and the merchant uses it dozens of times a day.
@@ -1016,8 +1016,8 @@ export function MerchantDashboard({
                     <QRScanner onScan={handleScan} onClose={() => setIsScannerOpen(false)} />
                   </div>
                 ) : (
-                  <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center space-y-4 bg-[#F7F7F5] rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-[#F0F0EE] transition cursor-pointer group touch-manipulation active:scale-[0.98]" onClick={() => setIsScannerOpen(true)}>
-                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm border notion-border group-hover:scale-105 transition duration-300">
+                  <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center space-y-3 md:space-y-4 bg-[#F7F7F5] rounded-lg border-2 border-dashed border-gray-200 hover:border-gray-300 hover:bg-[#F0F0EE] transition cursor-pointer group touch-manipulation active:scale-[0.98]" onClick={() => setIsScannerOpen(true)}>
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center shadow-sm border notion-border group-hover:scale-105 transition duration-300">
                       <Camera className="w-8 h-8 text-gray-400 group-hover:text-[#37352F] transition" />
                     </div>
                     <div className="space-y-1">
