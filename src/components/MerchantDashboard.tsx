@@ -809,7 +809,7 @@ export function MerchantDashboard({
         </div>
       </aside>
 
-      <main className="flex-1 p-6 md:p-12 md:pl-72 pb-24 md:pb-12 max-w-7xl mx-auto w-full min-w-0">
+      <main className={`flex-1 p-6 md:p-12 md:pl-72 ${activeTab === 'DASHBOARD' ? 'pb-20' : 'pb-24'} md:pb-12 max-w-7xl mx-auto w-full min-w-0`}>
         {/* Mobile header */}
         <div className="md:hidden sticky top-0 z-10 bg-white/80 backdrop-blur-md flex justify-between items-center mb-6 py-4 border-b notion-border -mx-6 px-6">
           <div className="flex items-center gap-2">
