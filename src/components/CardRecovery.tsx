@@ -50,8 +50,11 @@ export function CardRecovery() {
       if (found.length === 0) {
         setError(t('cust.recover.errNotFound', { defaultValue: 'No card found for that email and code. Double-check both and try again.' }));
       }
-    } catch {
-      setError(t('cust.recover.errGeneric', { defaultValue: 'Something went wrong. Please try again.' }));
+    } catch (e) {
+      const tooMany = /too many attempts/i.test(String((e as { message?: unknown } | null)?.message ?? ''));
+      setError(tooMany
+        ? t('cust.recover.errTooMany', { defaultValue: 'Too many attempts. Please wait an hour and try again.' })
+        : t('cust.recover.errGeneric', { defaultValue: 'Something went wrong. Please try again.' }));
     } finally {
       setLoading(false);
     }

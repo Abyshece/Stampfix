@@ -10,6 +10,13 @@ const BOT =
 
 const PAGE_ROUTES = new Set(['/', '/pricing', '/features', '/about', '/faq', '/use-cases']);
 
+// Posts written into the site itself (BlogPage.tsx) aren't in the database, so
+// blog-ssr would answer "not found" + noindex for them. Serve bots the SPA.
+const BUILT_IN_POSTS = new Set([
+  'end-of-paper-punch-card', 'hidden-cost-of-paper-punch-cards',
+  'why-nobody-downloads-your-app', 'apple-wallet-vs-native-apps',
+]);
+
 export default function middleware(req: Request) {
   const url = new URL(req.url);
   const path = url.pathname.replace(/\/+$/, '') || '/';
@@ -22,6 +29,7 @@ export default function middleware(req: Request) {
 
   if (isBlog) {
     const slug = path.replace(/^\/blog\/?/, '');
+    if (BUILT_IN_POSTS.has(slug)) return next();
     const dest = new URL('/api/blog-ssr', url.origin);
     if (slug) dest.searchParams.set('slug', slug);
     return rewrite(dest);

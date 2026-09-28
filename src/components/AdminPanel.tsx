@@ -188,6 +188,8 @@ function OverviewTab() {
   const [customTo, setCustomTo] = useState<string>('');
   const [data, setData] = useState<RangedKPIs | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0);
   const [merchantSearch, setMerchantSearch] = useState('');
   const [appliedMerchant, setAppliedMerchant] = useState<string | null>(null);
   const [ext, setExt] = useState<ExtendedKPIs | null>(null);
@@ -200,11 +202,12 @@ function OverviewTab() {
 
   useEffect(() => {
     setLoading(true);
+    setLoadErr(null);
     fetchRangedKPIs(fromDate, toDate)
       .then(setData)
-      .catch(console.error)
+      .catch((e) => { console.error(e); setLoadErr(e?.message ? String(e.message) : 'Could not load KPIs'); })
       .finally(() => setLoading(false));
-  }, [fromDate, toDate]);
+  }, [fromDate, toDate, retryTick]);
 
   useEffect(() => {
     setExt(null); setExtErr(null);
@@ -281,7 +284,12 @@ function OverviewTab() {
         </div>
       </div>
 
-      {loading || !data ? <Loader /> : (
+      {loadErr && !loading ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-4 flex items-center justify-between gap-3">
+          <span>Couldn&rsquo;t load KPIs: {loadErr}</span>
+          <button onClick={() => setRetryTick((n) => n + 1)} className="text-xs px-3 py-1.5 rounded-md border border-red-200 bg-white hover:bg-red-50">Try again</button>
+        </div>
+      ) : loading || !data ? <Loader /> : (
         <>
           {/* Open-work banner */}
           {(data.open_tickets > 0 || data.new_contact_messages > 0) && (
@@ -400,8 +408,8 @@ function KPIContainer({ title, block, accent }: { title: string; block: KPIBlock
           ))}
         </div>
         <div className="flex justify-between text-[9px] text-gray-400 font-medium mt-1">
-          <span>{block.daily[0] ? new Date(block.daily[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
-          <span>{block.daily[block.daily.length - 1] ? new Date(block.daily[block.daily.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}</span>
+          <span>{block.daily[0] ? dayLabel(block.daily[0].date) : ''}</span>
+          <span>{block.daily[block.daily.length - 1] ? dayLabel(block.daily[block.daily.length - 1].date) : ''}</span>
         </div>
       </div>
       <div className="text-xs text-gray-500 pt-2 border-t notion-border">
@@ -409,6 +417,14 @@ function KPIContainer({ title, block, accent }: { title: string; block: KPIBlock
       </div>
     </div>
   );
+}
+
+/** "2026-09-28" -> "Sep 28". A bare date string would otherwise be read as
+ *  UTC midnight and show the previous day west of UTC. */
+function dayLabel(date: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(date);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 /** Resolves a preset (or custom from/to) into actual Date objects. */
@@ -849,8 +865,9 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 function formatCents(cents: number, country: string | null): string {
   if (!cents) return '—';
   const amount = cents / 100;
-  if (country === 'CA') return `CA$${amount.toFixed(0)}`;
-  return `€${amount.toFixed(0)}`;
+  const shown = Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
+  if (country === 'CA') return `CA$${shown}`;
+  return `€${shown}`;
 }
 
 function B2B2CTab({ readOnly }: { readOnly: boolean }) {
@@ -1094,7 +1111,7 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
                                 <div className="text-gray-700">{d.current_offer}</div>
                                 {d.campaign_offer && d.campaign_offer !== d.current_offer && (
                                   <div className="text-[10px] text-amber-600 italic" title="Merchant changed the offer since this customer joined. Auto-migrates on next reward redemption.">
-                                    Joined under: "{d.campaign_offer}"
+                                    Shop&rsquo;s current offer: &ldquo;{d.campaign_offer}&rdquo;
                                   </div>
                                 )}
                                 <div className="flex items-center gap-2 pt-1">
@@ -1663,7 +1680,7 @@ function FunnelTab() {
   ];
   const b2b2c = [
     { label: 'Joined', hint: 'Customer record created', n: cAll.length },
-    { label: 'Added to Wallet', hint: 'Has a card in Apple / Google Wallet', n: cAll.filter((x) => x.cards_in_wallet > 0).length },
+    { label: 'Added to Wallet', hint: 'Has a card installed in Apple Wallet (Google isn\u2019t tracked)', n: cAll.filter((x) => (x.cards_detail ?? []).some((d) => d.in_apple_wallet)).length },
     { label: 'Earned a stamp', hint: 'Collected at least one stamp', n: cAll.filter((x) => x.last_stamp_at).length },
     { label: 'Active (30d)', hint: 'Stamped in the last 30 days', n: cAll.filter((x) => x.last_stamp_at && now - new Date(x.last_stamp_at).getTime() < D30).length },
   ];

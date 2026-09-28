@@ -70,6 +70,7 @@ export interface CustomerCardDetail {
   rewards_redeemed: number;
   joined_at: string;
   deletion_pending: boolean;
+  in_apple_wallet?: boolean;
 }
 
 export interface CustomerRow {
