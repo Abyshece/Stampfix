@@ -58,6 +58,11 @@ export interface MerchantRow {
   estimated_total_cents: number;
   admin_notes: string | null;
   phone: string | null;
+  /** Pro without a Stripe subscription (given for free). Its revenue estimate is 0. */
+  is_comped?: boolean;
+  /** First stamp this merchant ever gave; null = never stamped. */
+  first_stamp_at?: string | null;
+  onboarding_state?: { wizard_dismissed?: boolean; poster_downloaded?: boolean; test_signup_done?: boolean; first_stamp_given?: boolean } | null;
 }
 
 export interface CustomerCardDetail {
@@ -467,4 +472,138 @@ export async function fetchJobRuns(limit = 50): Promise<JobRunRow[]> {
   const { data, error } = await supabase.rpc('admin_job_runs', { p_limit: limit });
   if (error) throw error;
   return (data as JobRunRow[]) ?? [];
+}
+
+// =====================================================================
+// Founder tools: deleted merchants, admin action log, merchant snapshot,
+// email digest
+// =====================================================================
+
+/** Active merchant (not an admin account) that has never given a stamp. */
+export function isStuckMerchant(m: MerchantRow): boolean {
+  return m.status === 'active' && !m.is_platform_admin && !m.first_stamp_at && !m.onboarding_state?.first_stamp_given;
+}
+
+export interface DeletedMerchant {
+  id: string;
+  merchant_code: string | null;
+  business_name: string | null;
+  email: string | null;
+  plan: string | null;
+  country: string | null;
+  created_at: string;
+  deleted_at: string | null;
+  /** When the nightly cleanup erases the account for good. */
+  purge_after: string | null;
+  card_count: number;
+  /** Customer cards the deletion closed, re-opened on undo. */
+  cards_to_reopen: number;
+}
+
+export async function listDeletedMerchants(): Promise<DeletedMerchant[]> {
+  const { data, error } = await supabase.rpc('admin_list_deleted_merchants');
+  if (error) throw error;
+  return (data ?? []) as DeletedMerchant[];
+}
+
+/** Undo a deletion (within the 30 days before cleanup): reactivates the
+ *  account and re-opens the customer cards the deletion closed. */
+export async function restoreMerchant(merchantId: string): Promise<void> {
+  await setMerchantStatus(merchantId, 'active');
+}
+
+export interface AuditRow {
+  id: number;
+  created_at: string;
+  admin_email: string | null;
+  action: string;
+  target_type: string | null;
+  target_id: string | null;
+  target_label: string | null;
+  detail: Record<string, unknown> | null;
+}
+
+export async function fetchAuditLog(limit = 200, targetId?: string | null): Promise<AuditRow[]> {
+  const { data, error } = await supabase.rpc('admin_list_audit_log', { p_limit: limit, p_target_id: targetId ?? null });
+  if (error) throw error;
+  return (data ?? []) as AuditRow[];
+}
+
+export interface MerchantSnapshot {
+  merchant: {
+    id: string; merchant_code: string | null; business_name: string | null; email: string | null;
+    plan: string; status: string; country: string | null; created_at: string; is_comped: boolean;
+    onboarding_state: { wizard_dismissed?: boolean; poster_downloaded?: boolean; test_signup_done?: boolean; first_stamp_given?: boolean };
+    legal_entity_name: string | null; business_address: string | null;
+  };
+  campaign: null | {
+    id: string; business_name: string; offer_title: string; description: string | null; max_stamps: number;
+    max_stamps_per_day: number | null; stamping_mode: string | null; self_serve_radius: number | null;
+    background_color: string | null; card_text_color: string | null; logo_color: string | null; logo_text: string | null;
+    logo_image: string | null; logo_mode: 'stampfix' | 'custom' | 'none' | null; custom_icon: string | null;
+    approval_status: string | null; rejection_reason: string | null; social_links: Record<string, string> | null;
+    created_at: string; updated_at: string; has_owner_pin: boolean; has_stamp_code: boolean;
+  };
+  locations: Array<{ id: string; name: string; address: string | null; archived: boolean; has_coordinates: boolean }>;
+  staff: Array<{ name: string; active: boolean; last_login_at: string | null; created_at: string }>;
+  stats: {
+    customers_active: number; customers_blocked: number; joins_30d: number; stamps_total: number; stamps_7d: number;
+    stamps_30d: number; rewards_total: number; in_apple_wallet: number; last_activity_at: string | null;
+  };
+  recent_activity: Array<{
+    created_at: string; type: string; customer_name: string | null; source: string | null; staff_name: string | null;
+    reason: string | null; is_override: boolean | null; location_name: string | null;
+  }>;
+  customers: Array<{
+    customer_name: string | null; email: string | null; customer_code: string | null; current_stamps: number;
+    max_stamps: number | null; rewards_redeemed: number; status: string; joined_at: string; deletion_pending: boolean;
+  }>;
+  notifications: Array<{ title: string; created_at: string; read: boolean }>;
+}
+
+export async function fetchMerchantSnapshot(merchantId: string): Promise<MerchantSnapshot | null> {
+  const { data, error } = await supabase.rpc('admin_merchant_snapshot', { p_merchant: merchantId });
+  if (error) throw error;
+  return (data ?? null) as MerchantSnapshot | null;
+}
+
+export interface DigestSettings {
+  enabled: boolean;
+  alerts: boolean;
+  recipients: string[];
+  state: {
+    last_daily_at?: string; last_daily_ok?: boolean;
+    last_alert_at?: string; last_alert_ok?: boolean;
+    last_test_at?: string; last_test_ok?: boolean;
+    last_error?: string | null;
+  };
+}
+
+export async function getDigestSettings(): Promise<DigestSettings> {
+  const { data, error } = await supabase.rpc('admin_get_digest_settings');
+  if (error) throw error;
+  const d = (data ?? {}) as Partial<DigestSettings>;
+  return { enabled: !!d.enabled, alerts: !!d.alerts, recipients: d.recipients ?? [], state: d.state ?? {} };
+}
+
+export async function saveDigestSettings(enabled: boolean, alerts: boolean, recipients: string[]): Promise<DigestSettings> {
+  await assertNotReadOnly();
+  const { error } = await supabase.rpc('admin_set_digest_settings', { p_enabled: enabled, p_alerts: alerts, p_recipients: recipients });
+  if (error) throw error;
+  return getDigestSettings();
+}
+
+/** Sends the daily digest right now to the saved recipients. */
+export async function sendTestDigest(): Promise<{ sent: boolean; why?: string; recipients?: number }> {
+  await assertNotReadOnly();
+  const { data, error } = await supabase.functions.invoke('admin-digest', { body: { mode: 'test' } });
+  if (error) throw error;
+  return data as { sent: boolean; why?: string; recipients?: number };
+}
+
+/** Whether the email service key is set (null = couldn't tell). */
+export async function digestEmailConfigured(): Promise<boolean | null> {
+  const { data, error } = await supabase.functions.invoke('admin-digest', { body: { mode: 'status' } });
+  if (error) return null;
+  return (data as { email_configured?: boolean })?.email_configured ?? null;
 }

@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
   Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell, Pencil, KeyRound,
+  Download, Eye,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
@@ -17,8 +18,13 @@ import {
   type ContactMessage, type MerchantStatus, type StripeMrr,
   fetchActivityLog, fetchWalletErrors, fetchRecentSignups, fetchJobRuns,
   type ActivityLogRow, type WalletErrorRow, type SignupRow, type JobRunRow,
-  isReadOnlyAdminEmail,
+  isReadOnlyAdminEmail, isStuckMerchant, listDeletedMerchants,
 } from '../services/admin';
+import { AdminAuditLog } from './AdminAuditLog';
+import { DigestSettingsPanel } from './DigestSettingsPanel';
+import { MerchantSnapshotModal } from './MerchantSnapshotModal';
+import { DeletedMerchantsList } from './DeletedMerchantsList';
+import { toCsv, downloadCsv } from '../lib/csv';
 import { OffersTab } from './OffersTab';
 import { setMerchantApproval, getMerchantApproval, setRejectionReason, getMerchantRejectionReason, getMerchantActivity, type MerchantActivityRow } from '../lib/db';
 import { fetchExtendedKPIs, type ExtendedKPIs } from '../lib/db';
@@ -161,12 +167,12 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
           padding on mobile so tables get more room. */}
       <main className="md:ml-60 p-4 md:p-8 max-w-7xl">
         {tab === 'OVERVIEW' && <OverviewTab />}
-        {tab === 'B2B' && <B2BTab />}
+        {tab === 'B2B' && <B2BTab readOnly={readOnly} />}
         {tab === 'B2B2C' && <B2B2CTab readOnly={readOnly} />}
         {tab === 'B2B_REPORTS' && <ReportsTab source="merchant" title="B2B Reports" subtitle="Tickets submitted by merchants." />}
         {tab === 'B2B2C_REPORTS' && <ReportsTab source="customer" title="B2B2C Reports" subtitle="Tickets submitted by end-customers." />}
         {tab === 'CONTACT' && <ContactTab />}
-        {tab === 'LOGS' && <LogsTab />}
+        {tab === 'LOGS' && <LogsTab readOnly={readOnly} />}
         {tab === 'FUNNEL' && <FunnelTab />}
         {tab === 'OFFERS' && <OffersTab />}
         {tab === 'BLOG' && <BlogAdmin />}
@@ -470,15 +476,19 @@ function resolveRange(preset: RangePreset, customFrom: string, customTo: string)
 // B2B CLIENTS (merchants)
 // =====================================================================
 
-function B2BTab() {
+function B2BTab({ readOnly }: { readOnly: boolean }) {
   const [rows, setRows] = useState<MerchantRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [stripeMrr, setStripeMrr] = useState<StripeMrr | null>(null);
-  const [pill, setPill] = useState<'all' | 'new' | 'pending' | 'active' | 'blocked' | 'pro' | 'free'>('all');
+  const [pill, setPill] = useState<'all' | 'new' | 'pending' | 'active' | 'blocked' | 'pro' | 'free' | 'stuck' | 'deleted'>('all');
   const [approvalMap, setApprovalMap] = useState<Record<string, string>>({});
+  const [deletedCount, setDeletedCount] = useState(0);
+  const [viewAsId, setViewAsId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const refreshDeletedCount = () => { listDeletedMerchants().then((r) => setDeletedCount(r.length)).catch(() => {}); };
 
   const load = async (s = '') => {
     setLoading(true);
@@ -486,7 +496,7 @@ function B2BTab() {
     catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(''); fetchStripeMrr().then(setStripeMrr).catch(() => {}); listMerchantApprovals().then(setApprovalMap).catch(() => {}); }, []);
+  useEffect(() => { load(''); fetchStripeMrr().then(setStripeMrr).catch(() => {}); listMerchantApprovals().then(setApprovalMap).catch(() => {}); refreshDeletedCount(); }, []);
 
   const NEW_MS = 7 * 24 * 60 * 60 * 1000;
   const isNew = (m: MerchantRow) => Date.now() - new Date(m.created_at).getTime() < NEW_MS;
@@ -498,6 +508,8 @@ function B2BTab() {
     blocked: rows.filter((m) => m.status === 'blocked').length,
     pro: rows.filter((m) => m.plan === 'pro').length,
     free: rows.filter((m) => m.plan === 'free').length,
+    stuck: rows.filter(isStuckMerchant).length,
+    deleted: deletedCount,
   };
   const shown = rows.filter((m) =>
     pill === 'new' ? isNew(m) :
@@ -505,16 +517,38 @@ function B2BTab() {
     pill === 'active' ? m.status === 'active' :
     pill === 'blocked' ? m.status === 'blocked' :
     pill === 'pro' ? m.plan === 'pro' :
-    pill === 'free' ? m.plan === 'free' : true,
+    pill === 'free' ? m.plan === 'free' :
+    pill === 'stuck' ? isStuckMerchant(m) : true,
   );
 
   const handleStatus = async (m: MerchantRow, target: MerchantStatus) => {
-    const action = target === 'deleted' ? 'PERMANENTLY DELETE' : target;
-    if (!confirm(`Set ${m.merchant_code} (${m.email}) to "${action}"?`)) return;
+    const question = target === 'deleted'
+      ? `Delete ${m.merchant_code} (${m.email})?\n\nTheir account is closed and their customers' cards are blocked. You can bring it back from "Recently deleted" for 30 days; after that it is erased for good.`
+      : `Set ${m.merchant_code} (${m.email}) to "${target}"?`;
+    if (!confirm(question)) return;
     setBusyId(m.id);
-    try { await setMerchantStatus(m.id, target); await load(search); }
+    try { await setMerchantStatus(m.id, target); await load(search); if (target === 'deleted') refreshDeletedCount(); }
     catch (e) { alert(e instanceof Error ? e.message : 'Failed'); }
     finally { setBusyId(null); }
+  };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const all = await listMerchants('', 10000);
+      const csv = toCsv(
+        ['Code', 'Business', 'Registered company', 'Email', 'Phone', 'Country', 'Plan', 'Comped', 'Status', 'Approval',
+          'Active customers', 'Activity (7 days)', 'Joined', 'Last login', 'First stamp', 'Est. MRR', 'Admin notes'],
+        all.map((m) => [
+          m.merchant_code, m.business_name, m.registered_company_name, m.email, m.phone, m.country, m.plan,
+          m.is_comped ? 'yes' : 'no', m.status, approvalMap[m.id] ?? '', m.card_count, m.recent_activity_count,
+          m.created_at?.slice(0, 10), m.last_login_at?.slice(0, 10) ?? '', m.first_stamp_at?.slice(0, 10) ?? '',
+          m.estimated_mrr_cents ? (m.estimated_mrr_cents / 100).toFixed(2) : '', m.admin_notes,
+        ]),
+      );
+      downloadCsv(`stampfix-merchants-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    } catch (e) { alert(e instanceof Error ? e.message : 'Export failed'); }
+    finally { setExporting(false); }
   };
 
   const handlePlanToggle = async (m: MerchantRow) => {
@@ -562,18 +596,27 @@ function B2BTab() {
         <button type="submit" className="bg-[#37352F] text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-opacity-90">
           Search
         </button>
+        <button type="button" onClick={() => void exportCsv()} disabled={exporting} title="Download all merchants as a spreadsheet (CSV)"
+          className="inline-flex items-center gap-1.5 border notion-border bg-white px-3 py-2 rounded-md text-sm hover:bg-[#F7F7F5] disabled:opacity-50">
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} CSV
+        </button>
       </form>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {(([['all','All'],['new','New'],['pending','Pending approval'],['active','Active'],['blocked','Blocked'],['pro','Pro'],['free','Free']]) as const).map(([k,label]) => (
+        {(([['all','All'],['new','New'],['pending','Pending approval'],['active','Active'],['blocked','Blocked'],['pro','Pro'],['free','Free'],['stuck','Stuck (no stamps yet)'],['deleted','Recently deleted']]) as const).map(([k,label]) => (
           <button key={k} onClick={() => setPill(k)}
             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition ${pill===k ? 'bg-[#37352F] text-white border-[#37352F]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
-            {label}<span className={`text-[10px] px-1.5 py-0.5 rounded-full ${pill===k ? 'bg-white/25' : (k==='new' && counts.new>0 ? 'bg-red-100 text-red-700' : k==='pending' && counts.pending>0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500')}`}>{counts[k]}</span>
+            {label}<span className={`text-[10px] px-1.5 py-0.5 rounded-full ${pill===k ? 'bg-white/25' : (k==='new' && counts.new>0 ? 'bg-red-100 text-red-700' : (k==='pending' || k==='stuck') && counts[k]>0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500')}`}>{counts[k]}</span>
           </button>
         ))}
       </div>
 
-      {loading ? <Loader /> : shown.length === 0 ? <Empty msg="No merchants match this filter." /> : (
+      {pill === 'stuck' && !loading && shown.length > 0 && (
+        <p className="text-xs text-gray-500 -mt-2">Active merchants who have never given a stamp. Worth a call or an email: most need a hand printing the QR poster or trying the first scan.</p>
+      )}
+      {pill === 'deleted' ? (
+        <DeletedMerchantsList readOnly={readOnly} onRestored={() => { void load(search); refreshDeletedCount(); }} />
+      ) : loading ? <Loader /> : shown.length === 0 ? <Empty msg="No merchants match this filter." /> : (
         <div className="bg-white border notion-border rounded-lg overflow-x-auto">
           <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
@@ -615,6 +658,11 @@ function B2BTab() {
                           </div>
                           {(Date.now() - new Date(m.created_at).getTime()) < 7 * 24 * 60 * 60 * 1000 && <span className="text-[10px] font-bold uppercase bg-red-100 text-red-700 px-1.5 py-0.5 rounded">New</span>}
                           {m.is_platform_admin && <span className="text-[10px] font-bold uppercase bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">Admin</span>}
+                          {isStuckMerchant(m) && (
+                            <span className="text-[10px] font-bold uppercase bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded" title="Has never given a stamp">
+                              No stamps · {Math.max(0, Math.floor((Date.now() - new Date(m.created_at).getTime()) / 864e5))}d
+                            </span>
+                          )}
                           {m.admin_notes && <span title={m.admin_notes} className="text-[10px] text-gray-400">📝</span>}
                         </div>
                       </td>
@@ -623,11 +671,12 @@ function B2BTab() {
                         <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${
                           m.plan === 'pro' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
                         }`}>{m.plan.toUpperCase()}</span>
+                        {m.is_comped && <div className="text-[10px] font-semibold text-purple-700 mt-1" title="Pro without a Stripe subscription">COMPED</div>}
                       </td>
                       <td className="px-2 py-3"><StatusBadge status={m.status} /></td>
                       <td className="px-2 py-3 text-right font-medium text-sm">{m.card_count}</td>
-                      <td className="px-2 py-3 text-right text-xs text-gray-600">{formatCents(m.estimated_mrr_cents, m.country)}</td>
-                      <td className="px-2 py-3 text-right text-xs text-gray-600">{formatCents(m.estimated_total_cents, m.country)}</td>
+                      <td className="px-2 py-3 text-right text-xs text-gray-600">{m.is_comped ? <span className="text-purple-700">Comped</span> : formatCents(m.estimated_mrr_cents, m.country)}</td>
+                      <td className="px-2 py-3 text-right text-xs text-gray-600">{m.is_comped ? '—' : formatCents(m.estimated_total_cents, m.country)}</td>
                       <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">{new Date(m.created_at).toLocaleDateString()}</td>
                       <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">
                         {m.last_login_at ? relativeTime(new Date(m.last_login_at)) : 'Never'}
@@ -668,7 +717,7 @@ function B2BTab() {
                     {isOpen && (
                       <tr className="bg-[#F7F7F5]">
                         <td colSpan={11} className="px-4 py-4">
-                          <MerchantDetailPanel merchant={m} onChanged={() => load(search)} />
+                          <MerchantDetailPanel merchant={m} onChanged={() => load(search)} onViewAs={() => setViewAsId(m.id)} />
                         </td>
                       </tr>
                     )}
@@ -679,12 +728,13 @@ function B2BTab() {
           </table>
         </div>
       )}
+      {viewAsId && <MerchantSnapshotModal merchantId={viewAsId} onClose={() => setViewAsId(null)} />}
     </div>
   );
 }
 
 /** Expanded detail panel showing comprehensive info + editable admin notes. */
-function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; onChanged: () => void }) {
+function MerchantDetailPanel({ merchant, onChanged, onViewAs }: { merchant: MerchantRow; onChanged: () => void; onViewAs: () => void }) {
   const [notes, setNotes] = useState(merchant.admin_notes ?? '');
   const [approval, setApproval] = useState<'pending' | 'approved' | 'rejected' | null>(null);
   const [approvalBusy, setApprovalBusy] = useState(false);
@@ -722,8 +772,24 @@ function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; o
     } finally { setSaving(false); }
   };
 
+  const ob = merchant.onboarding_state ?? {};
+  const steps: Array<[boolean, string]> = [
+    [!!ob.wizard_dismissed, 'Finished the setup wizard'],
+    [!!ob.poster_downloaded, 'Downloaded the QR poster'],
+    [!!ob.test_signup_done, 'Tried the customer sign-up'],
+    [!!ob.first_stamp_given || !!merchant.first_stamp_at, merchant.first_stamp_at ? `First stamp ${new Date(merchant.first_stamp_at).toLocaleDateString()}` : 'Gave a first stamp'],
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+      <div className="md:col-span-3 flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-gray-500">
+          {isStuckMerchant(merchant) && <span className="text-amber-700 font-medium">No stamps yet — {steps.filter(([d]) => d).length} of 4 setup steps done. </span>}
+        </div>
+        <button onClick={onViewAs} className="inline-flex items-center gap-1.5 bg-white border notion-border px-3 py-1.5 rounded text-xs font-medium hover:bg-[#F7F7F5]">
+          <Eye className="w-3.5 h-3.5" /> View as merchant
+        </button>
+      </div>
       {/* Identity */}
       <div className="bg-white border notion-border rounded p-3 space-y-1.5">
         <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Identity</div>
@@ -818,6 +884,20 @@ function MerchantDetailPanel({ merchant, onChanged }: { merchant: MerchantRow; o
           className="w-full bg-[#F7F7F5] border notion-border rounded px-2 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-[#37352F]/20"
         />
       </div>
+      {/* Getting started */}
+      <div className="bg-white border notion-border rounded p-3 space-y-1.5">
+        <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Getting started</div>
+        {steps.map(([done, label]) => (
+          <div key={label} className={`flex items-center gap-2 ${done ? 'text-gray-800' : 'text-gray-400'}`}>
+            <span className={`inline-block w-3.5 text-center ${done ? 'text-green-600' : ''}`}>{done ? '✓' : '–'}</span>{label}
+          </div>
+        ))}
+      </div>
+      {/* Changes admins made to this account */}
+      <div className="bg-white border notion-border rounded p-3 md:col-span-2">
+        <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-2">Admin history</div>
+        <AdminAuditLog targetId={merchant.id} compact />
+      </div>
       {/* Dashboard activity log */}
       <div className="bg-white border notion-border rounded p-3 md:col-span-3">
         <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-2">Dashboard activity</div>
@@ -882,6 +962,26 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
   const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
   const [editBusy, setEditBusy] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const all = await listCustomers(undefined, merchantFilter || null, 10000);
+      const csv = toCsv(
+        ['Customer ID', 'Name', 'Email', 'Phone', 'Joined', 'Cards', 'Stamps', 'Rewards', 'Last stamp', 'Last stamp at',
+          'Last login', 'Shops', 'In Apple Wallet', 'Deletion pending'],
+        all.map((c) => [
+          c.customer_code, c.customer_name, c.email, c.phone, c.active_since?.slice(0, 10), c.cards_in_wallet, c.total_stamps,
+          c.total_rewards_redeemed, c.last_stamp_at?.slice(0, 10) ?? '', c.last_stamp_merchant ?? '', c.last_login_at?.slice(0, 10) ?? '',
+          c.merchants_list, (c.cards_detail ?? []).some((d) => d.in_apple_wallet) ? 'yes' : 'no', c.any_deletion_pending ? 'yes' : 'no',
+        ]),
+      );
+      const shop = merchantFilter ? `-${(merchants.find((m) => m.id === merchantFilter)?.merchant_code ?? 'shop').toLowerCase()}` : '';
+      downloadCsv(`stampfix-customers${shop}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    } catch (e) { alert(e instanceof Error ? e.message : 'Export failed'); }
+    finally { setExporting(false); }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -973,6 +1073,11 @@ function B2B2CTab({ readOnly }: { readOnly: boolean }) {
             Search
           </button>
         </form>
+        <button type="button" onClick={() => void exportCsv()} disabled={exporting}
+          title={merchantFilter ? 'Download this shop’s customers as a spreadsheet (CSV)' : 'Download all customers as a spreadsheet (CSV)'}
+          className="inline-flex items-center gap-1.5 border notion-border bg-white px-3 py-2 rounded-md text-sm hover:bg-[#F7F7F5] disabled:opacity-50">
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} CSV
+        </button>
         <select
           value={merchantFilter} onChange={(e) => setMerchantFilter(e.target.value)}
           className="bg-white border notion-border rounded-md px-3 py-2 text-sm"
@@ -1459,7 +1564,7 @@ function NotAuthorized({ email }: { email: string | null }) {
 // signups and scheduled-job runs. All data comes from existing
 // tables via admin RPCs (see stampfix_admin_logs.sql).
 // ============================================================
-type LogSub = 'ACTIVITY' | 'WALLET' | 'SIGNUPS' | 'JOBS';
+type LogSub = 'ACTIVITY' | 'WALLET' | 'SIGNUPS' | 'JOBS' | 'ADMIN' | 'DIGEST';
 
 const ACTIVITY_TYPES = ['', 'STAMP', 'REDEEM', 'JOIN', 'BLOCK', 'UNBLOCK'] as const;
 
@@ -1478,7 +1583,7 @@ function fmtTime(iso: string): string {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString();
 }
 
-function LogsTab() {
+function LogsTab({ readOnly }: { readOnly: boolean }) {
   const [sub, setSub] = useState<LogSub>('ACTIVITY');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [refreshTick, setRefreshTick] = useState(0);
@@ -1492,6 +1597,8 @@ function LogsTab() {
 
   useEffect(() => {
     let cancelled = false;
+    // The admin log and the digest settings load themselves.
+    if (sub === 'ADMIN' || sub === 'DIGEST') { setLoading(false); setErr(null); return; }
     (async () => {
       setLoading(true);
       setErr(null);
@@ -1514,6 +1621,8 @@ function LogsTab() {
     ['WALLET', 'Wallet errors'],
     ['SIGNUPS', 'New signups'],
     ['JOBS', 'System jobs'],
+    ['ADMIN', 'Admin actions'],
+    ['DIGEST', 'Email digest'],
   ];
 
   return (
@@ -1527,7 +1636,7 @@ function LogsTab() {
           <RotateCcw className="w-3.5 h-3.5" /> Refresh
         </button>
       </div>
-      <p className="text-sm text-gray-500 mb-5">Everything worth watching, in one place. Read-only.</p>
+      <p className="text-sm text-gray-500 mb-5">Everything worth watching, in one place.</p>
 
       {/* sub-tabs */}
       <div className="flex flex-wrap gap-1.5 mb-4 border-b notion-border">
@@ -1565,7 +1674,11 @@ function LogsTab() {
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-md px-4 py-3 mb-4">{err}</div>
       )}
 
-      {loading ? (
+      {sub === 'ADMIN' ? (
+        <AdminAuditLog key={refreshTick} />
+      ) : sub === 'DIGEST' ? (
+        <DigestSettingsPanel key={refreshTick} readOnly={readOnly} />
+      ) : loading ? (
         <div className="flex items-center gap-2 text-gray-400 text-sm py-10 justify-center">
           <Loader2 className="w-4 h-4 animate-spin" /> Loading…
         </div>
