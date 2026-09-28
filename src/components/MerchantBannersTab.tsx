@@ -234,18 +234,18 @@ function BannerEditor({ banner, isNew, readOnly, onClose, onSaved }: {
         className="bg-white rounded-t-xl md:rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 z-10 bg-white border-b notion-border px-5 py-3 flex items-center justify-between">
           <h3 className="font-semibold">{isNew ? 'New merchant banner' : 'Edit merchant banner'}</h3>
-          <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-[#37352F] text-xl leading-none">&times;</button>
+          <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-[#37352F] text-xl leading-none p-2 -m-2">&times;</button>
         </div>
 
         <div className="px-5 py-4 space-y-4">
           {/* Live preview */}
           <div className="bg-[#F7F7F5] border notion-border rounded-lg p-3 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">Preview on the merchant dashboard</span>
-              <div className="inline-flex rounded-md border notion-border overflow-hidden text-[11px]">
+              <div className="inline-flex flex-shrink-0 rounded-md border notion-border overflow-hidden text-[11px]">
                 {(['EN', 'DE'] as const).map((l) => (
                   <button key={l} type="button" onClick={() => setPreviewDe(l === 'DE')}
-                    className={`px-2 py-0.5 ${previewDe === (l === 'DE') ? 'bg-[#37352F] text-white' : 'bg-white text-gray-500'}`}>{l}</button>
+                    className={`px-2.5 py-1 ${previewDe === (l === 'DE') ? 'bg-[#37352F] text-white' : 'bg-white text-gray-500'}`}>{l}</button>
                 ))}
               </div>
             </div>

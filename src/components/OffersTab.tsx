@@ -222,7 +222,7 @@ function BannerEditor({
       <div className="bg-white rounded-t-xl md:rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b notion-border px-5 py-3 flex items-center justify-between">
           <h3 className="font-semibold">{isNew ? 'New banner' : 'Edit banner'}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-[#37352F] text-xl leading-none">&times;</button>
+          <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-[#37352F] text-xl leading-none p-2 -m-2">&times;</button>
         </div>
 
         <div className="px-5 py-4 space-y-4">

@@ -1030,13 +1030,13 @@ export function MerchantDashboard({
                 <div className="mt-4 pt-4 border-t notion-border">
                   <div className="flex gap-2">
                     <input
-                      className="flex-1 bg-[#F7F7F5] border notion-border rounded px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                      className="flex-1 min-w-0 bg-[#F7F7F5] border notion-border rounded px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
                       placeholder={t('dash.scan.manualPlaceholder', { defaultValue: 'Or enter Customer ID / Email...' })}
                       value={manualId}
                       onChange={(e) => setManualId(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleManualStamp()}
                     />
-                    <button onClick={handleManualStamp} className="text-white px-6 py-3 rounded text-sm font-medium hover:bg-opacity-90 transition shadow-sm active:scale-95"
+                    <button onClick={handleManualStamp} className="flex-shrink-0 whitespace-nowrap text-white px-6 py-3 rounded text-sm font-medium hover:bg-opacity-90 transition shadow-sm active:scale-95"
                       style={{ backgroundColor: campaign.primaryColor }}>
                       {t('dash.scan.stampBtn', { defaultValue: 'Stamp' })}
                     </button>
@@ -1672,7 +1672,7 @@ export function MerchantDashboard({
                   </button>
                 ))}
               </nav>
-              <div className="flex-1 min-w-0 space-y-8">
+              <div className="flex-1 min-w-0 w-full space-y-8">
               {(() => {
                 const meta: Record<SettingsSection, { title: string; hint: string }> = {
                   general:   { title: t('dash.settings.generalTitle', { defaultValue: 'General' }), hint: t('dash.settings.generalHint', { defaultValue: 'Your business name, the reward you offer, and how many stamps a customer needs. These appear on every card you issue, so changing them updates what new customers see.' }) },

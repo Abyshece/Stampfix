@@ -38,14 +38,14 @@ export function DeletedMerchantsList({ readOnly, onRestored }: { readOnly: boole
     <div className="space-y-2">
       <p className="text-xs text-gray-500">Deleted accounts are kept for 30 days, then erased for good (with their customers’ cards and history) by the nightly cleanup.</p>
       <div className="bg-white border notion-border rounded-lg overflow-x-auto">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className="w-full md:min-w-[760px] text-sm">
           <thead className="bg-[#F7F7F5] text-xs uppercase tracking-wider text-gray-500">
             <tr>
-              <th className="px-3 py-2 text-left">Code</th>
+              <th className="hidden md:table-cell px-3 py-2 text-left">Code</th>
               <th className="px-3 py-2 text-left">Business / contact</th>
-              <th className="px-2 py-2 text-left">Deleted</th>
-              <th className="px-2 py-2 text-left">Erased on</th>
-              <th className="px-2 py-2 text-right">Customer cards</th>
+              <th className="hidden md:table-cell px-2 py-2 text-left">Deleted</th>
+              <th className="hidden md:table-cell px-2 py-2 text-left">Erased on</th>
+              <th className="hidden md:table-cell px-2 py-2 text-right">Customer cards</th>
               <th className="px-2 py-2 text-center">Undo</th>
             </tr>
           </thead>
@@ -54,13 +54,23 @@ export function DeletedMerchantsList({ readOnly, onRestored }: { readOnly: boole
               const daysLeft = m.purge_after ? Math.max(0, Math.ceil((new Date(m.purge_after).getTime() - Date.now()) / 864e5)) : null;
               return (
                 <tr key={m.id} className="border-t notion-border align-top">
-                  <td className="px-3 py-3 font-mono text-xs whitespace-nowrap">{m.merchant_code}</td>
+                  <td className="hidden md:table-cell px-3 py-3 font-mono text-xs whitespace-nowrap">{m.merchant_code}</td>
                   <td className="px-3 py-3">
+                    <div className="md:hidden font-mono text-[10px] text-gray-400">{m.merchant_code}</div>
                     <div className="font-medium">{m.business_name || '—'}</div>
-                    <div className="text-xs text-gray-500">{m.email}</div>
+                    <div className="text-xs text-gray-500 break-all">{m.email}</div>
+                    {/* Phones: the columns hidden on small screens */}
+                    <div className="md:hidden mt-1 text-[11px] text-gray-500">
+                      Deleted {m.deleted_at ? new Date(m.deleted_at).toLocaleDateString() : '—'} · {m.card_count} customer card{m.card_count === 1 ? '' : 's'}
+                      {m.purge_after && (
+                        <div className={daysLeft !== null && daysLeft <= 7 ? 'text-red-600' : ''}>
+                          Erased on {new Date(m.purge_after).toLocaleDateString()} · {daysLeft} day{daysLeft === 1 ? '' : 's'} left
+                        </div>
+                      )}
+                    </div>
                   </td>
-                  <td className="px-2 py-3 text-xs text-gray-500 whitespace-nowrap">{m.deleted_at ? new Date(m.deleted_at).toLocaleDateString() : '—'}</td>
-                  <td className="px-2 py-3 text-xs whitespace-nowrap">
+                  <td className="hidden md:table-cell px-2 py-3 text-xs text-gray-500 whitespace-nowrap">{m.deleted_at ? new Date(m.deleted_at).toLocaleDateString() : '—'}</td>
+                  <td className="hidden md:table-cell px-2 py-3 text-xs whitespace-nowrap">
                     {m.purge_after ? (
                       <>
                         <div>{new Date(m.purge_after).toLocaleDateString()}</div>
@@ -68,11 +78,11 @@ export function DeletedMerchantsList({ readOnly, onRestored }: { readOnly: boole
                       </>
                     ) : '—'}
                   </td>
-                  <td className="px-2 py-3 text-right text-sm">{m.card_count}</td>
+                  <td className="hidden md:table-cell px-2 py-3 text-right text-sm">{m.card_count}</td>
                   <td className="px-2 py-3 text-center">
                     <button
                       onClick={() => void undo(m)} disabled={readOnly || busyId !== null}
-                      className="inline-flex items-center gap-1 text-xs text-green-700 border border-green-200 px-2.5 py-1 rounded hover:bg-green-50 disabled:opacity-40"
+                      className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-green-700 border border-green-200 px-2.5 py-1.5 md:py-1 rounded hover:bg-green-50 disabled:opacity-40"
                     >
                       {busyId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />} Bring back
                     </button>

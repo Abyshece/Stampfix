@@ -194,15 +194,22 @@ export function MerchantSnapshotModal({ merchantId, onClose }: { merchantId: str
               {snap.recent_activity.length === 0 ? <div className="text-xs text-gray-400 italic">No activity yet.</div> : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
-                    <thead className="text-gray-400 text-left"><tr><th className="py-1 pr-3">Time</th><th className="py-1 pr-3">Type</th><th className="py-1 pr-3">Customer</th><th className="py-1 pr-3">Where / who</th><th className="py-1">Note</th></tr></thead>
+                    <thead className="text-gray-400 text-left"><tr><th className="py-1 pr-3">Time</th><th className="py-1 pr-3">Type</th><th className="py-1 pr-3">Customer</th><th className="hidden sm:table-cell py-1 pr-3">Where / who</th><th className="hidden sm:table-cell py-1">Note</th></tr></thead>
                     <tbody>
                       {snap.recent_activity.map((a, i) => (
                         <tr key={i} className="border-t notion-border">
-                          <td className="py-1 pr-3 whitespace-nowrap text-gray-500">{new Date(a.created_at).toLocaleString()}</td>
+                          <td className="py-1 pr-3 sm:whitespace-nowrap text-gray-500">{new Date(a.created_at).toLocaleString()}</td>
                           <td className="py-1 pr-3">{a.type}</td>
-                          <td className="py-1 pr-3">{a.customer_name ?? '—'}</td>
-                          <td className="py-1 pr-3 text-gray-500">{[a.location_name, a.staff_name, a.source].filter(Boolean).join(' · ') || '—'}</td>
-                          <td className="py-1 text-gray-500">{a.is_override ? `Extra stamp${a.reason ? `: ${a.reason}` : ''}` : (a.reason ?? '')}</td>
+                          <td className="py-1 pr-3">
+                            {a.customer_name ?? '—'}
+                            {/* Phones: where / who and the note, under the customer */}
+                            <div className="sm:hidden text-gray-500">
+                              {[a.location_name, a.staff_name, a.source].filter(Boolean).join(' · ')}
+                              {a.is_override ? ` · Extra stamp${a.reason ? `: ${a.reason}` : ''}` : (a.reason ? ` · ${a.reason}` : '')}
+                            </div>
+                          </td>
+                          <td className="hidden sm:table-cell py-1 pr-3 text-gray-500">{[a.location_name, a.staff_name, a.source].filter(Boolean).join(' · ') || '—'}</td>
+                          <td className="hidden sm:table-cell py-1 text-gray-500">{a.is_override ? `Extra stamp${a.reason ? `: ${a.reason}` : ''}` : (a.reason ?? '')}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -215,16 +222,21 @@ export function MerchantSnapshotModal({ merchantId, onClose }: { merchantId: str
               {snap.customers.length === 0 ? <div className="text-xs text-gray-400 italic">No customers yet.</div> : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
-                    <thead className="text-gray-400 text-left"><tr><th className="py-1 pr-3">Name</th><th className="py-1 pr-3">Email</th><th className="py-1 pr-3">Stamps</th><th className="py-1 pr-3">Rewards</th><th className="py-1 pr-3">Status</th><th className="py-1">Joined</th></tr></thead>
+                    <thead className="text-gray-400 text-left"><tr><th className="py-1 pr-3">Name</th><th className="hidden sm:table-cell py-1 pr-3">Email</th><th className="py-1 pr-3">Stamps</th><th className="py-1 pr-3">Rewards</th><th className="py-1 pr-3">Status</th><th className="hidden sm:table-cell py-1">Joined</th></tr></thead>
                     <tbody>
                       {snap.customers.map((cu, i) => (
                         <tr key={i} className="border-t notion-border">
-                          <td className="py-1 pr-3">{cu.customer_name || '—'} <span className="text-gray-400 font-mono">{cu.customer_code}</span></td>
-                          <td className="py-1 pr-3 text-gray-500">{cu.email}</td>
+                          <td className="py-1 pr-3">
+                            {cu.customer_name || '—'} <span className="text-gray-400 font-mono">{cu.customer_code}</span>
+                            {/* Phones: email and join date, under the name */}
+                            <div className="sm:hidden text-gray-500 break-all">{cu.email}</div>
+                            <div className="sm:hidden text-gray-400">joined {new Date(cu.joined_at).toLocaleDateString()}</div>
+                          </td>
+                          <td className="hidden sm:table-cell py-1 pr-3 text-gray-500">{cu.email}</td>
                           <td className="py-1 pr-3">{cu.current_stamps}/{cu.max_stamps ?? '?'}</td>
                           <td className="py-1 pr-3">{cu.rewards_redeemed}</td>
                           <td className="py-1 pr-3">{cu.deletion_pending ? 'deletion pending' : cu.status.toLowerCase()}</td>
-                          <td className="py-1 whitespace-nowrap text-gray-500">{new Date(cu.joined_at).toLocaleDateString()}</td>
+                          <td className="hidden sm:table-cell py-1 whitespace-nowrap text-gray-500">{new Date(cu.joined_at).toLocaleDateString()}</td>
                         </tr>
                       ))}
                     </tbody>
