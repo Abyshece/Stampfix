@@ -230,12 +230,19 @@ function StatusBadge({ status }: { status: ShownStatus }) {
 
 // ---- Panel --------------------------------------------------------------------
 
-export function CampaignsPanel({ campaignId, businessName, locations }: { campaignId: string; businessName: string; locations: Location[] }) {
+export function CampaignsPanel({ campaignId, businessName, locations, showIntro = false, onIntroDone }: {
+  campaignId: string; businessName: string; locations: Location[];
+  /** First visit: show the "How campaigns work" box with ready-made examples. */
+  showIntro?: boolean;
+  /** The intro was closed, or a first campaign was created. */
+  onIntroDone?: () => void;
+}) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
   const [items, setItems] = useState<MarketingCampaign[] | null>(null);
   const [chooser, setChooser] = useState(false);
   const [editing, setEditing] = useState<CampaignKind | null>(null);
+  const [preset, setPreset] = useState<CampaignPreset | null>(null);
   const [pendingDelete, setPendingDelete] = useState<MarketingCampaign | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const activeLocations = useMemo(() => locations.filter((l) => !l.archived), [locations]);
@@ -279,11 +286,35 @@ export function CampaignsPanel({ campaignId, businessName, locations }: { campai
         businessName={businessName}
         locations={activeLocations}
         defaultName={t('dash.campaigns.defaultName', { n: (items?.length ?? 0) + 1, defaultValue: 'Campaign {{n}}' })}
-        onCancel={() => setEditing(null)}
-        onDone={() => { setEditing(null); load(); }}
+        preset={preset}
+        onCancel={() => { setEditing(null); setPreset(null); }}
+        onDone={() => { setEditing(null); setPreset(null); if (showIntro) onIntroDone?.(); load(); }}
       />
     );
   }
+
+  const examples: Array<CampaignPreset & { key: string }> = [
+    {
+      key: 'miss',
+      name: t('dash.campaigns.intro.exMissName', { defaultValue: 'We miss you' }),
+      message: t('dash.campaigns.intro.exMissMsg', { defaultValue: 'We miss you! Pop in this week and collect your next stamp.' }),
+      segment: 'inactive_30',
+    },
+    {
+      key: 'close',
+      name: t('dash.campaigns.intro.exCloseName', { defaultValue: 'Almost there' }),
+      message: t('dash.campaigns.intro.exCloseMsg', { defaultValue: 'You’re just 1 stamp away from your reward. See you soon!' }),
+      segment: 'close',
+    },
+    {
+      key: 'weekend',
+      name: t('dash.campaigns.intro.exWeekendName', { defaultValue: 'Double stamps weekend' }),
+      message: t('dash.campaigns.intro.exWeekendMsg', { defaultValue: 'This weekend only: double stamps on every visit!' }),
+      segment: 'all',
+    },
+  ];
+  const startFromExample = (ex: CampaignPreset) => { setPreset({ ...ex, message: ex.message.slice(0, MAX_MESSAGE) }); setEditing('manual'); };
+  const introVisible = showIntro && items !== null && items.length === 0;
 
   const locationNames = (ids: string[]) =>
     ids.length === 0
@@ -305,6 +336,47 @@ export function CampaignsPanel({ campaignId, businessName, locations }: { campai
           <Plus className="w-4 h-4" /> {t('dash.campaigns.start', { defaultValue: 'Start new campaign' })}
         </button>
       </div>
+
+      {introVisible && (
+        <section aria-label={t('dash.campaigns.intro.title', { defaultValue: 'How campaigns work' })}
+          className="border border-blue-200 bg-blue-50/60 rounded-xl p-5 sm:p-6 mb-6">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-base font-semibold text-[#37352F]">{t('dash.campaigns.intro.title', { defaultValue: 'How campaigns work' })}</h2>
+              <p className="text-sm text-gray-600 mt-0.5">{t('dash.campaigns.intro.sub', { defaultValue: 'Bring customers back with a short message on their phone. It takes a minute.' })}</p>
+            </div>
+            <button onClick={() => onIntroDone?.()} className="text-xs font-medium text-blue-700 hover:text-blue-900 whitespace-nowrap">
+              {t('dash.campaigns.intro.gotIt', { defaultValue: 'Got it' })}
+            </button>
+          </div>
+          <ol className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+            {([
+              [MessageSquare, t('dash.campaigns.intro.s1t', { defaultValue: '1. Write your message' }), t('dash.campaigns.intro.s1b', { count: MAX_MESSAGE, defaultValue: 'Up to {{count}} characters, like an offer or a friendly reminder.' })],
+              [Target, t('dash.campaigns.intro.s2t', { defaultValue: '2. Choose who gets it and when' }), t('dash.campaigns.intro.s2b', { defaultValue: 'Everyone, regulars who stopped coming, or customers close to a reward. Now or scheduled.' })],
+              [Send, t('dash.campaigns.intro.s3t', { defaultValue: '3. It appears on their wallet card' }), t('dash.campaigns.intro.s3b', { defaultValue: 'It pops up on their lock screen, for customers who added your card to Apple Wallet.' })],
+            ] as const).map(([Icon, title, body]) => (
+              <li key={title} className="bg-white border border-blue-100 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#37352F]"><Icon className="w-4 h-4 text-blue-600" />{title}</div>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{body}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{t('dash.campaigns.intro.examples', { defaultValue: 'Or start from a ready-made example' })}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {examples.map((ex) => (
+              <div key={ex.key} className="bg-white border notion-border rounded-lg p-3 flex flex-col">
+                <div className="text-sm font-semibold text-[#37352F]">{ex.name}</div>
+                <p className="text-xs text-gray-600 mt-1 flex-1">“{ex.message}”</p>
+                <p className="text-[11px] text-gray-400 mt-2">{t('dash.campaigns.intro.to', { defaultValue: 'To:' })} {segmentLabel(t, ex.segment)}</p>
+                <button onClick={() => startFromExample(ex)}
+                  className="mt-3 inline-flex items-center justify-center gap-1.5 bg-[#37352F] text-white text-xs font-medium px-3 py-2 rounded-lg hover:bg-[#2a2a28] transition">
+                  {t('dash.campaigns.intro.use', { defaultValue: 'Use this example' })} <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {items === null ? (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
@@ -422,15 +494,19 @@ function nextSlot(tz: string): { date: string; time: string } {
   return { date, time: `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}` };
 }
 
-function CampaignEditor({ kind, campaignId, businessName, locations, defaultName, onCancel, onDone }: {
+/** A ready-made campaign the editor opens with (the "How it works" examples). */
+interface CampaignPreset { name: string; message: string; segment: Segment }
+
+function CampaignEditor({ kind, campaignId, businessName, locations, defaultName, preset, onCancel, onDone }: {
   kind: CampaignKind; campaignId: string; businessName: string; locations: Location[]; defaultName: string;
+  preset?: CampaignPreset | null;
   onCancel: () => void; onDone: () => void;
 }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const [name, setName] = useState(defaultName);
-  const [message, setMessage] = useState('');
-  const [segment, setSegment] = useState<Segment>('all');
+  const [name, setName] = useState(preset?.name ?? defaultName);
+  const [message, setMessage] = useState(preset?.message ?? '');
+  const [segment, setSegment] = useState<Segment>(preset?.segment ?? 'all');
   const [locationIds, setLocationIds] = useState<string[]>([]);
   const [triggerType, setTriggerType] = useState<TriggerType | ''>('');
   const [triggerValue, setTriggerValue] = useState<number | null>(null);
