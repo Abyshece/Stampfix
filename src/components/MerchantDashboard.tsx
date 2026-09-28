@@ -6,6 +6,7 @@ import {
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
   RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone } from 'lucide-react';
 import { CampaignsPanel } from './CampaignsPanel';
+import { MerchantDashboardBanner } from './MerchantBannerBar';
 import { useAuth } from '../lib/auth';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -158,6 +159,11 @@ export function MerchantDashboard({
   useEffect(() => {
     if (staffHidden.includes(activeTab)) { setActiveTab('DASHBOARD'); window.history.replaceState({}, '', TAB_PATH.DASHBOARD); }
   }, [staffHidden, activeTab]);
+  // "NEW" badge on Campaigns until it has been opened once (saved to the account).
+  const campaignsNew = !onboarding.campaigns_opened;
+  useEffect(() => {
+    if (activeTab === 'OFFERS' && !onboarding.campaigns_opened) void onMarkOnboardingStep({ campaigns_opened: true });
+  }, [activeTab, onboarding.campaigns_opened, onMarkOnboardingStep]);
   useEffect(() => {
     let cancelled = false;
     listStaff(campaign.id)
@@ -752,6 +758,9 @@ export function MerchantDashboard({
                 }`}>
                 <Icon className="w-4 h-4" />
                 <span className="flex-1 text-left truncate">{label}</span>
+                {id === 'OFFERS' && campaignsNew && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider bg-blue-600 text-white px-1.5 py-0.5 rounded-full flex-shrink-0">{t('dash.nav.new', { defaultValue: 'New' })}</span>
+                )}
                 {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP' || id === 'STAFF') && (
                   <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
                 )}
@@ -813,7 +822,7 @@ export function MerchantDashboard({
         <div className="hidden md:flex items-center text-sm text-gray-400 mb-6 gap-2">
           <span>{campaign.businessName}</span>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab.toLowerCase() })}</span>
+          <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab === 'OFFERS' ? 'campaigns' : activeTab.toLowerCase() })}</span>
         </div>
 
         {/* Account approval status banner */}
@@ -852,6 +861,10 @@ export function MerchantDashboard({
             </button>
           </div>
         )}
+
+        {/* Announcements from Stampfix (Admin → Merchant Banners): owner only,
+            never on the scanner screen. */}
+        <MerchantDashboardBanner visible={!activeStaff && activeTab !== 'DASHBOARD'} onOpenTab={handleTabChange} />
 
         {/* --- DASHBOARD / SCANNER --- */}
         {activeTab === 'DASHBOARD' && (
@@ -1593,7 +1606,11 @@ export function MerchantDashboard({
 
         {/* --- SETTINGS --- */}
         {activeTab === 'OFFERS' && (
-          <CampaignsPanel campaignId={campaign.id} businessName={campaign.businessName} locations={locations} />
+          <CampaignsPanel
+            campaignId={campaign.id} businessName={campaign.businessName} locations={locations}
+            showIntro={!onboarding.campaigns_intro_done}
+            onIntroDone={() => void onMarkOnboardingStep({ campaigns_intro_done: true })}
+          />
         )}
         {activeTab === 'STAFF' && (
           !isPro ? (
@@ -2054,7 +2071,10 @@ export function MerchantDashboard({
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
               ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE', 'STAFF', 'OFFERS'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
-            <Menu className="w-6 h-6" />
+            <span className="relative">
+              <Menu className="w-6 h-6" />
+              {campaignsNew && <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-600" aria-hidden="true" />}
+            </span>
             <span className="text-[10px] font-medium">{t('dash.nav.more', { defaultValue: 'More' })}</span>
           </button>
         </div>
@@ -2080,10 +2100,13 @@ export function MerchantDashboard({
                   className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${
                     activeTab === id ? 'bg-[#F7F7F5] border-[#37352F]' : 'bg-white border-transparent'
                   }`}>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  <div className={`relative w-12 h-12 rounded-full flex items-center justify-center ${
                     activeTab === id ? 'bg-[#37352F] text-white' : 'bg-gray-100 text-gray-600'
                   }`}>
                     <Icon className="w-6 h-6" />
+                    {id === 'OFFERS' && campaignsNew && (
+                      <span className="absolute -top-1 -right-2 text-[8px] font-bold uppercase bg-blue-600 text-white px-1 py-0.5 rounded-full">{t('dash.nav.new', { defaultValue: 'New' })}</span>
+                    )}
                   </div>
                   <span className="text-xs font-medium">{label}</span>
                 </button>

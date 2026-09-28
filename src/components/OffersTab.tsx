@@ -4,6 +4,7 @@ import {
   adminListPromoBanners, upsertPromoBanner, deletePromoBanner,
   type PromoBanner,
 } from '../services/admin';
+import { toLocalInput } from '../lib/datetimeLocal';
 
 /**
  * Admin → Offers tab. Lets the platform admin create, edit, activate,
@@ -171,16 +172,6 @@ function BannerRow({
       </div>
     </div>
   );
-}
-
-/** Stored UTC timestamp -> the local "YYYY-MM-DDTHH:mm" a datetime-local input
- *  shows (and that `new Date(...)` reads back as local time on save). */
-function toLocalInput(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 function BannerEditor({

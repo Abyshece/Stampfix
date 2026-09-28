@@ -36,6 +36,9 @@ export function describeAuditAction(r: AuditRow): string {
     case 'banner.create': return 'Created a promo banner';
     case 'banner.update': return d.active === undefined ? 'Edited a promo banner' : (d.active ? 'Switched a promo banner on' : 'Switched a promo banner off');
     case 'banner.delete': return 'Deleted a promo banner';
+    case 'merchant_banner.create': return 'Created a merchant dashboard banner';
+    case 'merchant_banner.update': return d.active === undefined ? 'Edited a merchant dashboard banner' : (d.active ? 'Switched a merchant dashboard banner on' : 'Switched a merchant dashboard banner off');
+    case 'merchant_banner.delete': return 'Deleted a merchant dashboard banner';
     case 'blog.publish': return 'Published a blog post';
     case 'blog.unpublish': return 'Unpublished a blog post';
     case 'blog.draft': return 'Saved a blog draft';

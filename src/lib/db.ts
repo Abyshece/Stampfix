@@ -708,7 +708,9 @@ export type OnboardingKey =
   | 'test_signup_done'
   | 'first_stamp_given'
   | 'wizard_dismissed'
-  | 'checklist_dismissed';
+  | 'checklist_dismissed'
+  | 'campaigns_opened'
+  | 'campaigns_intro_done';
 
 export interface OnboardingState {
   poster_downloaded?: boolean;
@@ -716,6 +718,10 @@ export interface OnboardingState {
   first_stamp_given?: boolean;
   wizard_dismissed?: boolean;
   checklist_dismissed?: boolean;
+  /** Has opened Campaigns at least once (hides the "NEW" badge). */
+  campaigns_opened?: boolean;
+  /** Closed the "How campaigns work" box, or sent a first campaign. */
+  campaigns_intro_done?: boolean;
 }
 
 export async function getOnboardingState(merchantId: string): Promise<OnboardingState> {
