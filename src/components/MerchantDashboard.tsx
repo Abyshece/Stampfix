@@ -573,7 +573,8 @@ export function MerchantDashboard({
         if (segment === 'ready' && c.currentStamps < goal) return false;
         if (segment === 'close' && !(c.currentStamps === goal - 1 && goal > 1)) return false;
         if (segment === 'new' && c.joinedAt.getTime() < now - 7 * 864e5) return false;
-        if (segment === 'inactive' && last && last >= now - 30 * 864e5) return false;
+        // Signing up counts as a visit, so new members aren't "inactive".
+        if (segment === 'inactive' && Math.max(last ?? 0, c.joinedAt.getTime()) >= now - 30 * 864e5) return false;
       }
       if (!q) return true;
       return c.customerName.toLowerCase().includes(q)
@@ -600,7 +601,7 @@ export function MerchantDashboard({
       if (c.currentStamps === goal - 1 && goal > 1) cnt.close++;
       if (c.joinedAt.getTime() >= c7) cnt.new++;
       const last = lastSeenByCard.get(c.id);
-      if (!last || last < c30) cnt.inactive++;
+      if (Math.max(last ?? 0, c.joinedAt.getTime()) < c30) cnt.inactive++;
     }
     return cnt;
   }, [cards, lastSeenByCard, campaign.maxStamps]);
@@ -1641,12 +1642,12 @@ export function MerchantDashboard({
           <div className="space-y-8">
             <header className="flex justify-between items-start">
               <div>
-                <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Settings</h1>
-                <p className="text-gray-500 text-sm md:text-base">Configure campaign, branding, and integrations.</p>
+                <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">{t('dash.settings.pageTitle', { defaultValue: 'Settings' })}</h1>
+                <p className="text-gray-500 text-sm md:text-base">{t('dash.settings.pageSub', { defaultValue: 'Configure campaign, branding, and integrations.' })}</p>
               </div>
               {settingsSaved && (
                 <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1.5 rounded-full text-sm font-medium animate-in fade-in slide-in-from-top-2">
-                  <CheckCircle2 className="w-4 h-4" /> Saved
+                  <CheckCircle2 className="w-4 h-4" /> {t('dash.settings.savedBadge', { defaultValue: 'Saved' })}
                 </div>
               )}
             </header>
