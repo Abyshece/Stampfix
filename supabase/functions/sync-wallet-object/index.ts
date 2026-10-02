@@ -197,15 +197,44 @@ async function buildLoyaltyClass(campaign: Campaign) {
   };
 }
 
+// German text for Google Wallet. The app shows `translatedValues` when the
+// phone's language is German, and the English default everywhere else.
+const HOWTO_EN = 'Your card updates automatically. To refresh it yourself, open the pass in Google Wallet, tap the \u22ee menu (top-right) and choose refresh.';
+const DE_TEXT: Record<string, string> = {
+  'Stamps': 'Stempel',
+  'Rewards earned': 'Eingelöste Belohnungen',
+  'Current offer': 'Aktuelles Angebot',
+  'Reward ready': 'Belohnung bereit',
+  '🎉 Free reward unlocked — show this to redeem!': '🎉 Gratis-Belohnung freigeschaltet – zeigen Sie diese Karte zum Einlösen!',
+  'Last updated': 'Zuletzt aktualisiert',
+  'Keep your card up to date': 'So bleibt Ihre Karte aktuell',
+  [HOWTO_EN]: 'Ihre Karte aktualisiert sich automatisch. Zum manuellen Aktualisieren öffnen Sie die Karte in Google Wallet, tippen oben rechts auf das \u22ee-Menü und wählen „Aktualisieren“.',
+  'Your loyalty card': 'Ihre Treuekarte',
+  'Leave a review': 'Bewertung abgeben',
+  'Order online': 'Online bestellen',
+  'Delivery': 'Lieferung',
+};
+/** A Google LocalizedString with a German translation, or undefined (field omitted) when there is none. */
+function localized(en: string, de: string | undefined = DE_TEXT[en]) {
+  return de ? { defaultValue: { language: 'en-US', value: en }, translatedValues: [{ language: 'de', value: de }] } : undefined;
+}
+const LINK_LABELS: [string, string][] = [
+  ['website', 'Website'], ['googleReview', 'Leave a review'], ['order', 'Order online'], ['delivery', 'Delivery'],
+  ['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['linkedin', 'LinkedIn'],
+];
+/** Merchant links -> Google Wallet links module (shown in the card details). */
+function linkUris(socialLinks: Record<string, string> | null | undefined) {
+  const links = socialLinks ?? {};
+  return LINK_LABELS
+    .filter(([k]) => typeof links[k] === 'string' && String(links[k]).trim())
+    .map(([k, label]) => ({ uri: String(links[k]).trim(), description: label, localizedDescription: localized(label) }));
+}
+const updatedOn = (locale: string) => new Date().toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+
 function buildLoyaltyObject(campaign: Campaign, card: Card) {
-  const socialLinks = (campaign.social_links ?? {}) as Record<string, string>;
-  const LINK_LABELS: [string, string][] = [
-    ['website', 'Website'], ['googleReview', 'Leave a review'], ['order', 'Order online'], ['delivery', 'Delivery'],
-    ['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['linkedin', 'LinkedIn'],
-  ];
-  const linkUris = LINK_LABELS
-    .filter(([k]) => typeof socialLinks[k] === 'string' && String(socialLinks[k]).trim())
-    .map(([k, label]) => ({ uri: String(socialLinks[k]).trim(), description: label }));
+  const links = linkUris(campaign.social_links);
+  const stamps = card.current_stamps;
+  const updatedEn = `Your card was just updated \u2014 you now have ${stamps} stamp${stamps === 1 ? '' : 's'}. Keep collecting!`;
   return {
     id: objectIdFor(card.id),
     classId: classIdFor(campaign.id),
@@ -219,16 +248,20 @@ function buildLoyaltyObject(campaign: Campaign, card: Card) {
       {
         id: `s${card.current_stamps}r${card.rewards_redeemed}`,
         header: campaign.offer_title || 'Your loyalty card',
-        body: `Your card was just updated \u2014 you now have ${card.current_stamps} stamp${card.current_stamps === 1 ? '' : 's'}. Keep collecting!`,
+        body: updatedEn,
+        localizedHeader: campaign.offer_title ? undefined : localized('Your loyalty card'),
+        localizedBody: localized(updatedEn, `Ihre Karte wurde gerade aktualisiert \u2013 Sie haben jetzt ${stamps} Stempel. Weiter sammeln!`),
       },
     ],
     loyaltyPoints: {
       balance: { string: `${card.current_stamps} / ${campaign.max_stamps}` },
       label: 'Stamps',
+      localizedLabel: localized('Stamps'),
     },
     secondaryLoyaltyPoints: {
       balance: { int: card.rewards_redeemed },
       label: 'Rewards earned',
+      localizedLabel: localized('Rewards earned'),
     },
     barcode: {
       type: 'QR_CODE',
@@ -236,19 +269,23 @@ function buildLoyaltyObject(campaign: Campaign, card: Card) {
       alternateText: card.id.slice(0, 8),
     },
     textModulesData: [
-      { id: 'offer', header: 'Current offer', body: campaign.offer_title },
+      { id: 'offer', header: 'Current offer', localizedHeader: localized('Current offer'), body: campaign.offer_title },
       {
         id: 'updated',
         header: 'Last updated',
-        body: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        localizedHeader: localized('Last updated'),
+        body: updatedOn('en-GB'),
+        localizedBody: localized(updatedOn('en-GB'), updatedOn('de-DE')),
       },
       {
         id: 'howto',
         header: 'Keep your card up to date',
-        body: 'Your card updates automatically. To refresh it yourself, open the pass in Google Wallet, tap the \u22ee menu (top-right) and choose refresh.',
+        localizedHeader: localized('Keep your card up to date'),
+        body: HOWTO_EN,
+        localizedBody: localized(HOWTO_EN),
       },
     ],
-    linksModuleData: linkUris.length ? { uris: linkUris } : undefined,
+    linksModuleData: links.length ? { uris: links } : undefined,
   };
 }
 

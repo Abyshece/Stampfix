@@ -11,6 +11,12 @@ import { useTranslation } from 'react-i18next';
 import { getDailyCap, setDailyCap } from '../services/stampGuard';
 import { ownerPinIsSet, setOwnerPin } from '../services/staff';
 
+// Section key -> the dashboard menu's translation key, so the chips use the menu's wording.
+const NAV_KEY: Record<string, string> = {
+  CUSTOMERS: 'customers', ACTIVITY: 'activity', ANALYTICS: 'insights', VALUE: 'payback', STAFF: 'staff',
+  PREVIEW: 'previewCard', SHARE: 'sharePromote', SETTINGS: 'settings', HELP: 'getHelp',
+};
+
 const SEV: Record<Flag['severity'], { label: string; cls: string }> = {
   high:   { label: 'High',   cls: 'bg-red-50 border-red-200 text-red-700' },
   medium: { label: 'Medium', cls: 'bg-amber-50 border-amber-200 text-amber-800' },
@@ -213,7 +219,7 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
                           className={`text-[11px] px-2 py-1 rounded-md border transition ${hidden ? 'bg-gray-50 text-gray-400 border-gray-200 line-through' : 'bg-[#37352F] text-white border-[#37352F]'}`}
                           title={hidden ? t('dash.staff.hiddenFrom', { name: s.name, defaultValue: 'Hidden from {{name}}' }) : t('dash.staff.visibleTo', { name: s.name, defaultValue: 'Visible to {{name}}' })}
                         >
-                          {sec.label}
+                          {t(`dash.nav.${NAV_KEY[sec.key] ?? ''}`, { defaultValue: sec.label })}
                         </button>
                       );
                     })}

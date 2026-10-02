@@ -225,6 +225,7 @@ const de = {
       upgradeTitle: 'Auf Pro upgraden', upgradeBody: 'Schalten Sie unbegrenzte Kunden und mehr frei.', seePlans: 'Tarife ansehen',
     },
     settings: {
+      pageTitle: 'Einstellungen', pageSub: 'Kampagne, Branding und Integrationen konfigurieren.', savedBadge: 'Gespeichert',
       general: 'Allgemein', wallet: 'Wallet & Karte', posters: 'Poster & Druck', locations: 'Standorte', stamping: 'Stempelmodus', billing: 'Konto & Abrechnung', account: 'Login & Sicherheit', links: 'Links & Soziales', privacy: 'Datenschutz & Daten', danger: 'Gefahrenzone',
       generalTitle: 'Allgemein', generalHint: 'Ihr Firmenname, die Belohnung, die Sie anbieten, und wie viele Stempel ein Kunde benötigt. Diese erscheinen auf jeder Karte, die Sie ausgeben – Änderungen aktualisieren, was neue Kunden sehen.',
       walletTitle: 'Wallet anpassen', walletHint: 'Steuert, wie die Treuekarte in Apple Wallet und Google Wallet aussieht – Farben, Textfarbe und das Logo oben. Die Vorschauen aktualisieren sich live; nichts wird angewendet, bis Sie auf Speichern drücken.',
