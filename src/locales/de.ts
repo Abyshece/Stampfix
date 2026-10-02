@@ -396,6 +396,7 @@ const de = {
     },
     activity: {
       title: 'Letzte Aktivität',
+      showMore: 'Ältere Aktivität anzeigen',
       sub: 'Verlauf der letzten Stempel, Einlösungen und neuen Mitglieder.',
       empty: 'Noch keine Aktivität aufgezeichnet.',
       stamped: '{{name}} gestempelt',

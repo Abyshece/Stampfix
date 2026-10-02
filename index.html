@@ -60,13 +60,14 @@
       .notion-hover:hover { background-color: #EFEFEE; }
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      /* Scanner page: exactly one screen tall, so the Customer ID field is
-         visible without scrolling. Phones leave room for the top bar, the
-         page padding and the bottom menu (13rem); md+ for the breadcrumb and
-         padding (9rem). dvh is the visible height (excludes Safari's address
-         bar); browsers without it use vh. */
-      .scan-h { height: calc(100vh - 13rem); height: calc(100dvh - 13rem); }
-      @media (min-width: 768px) { .scan-h { height: calc(100vh - 9rem); height: calc(100dvh - 9rem); } }
+      /* Scanner page: fits one screen, so the Customer ID field is visible
+         without scrolling. Phones leave room for the top bar, the page
+         padding and the bottom menu, plus ~27px to spare (13.5rem, with the
+         scanner page's pb-20); md+ for the breadcrumb and padding (9.5rem).
+         dvh is the visible height (excludes Safari's address bar); browsers
+         without it use vh. */
+      .scan-h { height: calc(100vh - 13.5rem); height: calc(100dvh - 13.5rem); }
+      @media (min-width: 768px) { .scan-h { height: calc(100vh - 9.5rem); height: calc(100dvh - 9.5rem); } }
     </style>
   </head>
   <body>

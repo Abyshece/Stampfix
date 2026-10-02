@@ -601,6 +601,35 @@ export async function listActivities(campaignId: string, limit = 50): Promise<Ac
   return (data as ActivityRow[]).map(toActivity);
 }
 
+/**
+ * The shop's activity history, newest first, for Insights and the customer
+ * segments (only the latest 50 used to be loaded, so busy shops saw a
+ * fraction of their stamps). Paged because the API returns at most 1000
+ * rows per request; capped so a very large shop still loads quickly.
+ */
+export async function listActivityHistory(campaignId: string, max = 20000): Promise<ActivityItem[]> {
+  const PAGE = 1000;
+  const seen = new Set<string>();
+  const out: ActivityItem[] = [];
+  // Advance by what actually came back (the API may cap a page below
+  // PAGE); stop on an empty page or at the cap.
+  for (let from = 0; from < max;) {
+    const { data, error } = await supabase
+      .from('activities')
+      .select('*, locations(name)')
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, Math.min(from + PAGE, max) - 1);
+    if (error) throw error;
+    const rows = (data as ActivityRow[]) ?? [];
+    if (rows.length === 0) break;
+    for (const r of rows) if (!seen.has(r.id)) { seen.add(r.id); out.push(toActivity(r)); }
+    from += rows.length;
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------
 // Locations
 // ---------------------------------------------------------------------
