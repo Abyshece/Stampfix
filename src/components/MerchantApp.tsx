@@ -10,6 +10,7 @@ import {
   getCampaignByMerchant,
   listCardsForCampaign,
   listActivities,
+  listActivityHistory,
   updateCampaign,
   merchantScan,
   type ScanResult,
@@ -97,7 +98,7 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
       if (c) {
         const [cs, acts, locs, ob, bill] = await Promise.all([
           listCardsForCampaign(c.id),
-          listActivities(c.id),
+          listActivityHistory(c.id),
           listLocations(c.id),
           getOnboardingState(user.id),
           getMerchantBilling(user.id),
@@ -182,10 +183,13 @@ export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
 
   // Refresh activities after an action — they're the cheapest to refetch
   // and the source of truth (since the DB writes them).
+  // Only the newest rows are fetched and merged in, so a stamp doesn't
+  // reload the whole history.
   const refreshActivities = useCallback(async () => {
     if (!campaign) return;
-    const acts = await listActivities(campaign.id);
-    setActivities(acts);
+    const fresh = await listActivities(campaign.id);
+    const ids = new Set(fresh.map((a) => a.id));
+    setActivities((prev) => [...fresh, ...prev.filter((a) => !ids.has(a.id))]);
   }, [campaign]);
 
   const handleMarkOnboardingStep = useCallback(

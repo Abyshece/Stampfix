@@ -507,6 +507,8 @@ export function MerchantDashboard({
   const [rewardFilter, setRewardFilter] = useState<'all' | 'ready' | 'close' | 'redeemed'>('all');
   // One-tap customer segments (quick pills) for the questions merchants ask most.
   const [segment, setSegment] = useState<'all' | 'top' | 'ready' | 'close' | 'new' | 'inactive'>('all');
+  // The Activity page lists the newest entries; the full history is loaded for Insights.
+  const [activityShown, setActivityShown] = useState(100);
 
   /** Last stamp/redeem per card, derived from the activity log. */
   const lastSeenByCard = useMemo(() => {
@@ -1059,7 +1061,7 @@ export function MerchantDashboard({
                 <div className="text-sm text-gray-400 italic p-8 text-center">{t('dash.activity.empty', { defaultValue: 'No activity recorded yet.' })}</div>
               ) : (
                 <div className="divide-y notion-border">
-                  {activities.map((act) => (
+                  {activities.slice(0, activityShown).map((act) => (
                     <div key={act.id} className="flex items-center justify-between p-4 hover:bg-[#F7F7F5] transition">
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -1110,6 +1112,12 @@ export function MerchantDashboard({
                       </div>
                     </div>
                   ))}
+                  {activities.length > activityShown && (
+                    <button type="button" onClick={() => setActivityShown((n) => n + 100)}
+                      className="w-full p-3 text-sm font-medium text-gray-500 hover:text-[#37352F] hover:bg-[#F7F7F5] transition">
+                      {t('dash.activity.showMore', { defaultValue: 'Show older activity' })}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
