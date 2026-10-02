@@ -87,6 +87,22 @@ function env(name: string, fallback?: string): string {
   throw new Error(`Missing required secret: ${name}`);
 }
 
+// A pass.strings file ("key" = "value"; per line) in UTF-16 little-endian with
+// a byte-order mark, the encoding Apple documents for .strings files.
+function stringsFile(pairs: [string, string][]): Uint8Array {
+  const esc = (v: string) => v.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r?\n/g, '\\n');
+  const unique = new Map(pairs);
+  const text = [...unique].map(([k, v]) => `"${esc(k)}" = "${esc(v)}";`).join('\n') + '\n';
+  const out = new Uint8Array(2 + text.length * 2);
+  out[0] = 0xff; out[1] = 0xfe;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    out[2 + i * 2] = c & 0xff;
+    out[3 + i * 2] = c >> 8;
+  }
+  return out;
+}
+
 // SHA-1 hex of a byte array (Apple manifest uses SHA-1).
 function sha1Hex(bytes: Uint8Array): string {
   const md = forge.md.sha1.create();
@@ -301,12 +317,13 @@ Deno.serve(async (req) => {
       .not('latitude', 'is', null)
       .not('longitude', 'is', null)
       .limit(10);
+    const nearText = `You're near ${businessName} — open your card to collect a stamp!`;
     const passLocations = ((geoLocsData ?? []) as Array<{ latitude: number; longitude: number }>)
       .filter((l) => typeof l.latitude === 'number' && typeof l.longitude === 'number')
       .map((l) => ({
         latitude: l.latitude,
         longitude: l.longitude,
-        relevantText: `You're near ${businessName} — open your card to collect a stamp!`,
+        relevantText: nearText,
       }));
 
     // Per-pass authentication token for the PassKit web service. Generated
@@ -330,13 +347,18 @@ Deno.serve(async (req) => {
       .filter(([k]) => typeof socialLinks[k] === 'string' && String(socialLinks[k]).trim())
       .map(([k, label]) => ({ key: `link_${k}`, label, value: String(socialLinks[k]).trim() }));
 
+    const passDescription = `${businessName} loyalty card`;
+    const howtoText = 'Your card updates automatically. To refresh it yourself: tap \u2022\u2022\u2022 (top-right) \u203a Pass Details, then pull down.';
+    const updatedOn = (locale: string) => new Date().toLocaleDateString(locale, { day: '2-digit', month: 'short' });
+    const barcodeText = `${card.customer_code ?? ''} \u00b7 Updated ${updatedOn('en-GB')}`;
+
     // ---- Build pass.json ----
     const passJson = {
       formatVersion: 1,
       passTypeIdentifier: passTypeId,
       teamIdentifier: teamId,
       organizationName: businessName,
-      description: `${businessName} loyalty card`,
+      description: passDescription,
       serialNumber: card.id,
       backgroundColor: hexToRgb(cardBg),
       foregroundColor: hexToRgb(cardText),
@@ -400,7 +422,7 @@ Deno.serve(async (req) => {
           {
             key: 'howto',
             label: 'Keep your card up to date',
-            value: 'Your card updates automatically. To refresh it yourself: tap \u2022\u2022\u2022 (top-right) \u203a Pass Details, then pull down.',
+            value: howtoText,
           },
         ],
       },
@@ -410,7 +432,7 @@ Deno.serve(async (req) => {
         messageEncoding: 'iso-8859-1',
         // Small text rendered directly under the QR — the true bottom of the
         // pass. Shows the member code plus when the card was last updated.
-        altText: `${card.customer_code ?? ''} \u00b7 Updated ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`,
+        altText: barcodeText,
       },
     };
 
@@ -425,6 +447,31 @@ Deno.serve(async (req) => {
     const files: Record<string, Uint8Array> = {};
 
     files['pass.json'] = new TextEncoder().encode(JSON.stringify(passJson));
+
+    // ---- Translations ----
+    // Wallet looks up each label/value of pass.json in <language>.lproj/pass.strings
+    // and shows the translation when the iPhone's language matches. English is
+    // listed too, so phones in other languages fall back to English.
+    const passStrings: [string, string][] = [
+      ['STAMPS LEFT', 'STEMPEL ÜBRIG'],
+      ['%@ stamps left', 'Noch %@ Stempel'],
+      ['MEMBER', 'MITGLIED'],
+      ['REWARD', 'BELOHNUNG'],
+      ['Redeem your free reward now', 'Lösen Sie jetzt Ihre Gratis-Belohnung ein'],
+      ['Latest offer', 'Aktuelles Angebot'],
+      ['Last updated', 'Zuletzt aktualisiert'],
+      ['Keep your card up to date', 'So bleibt Ihre Karte aktuell'],
+      [howtoText, 'Ihre Karte aktualisiert sich automatisch. Zum manuellen Aktualisieren: oben rechts auf \u2022\u2022\u2022 tippen \u203a Pass-Details, dann nach unten ziehen.'],
+      ['Website', 'Website'],
+      ['Leave a review', 'Bewertung abgeben'],
+      ['Order online', 'Online bestellen'],
+      ['Delivery', 'Lieferung'],
+      [nearText, `Sie sind in der Nähe von ${businessName} – öffnen Sie Ihre Karte und sammeln Sie einen Stempel!`],
+      [passDescription, `${businessName} Treuekarte`],
+      [barcodeText, `${card.customer_code ?? ''} \u00b7 Aktualisiert ${updatedOn('de-DE')}`],
+    ];
+    files['en.lproj/pass.strings'] = stringsFile(passStrings.map(([en]) => [en, en] as [string, string]));
+    files['de.lproj/pass.strings'] = stringsFile(passStrings);
 
     // Generate the dynamic stamp-progress strip (the row of coffee cups
     // that fill in as stamps are collected). If rasterization fails for
@@ -558,7 +605,9 @@ Deno.serve(async (req) => {
     // ---- Zip everything into a .pkpass ----
     const zip = new JSZip();
     for (const [name, bytes] of Object.entries(files)) {
-      zip.file(name, bytes);
+      // No separate folder entries for en.lproj/ and de.lproj/: every entry
+      // in the archive is a file listed in manifest.json.
+      zip.file(name, bytes, { createFolders: false });
     }
     const pkpass = await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
 
