@@ -200,7 +200,7 @@ async function buildLoyaltyClass(campaign: Campaign) {
 function buildLoyaltyObject(campaign: Campaign, card: Card) {
   const socialLinks = (campaign.social_links ?? {}) as Record<string, string>;
   const LINK_LABELS: [string, string][] = [
-    ['website', 'Website'], ['order', 'Order online'], ['delivery', 'Delivery'],
+    ['website', 'Website'], ['googleReview', 'Leave a review'], ['order', 'Order online'], ['delivery', 'Delivery'],
     ['instagram', 'Instagram'], ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['linkedin', 'LinkedIn'],
   ];
   const linkUris = LINK_LABELS
