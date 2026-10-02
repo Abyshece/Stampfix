@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { PasswordInput } from './PasswordInput';
 import { FeaturesSection } from './FeaturesSection';
 import { TrustpilotWidget } from './TrustpilotWidget';
+import { FeatureVideo } from './FeatureVideo';
 import { InstaCarousel } from './InstaCarousel';
 import { PromoBannerBar } from './PromoBannerBar';
 
@@ -427,6 +428,9 @@ export function LandingPage({
           </div>
         </div>
       </section>
+
+      {/* 2-minute feature tour (video) */}
+      <FeatureVideo />
 
       {/* Made for your shop */}
       <section className="max-w-5xl mx-auto px-6 py-20 text-center">

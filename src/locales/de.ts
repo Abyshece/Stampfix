@@ -35,6 +35,7 @@ const de = {
     cta: 'Sehen Sie, was Papierkarten Sie kosten',
     v2: 'Unbegrenzt', v3: 'Jederzeit kündbar', s1: 'Einrichtung & Hardware', s2: 'Kunden & Karten', s3: 'Kein Vertrag',
   },
+  video: { kicker: 'Die 2-Minuten-Tour', heading: 'Unsere Top 9 Funktionen in unter 2 Minuten', subtitle: 'Von Angeboten auf dem Sperrbildschirm bis zu Standort-Erinnerungen: So bringt Stampfix Ihre Kunden immer wieder zurück.', play: 'Tour ansehen (1:53)' },
   shops: { heading: 'Für Ihr Geschäft gemacht', subtitle: 'Ob Café, Bäckerei, Salon oder Fitnessstudio – Stampfix passt sich Ihrem Geschäft an.' },
   industries: { cafe: 'Café', restaurant: 'Restaurant', bakery: 'Bäckerei', iceCream: 'Eisdiele', snackBar: 'Imbiss', pizzeria: 'Pizzeria', bar: 'Bar & Club', florist: 'Blumenladen', nailStudio: 'Nagelstudio', hairdresser: 'Friseur', barbershop: 'Barbershop', tattoo: 'Tattoostudio', gym: 'Fitnessstudio', retail: 'Einzelhandel', doner: 'Dönerladen', bubbleTea: 'Bubble Tea & Säfte', foodTruck: 'Foodtruck', lashBrow: 'Wimpern & Brauen', spa: 'Spa & Massage', carWash: 'Waschanlage', dogGrooming: 'Hundesalon', dryCleaner: 'Reinigung', yoga: 'Yoga & Pilates' },
   pricing: {

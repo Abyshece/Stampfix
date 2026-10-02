@@ -35,6 +35,7 @@ const en = {
     cta: 'See what paper cards cost you',
     v2: 'Unlimited', v3: 'Cancel anytime', s1: 'Setup & hardware', s2: 'Customers & cards', s3: 'No contract',
   },
+  video: { kicker: 'The 2-minute tour', heading: 'Our top 9 features, in under 2 minutes', subtitle: 'From lock-screen offers to geo reminders: see how Stampfix brings your customers back, again and again.', play: 'Watch the tour (1:40)' },
   shops: { heading: 'Made for your shop', subtitle: 'Whether café, bakery, salon or gym — Stampfix adapts to your business.' },
   industries: { cafe: 'Café', restaurant: 'Restaurant', bakery: 'Bakery', iceCream: 'Ice cream', snackBar: 'Snack bar', pizzeria: 'Pizzeria', bar: 'Bar & club', florist: 'Florist', nailStudio: 'Nail studio', hairdresser: 'Hairdresser', barbershop: 'Barbershop', tattoo: 'Tattoo studio', gym: 'Gym', retail: 'Retail', doner: 'Döner shop', bubbleTea: 'Bubble tea & juice', foodTruck: 'Food truck', lashBrow: 'Lash & brow', spa: 'Spa & massage', carWash: 'Car wash', dogGrooming: 'Dog grooming', dryCleaner: 'Dry cleaner', yoga: 'Yoga & Pilates' },
 };
