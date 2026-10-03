@@ -202,6 +202,7 @@ export function StampPage() {
       }
       else if (r.error === 'bad_code') { setCodeError(t('cust.stamp.badCode', { defaultValue: "That code isn't right — ask the cashier again." })); }
       else if (r.error === 'no_code_set') { setCodeError(t('cust.stamp.noCodeSet', { defaultValue: "This shop hasn't set a code yet." })); }
+      else if (r.error === 'too_many_attempts') { setCodeError(t('cust.stamp.tooManyCodes', { defaultValue: 'Too many wrong codes. Please try again in 30 minutes, or ask the cashier to stamp your card.' })); }
       else { setErrKey(r.error ?? 'network'); setErrExtra(''); setPhase('error'); }
     } catch (e) { setErrKey('network'); setErrExtra(e instanceof Error ? ': ' + e.message : ''); setPhase('error'); }
     finally { setSubmitting(false); }

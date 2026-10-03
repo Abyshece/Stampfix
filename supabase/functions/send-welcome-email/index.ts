@@ -4,7 +4,13 @@
 //   supabase secrets set RESEND_API_KEY=...
 //   supabase functions deploy send-welcome-email
 // Called fire-and-forget from the client after a card is created.
+//
+// Only ever mails the signed-in customer, about a card they joined in the
+// last 30 minutes, once per card. The address, name and shop all come from
+// the database, never from the request body, so this can't be used to send
+// Stampfix-branded mail to anyone else.
 import { serve } from 'https://deno.land/std@0.192.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -16,17 +22,46 @@ const CORS = {
 // (e.g. your Germany launch). For a Canada-only launch, leave false.
 const INCLUDE_EU_WAIVER = false;
 
+const reply = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: CORS });
+const esc = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   try {
-    const { email, name, businessName } = await req.json().catch(() => ({}));
-    if (!email) return new Response(JSON.stringify({ error: 'email required' }), { status: 400, headers: CORS });
+    const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+    // Who is asking: a signed-in user with an email (the public anon key alone is not enough).
+    const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+    const { data: auth } = jwt ? await db.auth.getUser(jwt) : { data: null };
+    const user = auth?.user;
+    if (!user?.email) return reply(401, { error: 'Not signed in' });
+
+    // Their newest card (in the given shop, when the app says which one).
+    const { campaignId } = await req.json().catch(() => ({}));
+    let q = db.from('cards').select('id, customer_name, campaign_id, joined_at')
+      .eq('customer_id', user.id).order('joined_at', { ascending: false }).limit(1);
+    if (typeof campaignId === 'string' && campaignId) q = q.eq('campaign_id', campaignId);
+    const { data: cards } = await q;
+    const card = cards?.[0];
+    if (!card) return reply(404, { error: 'No card found' });
+    if (Date.now() - new Date(card.joined_at).getTime() > 30 * 60 * 1000) {
+      return reply(200, { ok: false, skipped: 'not a new card' });
+    }
+    // One welcome email per card.
+    const { data: firstSend } = await db.rpc('rate_limit_hit', {
+      p_bucket: 'welcome_email', p_key: card.id, p_max: 1, p_window_secs: 86400, p_block_secs: 86400,
+    });
+    if (firstSend === false) return reply(200, { ok: false, skipped: 'already sent' });
 
     const key = Deno.env.get('RESEND_API_KEY');
     if (!key) return new Response(JSON.stringify({ ok: false, skipped: 'no RESEND_API_KEY' }), { status: 200, headers: CORS });
 
-    const shop = (businessName || 'the shop').toString();
-    const first = (name || 'there').toString();
+    const { data: campaign } = await db.from('campaigns').select('business_name').eq('id', card.campaign_id).maybeSingle();
+    const email = user.email;
+    const shopName = (campaign?.business_name || 'the shop').toString();
+    const shop = esc(shopName);
+    const first = esc((card.customer_name || 'there').toString());
 
     const waiver = INCLUDE_EU_WAIVER
       ? `<p style="margin:16px 0 0;font-size:12px;color:#888;line-height:1.6">
@@ -62,7 +97,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Stampfix <hello@stampfix.app>',
         to: [email],
-        subject: `Your ${shop} loyalty card is ready`,
+        subject: `Your ${shopName} loyalty card is ready`,
         html,
       }),
     });
