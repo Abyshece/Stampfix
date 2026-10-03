@@ -1080,6 +1080,7 @@ const de = {
       },
       badCode: 'Der Code stimmt nicht – fragen Sie erneut an der Kasse.',
       noCodeSet: 'Dieses Geschäft hat noch keinen Code festgelegt.',
+      tooManyCodes: 'Zu viele falsche Codes. Bitte versuchen Sie es in 30 Minuten erneut oder lassen Sie Ihre Karte an der Kasse stempeln.',
       locating: 'Wir prüfen, ob Sie im Geschäft sind …', stamping: 'Ihr Stempel wird hinzugefügt …',
       added: 'Stempel hinzugefügt!',
       cardFull: 'Ihre Karte ist voll – lösen Sie Ihre Belohnung ein!',

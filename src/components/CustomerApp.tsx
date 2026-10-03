@@ -164,7 +164,8 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
           if (existing) {
             logConsent({ subjectType: 'cardholder', cardId: existing.id, document: 'cardholder_terms', version: CONSENT_VERSIONS.cardholder_terms, granted: consentGiven });
             if (marketing) logConsent({ subjectType: 'cardholder', cardId: existing.id, document: 'marketing_consent', version: CONSENT_VERSIONS.cardholder_terms, granted: true });
-            void supabase.functions.invoke('send-welcome-email', { body: { email: user.email ?? '', name, businessName: campaign.businessName } });
+            // The function mails the signed-in customer about this card; it takes nothing else from us.
+            void supabase.functions.invoke('send-welcome-email', { body: { campaignId: campaign.id } });
           }
           sessionStorage.removeItem('pending_customer_signup');
           // Consume the pending row so it doesn't linger after card creation

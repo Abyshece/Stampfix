@@ -93,7 +93,8 @@ const toCampaign = (r: CampaignRow): Campaign => ({
   cardPattern: r.card_pattern,
   stampingMode: (((r as { stamping_mode?: string }).stamping_mode) as 'scanner' | 'self_serve') ?? 'scanner',
   selfServeRadius: (r as { self_serve_radius?: number }).self_serve_radius ?? 100,
-  stampCode: (r as { stamp_code?: string | null }).stamp_code ?? null,
+  // Left undefined when not loaded (public reads), so a settings save can't wipe it.
+  stampCode: (r as { stamp_code?: string | null }).stamp_code,
   logoMode: r.logo_mode ?? 'stampfix',
   customIcon: r.custom_icon,
   logoImage: r.logo_image,
@@ -153,24 +154,46 @@ const toActivity = (r: ActivityRow): ActivityItem => ({
 // Campaigns
 // ---------------------------------------------------------------------
 
+// Every campaigns column the browser may read. The cashier code, owner-PIN
+// hash and review note are private: the owner gets the code via
+// campaign_private() (withPrivate below). Keep in sync with the column grant in
+// supabase/migrations/20261004000100_private_campaign_fields_part2.sql.
+const CAMPAIGN_PUBLIC_COLS =
+  'id, merchant_id, business_name, offer_title, description, max_stamps, primary_color, background_color, ' +
+  'logo_text, card_pattern, custom_icon, logo_image, created_at, updated_at, poster_color, customer_privacy_notice, ' +
+  'card_color, card_text_color, approval_status, approval_banner_seen, logo_color, max_stamps_per_day, logo_mode, ' +
+  'social_links, stamping_mode, self_serve_radius';
+
+/** Adds the owner's private fields (the cashier code). On failure the code
+ *  stays undefined, which the settings form leaves untouched on save. */
+async function withPrivate(c: Campaign): Promise<Campaign> {
+  const { data, error } = await supabase.rpc('campaign_private', { p_campaign: c.id });
+  if (error) {
+    console.warn('[campaign_private]', error.message);
+    return c;
+  }
+  const row = (data as { stamp_code: string | null }[] | null)?.[0];
+  return row ? { ...c, stampCode: row.stamp_code } : c;
+}
+
 export async function getCampaignByMerchant(merchantId: string): Promise<Campaign | null> {
   const { data, error } = await supabase
     .from('campaigns')
-    .select('*')
+    .select(CAMPAIGN_PUBLIC_COLS)
     .eq('merchant_id', merchantId)
     .maybeSingle();
   if (error) throw error;
-  return data ? toCampaign(data as CampaignRow) : null;
+  return data ? withPrivate(toCampaign(data as unknown as CampaignRow)) : null;
 }
 
 export async function getCampaignById(id: string): Promise<Campaign | null> {
   const { data, error } = await supabase
     .from('campaigns')
-    .select('*')
+    .select(CAMPAIGN_PUBLIC_COLS)
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
-  return data ? toCampaign(data as CampaignRow) : null;
+  return data ? toCampaign(data as unknown as CampaignRow) : null;
 }
 
 /** Persist the merchant's dismissal of the "approved" banner so it never
@@ -199,10 +222,10 @@ export async function createCampaign(input: Omit<Campaign, 'id'>): Promise<Campa
       custom_icon: input.customIcon,
       logo_image: input.logoImage ?? null,
     })
-    .select('*')
+    .select(CAMPAIGN_PUBLIC_COLS)
     .single();
   if (error) throw error;
-  return toCampaign(data as CampaignRow);
+  return toCampaign(data as unknown as CampaignRow);
 }
 
 /**
@@ -270,10 +293,10 @@ export async function updateCampaign(id: string, patch: Partial<Campaign>): Prom
     .from('campaigns')
     .update(dbPatch)
     .eq('id', id)
-    .select('*')
+    .select(CAMPAIGN_PUBLIC_COLS)
     .single();
   if (error) throw error;
-  return toCampaign(data as CampaignRow);
+  return withPrivate(toCampaign(data as unknown as CampaignRow));
 }
 
 // ---------------------------------------------------------------------
@@ -338,10 +361,10 @@ export async function getCampaignsByIds(ids: string[]): Promise<Campaign[]> {
   if (ids.length === 0) return [];
   const { data, error } = await supabase
     .from('campaigns')
-    .select('*')
+    .select(CAMPAIGN_PUBLIC_COLS)
     .in('id', ids);
   if (error) throw error;
-  return (data as CampaignRow[]).map(toCampaign);
+  return (data as unknown as CampaignRow[]).map(toCampaign);
 }
 
 export async function createCard(input: {
