@@ -102,7 +102,7 @@ export function PricingPage() {
                 </li>
               ))}
             </ul>
-            <StartButton label={t('pricing.startFree', { defaultValue: 'Start for free' })} className="mt-8 w-full py-3" />
+            <StartButton label={t('pricing.startFree', { defaultValue: 'Start your free trial' })} className="mt-8 w-full py-3" />
           </div>
 
           {/* Pro */}
@@ -178,7 +178,7 @@ export function PricingPage() {
       <GradientBanner
         title={t('pricing.bannerTitle', { defaultValue: 'Try it free. See the repeat visits.' })}
         subtitle={t('pricing.bannerSub', { defaultValue: 'Set up your first loyalty card in minutes — no card details, no commitment.' })}
-        buttonLabel={t('pricing.bannerCta', { defaultValue: 'Start for free' })}
+        buttonLabel={t('pricing.bannerCta', { defaultValue: 'Start your free trial' })}
       />
 
       <style>{`

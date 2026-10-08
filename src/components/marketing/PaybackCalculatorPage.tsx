@@ -45,7 +45,7 @@ export function PaybackCalculatorPage() {
         </div>
 
         <div className="mt-14 text-center">
-          <StartButton label="Start for free" className="px-6 py-3" />
+          <StartButton label="Start your free trial" className="px-6 py-3" />
           <p className="text-xs text-gray-400 mt-3">Free up to 10 customers. No card, no app to install.</p>
         </div>
       </section>
