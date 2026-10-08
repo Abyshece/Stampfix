@@ -14,7 +14,7 @@ const en = {
   hero: {
     l1: 'No apps.', l2: 'No paper stamp cards.', l3: 'No extra hardware.', l4: 'Just loyalty.',
     subtitle: "Create a digital stamp card in 30 seconds. No apps to download. Just a simple link that lives in your customer's Apple or Google Wallet.",
-    startFree: 'Start for free', bookDemo: 'Book a demo', demoNote: 'Takes just 10–12 minutes over Google Meet.',
+    startFree: 'Start your free trial', noCard: 'No credit card, debit card or PayPal required.', bookDemo: 'Book a demo', demoNote: 'Takes just 10–12 minutes over Google Meet.',
     pillNotif: 'Push notifications', pillLoc: 'Multiple locations', pillGdpr: 'GDPR compliant', pillCheap: 'Cheapest in market',
   },
   social: { retention: 'Increase in Retention', apps: 'Apps to Download', custom: 'Customizable' },

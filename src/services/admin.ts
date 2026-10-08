@@ -133,22 +133,32 @@ export interface ContactMessage {
  */
 const READ_ONLY_ADMINS = new Set<string>(['ai4miketomar@gmail.com']);
 
+// Viewers (public.admin_viewers) can read the panel but are not platform
+// admins, so the database refuses their writes too. Set by checkIsAdmin().
+let viewerSession = false;
+
 async function assertNotReadOnly(): Promise<void> {
   const { data } = await supabase.auth.getSession();
   const email = (data.session?.user?.email ?? '').toLowerCase();
-  if (READ_ONLY_ADMINS.has(email)) {
+  if (READ_ONLY_ADMINS.has(email) || viewerSession) {
     throw new Error('You have view-only admin access \u2014 this action is disabled.');
   }
 }
 
 export function isReadOnlyAdminEmail(email: string | null | undefined): boolean {
-  return READ_ONLY_ADMINS.has((email ?? '').toLowerCase());
+  return READ_ONLY_ADMINS.has((email ?? '').toLowerCase()) || viewerSession;
 }
 
+/** True for full admins and for view-only admins. */
 export async function checkIsAdmin(): Promise<boolean> {
-  const { data, error } = await supabase.rpc('is_platform_admin');
+  const { data: full, error } = await supabase.rpc('is_platform_admin');
   if (error) { console.warn('[admin]', error); return false; }
-  return data === true;
+  viewerSession = false;
+  if (full === true) return true;
+  const { data: canView, error: viewErr } = await supabase.rpc('can_view_admin');
+  if (viewErr) return false;
+  viewerSession = canView === true;
+  return viewerSession;
 }
 
 export interface StripeMrr {
