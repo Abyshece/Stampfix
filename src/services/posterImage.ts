@@ -1,4 +1,5 @@
 import { toPng } from 'html-to-image';
+import { posterInk, expandHex } from './posterInk';
 // Client-side PNG export for the Instagram square and the table QR.
 // Backgrounds honour the poster colour/gradient setting (same value the
 // pamphlet uses); the QR comes from CORS-enabled api.qrserver.com.
@@ -11,13 +12,15 @@ const lum = (h: string) => {
   return 0.299 * r + 0.587 * g + 0.114 * b;
 };
 const parseGrad = (s?: string | null) => {
-  const m = /linear-gradient\(\s*(-?\d+)deg\s*,\s*(#[0-9a-fA-F]{6})[^,]*,\s*(#[0-9a-fA-F]{6})/.exec(s || '');
-  return m ? { angle: +m[1], from: m[2], to: m[3] } : null;
+  const m = /linear-gradient\(\s*(-?\d+)deg\s*,\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})(?![0-9a-fA-F])[^,]*,\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})(?![0-9a-fA-F])/.exec(s || '');
+  return m ? { angle: +m[1], from: expandHex(m[2]), to: expandHex(m[3]) } : null;
 };
+// Same rule as the print posters (see posterInk): the ink that reads on both
+// ends of a gradient, plus a soft outline when it runs from light to dark.
 const inkFor = (bg: string) => {
   const g = parseGrad(bg);
-  const l = g ? (lum(g.from) + lum(g.to)) / 2 : isHex(bg) ? lum(bg) : 255;
-  return l > 150 ? '#1A1A1A' : '#FFFFFF';
+  const { light, halo } = posterInk(g ? `linear-gradient(${g.from}, ${g.to})` : isHex(bg) ? bg : '#FFFFFF');
+  return { ink: light ? '#1A1A1A' : '#FFFFFF', halo: halo ? (light ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.8)') : null };
 };
 
 function info(c: PC, bg?: string | null) {
@@ -26,7 +29,13 @@ function info(c: PC, bg?: string | null) {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://stampfix.app';
   const joinUrl = `${origin}/?campaign=${encodeURIComponent(c.id)}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=0&data=${encodeURIComponent(joinUrl)}`;
-  return { posterBg, ink: inkFor(posterBg), cardColor, name: c.businessName || 'Your Business', qrUrl };
+  const { ink, halo } = inkFor(posterBg);
+  return { posterBg, ink, halo, cardColor, name: c.businessName || 'Your Business', qrUrl };
+}
+
+/** Soft outline under the text that follows (none unless the gradient needs it). */
+function textHalo(x: CanvasRenderingContext2D, halo: string | null) {
+  x.shadowColor = halo ?? 'transparent'; x.shadowBlur = halo ? 10 : 0; x.shadowOffsetX = 0; x.shadowOffsetY = 0;
 }
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stampfix';
@@ -84,6 +93,7 @@ export async function downloadInstagramPng(c: PC, bg?: string | null) {
   // wallet cards peeking from left and right
   peekCard(x, 30, 660, 440, -0.13, f.cardColor);
   peekCard(x, S - 30, 660, 440, 0.13, f.cardColor);
+  textHalo(x, f.halo);
   x.textAlign = 'center'; x.fillStyle = f.ink;
   x.font = '800 32px "Helvetica Neue", Arial, sans-serif'; (x as unknown as { letterSpacing: string }).letterSpacing = '4px';
   x.fillText(f.name.toUpperCase().slice(0, 28), S / 2, 118);
@@ -94,6 +104,7 @@ export async function downloadInstagramPng(c: PC, bg?: string | null) {
   x.fillStyle = '#fff'; x.shadowColor = 'rgba(0,0,0,0.18)'; x.shadowBlur = 30; x.shadowOffsetY = 10;
   rr(x, qx - 26, qy - 26, q + 52, q + 52, 30); x.fill(); x.shadowColor = 'transparent';
   x.drawImage(qr, qx, qy, q, q);
+  textHalo(x, f.halo);
   x.fillStyle = f.ink; x.font = '600 32px "Helvetica Neue", Arial, sans-serif';
   x.fillText('Rewards every visit — no app to download.', S / 2, 1002);
   dl(cv, `${slug(f.name)}-instagram.png`);
@@ -105,6 +116,7 @@ export async function downloadTableQrPng(c: PC, bg?: string | null) {
   try { qr = await loadImg(f.qrUrl); } catch { alert('Could not load the QR code. Check your connection and try again.'); return; }
   const S = 900, cv = document.createElement('canvas'); cv.width = S; cv.height = S; const x = cv.getContext('2d')!;
   applyBg(x, f.posterBg, S, S);
+  textHalo(x, f.halo);
   x.textAlign = 'center'; x.fillStyle = f.ink;
   x.font = '800 54px "Helvetica Neue", Arial, sans-serif'; (x as unknown as { letterSpacing: string }).letterSpacing = '2px';
   x.fillText('SCAN & STAMP', S / 2, 152);
@@ -114,6 +126,7 @@ export async function downloadTableQrPng(c: PC, bg?: string | null) {
   x.fillStyle = '#fff'; x.shadowColor = 'rgba(0,0,0,0.16)'; x.shadowBlur = 26; x.shadowOffsetY = 8;
   rr(x, qx - 30, qy - 30, q + 60, q + 60, 26); x.fill(); x.shadowColor = 'transparent';
   x.drawImage(qr, qx, qy, q, q);
+  textHalo(x, f.halo);
   x.fillStyle = f.ink; x.font = '800 46px "Helvetica Neue", Arial, sans-serif'; (x as unknown as { letterSpacing: string }).letterSpacing = '1px';
   x.fillText('WIN REWARDS WITH US', S / 2, 814);
   (x as unknown as { letterSpacing: string }).letterSpacing = '0px';

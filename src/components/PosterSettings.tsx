@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Palette, Check, Loader2, Lock, Sparkles } from 'lucide-react';
 import type { Campaign } from '../types';
 import { updateCampaign } from '../lib/db';
 import { downloadInstagramPng, downloadTableQrPng } from '../services/posterImage';
 import { buildPosterHtml } from '../services/posterGenerator';
+import { posterInk, haloShadow, expandHex } from '../services/posterInk';
 import { toPng } from 'html-to-image';
 import { useToast } from './ToastProvider';
 import { ProLockOverlay } from './ProLockOverlay';
@@ -78,8 +79,10 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
 
   /** What the poster background actually IS right now (white by default). */
   const previewBg = computedValue ?? '#FFFFFF';
-  // Readable text colour for the preview (dark on light, white on dark).
-  const previewInk = pickInk(previewBg);
+  // Readable text colour for the preview — the same rule the posters use.
+  const previewTheme = posterInk(previewBg);
+  const previewInk = previewTheme.light ? '#1A1A1A' : '#FFFFFF';
+  const previewShadow = previewTheme.halo ? haloShadow(previewTheme.light) : undefined;
 
   const handleSave = async () => {
     setSaving(true);
@@ -161,7 +164,7 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
       {/* Live preview swatch — shows the user what they're saving */}
       <div
         className="rounded-lg h-24 border notion-border flex items-center justify-center font-serif-display text-2xl font-semibold tracking-wide shadow-inner"
-        style={{ background: previewBg, color: previewInk }}
+        style={{ background: previewBg, color: previewInk, textShadow: previewShadow }}
       >
         {t('dash.poster.scanSave', { defaultValue: 'SCAN & SAVE' })}
       </div>
@@ -353,9 +356,23 @@ function ModeRow({
   );
 }
 
+/** '#abc' / 'aabbcc' → '#aabbcc' (lower-case); null if not a full hex colour. */
+function normHex(v: string): string | null {
+  const m = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(v.trim());
+  return m ? expandHex('#' + m[1]).toLowerCase() : null;
+}
+
 function ColorPicker({
   label, value, onChange,
 }: { label: string; value: string; onChange: (v: string) => void }) {
+  // The text box only passes on complete hex colours. A half-typed value
+  // (e.g. "#ff") used to go straight into the gradient, which browsers can't
+  // draw — the poster turned white while its text colour was still picked
+  // for the other stop (white text on white).
+  const [draft, setDraft] = useState(value);
+  useEffect(() => {
+    setDraft((d) => (normHex(d) === value.toLowerCase() ? d : value));
+  }, [value]);
   return (
     <div className="space-y-1">
       <label className="text-xs font-medium text-gray-600">{label}</label>
@@ -368,8 +385,13 @@ function ColorPicker({
         />
         <input
           type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            const hex = normHex(e.target.value);
+            if (hex) onChange(hex);
+          }}
+          onBlur={() => setDraft(value)}
           className="flex-1 min-w-0 bg-white border notion-border rounded-md px-2 py-1.5 text-xs font-mono uppercase"
           maxLength={7}
         />
@@ -381,18 +403,6 @@ function ColorPicker({
 // ---------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------
-
-/**
- * Picks a readable text colour for a background — dark ink on light
- * backgrounds, white on dark ones. For gradients it reads the first stop.
- */
-function pickInk(bg: string): string {
-  const m = /#([0-9a-fA-F]{6})/.exec(bg || '');
-  if (!m) return '#1A1A1A';
-  const n = parseInt(m[1], 16);
-  const lum = 0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
-  return lum > 150 ? '#1A1A1A' : '#FFFFFF';
-}
 
 /**
  * Extracts the `from`, `to`, and `angle` from a stored gradient string.

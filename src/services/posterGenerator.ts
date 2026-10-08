@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import QRCode from 'react-qr-code';
 import type { Campaign, Location } from '../types';
+import { posterInk, haloShadow } from './posterInk';
 
 export type PosterSize = 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker' | 'selfscan' | 'loyalty';
 
@@ -105,17 +106,16 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   if (!isGradient && !isHex(posterBg)) posterBg = '#FFFFFF';
 
   // Adaptive theme: dark ink on a light background, white ink on a dark one.
-  // For a gradient, average its colour stops to decide which reads better.
-  const bgLum = isGradient
-    ? (() => {
-        const stops = String(posterBg).match(/#[0-9a-fA-F]{6}/g) ?? [];
-        return stops.length ? stops.reduce((a, h) => a + lumOf(h), 0) / stops.length : 80;
-      })()
-    : lumOf(posterBg);
-  const lightBg = bgLum > 150;
+  // For a gradient, pick the ink that reads on every part of it; a gradient
+  // that runs from light to dark also gets a soft outline (halo) on the text.
+  const { light: lightBg, halo } = posterInk(String(posterBg));
   const ink = lightBg ? '#1A1A1A' : '#FFFFFF';
   const inkSoft = lightBg ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)';
+  const inkWallet = lightBg ? 'rgba(26,26,26,0.92)' : 'rgba(255,255,255,0.92)';
   const vbrand = lightBg ? '#9B8B66' : '#FBBF24';
+  const haloText = halo ? haloShadow(lightBg) : 'none';
+  const haloGlow = lightBg ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.7)';
+  const haloFilter = halo ? `drop-shadow(0 0 1.5px ${haloGlow}) drop-shadow(0 0 4px ${haloGlow})` : 'none';
 
   // Wallet-card colour on the poster. Default is chosen for contrast with the
   // poster background — white card on a coloured/gradient poster, black card on
@@ -132,7 +132,7 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     `<rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/>`;
   const markHex = lightBg ? '#1A1A1A' : '#FFFFFF';
   const brandMark =
-    `<svg viewBox="0 0 282 90" style="height:11px;width:auto;vertical-align:middle;margin-right:5px;display:inline-block" fill="${markHex}">${markPaths}</svg>`;
+    `<svg class="brand-mark" viewBox="0 0 282 90" style="height:11px;width:auto;vertical-align:middle;margin-right:5px;display:inline-block" fill="${markHex}">${markPaths}</svg>`;
   const cardMark =
     `<svg viewBox="0 0 282 90" style="height:18px;width:auto;vertical-align:middle;display:inline-block" fill="${cardInk}">${markPaths}</svg>`;
 
@@ -195,6 +195,9 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__CARD_INK__',       cardInk)
     .replaceAll('__INK__',            ink)
     .replaceAll('__INK_SOFT__',       inkSoft)
+    .replaceAll('__INK_WALLET__',     inkWallet)
+    .replaceAll('__HALO_TEXT__',      haloText)
+    .replaceAll('__HALO_FILTER__',    haloFilter)
     .replaceAll('__VBRAND__',         vbrand)
     .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
     .replaceAll('__LOYALTY_STAMPS__', buildDummyStamps(6))
@@ -318,6 +321,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   body {
     font-family: 'Helvetica Neue', 'Segoe UI', Arial, sans-serif; background: #f5f5f5;
     --ink: __INK__; --ink-soft: __INK_SOFT__; --vbrand: __VBRAND__;
+    --ink-wallet: __INK_WALLET__; --halo-text: __HALO_TEXT__; --halo-filter: __HALO_FILTER__;
   }
 
   /* Each format is its own page. Print rules use the matching @page. */
@@ -530,7 +534,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-loyalty .ly-badge svg { width: 92px; height: 92px; }
   .size-loyalty .ly-scan { position: absolute; top: 268px; left: 42px; right: 32px; display: flex; align-items: center; justify-content: center; gap: 20px; z-index: 2; }
   .size-loyalty .ly-opt { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-  .size-loyalty .ly-opt > span { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #FBBF24; }
+  .size-loyalty .ly-opt > span { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--vbrand); }
   .size-loyalty .ly-opt small { font-size: 10.5px; font-weight: 500; opacity: 0.85; line-height: 1.3; max-width: 150px; }
   .size-loyalty .ly-qr { background: #fff; padding: 9px; border-radius: 12px; line-height: 0; }
   .size-loyalty .ly-qr svg { width: 100px; height: 100px; display: block; }
@@ -689,7 +693,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-poster .dc-name { font-size: 15px; }
   .wallet-compat {
     display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
-    gap: 6px 10px; margin: 16px auto 0; color: rgba(255,255,255,0.92);
+    gap: 6px 10px; margin: 16px auto 0; color: var(--ink-wallet);
     font-size: 13px; font-weight: 600;
   }
   .wallet-compat .wc-label { text-transform: uppercase; letter-spacing: 1.5px; font-size: 10px; opacity: 0.7; }
@@ -773,6 +777,18 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-sticker .st-box img { width: 66px; height: auto; display: block; }
   .size-sticker .st-row { display: flex; align-items: center; gap: 8px; }
   .size-sticker .nfc-big-svg { width: 58px; height: 58px; }
+
+  /* The business card's right panel is always white: keep its NFC label dark
+     (it inherited the poster ink, so dark posters gave white-on-white). */
+  .size-card .bc-right .nfc-tap { color: #1A1A1A; }
+
+  /* Light-to-dark gradients: a soft outline keeps the ink readable on both
+     ends. Both are "none" for every other background. */
+  .size-card, .size-pamphlet, .size-poster, .size-loyalty, .size-selfscan,
+  .size-instagram, .size-table, .size-sticker .st-cell { text-shadow: var(--halo-text); }
+  .size-card .bc-right, .dummy-card, .size-loyalty .ly-badge { text-shadow: none; }
+  .nfc-ic, .nfc-big-svg, .size-pamphlet .pm-cb, .size-poster .ps-cb, .brand-mark { filter: var(--halo-filter); }
+  .size-card .bc-right .nfc-ic { filter: none; }
 </style>
 </head>
 <body data-size="__SIZE__">
