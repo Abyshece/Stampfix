@@ -8,7 +8,7 @@
 // Stripe subscription) and discounts are naturally excluded here, unlike the
 // plan-based per-merchant estimate shown in the admin table.
 //
-// Admin-only: reuses the same is_platform_admin() RPC the app uses.
+// Admins only (full or view-only): checked with the can_view_admin() RPC.
 //
 // Secrets: STRIPE_SECRET_KEY, SUPABASE_URL, SUPABASE_ANON_KEY
 // Deploy:  supabase functions deploy get-stripe-mrr
@@ -42,14 +42,14 @@ Deno.serve(async (req) => {
   try {
     if (!STRIPE_SECRET) return json({ error: 'Stripe not configured' }, 500);
 
-    // --- Admin auth: same is_platform_admin() RPC the app calls. ---
+    // --- Admin auth: full and view-only admins may read the MRR. ---
     const authHeader = req.headers.get('Authorization') ?? '';
     const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: 'Not authenticated' }, 401);
-    const { data: isAdmin } = await userClient.rpc('is_platform_admin');
+    const { data: isAdmin } = await userClient.rpc('can_view_admin');
     if (isAdmin !== true) return json({ error: 'Forbidden' }, 403);
 
     const stripe = new Stripe(STRIPE_SECRET, { apiVersion: '2024-12-18.acacia' });
