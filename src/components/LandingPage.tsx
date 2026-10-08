@@ -357,13 +357,16 @@ export function LandingPage({
         </p>
 
         <div className="flex flex-col items-center md:items-start gap-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-          <div className="flex justify-center gap-4 flex-wrap">
-            <button
-              onClick={onEnterMerchantFlow}
-              className="bg-[#37352F] text-white px-8 py-3.5 rounded-lg font-medium text-lg flex items-center justify-center gap-2 hover:bg-[#2F2D28] transition shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transform"
-            >
-              {t('hero.startFree')} <ArrowRight className="w-5 h-5" />
-            </button>
+          <div className="flex justify-center items-start gap-4 flex-wrap">
+            <div className="flex flex-col items-center md:items-start gap-1.5">
+              <button
+                onClick={onEnterMerchantFlow}
+                className="bg-[#37352F] text-white px-8 py-3.5 rounded-lg font-medium text-lg flex items-center justify-center gap-2 hover:bg-[#2F2D28] transition shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transform"
+              >
+                {t('hero.startFree')} <ArrowRight className="w-5 h-5" />
+              </button>
+              <p className="text-xs text-gray-500">{t('hero.noCard')}</p>
+            </div>
             <a
               href="https://calendar.app.google/WCPgkaPjeoUbkQJq7"
               target="_blank"
