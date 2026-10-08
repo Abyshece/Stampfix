@@ -4,7 +4,7 @@ import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, Merch
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, MoreHorizontal, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone } from 'lucide-react';
+  RotateCcw, Smile, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone } from 'lucide-react';
 import { CampaignsPanel } from './CampaignsPanel';
 import { MerchantDashboardBanner } from './MerchantBannerBar';
 import { useAuth } from '../lib/auth';
@@ -1297,8 +1297,16 @@ export function MerchantDashboard({
                         )
                       )}
                       <button onClick={() => setConfirmAction({ type: 'BLOCK', cardId: card.id, name: card.customerName })}
-                        className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center">
-                        <MoreHorizontal className="w-4 h-4" />
+                        className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 active:text-orange-500 flex items-center justify-center"
+                        title={card.status === 'BLOCKED' ? t('dash.customers.unblock', { defaultValue: 'Unblock' }) : t('dash.customers.block', { defaultValue: 'Block' })}
+                        aria-label={card.status === 'BLOCKED' ? t('dash.customers.unblock', { defaultValue: 'Unblock' }) : t('dash.customers.block', { defaultValue: 'Block' })}>
+                        <Ban className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setConfirmAction({ type: 'DELETE', cardId: card.id, name: card.customerName })}
+                        className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 active:text-red-500 flex items-center justify-center"
+                        title={t('dash.customers.delete', { defaultValue: 'Delete' })}
+                        aria-label={t('dash.customers.delete', { defaultValue: 'Delete' })}>
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
