@@ -1,5 +1,5 @@
 const de = {
-  nav: { features: 'Funktionen', pricing: 'Preise', about: 'Über uns', lostCard: 'Stempelkarte verloren?', lostCardMobile: 'Stempelkarte verloren? Hier herunterladen', dashboard: 'Zum Dashboard', login: 'Anmelden', myCard: 'Meine Treuekarte', startFree: 'Kostenlos starten' },
+  nav: { features: 'Funktionen', pricing: 'Preise', about: 'Über uns', lostCard: 'Stempelkarte verloren?', lostCardMobile: 'Stempelkarte verloren? Hier herunterladen', dashboard: 'Zum Dashboard', login: 'Anmelden', myCard: 'Meine Treuekarte', startFree: 'Kostenlos testen' },
   login: {
     title: 'Anmelden', which: 'Welche Art von Konto?',
     merchant: 'Händler-Login', merchantDesc: 'Verwalten Sie Ihr Treueprogramm und Ihr Dashboard.',
@@ -47,7 +47,7 @@ const de = {
     free: ['Bis zu 10 Kundenkarten', '1 Standort', 'Apple Wallet & Google Wallet Pässe', 'Ihr Handy oder Tablet als Scanner', 'Stempel, Belohnungen & QR-Anmeldeposter'],
     pro: ['Unbegrenzte Kundenkarten', 'Unbegrenzte Standorte', 'Individuelles Kartendesign + Live-Vorschau', 'Analysen – pro Standort & pro Angebot', 'Mitarbeiter-PINs, Aktivität & Berechtigungen', 'Individuelle Links auf Ihren Karten', 'CSV-Export', 'Stempellimits pro Kunde', 'Individuell gestaltete Poster (3 Größen)', 'Kundensegmente & animierte Stempel'],
     freeDesc: 'Alles, was Sie brauchen, um eine Treuekarte zu starten und mit dem Stempeln zu beginnen.',
-    startFree: 'Kostenlos starten',
+    startFree: 'Jetzt kostenlos testen',
     proDesc: 'Alles aus Kostenlos, plus das komplette Toolkit.', proVat: ' Preise inkl. MwSt.',
     proCta: 'Kostenlos starten, jederzeit upgraden',
     noCard: 'Keine Kartendaten zum Starten nötig. Sie upgraden erst, wenn Stampfix bereits für Sie arbeitet.',
@@ -60,7 +60,7 @@ const de = {
     benSub: 'Pro ist keine längere Funktionsliste um ihrer selbst willen – jede davon bringt Kunden zurück und nimmt Ihnen Arbeit ab.',
     bannerTitle: 'Kostenlos testen. Die wiederkehrenden Besuche sehen.',
     bannerSub: 'Richten Sie Ihre erste Treuekarte in Minuten ein – keine Kartendaten, keine Verpflichtung.',
-    bannerCta: 'Kostenlos starten',
+    bannerCta: 'Jetzt kostenlos testen',
   },
   ben: {
     b0: { title: 'Ihr Handy ist der Scanner', body: 'Starten Sie heute mit dem Gerät, das Sie bereits in der Tasche haben. Keine Hardware zu kaufen, installieren oder warten – Geld, das in Ihrem Geschäft bleibt.' },

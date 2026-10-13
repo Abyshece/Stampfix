@@ -138,7 +138,7 @@ export async function downloadTableQrPng(c: PC, bg?: string | null) {
  * Uses a hidden iframe so the poster's own stylesheet applies, strips the
  * preview drop-shadow, and captures just the poster element.
  */
-export async function downloadPosterPng(html: string, size: string, filename: string): Promise<void> {
+export async function downloadPosterPng(html: string, size: string, filename: string, errorMessage?: string): Promise<void> {
   const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   // iOS Safari ignores <a download> (nothing saves). Open a tab NOW — while we
@@ -166,7 +166,12 @@ export async function downloadPosterPng(html: string, size: string, filename: st
     const el = (doc.querySelector('.size-' + size) as HTMLElement | null) ?? doc.body;
     el.style.boxShadow = 'none';
     el.style.margin = '0';
-    const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' });
+    // html-to-image also paints `backgroundColor` onto the exported element
+    // itself, so the white backing turned every solid-colour poster white while
+    // its text stayed white for that colour. Put the poster's own colour back on
+    // the element; white stays behind it (rounded corners, gradients).
+    const ownBg = doc.defaultView?.getComputedStyle(el).backgroundColor || 'transparent';
+    const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff', style: { backgroundColor: ownBg } });
     if (iosWin) {
       iosWin.document.open();
       iosWin.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + filename + '</title><body style="margin:0;background:#faf9f7;font:15px -apple-system,system-ui;color:#444;text-align:center"><p style="margin:0;padding:12px 16px">Press and hold the image, then tap <b>Save to Photos</b> or <b>Add to Files</b>.</p><img src="' + dataUrl + '" style="display:block;max-width:100%;height:auto;margin:0 auto"></body>');
@@ -180,7 +185,7 @@ export async function downloadPosterPng(html: string, size: string, filename: st
   } catch (err) {
     if (iosWin) { try { iosWin.close(); } catch { /* ignore */ } }
     console.error('[poster png]', err);
-    alert('Could not generate the poster image. Please try again.');
+    alert(errorMessage ?? 'Could not generate the poster image. Please try again.');
   } finally {
     setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* ignore */ } }, 200);
   }

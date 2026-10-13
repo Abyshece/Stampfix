@@ -2,10 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { Palette, Check, Loader2, Lock, Sparkles } from 'lucide-react';
 import type { Campaign } from '../types';
 import { updateCampaign } from '../lib/db';
-import { downloadInstagramPng, downloadTableQrPng } from '../services/posterImage';
+import { downloadInstagramPng, downloadTableQrPng, downloadPosterPng } from '../services/posterImage';
 import { buildPosterHtml } from '../services/posterGenerator';
 import { posterInk, haloShadow, expandHex } from '../services/posterInk';
-import { toPng } from 'html-to-image';
 import { useToast } from './ToastProvider';
 import { ProLockOverlay } from './ProLockOverlay';
 import { logMerchantActivity } from '../lib/db';
@@ -100,7 +99,8 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
     }
   };
 
-  /** Render the selected poster to a PNG and download it directly. */
+  /** Render the selected poster to a PNG and download it directly — same
+   *  isolated export as the Share tab and onboarding (keeps the poster colour). */
   const handlePreview = async (size: 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker' | 'selfscan' | 'loyalty') => {
     const html = buildPosterHtml({
       campaign,
@@ -108,45 +108,8 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
       posterBgOverride: previewBg,
       cardColorOverride: cardColor || undefined,
     });
-    // Pull the styles + the specific format element out of the generated
-    // document and render just that element off-screen, then snapshot it.
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const styleText = Array.from(doc.querySelectorAll('style')).map((s) => s.textContent || '').join('\n');
-    const posterEl = doc.querySelector('.size-' + size) as HTMLElement | null;
-    if (!posterEl) return;
-
-    const holder = document.createElement('div');
-    holder.style.cssText = 'position:fixed;left:-100000px;top:0;pointer-events:none;';
-    const styleEl = document.createElement('style');
-    styleEl.textContent = styleText;
-    holder.appendChild(styleEl);
-    const clone = posterEl.cloneNode(true) as HTMLElement;
-    clone.style.margin = '0';
-    holder.appendChild(clone);
-    document.body.appendChild(holder);
-
-    try {
-      // Wait for the QR image(s) and web fonts before snapshotting.
-      const imgs = Array.from(clone.querySelectorAll('img'));
-      await Promise.all(imgs.map((img) =>
-        img.complete && img.naturalWidth
-          ? Promise.resolve()
-          : new Promise<void>((res) => { img.onload = () => res(); img.onerror = () => res(); }),
-      ));
-      if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch { /* ignore */ } }
-      await new Promise((r) => setTimeout(r, 120));
-
-      const dataUrl = await toPng(clone, { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff' });
-      const link = document.createElement('a');
-      link.download = `stampfix-${size}.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (err) {
-      console.error('[poster png]', err);
-      alert(t('dash.poster.errPng', { defaultValue: 'Could not generate the PNG — please try again.' }));
-    } finally {
-      document.body.removeChild(holder);
-    }
+    await downloadPosterPng(html, size, `stampfix-${size}.png`,
+      t('dash.poster.errPng', { defaultValue: 'Could not generate the PNG — please try again.' }));
   };
 
   return (
@@ -163,8 +126,8 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
 
       {/* Live preview swatch — shows the user what they're saving */}
       <div
-        className="rounded-lg h-24 border notion-border flex items-center justify-center font-serif-display text-2xl font-semibold tracking-wide shadow-inner"
-        style={{ background: previewBg, color: previewInk, textShadow: previewShadow }}
+        className="rounded-lg h-24 border notion-border flex items-center justify-center px-3 text-center leading-tight text-xl sm:text-3xl font-black tracking-tight shadow-inner"
+        style={{ background: previewBg, color: previewInk, textShadow: previewShadow, fontFamily: "'Helvetica Neue', 'Segoe UI', Arial, sans-serif" }}
       >
         {t('dash.poster.scanSave', { defaultValue: 'SCAN & SAVE' })}
       </div>

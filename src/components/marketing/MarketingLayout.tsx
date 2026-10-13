@@ -12,7 +12,7 @@ const NAV_LINKS = [
 ];
 
 /** Primary charcoal CTA used across marketing pages. Links home, where signup lives. */
-export function StartButton({ label = 'Start for free', className = '' }: { label?: string; className?: string }) {
+export function StartButton({ label = 'Start your free trial', className = '' }: { label?: string; className?: string }) {
   return (
     <a
       href="/?signup=1"
@@ -86,7 +86,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
           </div>
           <div className="flex items-center gap-2">
             <a href="/?login=1" className="text-gray-600 hover:text-[#37352F] px-2 py-2 text-sm transition whitespace-nowrap hidden sm:inline">{t('nav.login', { defaultValue: 'Log in' })}</a>
-            <StartButton label={t('nav.startFree', { defaultValue: 'Start for free' })} className="px-4 py-2 text-sm" />
+            <StartButton label={t('nav.startFree', { defaultValue: 'Start your free trial' })} className="px-3 sm:px-4 py-2 text-sm" />
             <LanguageSwitcher className="hidden sm:block" />
             <MobileNav
               links={[

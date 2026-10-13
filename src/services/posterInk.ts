@@ -57,6 +57,33 @@ export function posterInk(bg: string): { light: boolean; halo: boolean } {
   return { light: dark > white, halo: Math.max(dark, white) < 2.5 };
 }
 
+/** Lowest contrast of a colour against any part of a poster background
+ *  (solid hex or gradient). Unknown backgrounds count as fine. */
+export function minContrast(color: string, bg: string): number {
+  const stops = /gradient\(/i.test(bg) ? gradientStops(bg) : (/^#[0-9a-fA-F]{6}$/.test(bg.trim()) ? [bg.trim()] : []);
+  return stops.length ? Math.min(...stops.map((s) => contrast(color, s))) : 21;
+}
+
+// CIE Lab, for "do these two colours look alike" (hue counts, not just brightness).
+const lab = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  const lin = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const [r, g, b] = [lin((n >> 16) & 255), lin((n >> 8) & 255), lin(n & 255)];
+  const f = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  const x = f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047), y = f(0.2126 * r + 0.7152 * g + 0.0722 * b),
+    z = f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+};
+
+/** Smallest visual difference (CIE76 ΔE) between a colour and any part of a
+ *  poster background. Below ~25 a shape in that colour blends into it. */
+export function minDistance(color: string, bg: string): number {
+  const stops = /gradient\(/i.test(bg) ? gradientStops(bg) : (/^#[0-9a-fA-F]{6}$/.test(bg.trim()) ? [bg.trim()] : []);
+  if (!stops.length) return 100;
+  const a = lab(color);
+  return Math.min(...stops.map((s) => { const b = lab(s); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); }));
+}
+
 /** CSS text-shadow that outlines ink on a light→dark gradient. */
 export function haloShadow(light: boolean): string {
   return light
