@@ -2,7 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import QRCode from 'react-qr-code';
 import type { Campaign, Location } from '../types';
-import { posterInk, haloShadow } from './posterInk';
+import { posterInk, haloShadow, minContrast, minDistance } from './posterInk';
 
 export type PosterSize = 'card' | 'pamphlet' | 'poster' | 'instagram' | 'table' | 'sticker' | 'selfscan' | 'loyalty';
 
@@ -112,7 +112,16 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   const ink = lightBg ? '#1A1A1A' : '#FFFFFF';
   const inkSoft = lightBg ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)';
   const inkWallet = lightBg ? 'rgba(26,26,26,0.92)' : 'rgba(255,255,255,0.92)';
-  const vbrand = lightBg ? '#9B8B66' : '#FBBF24';
+  // Gold labels ("Scan", "Tap · NFC", the vertical brand): a darker gold, or the
+  // ink itself, wherever the usual gold is too faint (yellow/amber posters).
+  const vbrand = lightBg
+    ? (minContrast('#9B8B66', posterBg) >= 2.5 ? '#9B8B66' : minContrast('#5C5233', posterBg) >= 3 ? '#5C5233' : ink)
+    : (minContrast('#FBBF24', posterBg) >= 2 ? '#FBBF24' : '#FFFFFF');
+  // The yellow badge and accent bar vanish on a yellow/amber poster: there the
+  // badge turns white and the bar takes the ink colour. Unchanged everywhere else.
+  const accentClash = minDistance('#FBBF24', posterBg) < 25;
+  const accent = accentClash ? '#FFFFFF' : '#FBBF24';
+  const accentBar = accentClash ? ink : '#FBBF24';
   const haloText = halo ? haloShadow(lightBg) : 'none';
   const haloGlow = lightBg ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.7)';
   const haloFilter = halo ? `drop-shadow(0 0 1.5px ${haloGlow}) drop-shadow(0 0 4px ${haloGlow})` : 'none';
@@ -164,7 +173,9 @@ export function buildPosterHtml(input: BuildPosterInput): string {
   const qrUrl = `data:image/svg+xml,${encodeURIComponent(qrSvg)}`;
   const fakeQrSvg = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"><rect width="100" height="100" fill="#fff"/><rect x="0" y="0" width="28" height="28" fill="#111"/><rect x="6" y="6" width="16" height="16" fill="#fff"/><rect x="10" y="10" width="8" height="8" fill="#111"/><rect x="72" y="0" width="28" height="28" fill="#111"/><rect x="78" y="6" width="16" height="16" fill="#fff"/><rect x="82" y="10" width="8" height="8" fill="#111"/><rect x="0" y="72" width="28" height="28" fill="#111"/><rect x="6" y="78" width="16" height="16" fill="#fff"/><rect x="10" y="82" width="8" height="8" fill="#111"/><g fill="#111"><rect x="40" y="8" width="8" height="8"/><rect x="56" y="8" width="8" height="8"/><rect x="48" y="24" width="8" height="8"/><rect x="64" y="24" width="8" height="8"/><rect x="8" y="40" width="8" height="8"/><rect x="24" y="40" width="8" height="8"/><rect x="40" y="40" width="8" height="8"/><rect x="64" y="40" width="8" height="8"/><rect x="88" y="40" width="8" height="8"/><rect x="48" y="48" width="8" height="8"/><rect x="72" y="48" width="8" height="8"/><rect x="32" y="56" width="8" height="8"/><rect x="56" y="56" width="8" height="8"/><rect x="88" y="56" width="8" height="8"/><rect x="40" y="64" width="8" height="8"/><rect x="64" y="64" width="8" height="8"/><rect x="56" y="72" width="8" height="8"/><rect x="72" y="72" width="8" height="8"/><rect x="88" y="72" width="8" height="8"/><rect x="40" y="88" width="8" height="8"/><rect x="56" y="88" width="8" height="8"/><rect x="72" y="88" width="8" height="8"/></g></svg>';
   const fakeQrUrl = `data:image/svg+xml,${encodeURIComponent(fakeQrSvg)}`;
-  const nfc = '<svg class="nfc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M8 8 A4 4 0 0 1 8 16"/><path d="M8 5 A7 7 0 0 1 8 19"/><path d="M8 2.5 A10 10 0 0 1 8 21.5"/></svg>';
+  // Contactless mark: a dot and three well-spaced arcs (the old arcs were 0.6 units apart under a
+  // 2.4 stroke, so at business-card size they merged into a single blob).
+  const nfc = '<svg class="nfc-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><path d="M7.57 8.94 A4 4 0 0 1 7.57 15.06"/><path d="M10.46 5.49 A8.5 8.5 0 0 1 10.46 18.51"/><path d="M13.36 2.04 A13 13 0 0 1 13.36 21.96"/></svg>';
   const nfcTap = `<div class="nfc-tap">${nfc}<span>Tap to sign up</span></div>`;
   const nfcBig = '<svg class="nfc-big-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><rect x="58" y="22" width="34" height="56" rx="8"/><line x1="68" y1="30" x2="82" y2="30"/><path d="M28 35 A22 22 0 0 1 28 65"/><path d="M34 30 A30 30 0 0 1 34 70"/><path d="M40 25 A38 38 0 0 1 40 75"/></svg>';
   const stickerCells = Array.from({ length: 20 }, () => `<div class="st-cell"><div class="stx">Scan or tap to join</div><div class="st-row"><div class="st-box"><img src="${qrUrl}" alt="Scan"/></div>${nfcBig}</div><div class="stx">Win rewards with us</div></div>`).join('');
@@ -199,6 +210,8 @@ export function buildPosterHtml(input: BuildPosterInput): string {
     .replaceAll('__HALO_TEXT__',      haloText)
     .replaceAll('__HALO_FILTER__',    haloFilter)
     .replaceAll('__VBRAND__',         vbrand)
+    .replaceAll('__ACCENT_BAR__',     accentBar)
+    .replaceAll('__ACCENT__',         accent)
     .replaceAll('__DUMMY_STAMPS__',   buildDummyStamps(maxStamps))
     .replaceAll('__LOYALTY_STAMPS__', buildDummyStamps(6))
     .replaceAll('__PAGE__',           input.size === 'card' || input.size === 'selfscan' ? '85mm 55mm' : input.size === 'pamphlet' ? '297mm 210mm' : input.size === 'instagram' ? '210mm 210mm' : input.size === 'table' ? '45mm 45mm' : input.size === 'sticker' ? '210mm 297mm' : input.size === 'loyalty' ? '148mm 210mm' : '210mm 297mm')
@@ -318,6 +331,9 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   @page { size: __PAGE__; margin: 0; }
   /* Reset + sensible defaults */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Print the poster colours: browsers drop backgrounds by default ('Background
+     graphics' off), which left text inked for a dark poster white on white paper. */
+  html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body {
     font-family: 'Helvetica Neue', 'Segoe UI', Arial, sans-serif; background: #f5f5f5;
     --ink: __INK__; --ink-soft: __INK_SOFT__; --vbrand: __VBRAND__;
@@ -528,7 +544,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   .size-loyalty .ly-pb svg { height: 11px; width: auto; }
   .size-loyalty .ly-top { position: absolute; top: 66px; left: 58px; right: 30px; z-index: 2; }
   .size-loyalty .ly-headline { font-size: 45px; font-weight: 800; line-height: 1.0; letter-spacing: -1px; margin: 0; max-width: 380px; }
-  .size-loyalty .ly-accent { width: 62px; height: 5px; border-radius: 3px; background: #FBBF24; margin: 15px 0 12px; }
+  .size-loyalty .ly-accent { width: 62px; height: 5px; border-radius: 3px; background: __ACCENT_BAR__; margin: 15px 0 12px; }
   .size-loyalty .ly-sub { font-size: 14px; font-weight: 500; line-height: 1.4; opacity: 0.9; margin: 0; }
   .size-loyalty .ly-badge { position: absolute; top: 64px; right: 22px; width: 92px; height: 92px; z-index: 4; }
   .size-loyalty .ly-badge svg { width: 92px; height: 92px; }
@@ -833,7 +849,7 @@ const PAGE_TEMPLATE = `<!DOCTYPE html>
   <div class="size-loyalty">
     <div class="ly-vbrand"><span>__BUSINESS_NAME_RAW__</span></div>
     <div class="ly-pb">Powered by __BRAND_MARK__ Stampfix</div>
-    <div class="ly-badge"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50.0,2.0 57.4,12.7 68.4,5.7 71.1,18.4 83.9,16.1 81.6,28.9 94.3,31.6 87.3,42.6 98.0,50.0 87.3,57.4 94.3,68.4 81.6,71.1 83.9,83.9 71.1,81.6 68.4,94.3 57.4,87.3 50.0,98.0 42.6,87.3 31.6,94.3 28.9,81.6 16.1,83.9 18.4,71.1 5.7,68.4 12.7,57.4 2.0,50.0 12.7,42.6 5.7,31.6 18.4,28.9 16.1,16.1 28.9,18.4 31.6,5.7 42.6,12.7" fill="#FBBF24"/><text x="50" y="38" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="800" fill="#1A1A1F">READY IN</text><text x="50" y="60" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="26" font-weight="800" fill="#1A1A1F">15</text><text x="50" y="76" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="800" fill="#1A1A1F">SECONDS</text></svg></div>
+    <div class="ly-badge"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50.0,2.0 57.4,12.7 68.4,5.7 71.1,18.4 83.9,16.1 81.6,28.9 94.3,31.6 87.3,42.6 98.0,50.0 87.3,57.4 94.3,68.4 81.6,71.1 83.9,83.9 71.1,81.6 68.4,94.3 57.4,87.3 50.0,98.0 42.6,87.3 31.6,94.3 28.9,81.6 16.1,83.9 18.4,71.1 5.7,68.4 12.7,57.4 2.0,50.0 12.7,42.6 5.7,31.6 18.4,28.9 16.1,16.1 28.9,18.4 31.6,5.7 42.6,12.7" fill="__ACCENT__"/><text x="50" y="38" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="800" fill="#1A1A1F">READY IN</text><text x="50" y="60" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="26" font-weight="800" fill="#1A1A1F">15</text><text x="50" y="76" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" font-weight="800" fill="#1A1A1F">SECONDS</text></svg></div>
     <div class="ly-top">
       <h1 class="ly-headline">Your Loyalty<br>Card</h1>
       <div class="ly-accent"></div>
