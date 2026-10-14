@@ -254,6 +254,19 @@ async function handle(req: Request, note: Record<string, unknown>): Promise<Resp
         return new Response('Pass build failed', { status: 500 });
       }
       const bytes = new Uint8Array(await passResp.arrayBuffer());
+
+      // Campaign delivery confirmation: this phone now holds the card as of
+      // passkit_last_updated, so a campaign message sent before that is on
+      // it (and on the lock screen). Never breaks the download.
+      try {
+        const { error } = await supabase.rpc('marketing_delivery_event', {
+          p_card_id: serial, p_event: 'downloaded', p_pass_version: card.passkit_last_updated,
+        });
+        if (error) console.warn('[apple-wallet-webservice] delivery event failed:', error.message);
+      } catch (e) {
+        console.warn('[apple-wallet-webservice] delivery event failed:', e);
+      }
+
       return new Response(bytes, { status: 200, headers: passHeaders });
     }
 

@@ -10,8 +10,9 @@ import {
   SEGMENTS, TRIGGERS, MAX_MESSAGE, MAX_CAMPAIGN_DAYS, TIME_SLOTS,
   listMarketingCampaigns, createMarketingCampaign, launchMarketingCampaign, setMarketingCampaignStatus,
   deleteMarketingCampaign, estimateReach, browserTimeZone, timeZoneOptions, zonedTimeToUtc, nowInZone, addDays,
-  formatInZone,
-  type CampaignKind, type MarketingCampaign, type Segment, type TriggerType,
+  formatInZone, reachBreakdown, listCampaignRecipients, deliveryState, deliverySummaries,
+  type CampaignKind, type MarketingCampaign, type Segment, type TriggerType, type ReachBreakdown,
+  type CampaignRecipient, type DeliveryState, type DeliverySummary,
 } from '../lib/marketingCampaigns';
 
 type T = ReturnType<typeof useTranslation>['t'];
@@ -202,6 +203,163 @@ function ConfirmDialog({ title, body, confirmLabel, danger, busy, onConfirm, onC
   );
 }
 
+/** Why the estimated reach is smaller than the customer list: only customers
+ *  who agreed to marketing and have the card in Apple Wallet can get campaigns. */
+function ReachExplainer({ breakdown, filtered, footnote }: { breakdown: ReachBreakdown | null; filtered: boolean; footnote?: string }) {
+  const { t } = useTranslation();
+  if (!breakdown || breakdown.total === 0) return null;
+  const reasons = [
+    [breakdown.noConsent, t('dash.campaigns.why.noConsent', { count: breakdown.noConsent, defaultValue: "Didn't agree to receive marketing at sign-up: {{count}}" })],
+    [breakdown.noWallet, t('dash.campaigns.why.noWallet', { count: breakdown.noWallet, defaultValue: 'Card not in Apple Wallet: {{count}}' })],
+    [breakdown.inactive, t('dash.campaigns.why.inactive', { count: breakdown.inactive, defaultValue: 'Blocked or asked to be deleted: {{count}}' })],
+  ] as const;
+  return (
+    <div className="rounded-lg bg-[#F7F7F5] px-4 py-3 text-sm text-gray-600 leading-relaxed">
+      <p className="font-medium text-[#37352F]">
+        {filtered
+          ? t('dash.campaigns.why.headLoc', { eligible: breakdown.eligible, total: breakdown.total, defaultValue: 'Campaigns can reach {{eligible}} of your {{total}} customers at these locations' })
+          : t('dash.campaigns.why.head', { eligible: breakdown.eligible, total: breakdown.total, defaultValue: 'Campaigns can reach {{eligible}} of your {{total}} customers' })}
+      </p>
+      <ul className="mt-1 space-y-0.5">
+        {reasons.filter(([n]) => n > 0).map(([, label]) => <li key={label}>· {label}</li>)}
+      </ul>
+      {footnote && <p className="mt-1.5 text-gray-500">{footnote}</p>}
+    </div>
+  );
+}
+
+// ---- Delivery report --------------------------------------------------------------
+
+const deliveryBadge = (t: T, s: DeliveryState): [string, string] => ({
+  delivered: [t('dash.campaigns.dl.delivered', { defaultValue: 'Delivered' }), 'bg-green-50 text-green-700'],
+  waiting_phone: [t('dash.campaigns.dl.waitingPhone', { defaultValue: 'Sent to Apple' }), 'bg-blue-50 text-blue-700'],
+  sending: [t('dash.campaigns.dl.sending', { defaultValue: 'Sending…' }), 'bg-gray-100 text-gray-600'],
+  unconfirmed: [t('dash.campaigns.dl.unconfirmed', { defaultValue: 'Not confirmed' }), 'bg-amber-50 text-amber-700'],
+  failed: [t('dash.campaigns.dl.failed', { defaultValue: 'Not delivered' }), 'bg-red-50 text-red-700'],
+} as Record<DeliveryState, [string, string]>)[s];
+
+const failedReasonLabel = (t: T, reason: string | null) =>
+  reason === 'no_devices'
+    ? t('dash.campaigns.dl.whyNoDevice', { defaultValue: 'The card is no longer in Apple Wallet' })
+    : reason === 'Unregistered' || reason === 'BadDeviceToken' || reason === 'DeviceTokenNotForTopic'
+      ? t('dash.campaigns.dl.whyRemoved', { defaultValue: 'The card was removed from Apple Wallet' })
+      : t('dash.campaigns.dl.whyRefused', { defaultValue: "Apple didn't accept the notification" });
+
+/** Who a campaign went to, followed through to each customer's phone. Refreshes
+ *  itself while sends from the last 15 minutes are still on their way. */
+function DeliveryReport({ campaign, onClose }: { campaign: MarketingCampaign; onClose: () => void }) {
+  const { t, i18n } = useTranslation();
+  const [rows, setRows] = useState<CampaignRecipient[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const fetchRows = () => {
+      listCampaignRecipients(campaign.id)
+        .then((r) => {
+          if (!live) return;
+          setRows(r);
+          setFailed(false);
+          const now = Date.now();
+          const pending = r.some((x) => {
+            const s = deliveryState(x, now);
+            return (s === 'sending' || s === 'waiting_phone') && now - new Date(x.sentAt).getTime() < 15 * 60 * 1000;
+          });
+          if (pending) timer = setTimeout(fetchRows, 4000);
+        })
+        .catch(() => { if (live) setFailed(true); });
+    };
+    fetchRows();
+    return () => { live = false; if (timer) clearTimeout(timer); };
+  }, [campaign.id]);
+
+  const states = (rows ?? []).map((r) => deliveryState(r));
+  const count = (s: DeliveryState[]) => states.filter((x) => s.includes(x)).length;
+  const when = (iso: string) => formatInZone(iso, campaign.timezone, i18n.language);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl p-5 sm:p-6 max-w-lg w-full shadow-xl max-h-[85vh] flex flex-col">
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <h3 className="text-lg font-semibold text-[#37352F] min-w-0 break-words">
+            {t('dash.campaigns.dl.title', { name: campaign.name, defaultValue: 'Delivery report: {{name}}' })}
+          </h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-[#F7F7F5] shrink-0"><X className="w-5 h-5" /></button>
+        </div>
+        <p className="text-sm text-gray-500 break-words">“{campaign.message}”</p>
+
+        {rows === null && !failed && (
+          <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
+        )}
+        {failed && rows === null && (
+          <p className="text-sm text-red-600 py-6">{t('dash.campaigns.dl.loadErr', { defaultValue: "Couldn't load the delivery report. Please try again." })}</p>
+        )}
+        {rows !== null && (
+          <>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
+                {t('dash.campaigns.dl.sumDelivered', { count: count(['delivered']), defaultValue: '{{count}} delivered' })}
+              </span>
+              {count(['waiting_phone', 'sending']) > 0 && (
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">
+                  {t('dash.campaigns.dl.sumWaiting', { count: count(['waiting_phone', 'sending']), defaultValue: '{{count}} on the way' })}
+                </span>
+              )}
+              {count(['unconfirmed', 'failed']) > 0 && (
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-red-50 text-red-700">
+                  {t('dash.campaigns.dl.sumFailed', { count: count(['unconfirmed', 'failed']), defaultValue: '{{count}} not delivered' })}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-3 leading-relaxed">
+              {t('dash.campaigns.dl.explain', { defaultValue: 'Delivered means the customer’s iPhone downloaded your message, so it is on their card and lock screen (unless they turned off notifications for your card). “Sent to Apple” means the phone is off or offline; it arrives when it is back online.' })}
+            </p>
+            <div className="mt-3 -mx-1 overflow-y-auto divide-y divide-gray-100 border-t border-gray-100">
+              {rows.length === 0 && (
+                <p className="text-sm text-gray-500 py-6 text-center">{t('dash.campaigns.dl.nobody', { defaultValue: 'Nobody has received this campaign yet.' })}</p>
+              )}
+              {rows.map((r, i) => {
+                const s = states[i];
+                const [label, cls] = deliveryBadge(t, s);
+                const sub = s === 'delivered'
+                  ? t('dash.campaigns.dl.subDelivered', { when: when(r.deliveredAt as string), defaultValue: 'On their phone since {{when}}' })
+                  : s === 'failed'
+                    ? failedReasonLabel(t, r.failedReason)
+                    : s === 'waiting_phone'
+                      ? t('dash.campaigns.dl.subWaiting', { defaultValue: 'Waiting for their iPhone to come online' })
+                      : s === 'unconfirmed'
+                        ? t('dash.campaigns.dl.subUnconfirmed', { defaultValue: 'Apple never confirmed this one' })
+                        : t('dash.campaigns.dl.subSent', { when: when(r.sentAt), defaultValue: 'Sent {{when}}' });
+                return (
+                  <div key={r.cardId} className="flex items-start justify-between gap-3 px-1 py-2.5">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-[#37352F] truncate">
+                        {r.customerName || '—'}
+                        {r.customerCode && <span className="ml-1.5 text-xs font-normal text-gray-400">#{r.customerCode}</span>}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">{sub}</div>
+                    </div>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 ${cls}`}>
+                      {s === 'delivered' && <Check className="w-3 h-3 inline -mt-0.5 mr-0.5" />}{label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+        <div className="flex justify-end mt-4">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm font-medium bg-[#37352F] text-white hover:bg-[#2a2a28] transition">
+            {t('dash.campaigns.dl.done', { defaultValue: 'Done' })}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---- Status -------------------------------------------------------------------
 
 type ShownStatus = 'scheduled' | 'sending' | 'sent' | 'running' | 'paused' | 'ended' | 'cancelled';
@@ -245,10 +403,14 @@ export function CampaignsPanel({ campaignId, businessName, locations, showIntro 
   const [preset, setPreset] = useState<CampaignPreset | null>(null);
   const [pendingDelete, setPendingDelete] = useState<MarketingCampaign | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [report, setReport] = useState<MarketingCampaign | null>(null);
+  const [summaries, setSummaries] = useState<Record<string, DeliverySummary>>({});
   const activeLocations = useMemo(() => locations.filter((l) => !l.archived), [locations]);
 
   const load = useCallback(() => {
     listMarketingCampaigns(campaignId).then(setItems).catch(() => setItems([]));
+    // Delivery counts are extra: without them the list still shows "Sent to N".
+    deliverySummaries(campaignId).then(setSummaries).catch(() => {});
   }, [campaignId]);
   useEffect(() => { load(); }, [load]);
 
@@ -288,7 +450,11 @@ export function CampaignsPanel({ campaignId, businessName, locations, showIntro 
         defaultName={t('dash.campaigns.defaultName', { n: (items?.length ?? 0) + 1, defaultValue: 'Campaign {{n}}' })}
         preset={preset}
         onCancel={() => { setEditing(null); setPreset(null); }}
-        onDone={() => { setEditing(null); setPreset(null); if (showIntro) onIntroDone?.(); load(); }}
+        onDone={(sent) => {
+          setEditing(null); setPreset(null); if (showIntro) onIntroDone?.(); load();
+          // "Send now": follow it to the customers' phones right away.
+          if (sent) setReport(sent);
+        }}
       />
     );
   }
@@ -390,6 +556,7 @@ export function CampaignsPanel({ campaignId, businessName, locations, showIntro 
         <div className="space-y-3">
           {items.map((c) => {
             const st = shownStatus(c);
+            const sum = summaries[c.id];
             return (
               <div key={c.id} className="border notion-border rounded-xl p-4 sm:p-5">
                 <div className="flex items-start gap-3">
@@ -416,6 +583,24 @@ export function CampaignsPanel({ campaignId, businessName, locations, showIntro 
                       {c.endsAt && <> – {formatInZone(c.endsAt, c.timezone, i18n.language)}</>}
                       {' · '}{t('dash.campaigns.sentTo', { count: c.sentCount, defaultValue: 'Sent to {{count}}' })}
                     </p>
+                    {c.sentCount > 0 && (
+                      <p className="text-xs mt-1.5 flex items-center gap-x-2 gap-y-1 flex-wrap">
+                        {sum && sum.sent > 0 && (
+                          <>
+                            <span className="inline-flex items-center gap-1 text-green-700">
+                              <Check className="w-3.5 h-3.5" />
+                              {t('dash.campaigns.dl.rowDelivered', { delivered: sum.delivered, count: sum.sent, defaultValue: '{{delivered}} of {{count}} delivered' })}
+                            </span>
+                            {sum.failed > 0 && (
+                              <span className="text-red-600">{t('dash.campaigns.dl.sumFailed', { count: sum.failed, defaultValue: '{{count}} not delivered' })}</span>
+                            )}
+                          </>
+                        )}
+                        <button onClick={() => setReport(c)} className="font-medium text-[#37352F] underline underline-offset-2 hover:text-black">
+                          {t('dash.campaigns.dl.open', { defaultValue: 'Delivery report' })}
+                        </button>
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {busyId === c.id && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
@@ -479,6 +664,8 @@ export function CampaignsPanel({ campaignId, businessName, locations, showIntro 
           onCancel={() => setPendingDelete(null)}
         />
       )}
+
+      {report && <DeliveryReport campaign={report} onClose={() => { setReport(null); load(); }} />}
     </div>
   );
 }
@@ -500,7 +687,8 @@ interface CampaignPreset { name: string; message: string; segment: Segment }
 function CampaignEditor({ kind, campaignId, businessName, locations, defaultName, preset, onCancel, onDone }: {
   kind: CampaignKind; campaignId: string; businessName: string; locations: Location[]; defaultName: string;
   preset?: CampaignPreset | null;
-  onCancel: () => void; onDone: () => void;
+  /** `sent` is the campaign when it was just sent ("Send now"). */
+  onCancel: () => void; onDone: (sent?: MarketingCampaign) => void;
 }) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -519,6 +707,7 @@ function CampaignEditor({ kind, campaignId, businessName, locations, defaultName
   const [endDate, setEndDate] = useState(addDays(initial.date, kind === 'manual' ? 7 : MAX_CAMPAIGN_DAYS));
   const [endTime, setEndTime] = useState(initial.time);
   const [reach, setReach] = useState<number | null>(null);
+  const [breakdown, setBreakdown] = useState<ReachBreakdown | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmSend, setConfirmSend] = useState(false);
 
@@ -535,6 +724,17 @@ function CampaignEditor({ kind, campaignId, businessName, locations, defaultName
     }, 250);
     return () => { live = false; clearTimeout(h); };
   }, [campaignId, kind, segment, triggerType, triggerValue, locationIds]);
+
+  // Who can be reached at these locations at all, and why the rest can't.
+  useEffect(() => {
+    let live = true;
+    const h = setTimeout(() => {
+      reachBreakdown(campaignId, locationIds)
+        .then((b) => { if (live) setBreakdown(b); })
+        .catch(() => { if (live) setBreakdown(null); });
+    }, 250);
+    return () => { live = false; clearTimeout(h); };
+  }, [campaignId, locationIds]);
 
   const startAt = useMemo(
     () => (startMode === 'now' ? new Date() : zonedTimeToUtc(startDate, startTime, timezone)),
@@ -572,9 +772,10 @@ function CampaignEditor({ kind, campaignId, businessName, locations, defaultName
         toast.success(kind === 'manual'
           ? t('dash.campaigns.sentToast', { count: n, defaultValue: 'Sent to {{count}} customers' })
           : t('dash.campaigns.startedToast', { count: n, defaultValue: 'Automation started, {{count}} customers notified so far' }));
-      } else {
-        toast.success(t('dash.campaigns.scheduledToast', { when: formatInZone(startAt.toISOString(), timezone), defaultValue: 'Scheduled for {{when}}' }));
+        onDone(kind === 'manual' ? created : undefined);
+        return;
       }
+      toast.success(t('dash.campaigns.scheduledToast', { when: formatInZone(startAt.toISOString(), timezone), defaultValue: 'Scheduled for {{when}}' }));
       onDone();
     } catch {
       toast.error(t('dash.campaigns.saveErr', { defaultValue: "Couldn't save. Please try again." }));
@@ -641,6 +842,8 @@ function CampaignEditor({ kind, campaignId, businessName, locations, defaultName
                   {SEGMENTS.map((s) => <option key={s} value={s}>{segmentLabel(t, s)}</option>)}
                 </select>
               </div>
+              <ReachExplainer breakdown={breakdown} filtered={locationIds.length > 0}
+                footnote={segment === 'all' ? undefined : t('dash.campaigns.why.segment', { segment: segmentLabel(t, segment), defaultValue: 'The estimated reach is the ones of them in “{{segment}}”.' })} />
             </Section>
           ) : (
             <Section icon={Radio} title={t('dash.campaigns.trigger', { defaultValue: 'Select trigger' })} right={reachBadge}>
@@ -674,6 +877,8 @@ function CampaignEditor({ kind, campaignId, businessName, locations, defaultName
                   <LocationPicker locations={locations} value={locationIds} onChange={setLocationIds} />
                 </div>
               )}
+              <ReachExplainer breakdown={breakdown} filtered={locationIds.length > 0}
+                footnote={triggerType ? t('dash.campaigns.why.trigger', { defaultValue: '“Matching now” is the ones of them who meet the trigger right now.' }) : undefined} />
             </Section>
           )}
 
