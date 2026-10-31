@@ -176,10 +176,11 @@ export function MerchantDashboard({
       .catch(() => { /* staff is optional — never block the dashboard */ });
     return () => { cancelled = true; };
   }, [campaign.id]);
-  // Show the Admin shortcut only for the platform owner's account.
+  // Show the Admin shortcut only for the platform owners' accounts (same list
+  // as the database's is_stampfix_admin()).
   const { user } = useAuth();
   const [showSupport, setShowSupport] = useState(false);
-  const isStampfixAdmin = (user?.email ?? '').toLowerCase() === 'abyshece@gmail.com';
+  const isStampfixAdmin = ['abyshece@gmail.com', 'ai4miketomar@gmail.com'].includes((user?.email ?? '').toLowerCase());
 
   // Buffered settings
   const [tempSettings, setTempSettings] = useState<Campaign>(campaign);

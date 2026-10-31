@@ -127,6 +127,22 @@ async function recordPush(
   }
 }
 
+// Campaign delivery confirmation: tell marketing_campaign_deliveries whether
+// Apple took the push for this card. Never breaks the push.
+async function recordDelivery(
+  db: ReturnType<typeof createClient>,
+  cardId: string,
+  event: 'pushed' | 'push_failed',
+  detail?: string,
+): Promise<void> {
+  try {
+    const { error } = await db.rpc('marketing_delivery_event', { p_card_id: cardId, p_event: event, p_detail: detail ?? null });
+    if (error) console.warn('[push-apple-update] delivery event failed:', error.message);
+  } catch (e) {
+    console.warn('[push-apple-update] delivery event failed:', e);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -149,6 +165,7 @@ Deno.serve(async (req) => {
       .eq('serial_number', cardId);
     if (!regs || regs.length === 0) {
       await recordPush(supabase, 200, { cardId, caller, pushed: 0, reason: 'no_registrations' });
+      await recordDelivery(supabase, cardId, 'push_failed', 'no_devices');
       return json({ pushed: 0, reason: 'no_registrations' });
     }
 
@@ -214,6 +231,7 @@ Deno.serve(async (req) => {
     await recordPush(supabase, errors.length ? 207 : 200, {
       cardId, caller, pushType: pushType || '(none)', priority, topic, pushed, results,
     });
+    await recordDelivery(supabase, cardId, pushed > 0 ? 'pushed' : 'push_failed', errors[0]?.reason);
 
     if (stale.length > 0) {
       await supabase.from('apple_wallet_registrations').delete().in('push_token', stale);

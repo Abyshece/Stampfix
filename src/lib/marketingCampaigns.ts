@@ -147,6 +147,83 @@ export async function estimateReach(p: {
   return typeof data === 'number' ? data : 0;
 }
 
+/** Who can receive campaigns at the chosen locations, and why the rest can't.
+ *  eligible + noConsent + noWallet + inactive = total. */
+export interface ReachBreakdown {
+  total: number;
+  eligible: number;
+  /** Didn't agree to marketing when they signed up. */
+  noConsent: number;
+  /** Agreed, but the card isn't in Apple Wallet. */
+  noWallet: number;
+  /** Blocked, or deletion requested. */
+  inactive: number;
+}
+
+export async function reachBreakdown(campaignId: string, locationIds: string[]): Promise<ReachBreakdown> {
+  const { data, error } = await supabase.rpc('marketing_reach_breakdown', {
+    p_campaign_id: campaignId,
+    p_location_ids: locationIds.length ? locationIds : null,
+  });
+  if (error) throw error;
+  const d = (data ?? {}) as Record<string, number | undefined>;
+  return {
+    total: d.total ?? 0, eligible: d.eligible ?? 0, noConsent: d.no_consent ?? 0,
+    noWallet: d.no_wallet ?? 0, inactive: d.inactive ?? 0,
+  };
+}
+
+// ---- Delivery confirmation -------------------------------------------------
+// Each send is followed through to the customer's phone: Apple accepts the
+// push (pushedAt), then the iPhone downloads the card carrying the message
+// (deliveredAt), which is when Wallet shows it on the lock screen.
+
+export type DeliveryState = 'delivered' | 'waiting_phone' | 'sending' | 'unconfirmed' | 'failed';
+
+export interface CampaignRecipient {
+  cardId: string;
+  customerName: string;
+  customerCode: string | null;
+  sentAt: string;
+  pushedAt: string | null;
+  deliveredAt: string | null;
+  failedReason: string | null;
+}
+
+/** Still "sending" this long after the send; after that it's "not confirmed". */
+const SENDING_GRACE_MS = 10 * 60 * 1000;
+
+export function deliveryState(r: CampaignRecipient, now = Date.now()): DeliveryState {
+  if (r.deliveredAt) return 'delivered';
+  if (r.pushedAt) return 'waiting_phone';
+  if (r.failedReason) return 'failed';
+  return now - new Date(r.sentAt).getTime() < SENDING_GRACE_MS ? 'sending' : 'unconfirmed';
+}
+
+export async function listCampaignRecipients(marketingCampaignId: string): Promise<CampaignRecipient[]> {
+  const { data, error } = await supabase.rpc('marketing_campaign_recipients', { p_id: marketingCampaignId });
+  if (error) throw error;
+  type R = { card_id: string; customer_name: string | null; customer_code: string | null; sent_at: string;
+    pushed_at: string | null; delivered_at: string | null; failed_reason: string | null };
+  return ((data as R[] | null) ?? []).map((r) => ({
+    cardId: r.card_id, customerName: r.customer_name ?? '', customerCode: r.customer_code, sentAt: r.sent_at,
+    pushedAt: r.pushed_at, deliveredAt: r.delivered_at, failedReason: r.failed_reason,
+  }));
+}
+
+export interface DeliverySummary { sent: number; delivered: number; failed: number }
+
+/** Delivery counts for every campaign of a loyalty program, by campaign id. */
+export async function deliverySummaries(campaignId: string): Promise<Record<string, DeliverySummary>> {
+  const { data, error } = await supabase.rpc('marketing_delivery_summary', { p_campaign_id: campaignId });
+  if (error) throw error;
+  const out: Record<string, DeliverySummary> = {};
+  for (const r of (data as Array<{ marketing_campaign_id: string; sent: number; delivered: number; failed: number }> | null) ?? []) {
+    out[r.marketing_campaign_id] = { sent: r.sent, delivered: r.delivered, failed: r.failed };
+  }
+  return out;
+}
+
 // ---- Time zones ------------------------------------------------------------
 // Campaign times are picked as a wall-clock date + time in a chosen IANA time
 // zone and stored as UTC instants.
