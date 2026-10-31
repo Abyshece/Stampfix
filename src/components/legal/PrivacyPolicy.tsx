@@ -100,7 +100,7 @@ export function PrivacyPolicy() {
       <ul className="list-disc pl-6 space-y-1">
         <li><strong>Performance of a contract</strong> (Art. 6(1)(b)) — to create accounts, issue loyalty cards, and track stamps</li>
         <li><strong>Legitimate interests</strong> (Art. 6(1)(f)) — to keep the Service secure and prevent fraud</li>
-        <li><strong>Consent</strong> (Art. 6(1)(a)) — for marketing emails, where applicable; you can withdraw consent at any time</li>
+        <li><strong>Consent</strong> (Art. 6(1)(a)) — for marketing messages (email and wallet-card notifications), where applicable; you can withdraw consent at any time</li>
         <li><strong>Legal obligation</strong> (Art. 6(1)(c)) — to retain billing records as required by tax law</li>
       </ul>
 

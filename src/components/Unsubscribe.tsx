@@ -30,7 +30,7 @@ export function Unsubscribe() {
 
   const messages = {
     loading: { h: t('cust.unsubscribe.loadingH', { defaultValue: 'One moment…' }), p: t('cust.unsubscribe.loadingP', { defaultValue: 'Updating your preferences.' }) },
-    done: { h: t('cust.unsubscribe.doneH', { defaultValue: 'You’re unsubscribed' }), p: t('cust.unsubscribe.doneP', { defaultValue: 'You will no longer receive marketing emails for this card. You’ll still get essential messages about your card. Changed your mind? Just sign up again next time you visit.' }) },
+    done: { h: t('cust.unsubscribe.doneH', { defaultValue: 'You’re unsubscribed' }), p: t('cust.unsubscribe.doneP', { defaultValue: 'You will no longer receive offers or marketing messages for this card. You’ll still get essential messages about your card. Changed your mind? Just sign up again next time you visit.' }) },
     notfound: { h: t('cust.unsubscribe.notfoundH', { defaultValue: 'Link not recognised' }), p: t('cust.unsubscribe.notfoundP', { defaultValue: 'This unsubscribe link is invalid or has expired. If you keep receiving emails you don’t want, reply to one of them and we’ll remove you.' }) },
     error: { h: t('cust.unsubscribe.errorH', { defaultValue: 'Something went wrong' }), p: t('cust.unsubscribe.errorP', { defaultValue: 'We couldn’t update your preferences just now. Please try again in a moment.' }) },
   }[state];
