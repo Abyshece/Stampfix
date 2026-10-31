@@ -131,7 +131,7 @@ export interface ContactMessage {
  * admin action is blocked here — the single point all admin writes funnel
  * through. Pairs with the DB is_platform_admin flag (which grants read access).
  */
-const READ_ONLY_ADMINS = new Set<string>(['ai4miketomar@gmail.com']);
+const READ_ONLY_ADMINS = new Set<string>([]);
 
 // Viewers (public.admin_viewers) can read the panel but are not platform
 // admins, so the database refuses their writes too. Set by checkIsAdmin().
