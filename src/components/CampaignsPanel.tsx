@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, type ComponentType, 
 import { useTranslation } from 'react-i18next';
 import {
   Megaphone, Plus, ArrowRight, ArrowLeft, MessageSquare, Target, CalendarDays, Radio, Users, Info, Loader2,
-  X, Pause, Play, Trash2, ChevronDown, Check, Send, Zap, Ban,
+  X, Pause, Play, Trash2, ChevronDown, Check, Send, Zap, Ban, Sparkles,
 } from 'lucide-react';
 import { useToast } from './ToastProvider';
 import type { Location } from '../types';
@@ -11,6 +11,7 @@ import {
   listMarketingCampaigns, createMarketingCampaign, launchMarketingCampaign, setMarketingCampaignStatus,
   deleteMarketingCampaign, estimateReach, browserTimeZone, timeZoneOptions, zonedTimeToUtc, nowInZone, addDays,
   formatInZone, reachBreakdown, listCampaignRecipients, deliveryState, deliverySummaries,
+  campaignReturns, recipientReturns,
   type CampaignKind, type MarketingCampaign, type Segment, type TriggerType, type ReachBreakdown,
   type CampaignRecipient, type DeliveryState, type DeliverySummary,
 } from '../lib/marketingCampaigns';
@@ -25,6 +26,8 @@ const segmentLabel = (t: T, s: Segment) => ({
   all: t('dash.campaigns.seg.all', { defaultValue: 'All customers' }),
   new: t('dash.campaigns.seg.new', { defaultValue: 'New customers (joined in the last 30 days)' }),
   active: t('dash.campaigns.seg.active', { defaultValue: 'Active customers (visited in the last 30 days)' }),
+  inactive_7: t('dash.campaigns.seg.inactive7', { defaultValue: "Haven't visited in 7+ days" }),
+  inactive_14: t('dash.campaigns.seg.inactive14', { defaultValue: "Haven't visited in 14+ days" }),
   inactive_30: t('dash.campaigns.seg.inactive30', { defaultValue: "Haven't visited in 30+ days" }),
   inactive_60: t('dash.campaigns.seg.inactive60', { defaultValue: "Haven't visited in 60+ days" }),
   close: t('dash.campaigns.seg.close', { defaultValue: '1 stamp away from a reward' }),
@@ -251,6 +254,13 @@ function DeliveryReport({ campaign, onClose }: { campaign: MarketingCampaign; on
   const { t, i18n } = useTranslation();
   const [rows, setRows] = useState<CampaignRecipient[] | null>(null);
   const [failed, setFailed] = useState(false);
+  // When each customer came back within 7 days (extra: the report works without it).
+  const [backAt, setBackAt] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    recipientReturns(campaign.id).then((m) => { if (live) setBackAt(m); }).catch(() => {});
+    return () => { live = false; };
+  }, [campaign.id]);
 
   useEffect(() => {
     let live = true;
@@ -340,6 +350,11 @@ function DeliveryReport({ campaign, onClose }: { campaign: MarketingCampaign; on
                         {r.customerCode && <span className="ml-1.5 text-xs font-normal text-gray-400">#{r.customerCode}</span>}
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">{sub}</div>
+                      {backAt[r.cardId] && (
+                        <div className="text-xs font-medium text-[#37352F] mt-0.5">
+                          {t('dash.campaigns.dl.cameBack', { when: when(backAt[r.cardId]), defaultValue: 'Came back {{when}}' })}
+                        </div>
+                      )}
                     </div>
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap shrink-0 ${cls}`}>
                       {s === 'delivered' && <Check className="w-3 h-3 inline -mt-0.5 mr-0.5" />}{label}
@@ -357,6 +372,132 @@ function DeliveryReport({ campaign, onClose }: { campaign: MarketingCampaign; on
         </div>
       </div>
     </div>
+  );
+}
+
+// ---- Suggestions (Autopilot) -------------------------------------------------------
+// Ready-made campaigns for the customers who need one right now. "Review &
+// send" opens the normal editor pre-filled, so nothing goes out without the
+// owner seeing it.
+
+type SuggestionKey = 'winback14' | 'close' | 'reward' | 'winback30';
+const SUGGESTION_ORDER: SuggestionKey[] = ['winback14', 'close', 'reward', 'winback30'];
+const SUGGESTION_SEGMENT: Record<SuggestionKey, Segment> = {
+  winback14: 'inactive_14', close: 'close', reward: 'reward_ready', winback30: 'inactive_30',
+};
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HIDE_FOR_MS = 7 * DAY_MS;
+const hideKey = (campaignId: string, k: SuggestionKey) => `sf_sugg_${campaignId}_${k}`;
+const isWinback = (k: SuggestionKey) => k === 'winback14' || k === 'winback30';
+
+function wasHidden(campaignId: string, k: SuggestionKey): boolean {
+  try {
+    const v = Number(localStorage.getItem(hideKey(campaignId, k)) ?? 0);
+    return v > 0 && Date.now() - v < HIDE_FOR_MS;
+  } catch {
+    return false;
+  }
+}
+
+function Suggestions({ campaignId, items, onUse }: {
+  campaignId: string; items: MarketingCampaign[]; onUse: (p: CampaignPreset) => void;
+}) {
+  const { t } = useTranslation();
+  const [counts, setCounts] = useState<Partial<Record<SuggestionKey, number>> | null>(null);
+  const [hidden, setHidden] = useState<Set<SuggestionKey>>(
+    () => new Set(SUGGESTION_ORDER.filter((k) => wasHidden(campaignId, k))),
+  );
+
+  // How many customers each suggestion would reach (same rule as sending).
+  useEffect(() => {
+    let live = true;
+    Promise.all(SUGGESTION_ORDER.map((k) =>
+      estimateReach({ campaignId, kind: 'manual', segment: SUGGESTION_SEGMENT[k], locationIds: [] })
+        .then((n) => [k, n] as const)
+        .catch(() => [k, 0] as const),
+    )).then((pairs) => { if (live) setCounts(Object.fromEntries(pairs)); });
+    return () => { live = false; };
+  }, [campaignId]);
+
+  if (!counts) return null;
+
+  // Skip what was just done: a similar campaign in the last 7 days (or one
+  // scheduled), or a running automation that already covers it.
+  const now = Date.now();
+  const covered = (k: SuggestionKey) => items.some((c) => {
+    if (c.kind === 'manual') {
+      if (c.status === 'cancelled' || !c.segment || now - new Date(c.startsAt).getTime() > 7 * DAY_MS) return false;
+      return isWinback(k) ? c.segment.startsWith('inactive_') : c.segment === SUGGESTION_SEGMENT[k];
+    }
+    if (c.status !== 'active') return false;
+    if (isWinback(k)) return c.triggerType === 'inactive';
+    if (k === 'close') return c.triggerType === 'stamps_away';
+    return c.triggerType === 'reward_ready';
+  });
+
+  let shown = SUGGESTION_ORDER.filter((k) => (counts[k] ?? 0) > 0 && !hidden.has(k) && !covered(k));
+  // One win-back at a time: everyone gone 30 days is also gone 14.
+  if (shown.includes('winback14')) shown = shown.filter((k) => k !== 'winback30');
+  shown = shown.slice(0, 3);
+  if (shown.length === 0) return null;
+
+  const text: Record<SuggestionKey, { title: string; name: string; message: string }> = {
+    winback14: {
+      title: t('dash.campaigns.sugg.winback14Title', { defaultValue: "Win back customers who haven't visited in 14 days" }),
+      name: t('dash.campaigns.sugg.winbackName', { defaultValue: "We haven't seen you" }),
+      message: t('dash.campaigns.sugg.winback14Msg', { defaultValue: "We haven't seen you in a while! Come back this week and collect your next stamp." }),
+    },
+    winback30: {
+      title: t('dash.campaigns.sugg.winback30Title', { defaultValue: "Win back customers who haven't visited in 30 days" }),
+      name: t('dash.campaigns.sugg.winback30Name', { defaultValue: 'We miss you' }),
+      message: t('dash.campaigns.sugg.winback30Msg', { defaultValue: "We miss you! It's been a while. Pop in this week and collect your next stamp." }),
+    },
+    close: {
+      title: t('dash.campaigns.sugg.closeTitle', { defaultValue: 'Nudge customers who are 1 stamp from a reward' }),
+      name: t('dash.campaigns.sugg.closeName', { defaultValue: 'Almost there' }),
+      message: t('dash.campaigns.sugg.closeMsg', { defaultValue: "You're just 1 stamp away from your reward. See you soon!" }),
+    },
+    reward: {
+      title: t('dash.campaigns.sugg.rewardTitle', { defaultValue: 'Remind customers their reward is ready' }),
+      name: t('dash.campaigns.sugg.rewardName', { defaultValue: 'Your reward is ready' }),
+      message: t('dash.campaigns.sugg.rewardMsg', { defaultValue: 'Your reward is ready! Show your card at the counter to claim it.' }),
+    },
+  };
+
+  const hide = (k: SuggestionKey) => {
+    setHidden((prev) => new Set([...prev, k]));
+    try { localStorage.setItem(hideKey(campaignId, k), String(Date.now())); } catch { /* hidden for this visit only */ }
+  };
+
+  return (
+    <section className="mb-8">
+      <h2 className="flex items-center gap-2 text-base font-semibold text-[#37352F]">
+        <Sparkles className="w-4 h-4 text-amber-500" />{t('dash.campaigns.sugg.title', { defaultValue: 'Suggested for you' })}
+      </h2>
+      <p className="text-sm text-gray-500 mt-0.5 mb-3">
+        {t('dash.campaigns.sugg.sub', { defaultValue: 'Based on your customers right now. Check the message, then send it.' })}
+      </p>
+      <div className="grid gap-3 md:grid-cols-3">
+        {shown.map((k) => (
+          <div key={k} className="border notion-border rounded-xl p-4 flex flex-col min-w-0">
+            <div className="font-medium text-[#37352F] text-sm">{text[k].title}</div>
+            <div className="text-xs text-gray-500 mt-1">
+              {t('dash.campaigns.sugg.count', { count: counts[k] ?? 0, defaultValue: 'Can reach {{count}} right now' })}
+            </div>
+            <p className="text-sm text-gray-600 mt-2 break-words flex-1">“{text[k].message}”</p>
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
+              <button onClick={() => onUse({ name: text[k].name, message: text[k].message, segment: SUGGESTION_SEGMENT[k] })}
+                className="inline-flex items-center gap-1.5 bg-[#37352F] text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#2a2a28] transition">
+                <Send className="w-4 h-4" />{t('dash.campaigns.sugg.use', { defaultValue: 'Review & send' })}
+              </button>
+              <button onClick={() => hide(k)} className="px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-[#F7F7F5] transition">
+                {t('dash.campaigns.sugg.hide', { defaultValue: 'Not now' })}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -405,12 +546,14 @@ export function CampaignsPanel({ campaignId, businessName, locations, showIntro 
   const [busyId, setBusyId] = useState<string | null>(null);
   const [report, setReport] = useState<MarketingCampaign | null>(null);
   const [summaries, setSummaries] = useState<Record<string, DeliverySummary>>({});
+  const [returns, setReturns] = useState<Record<string, number>>({});
   const activeLocations = useMemo(() => locations.filter((l) => !l.archived), [locations]);
 
   const load = useCallback(() => {
     listMarketingCampaigns(campaignId).then(setItems).catch(() => setItems([]));
     // Delivery counts are extra: without them the list still shows "Sent to N".
     deliverySummaries(campaignId).then(setSummaries).catch(() => {});
+    campaignReturns(campaignId).then(setReturns).catch(() => {});
   }, [campaignId]);
   useEffect(() => { load(); }, [load]);
 
@@ -544,6 +687,11 @@ export function CampaignsPanel({ campaignId, businessName, locations, showIntro 
         </section>
       )}
 
+      {items !== null && (
+        <Suggestions campaignId={campaignId} items={items}
+          onUse={(p) => { setPreset({ ...p, message: p.message.slice(0, MAX_MESSAGE) }); setEditing('manual'); }} />
+      )}
+
       {items === null ? (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
       ) : items.length === 0 ? (
@@ -593,6 +741,9 @@ export function CampaignsPanel({ campaignId, businessName, locations, showIntro 
                             </span>
                             {sum.failed > 0 && (
                               <span className="text-red-600">{t('dash.campaigns.dl.sumFailed', { count: sum.failed, defaultValue: '{{count}} not delivered' })}</span>
+                            )}
+                            {(returns[c.id] ?? 0) > 0 && (
+                              <span className="text-[#37352F] font-medium">{t('dash.campaigns.cameBack', { count: returns[c.id], defaultValue: '{{count}} came back within 7 days' })}</span>
                             )}
                           </>
                         )}

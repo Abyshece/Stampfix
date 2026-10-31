@@ -96,7 +96,7 @@ export interface UserCard {
   customerCode?: string | null;
   /** Timestamp the customer ticked the consent checkbox at signup. */
   customerConsentAt?: string | null;
-  /** Did the customer opt in to marketing emails at signup? */
+  /** Did the customer opt in to marketing (offers by email and wallet-card notifications)? */
   marketingOptIn?: boolean;
   /** When the customer requested deletion. 24h grace before scrub. */
   deletionRequestedAt?: string | null;

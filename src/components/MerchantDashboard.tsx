@@ -21,6 +21,7 @@ import { playScanSound } from '../lib/scanSounds';
 import { ScanRejection } from './ScanRejection';
 import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
+import { ResultsPanel } from './ResultsPanel';
 import { StaffPanel } from './StaffPanel';
 
 import { InfoHint } from './InfoHint';
@@ -749,7 +750,7 @@ export function MerchantDashboard({
               ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
               ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
               ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Campaigns' })],
-              ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Payback' })],
+              ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Results' })],
               ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
               ['PREVIEW', Eye, t('dash.nav.previewCard', { defaultValue: 'Preview Card' })],
               ['SHARE', Share, t('dash.nav.sharePromote', { defaultValue: 'Share & Promote' })],
@@ -826,7 +827,7 @@ export function MerchantDashboard({
         <div className="hidden md:flex items-center text-sm text-gray-400 mb-6 gap-2">
           <span>{campaign.businessName}</span>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab === 'OFFERS' ? 'campaigns' : activeTab.toLowerCase() })}</span>
+          <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab === 'OFFERS' ? 'campaigns' : activeTab === 'VALUE' ? 'results' : activeTab.toLowerCase() })}</span>
         </div>
 
         {/* Account approval status banner */}
@@ -1644,7 +1645,11 @@ export function MerchantDashboard({
         )}
 
         {activeTab === 'VALUE' && (
-          <MerchantValueCalculator country={country ?? null} businessName={campaign.businessName} />
+          <div className="space-y-12">
+            <ResultsPanel campaignId={campaign.id} activities={activities} country={country ?? null}
+              onOpenCampaigns={() => handleTabChange('OFFERS')} />
+            <MerchantValueCalculator country={country ?? null} businessName={campaign.businessName} />
+          </div>
         )}
 
         {activeTab === 'SETTINGS' && (
@@ -2107,7 +2112,7 @@ export function MerchantDashboard({
               {([
                 ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Campaigns' })],
                 ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
-                ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Payback' })],
+                ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Results' })],
                 ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
                 ['SHARE', Share, t('dash.nav.share', { defaultValue: 'Share' })],
                 ['PREVIEW', Eye, t('dash.nav.preview', { defaultValue: 'Preview' })],

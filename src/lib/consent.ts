@@ -45,4 +45,6 @@ export const CONSENT_VERSIONS = {
   cardholder_terms: 'CardholderTerms_v1_2026-08',
   privacy: 'Privacy_v1_2026-08',
   dpa: 'DPA_v1_2026-08',
+  // v2: covers offers by email AND as wallet-card notifications (v1 named emails only).
+  marketing: 'MarketingConsent_v2_2026-11',
 } as const;

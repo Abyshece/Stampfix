@@ -9,7 +9,7 @@ import { supabase } from './supabase';
 export type CampaignKind = 'manual' | 'automation';
 export type CampaignStatus = 'scheduled' | 'sent' | 'active' | 'paused' | 'ended' | 'cancelled';
 
-export const SEGMENTS = ['all', 'new', 'active', 'inactive_30', 'inactive_60', 'close', 'reward_ready', 'loyal'] as const;
+export const SEGMENTS = ['all', 'new', 'active', 'inactive_7', 'inactive_14', 'inactive_30', 'inactive_60', 'close', 'reward_ready', 'loyal'] as const;
 export type Segment = (typeof SEGMENTS)[number];
 
 export type TriggerType = 'inactive' | 'stamps_reached' | 'stamps_away' | 'reward_ready' | 'rewards_redeemed' | 'joined_days';
@@ -25,7 +25,7 @@ export interface TriggerDef {
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
 export const TRIGGERS: TriggerDef[] = [
-  { type: 'inactive', unit: 'days', options: [14, 30, 60, 90], defaultValue: 30 },
+  { type: 'inactive', unit: 'days', options: [7, 14, 30, 60, 90], defaultValue: 30 },
   { type: 'stamps_reached', unit: 'count', options: range(1, 20), defaultValue: 5 },
   { type: 'stamps_away', unit: 'count', options: range(1, 5), defaultValue: 1 },
   { type: 'reward_ready', unit: null, options: [], defaultValue: null },
@@ -212,6 +212,29 @@ export async function listCampaignRecipients(marketingCampaignId: string): Promi
 }
 
 export interface DeliverySummary { sent: number; delivered: number; failed: number }
+
+/** Customers who came back (a stamp or a reward) within 7 days of receiving
+ *  each campaign, by campaign id. */
+export async function campaignReturns(campaignId: string): Promise<Record<string, number>> {
+  const { data, error } = await supabase.rpc('marketing_campaign_returns', { p_campaign_id: campaignId });
+  if (error) throw error;
+  const out: Record<string, number> = {};
+  for (const r of (data as Array<{ marketing_campaign_id: string; returned: number }> | null) ?? []) {
+    out[r.marketing_campaign_id] = r.returned;
+  }
+  return out;
+}
+
+/** When each recipient of a campaign came back within 7 days, by card id. */
+export async function recipientReturns(marketingCampaignId: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase.rpc('marketing_recipient_returns', { p_id: marketingCampaignId });
+  if (error) throw error;
+  const out: Record<string, string> = {};
+  for (const r of (data as Array<{ card_id: string; returned_at: string | null }> | null) ?? []) {
+    if (r.returned_at) out[r.card_id] = r.returned_at;
+  }
+  return out;
+}
 
 /** Delivery counts for every campaign of a loyalty program, by campaign id. */
 export async function deliverySummaries(campaignId: string): Promise<Record<string, DeliverySummary>> {

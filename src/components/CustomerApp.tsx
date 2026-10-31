@@ -163,7 +163,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
           // Consent audit trail (CASL/GDPR proof) + durable-medium welcome email.
           if (existing) {
             logConsent({ subjectType: 'cardholder', cardId: existing.id, document: 'cardholder_terms', version: CONSENT_VERSIONS.cardholder_terms, granted: consentGiven });
-            if (marketing) logConsent({ subjectType: 'cardholder', cardId: existing.id, document: 'marketing_consent', version: CONSENT_VERSIONS.cardholder_terms, granted: true });
+            if (marketing) logConsent({ subjectType: 'cardholder', cardId: existing.id, document: 'marketing_consent', version: CONSENT_VERSIONS.marketing, granted: true });
             // The function mails the signed-in customer about this card; it takes nothing else from us.
             void supabase.functions.invoke('send-welcome-email', { body: { campaignId: campaign.id } });
           }
@@ -417,7 +417,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
                   className="mt-0.5 w-4 h-4 accent-[#37352F] flex-shrink-0"
                 />
                 <span className="text-xs text-gray-500 leading-relaxed">
-                  {t('cust.app.marketing', { name: campaign.businessName, defaultValue: 'Send me marketing emails from {{name}} (optional).' })}
+                  {t('cust.app.marketing', { name: campaign.businessName, defaultValue: 'Send me offers and news from {{name}} by email and as notifications on my wallet card (optional).' })}
                 </span>
               </label>
             </div>
