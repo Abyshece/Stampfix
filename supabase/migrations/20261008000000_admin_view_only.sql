@@ -81,7 +81,5 @@ create policy "notif admin viewer read" on public.notifications for select using
 alter policy merchant_activity_read on public.merchant_activity
   using ((merchant_id = auth.uid()) or public.can_view_admin());
 
--- View-only admin access requested by the owner.
-insert into public.admin_viewers (email, note)
-values ('rawat.akshaye@gmail.com', 'View-only admin')
-on conflict (email) do nothing;
+-- Viewers are added per person (insert into public.admin_viewers); none are
+-- seeded here.
