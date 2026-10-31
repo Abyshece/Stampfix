@@ -14,7 +14,7 @@
 //
 // Events handled:
 //   checkout.session.completed     - subscription just started -> set pro
-//   customer.subscription.updated  - mid-period changes (e.g. paused) -> reconcile
+//   customer.subscription.updated  - status changes -> pro while active/trialing, else free
 //   customer.subscription.deleted  - cancellation finalised -> set free
 //   invoice.payment_failed         - recurring charge failed -> log only (Stripe retries)
 //
@@ -109,10 +109,11 @@ Deno.serve(async (req) => {
       }
 
       // -------------------------------------------------------------
-      // Subscription updated mid-period.
-      // Most updates are billing-period changes we don't care about,
-      // but we DO care about 'canceled' or 'past_due' or 'unpaid'
-      // states reverting them to free.
+      // Subscription status changed.
+      // 'past_due' / 'unpaid' / 'canceled' etc. revert the merchant to
+      // free; 'active' / 'trialing' put them back on pro. This used to
+      // only ever downgrade, so a renewal that failed once and then went
+      // through on Stripe's retry left a paying merchant on free.
       // -------------------------------------------------------------
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription;
@@ -121,17 +122,21 @@ Deno.serve(async (req) => {
           console.warn('[webhook] subscription.updated without merchant_id metadata');
           break;
         }
-        // If the subscription is in any non-active state, downgrade.
+        // Events can arrive late or out of order, so act on the
+        // subscription's current status, not the one in this event.
+        const current = await stripe.subscriptions.retrieve(sub.id).catch(() => sub);
         // 'trialing' is active for our purposes; 'active' obviously is.
-        const isActive = sub.status === 'active' || sub.status === 'trialing';
-        if (!isActive) {
-          const { error } = await admin
-            .from('merchants')
-            .update({ plan: 'free' })
-            .eq('id', merchantId);
-          if (error) console.error(`[webhook] failed to downgrade merchant ${merchantId}:`, error);
-          else console.log(`[webhook] merchant ${merchantId} downgraded (sub status=${sub.status})`);
-        }
+        const isActive = current.status === 'active' || current.status === 'trialing';
+        const { error } = await admin
+          .from('merchants')
+          .update(isActive
+            ? { plan: 'pro', stripe_subscription_id: current.id, stripe_subscription_status: current.status }
+            : { plan: 'free', stripe_subscription_status: current.status })
+          .eq('id', merchantId)
+          // Ignore an old subscription's events once the merchant has a newer one.
+          .or(`stripe_subscription_id.is.null,stripe_subscription_id.eq.${current.id}`);
+        if (error) console.error(`[webhook] failed to update merchant ${merchantId}:`, error);
+        else console.log(`[webhook] merchant ${merchantId} -> ${isActive ? 'pro' : 'free'} (sub status=${current.status})`);
         break;
       }
 
@@ -150,9 +155,12 @@ Deno.serve(async (req) => {
           .update({
             plan: 'free',
             stripe_subscription_id: null,
+            stripe_subscription_status: sub.status,
             // Keep stripe_customer_id so we reuse it if they re-upgrade.
           })
-          .eq('id', merchantId);
+          .eq('id', merchantId)
+          // An old subscription ending must not downgrade a newer one.
+          .or(`stripe_subscription_id.is.null,stripe_subscription_id.eq.${sub.id}`);
         if (error) console.error(`[webhook] failed to downgrade merchant ${merchantId}:`, error);
         else console.log(`[webhook] merchant ${merchantId} subscription deleted; downgraded`);
         break;
