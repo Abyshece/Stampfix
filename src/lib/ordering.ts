@@ -281,9 +281,14 @@ export function orderUrl(campaignId: string, table: string | null, locationId: s
   return `${origin}/order/${campaignId}${s ? `?${s}` : ''}`;
 }
 
+/** The currency symbol for a shop's country. */
+export function menuCurrency(country: string | null | undefined): string {
+  return country === 'DE' ? '€' : 'CA$';
+}
+
 /** Currency symbol and number formatting for a shop's country. */
 export function menuMoney(country: string | null | undefined, lang: string): (n: number) => string {
-  const symbol = country === 'DE' ? '€' : 'CA$';
+  const symbol = menuCurrency(country);
   const locale = lang.startsWith('de') ? 'de-DE' : 'en-CA';
   return (n: number) => symbol + n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
