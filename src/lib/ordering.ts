@@ -292,3 +292,111 @@ export function menuMoney(country: string | null | undefined, lang: string): (n:
   const locale = lang.startsWith('de') ? 'de-DE' : 'en-CA';
   return (n: number) => symbol + n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+// ---- Menu uploads (shop -> Stampfix) ------------------------------------------------
+// Shops send photos or a PDF of their menu; Stampfix adds the items for them.
+// Files go to the private menu-uploads bucket, in a folder per shop.
+
+export type MenuUploadStatus = 'new' | 'in_progress' | 'done' | 'needs_info';
+export interface MenuUploadFile { path: string; name: string; type: string | null; size: number | null }
+export interface MenuUpload {
+  id: string;
+  status: MenuUploadStatus;
+  note: string | null;
+  adminNote: string | null;
+  createdAt: string;
+  files: MenuUploadFile[];
+}
+
+export const MENU_UPLOAD_MAX_FILES = 15;
+export const MENU_UPLOAD_MAX_BYTES = 15 * 1024 * 1024;
+const MENU_UPLOAD_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+  heic: 'image/heic', heif: 'image/heif', pdf: 'application/pdf',
+};
+
+/** The file's type, from the browser or (when it doesn't know, e.g. HEIC on Windows) the extension. Null when not allowed. */
+export function menuFileType(file: { name: string; type: string }): string | null {
+  const allowed = Object.values(MENU_UPLOAD_TYPES);
+  if (file.type && allowed.includes(file.type)) return file.type;
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+  return MENU_UPLOAD_TYPES[ext] ?? null;
+}
+
+/** Browsers can show these inline; HEIC and PDF open in a new tab instead. */
+export function isPreviewableImage(type: string | null | undefined): boolean {
+  return type === 'image/jpeg' || type === 'image/png' || type === 'image/webp';
+}
+
+export async function listMenuUploads(campaignId: string): Promise<MenuUpload[]> {
+  const { data, error } = await supabase
+    .from('menu_uploads')
+    .select('id, status, note, admin_note, created_at, files')
+    .eq('campaign_id', campaignId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return ((data as Array<{ id: string; status: MenuUploadStatus; note: string | null; admin_note: string | null; created_at: string; files: MenuUploadFile[] | null }> | null) ?? [])
+    .map((r) => ({ id: r.id, status: r.status, note: r.note, adminNote: r.admin_note, createdAt: r.created_at, files: r.files ?? [] }));
+}
+
+export type MenuUploadError = 'too_many_uploads' | 'invalid_files' | 'unknown';
+
+/** Uploads the files into the shop's folder, then sends them to Stampfix in one go. */
+export async function uploadMenu(campaignId: string, files: File[], note: string, onProgress?: (done: number, total: number) => void): Promise<void> {
+  const batch = (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : String(Date.now());
+  const sent: Array<{ path: string; name: string }> = [];
+  for (const [i, f] of files.entries()) {
+    const safe = f.name.normalize('NFKD').replace(/[^\w.-]+/g, '_').replace(/^_+/, '').slice(-80) || `file-${i + 1}`;
+    const path = `${campaignId}/${batch}/${i + 1}-${safe}`;
+    const { error } = await supabase.storage.from('menu-uploads').upload(path, f, { contentType: menuFileType(f) ?? undefined, upsert: false });
+    if (error) throw Object.assign(new Error('unknown'), { code: 'unknown' as MenuUploadError });
+    sent.push({ path, name: f.name.slice(0, 120) });
+    onProgress?.(i + 1, files.length);
+  }
+  const { error } = await supabase.rpc('submit_menu_upload', { p_campaign: campaignId, p_files: sent, p_note: note.trim() || null });
+  if (error) {
+    const code: MenuUploadError = error.message?.includes('too_many_uploads') ? 'too_many_uploads' : error.message?.includes('invalid_files') ? 'invalid_files' : 'unknown';
+    throw Object.assign(new Error(code), { code });
+  }
+}
+
+/** Short-lived links to view uploaded menu files (the bucket is private). */
+export async function menuFileUrls(paths: string[]): Promise<Record<string, string>> {
+  if (paths.length === 0) return {};
+  const { data, error } = await supabase.storage.from('menu-uploads').createSignedUrls(paths, 60 * 60);
+  if (error) throw error;
+  const out: Record<string, string> = {};
+  for (const d of data ?? []) if (d.path && d.signedUrl) out[d.path] = d.signedUrl;
+  return out;
+}
+
+// ---- Admin -----------------------------------------------------------------------
+
+export interface AdminMenuUpload extends MenuUpload {
+  campaignId: string;
+  businessName: string;
+  country: string | null;
+  plan: string;
+  ownerEmail: string | null;
+  reviewedAt: string | null;
+  menuItems: number;
+}
+
+export async function adminListMenuUploads(): Promise<AdminMenuUpload[]> {
+  const { data, error } = await supabase.rpc('admin_menu_uploads', { p_status: null });
+  if (error) throw error;
+  return ((data as Array<Record<string, unknown>> | null) ?? []).map((r) => ({
+    id: r.id as string, status: r.status as MenuUploadStatus, note: (r.note as string | null) ?? null,
+    adminNote: (r.admin_note as string | null) ?? null, createdAt: r.created_at as string,
+    files: (r.files as MenuUploadFile[] | null) ?? [], campaignId: r.campaign_id as string,
+    businessName: (r.business_name as string) ?? '', country: (r.country as string | null) ?? null,
+    plan: (r.plan as string) ?? 'free', ownerEmail: (r.owner_email as string | null) ?? null,
+    reviewedAt: (r.reviewed_at as string | null) ?? null, menuItems: Number(r.menu_items ?? 0),
+  }));
+}
+
+export async function adminSetMenuUpload(id: string, status: MenuUploadStatus, adminNote?: string): Promise<void> {
+  const { error } = await supabase.rpc('admin_set_menu_upload', { p_id: id, p_status: status, p_admin_note: adminNote ?? null });
+  if (error) throw error;
+}

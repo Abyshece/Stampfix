@@ -4,14 +4,15 @@ import QRCode from 'react-qr-code';
 import {
   Puzzle, UtensilsCrossed, Check, Loader2, Plus, Pencil, Trash2, ArrowUp, ArrowDown, X, Printer,
   ExternalLink, ClipboardList, ChevronLeft, ChevronRight, MoreHorizontal, QrCode, BookOpen, FolderPlus,
-  type LucideIcon,
+  Upload, Clock, FileText, AlertCircle, type LucideIcon,
 } from 'lucide-react';
 import type { Location } from '../types';
 import { useToast } from './ToastProvider';
 import {
   getOrderingSettings, saveOrderingSettings, listMenu, createCategory, updateCategory, deleteCategory,
   createItem, updateItem, deleteItem, orderUrl, menuMoney, menuCurrency, isTableNumber, MAX_TABLES,
-  type OrderingSettings, type MenuCategory, type MenuItem, type ItemInput,
+  listMenuUploads, uploadMenu, menuFileUrls, menuFileType, isPreviewableImage, MENU_UPLOAD_MAX_FILES, MENU_UPLOAD_MAX_BYTES,
+  type OrderingSettings, type MenuCategory, type MenuItem, type ItemInput, type MenuUpload, type MenuUploadError,
 } from '../lib/ordering';
 
 const inputCls = 'w-full border notion-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#37352F]/10';
@@ -40,13 +41,13 @@ export function AddonsPanel({ campaignId, businessName, country, locations, onOr
   const { t, i18n } = useTranslation();
   const money = useMemo(() => menuMoney(country, i18n.language), [country, i18n.language]);
   const [open, setOpen] = useState(false);
-  const [status, setStatus] = useState<{ enabled: boolean; items: number; tables: number } | null>(null);
+  const [status, setStatus] = useState<{ enabled: boolean; items: number; tables: number; uploads: number } | null>(null);
 
   useEffect(() => {
     if (open) return;
     let live = true;
-    Promise.all([getOrderingSettings(campaignId), listMenu(campaignId)])
-      .then(([s, m]) => { if (live) setStatus({ enabled: s.enabled, items: m.items.length, tables: s.tables.length }); })
+    Promise.all([getOrderingSettings(campaignId), listMenu(campaignId), listMenuUploads(campaignId).catch(() => [])])
+      .then(([s, m, u]) => { if (live) setStatus({ enabled: s.enabled, items: m.items.length, tables: s.tables.length, uploads: u.length }); })
       .catch(() => { /* the card still opens; the add-on shows its own error */ });
     return () => { live = false; };
   }, [campaignId, open]);
@@ -58,7 +59,7 @@ export function AddonsPanel({ campaignId, businessName, country, locations, onOr
     );
   }
 
-  const started = !!status && (status.enabled || status.items > 0 || status.tables > 0);
+  const started = !!status && (status.enabled || status.items > 0 || status.tables > 0 || status.uploads > 0);
   return (
     <div className="max-w-5xl space-y-6">
       <header>
@@ -162,15 +163,19 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<'menu' | 'tables'>('menu');
   const [itemDialog, setItemDialog] = useState<{ item?: MenuItem; categoryId: string | null } | null>(null);
+  const [uploads, setUploads] = useState<MenuUpload[]>([]);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const reloadMenu = useCallback(() => listMenu(campaignId).then(setMenu), [campaignId]);
+  const reloadUploads = useCallback(() => listMenuUploads(campaignId).then(setUploads).catch(() => { /* the page works without it */ }), [campaignId]);
   useEffect(() => {
     let live = true;
     Promise.all([getOrderingSettings(campaignId), listMenu(campaignId)])
       .then(([s, m]) => { if (live) { setSettings(s); setMenu(m); } })
       .catch(() => { if (live) setLoadError(true); });
+    void reloadUploads();
     return () => { live = false; };
-  }, [campaignId]);
+  }, [campaignId, reloadUploads]);
 
   const fail = () => toast.error(t('dash.addons.saveErr', { defaultValue: "Couldn't save. Please try again." }));
   /** Runs a menu change, then reloads the menu. False when it failed. */
@@ -217,13 +222,23 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
   };
   const previewUrl = orderUrl(campaignId, settings.tables[0] ?? null, active.length > 1 ? active[0].id : null);
 
-  const steps: Array<{ done: boolean; title: string; hint: string; cta: string; action: () => void; disabled?: boolean }> = [
+  // The newest upload decides what step 1 says while the menu is still empty.
+  const latest = uploads[0];
+  const waiting = !!latest && (latest.status === 'new' || latest.status === 'in_progress');
+  const needsInfo = latest?.status === 'needs_info';
+  const steps: Array<{ done: boolean; title: string; hint: string; cta: string; action: () => void; disabled?: boolean; waiting?: boolean; warn?: boolean }> = [
     {
       done: availableCount > 0,
-      title: t('dash.addons.step1', { defaultValue: 'Add your menu' }),
-      hint: t('dash.addons.step1Hint', { defaultValue: 'Add the drinks and food guests can order.' }),
-      cta: t('dash.addons.step1Btn', { defaultValue: 'Add items' }),
-      action: () => { setTab('menu'); setItemDialog({ categoryId: menu.categories[0]?.id ?? null }); },
+      title: t('dash.addons.step1', { defaultValue: 'Upload your menu' }),
+      hint: waiting
+        ? t('dash.addons.step1Waiting', { defaultValue: 'Got it! We’re adding your items. They’ll show up here.' })
+        : needsInfo
+          ? (latest.adminNote || t('dash.addons.needsInfoTitle', { defaultValue: 'We need a bit more from you' }))
+          : t('dash.addons.step1Hint', { defaultValue: 'Send photos or a PDF of your menu. We’ll add the items for you.' }),
+      cta: needsInfo ? t('dash.addons.uploadAgain', { defaultValue: 'Upload again' }) : t('dash.addons.step1Btn', { defaultValue: 'Upload menu' }),
+      action: () => { setTab('menu'); setUploadOpen(true); },
+      waiting,
+      warn: needsInfo,
     },
     {
       done: settings.tables.length > 0,
@@ -289,9 +304,15 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
                 <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-3">
                   <div className="min-w-0 flex-1 pt-1 sm:pt-0">
                     <div className={`text-sm font-medium ${s.done ? 'text-gray-400 line-through' : 'text-[#37352F]'}`}>{s.title}</div>
-                    {!s.done && <div className="text-xs text-gray-500 mt-0.5">{s.hint}</div>}
+                    {!s.done && <div className={`text-xs mt-0.5 ${s.warn ? 'text-amber-700' : 'text-gray-500'}`}>{s.hint}</div>}
                   </div>
-                  {!s.done && <button className={`${btnLight} shrink-0 mt-2 sm:mt-0`} disabled={s.disabled} onClick={s.action}>{s.cta}</button>}
+                  {!s.done && (s.waiting ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-full bg-blue-50 text-blue-700 shrink-0 mt-2 sm:mt-0">
+                      <Clock className="w-3.5 h-3.5" />{t('dash.addons.received', { defaultValue: 'Received' })}
+                    </span>
+                  ) : (
+                    <button className={`${btnLight} shrink-0 mt-2 sm:mt-0`} disabled={s.disabled} onClick={s.action}>{s.cta}</button>
+                  ))}
                 </div>
               </li>
             ))}
@@ -328,12 +349,21 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
 
       {tab === 'menu' ? (
         <MenuTab menu={menu} settings={settings} money={money} busy={busy} campaignId={campaignId} run={run}
-          saveSettings={saveSettings}
+          saveSettings={saveSettings} latestUpload={latest} onUpload={() => setUploadOpen(true)}
           onAddItem={(categoryId) => setItemDialog({ categoryId })}
           onEditItem={(item) => setItemDialog({ item, categoryId: item.categoryId })} />
       ) : (
         <TablesTab campaignId={campaignId} businessName={businessName} locations={active} settings={settings}
           busy={busy} onSave={saveSettings} />
+      )}
+
+      {uploadOpen && (
+        <UploadMenuDialog campaignId={campaignId} onClose={() => setUploadOpen(false)}
+          onSent={() => {
+            setUploadOpen(false);
+            toast.success(t('dash.addons.upSent', { defaultValue: 'Menu sent. We’ll add your items for you.' }));
+            void reloadUploads();
+          }} />
       )}
 
       {itemDialog && (
@@ -356,9 +386,10 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
 
 // ---- Menu tab ------------------------------------------------------------------------
 
-function MenuTab({ menu, settings, money, busy, campaignId, run, saveSettings, onAddItem, onEditItem }: {
+function MenuTab({ menu, settings, money, busy, campaignId, run, saveSettings, latestUpload, onUpload, onAddItem, onEditItem }: {
   menu: Menu; settings: OrderingSettings; money: (n: number) => string; busy: boolean; campaignId: string;
   run: (fn: () => Promise<unknown>) => Promise<boolean>; saveSettings: (next: OrderingSettings) => Promise<boolean>;
+  latestUpload: MenuUpload | undefined; onUpload: () => void;
   onAddItem: (categoryId: string | null) => void; onEditItem: (item: MenuItem) => void;
 }) {
   const { t } = useTranslation();
@@ -382,24 +413,34 @@ function MenuTab({ menu, settings, money, busy, campaignId, run, saveSettings, o
   };
 
   const empty = menu.items.length === 0 && menu.categories.length === 0;
+  // An upload we're still working on (or asked more for) is shown above the menu.
+  const openUpload = latestUpload && latestUpload.status !== 'done' ? latestUpload : undefined;
 
   return (
     <div className="space-y-4">
+      {openUpload && <UploadStatusCard upload={openUpload} onUploadAgain={onUpload} />}
       {empty ? (
-        <div className="rounded-2xl border-2 border-dashed border-[#E9E9E7] py-12 px-6 text-center">
-          <BookOpen className="w-8 h-8 mx-auto text-gray-300 mb-3" />
-          <h3 className="font-semibold text-[#37352F]">{t('dash.addons.emptyMenu', { defaultValue: 'Your menu is empty' })}</h3>
-          <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">{t('dash.addons.emptyMenuHint', { defaultValue: 'Add what guests can order, like a cappuccino or a slice of cake.' })}</p>
-          <div className="flex justify-center gap-2 mt-5 flex-wrap">
-            <button className={btnDark} onClick={() => onAddItem(null)}><Plus className="w-4 h-4" />{t('dash.addons.addFirst', { defaultValue: 'Add your first item' })}</button>
-            <button className={btnLight} onClick={() => setCatDialog({})}><FolderPlus className="w-4 h-4" />{t('dash.addons.addCat', { defaultValue: 'Add category' })}</button>
+        openUpload ? (
+          <p className="text-sm text-gray-500 text-center">
+            <button className="underline hover:text-[#37352F]" onClick={() => onAddItem(null)}>{t('dash.addons.orAddYourself', { defaultValue: 'Or add items yourself' })}</button>
+          </p>
+        ) : (
+          <div className="rounded-2xl border-2 border-dashed border-[#E9E9E7] py-12 px-6 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-[#F7F7F5] flex items-center justify-center mx-auto mb-3"><Upload className="w-6 h-6 text-[#37352F]" /></div>
+            <h3 className="font-semibold text-[#37352F]">{t('dash.addons.emptyUploadTitle', { defaultValue: 'Upload your menu' })}</h3>
+            <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">{t('dash.addons.emptyUploadHint', { defaultValue: 'Send us photos or a PDF of your menu and we’ll add every item and price for you. No typing needed.' })}</p>
+            <div className="flex flex-col items-center gap-3 mt-5">
+              <button className={`${btnDark} px-5 py-2.5`} onClick={onUpload}><Upload className="w-4 h-4" />{t('dash.addons.step1Btn', { defaultValue: 'Upload menu' })}</button>
+              <button className="text-sm text-gray-500 underline hover:text-[#37352F]" onClick={() => onAddItem(null)}>{t('dash.addons.orAddYourself', { defaultValue: 'Or add items yourself' })}</button>
+            </div>
           </div>
-        </div>
+        )
       ) : (
         <>
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="text-sm text-gray-500 hidden sm:block">{t('dash.addons.menuTip', { defaultValue: 'Click an item to edit it. Switch it off when it’s sold out.' })}</p>
-            <div className="flex flex-wrap gap-2 sm:ml-auto w-full sm:w-auto">
+            <p className="text-sm text-gray-500 hidden lg:block">{t('dash.addons.menuTip', { defaultValue: 'Click an item to edit it. Switch it off when it’s sold out.' })}</p>
+            <div className="flex flex-wrap gap-2 lg:ml-auto w-full lg:w-auto">
+              <button className={`${btnLight} flex-1 sm:flex-none`} onClick={onUpload}><Upload className="w-4 h-4" />{t('dash.addons.step1Btn', { defaultValue: 'Upload menu' })}</button>
               <button className={`${btnLight} flex-1 sm:flex-none`} onClick={() => setCatDialog({})}><FolderPlus className="w-4 h-4" />{t('dash.addons.addCat', { defaultValue: 'Add category' })}</button>
               <button className={`${btnDark} flex-1 sm:flex-none`} onClick={() => onAddItem(menu.categories[0]?.id ?? null)}><Plus className="w-4 h-4" />{t('dash.addons.addItem', { defaultValue: 'Add item' })}</button>
             </div>
@@ -502,6 +543,164 @@ function MenuTab({ menu, settings, money, busy, campaignId, run, saveSettings, o
           onConfirm={() => void confirm.action().then(() => setConfirm(null))} />
       )}
     </div>
+  );
+}
+
+// ---- Menu upload ---------------------------------------------------------------------
+
+/** What happened to the shop's newest upload: we're on it, or we need better photos. */
+function UploadStatusCard({ upload, onUploadAgain }: { upload: MenuUpload; onUploadAgain: () => void }) {
+  const { t, i18n } = useTranslation();
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    menuFileUrls(upload.files.filter((f) => isPreviewableImage(f.type)).map((f) => f.path))
+      .then((u) => { if (live) setUrls(u); })
+      .catch(() => { /* thumbnails are a nice-to-have */ });
+    return () => { live = false; };
+  }, [upload]);
+  const when = new Date(upload.createdAt).toLocaleString(i18n.language?.startsWith('de') ? 'de-DE' : 'en-CA',
+    { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const needsInfo = upload.status === 'needs_info';
+
+  return (
+    <section className={`rounded-xl border p-4 sm:p-5 ${needsInfo ? 'border-amber-200 bg-amber-50' : 'border-blue-100 bg-blue-50/60'}`}>
+      <div className="flex items-start gap-3">
+        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${needsInfo ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+          {needsInfo ? <AlertCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className={`font-semibold ${needsInfo ? 'text-amber-900' : 'text-blue-900'}`}>
+            {needsInfo
+              ? t('dash.addons.needsInfoTitle', { defaultValue: 'We need a bit more from you' })
+              : t('dash.addons.receivedTitle', { defaultValue: 'We’re adding your menu' })}
+          </h3>
+          <p className={`text-sm mt-0.5 ${needsInfo ? 'text-amber-800' : 'text-blue-800/90'}`}>
+            {needsInfo
+              ? (upload.adminNote || t('dash.addons.needsInfoBody', { defaultValue: 'Please upload your menu again with clear photos of every page.' }))
+              : t('dash.addons.receivedBody', { defaultValue: 'We’ll add every item and price for you, and they’ll show up here. There’s nothing else you need to do.' })}
+          </p>
+          <p className="text-xs text-gray-500 mt-1.5">{t('dash.addons.receivedMeta', { count: upload.files.length, date: when, defaultValue: 'Files: {{count}} · {{date}}' })}</p>
+          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
+            {upload.files.map((f) => (
+              <div key={f.path} title={f.name} className="w-14 h-14 rounded-lg border border-white bg-white shadow-sm overflow-hidden shrink-0 flex items-center justify-center">
+                {urls[f.path]
+                  ? <img src={urls[f.path]} alt={f.name} className="w-full h-full object-cover" />
+                  : <FileText className="w-5 h-5 text-gray-400" />}
+              </div>
+            ))}
+          </div>
+          {needsInfo && (
+            <button className={`${btnDark} mt-4`} onClick={onUploadAgain}><Upload className="w-4 h-4" />{t('dash.addons.uploadAgain', { defaultValue: 'Upload again' })}</button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function UploadMenuDialog({ campaignId, onClose, onSent }: { campaignId: string; onClose: () => void; onSent: () => void }) {
+  const { t } = useTranslation();
+  const [files, setFiles] = useState<File[]>([]);
+  const [note, setNote] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const sending = progress !== null;
+
+  // Small previews of the chosen photos (PDF and HEIC show a file icon).
+  const previews = useMemo(() => files.map((f) => (isPreviewableImage(menuFileType(f)) ? URL.createObjectURL(f) : null)), [files]);
+  useEffect(() => () => previews.forEach((u) => { if (u) URL.revokeObjectURL(u); }), [previews]);
+
+  const add = (list: FileList | File[] | null) => {
+    if (!list) return;
+    const next = [...files];
+    let badType = false; let tooBig = false; let tooMany = false;
+    for (const f of Array.from(list)) {
+      if (!menuFileType(f)) { badType = true; continue; }
+      if (f.size > MENU_UPLOAD_MAX_BYTES) { tooBig = true; continue; }
+      if (next.some((x) => x.name === f.name && x.size === f.size)) continue;
+      if (next.length >= MENU_UPLOAD_MAX_FILES) { tooMany = true; continue; }
+      next.push(f);
+    }
+    setFiles(next);
+    setError(badType ? t('dash.addons.upBadType', { defaultValue: 'Only photos (JPG, PNG, HEIC) and PDF files work.' })
+      : tooBig ? t('dash.addons.upTooBig', { defaultValue: 'Each file can be up to 15 MB.' })
+      : tooMany ? t('dash.addons.upTooMany', { defaultValue: 'You can send up to 15 files at once.' })
+      : null);
+  };
+
+  const send = async () => {
+    if (files.length === 0 || sending) return;
+    setError(null);
+    setProgress({ done: 0, total: files.length });
+    try {
+      await uploadMenu(campaignId, files, note, (done, total) => setProgress({ done, total }));
+      onSent();
+    } catch (e) {
+      const code = (e as { code?: MenuUploadError }).code ?? 'unknown';
+      setError(code === 'too_many_uploads'
+        ? t('dash.addons.upErrTooMany', { defaultValue: 'You’ve sent a lot of uploads today. Please try again tomorrow.' })
+        : t('dash.addons.upErr', { defaultValue: 'Couldn’t send your menu. Please check your connection and try again.' }));
+      setProgress(null);
+    }
+  };
+
+  return (
+    <Dialog title={t('dash.addons.upTitle', { defaultValue: 'Upload your menu' })} onClose={() => { if (!sending) onClose(); }}>
+      <div className="px-5 space-y-4">
+        <p className="text-sm text-gray-600">{t('dash.addons.upIntro', { defaultValue: 'Take a photo of each page of your menu, or upload a PDF. We’ll add every item and price for you.' })}</p>
+        <label
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => { e.preventDefault(); setDragging(false); if (!sending) add(e.dataTransfer.files); }}
+          className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-7 text-center cursor-pointer transition ${
+            dragging ? 'border-[#37352F] bg-[#F7F7F5]' : 'border-[#E0E0DD] hover:bg-[#FBFBFA]'
+          } ${sending ? 'pointer-events-none opacity-60' : ''}`}>
+          <Upload className="w-6 h-6 text-[#37352F]" />
+          <span className="text-sm font-medium text-[#37352F]">{t('dash.addons.upPick', { defaultValue: 'Choose photos or a PDF' })}</span>
+          <span className="text-xs text-gray-500">{t('dash.addons.upLimits', { defaultValue: 'JPG, PNG, HEIC or PDF · up to 15 files, 15 MB each' })}</span>
+          <input type="file" multiple accept="image/*,.heic,.heif,application/pdf" className="sr-only" disabled={sending}
+            onChange={(e) => { add(e.target.files); e.target.value = ''; }} />
+        </label>
+
+        {files.length > 0 && (
+          <ul className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {files.map((f, i) => (
+              <li key={`${f.name}-${f.size}`} className="relative rounded-lg border notion-border bg-white overflow-hidden">
+                <div className="aspect-square bg-[#F7F7F5] flex items-center justify-center">
+                  {previews[i] ? <img src={previews[i]!} alt="" className="w-full h-full object-cover" /> : <FileText className="w-6 h-6 text-gray-400" />}
+                </div>
+                <div className="px-1.5 py-1 text-[11px] text-gray-600 truncate">{f.name}</div>
+                {!sending && (
+                  <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                    aria-label={t('dash.addons.removeFile', { defaultValue: 'Remove file' })}
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/70">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div>
+          <label htmlFor="upload-note" className="block text-xs font-medium text-gray-500 mb-1">{t('dash.addons.upNoteLabel', { defaultValue: 'Anything we should know? (optional)' })}</label>
+          <textarea id="upload-note" value={note} maxLength={500} rows={2} disabled={sending} onChange={(e) => setNote(e.target.value)}
+            className={`${inputCls} resize-none`} placeholder={t('dash.addons.upNotePh', { defaultValue: 'e.g. The lunch menu is only until 3 pm' })} />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+      </div>
+      <div className="flex items-center justify-end gap-2 px-5 py-4 mt-5 border-t notion-border">
+        <button type="button" className={btnLight} onClick={onClose} disabled={sending}>{t('dash.addons.cancel', { defaultValue: 'Cancel' })}</button>
+        <button type="button" className={btnDark} disabled={files.length === 0 || sending} onClick={() => void send()}>
+          {sending && <Loader2 className="w-4 h-4 animate-spin" />}
+          {sending
+            ? t('dash.addons.upSending', { done: progress!.done, total: progress!.total, defaultValue: 'Uploading {{done}} of {{total}}…' })
+            : t('dash.addons.upSend', { defaultValue: 'Send menu' })}
+        </button>
+      </div>
+    </Dialog>
   );
 }
 

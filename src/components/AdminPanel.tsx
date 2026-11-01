@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
   Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell, Pencil, KeyRound,
-  Download, Eye, Megaphone,
+  Download, Eye, Megaphone, Utensils,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
@@ -27,10 +27,12 @@ import { DeletedMerchantsList } from './DeletedMerchantsList';
 import { toCsv, downloadCsv } from '../lib/csv';
 import { OffersTab } from './OffersTab';
 import { MerchantBannersTab } from './MerchantBannersTab';
+import { MenuUploadsAdmin } from './MenuUploadsAdmin';
+import { adminListMenuUploads } from '../lib/ordering';
 import { setMerchantApproval, getMerchantApproval, setRejectionReason, getMerchantRejectionReason, getMerchantActivity, type MerchantActivityRow } from '../lib/db';
 import { fetchExtendedKPIs, type ExtendedKPIs } from '../lib/db';
 
-type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'OFFERS' | 'MERCHANT_BANNERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
+type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'MENUS' | 'OFFERS' | 'MERCHANT_BANNERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
 
 export function AdminPanel({ onExit }: { onExit: () => void }) {
   const { user, loading: authLoading } = useAuth();
@@ -40,12 +42,18 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
   // so hook order is stable on every render — React error #310 fires
   // if a hook moves from "called" to "not called" across renders.
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Menus uploaded by shops that still need adding (badge in the sidebar).
+  const [newMenus, setNewMenus] = useState(0);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { setIsAdmin(false); return; }
     checkIsAdmin().then(setIsAdmin);
   }, [user, authLoading]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    adminListMenuUploads().then((l) => setNewMenus(l.filter((u) => u.status === 'new').length)).catch(() => { /* badge only */ });
+  }, [isAdmin]);
 
   if (authLoading || isAdmin === null) {
     return <FullPageLoader />;
@@ -124,6 +132,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
             ['B2B_REPORTS', MessageSquare, 'B2B Reports'],
             ['B2B2C_REPORTS', MessageSquare, 'B2B2C Reports'],
             ['CONTACT', Mail, 'Contact Inquiries'],
+            ['MENUS', Utensils, 'Menus'],
             ['OFFERS', Tag, 'Offers'],
             ['MERCHANT_BANNERS', Megaphone, 'Merchant Banners'],
             ['LOGS', Activity, 'Logs'],
@@ -139,6 +148,9 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
               }`}
             >
               <Icon className="w-4 h-4" /> {label}
+              {id === 'MENUS' && newMenus > 0 && (
+                <span className="ml-auto text-[10px] font-bold bg-blue-600 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">{newMenus}</span>
+              )}
             </button>
           ))}
         </nav>
@@ -174,6 +186,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         {tab === 'B2B_REPORTS' && <ReportsTab source="merchant" title="B2B Reports" subtitle="Tickets submitted by merchants." />}
         {tab === 'B2B2C_REPORTS' && <ReportsTab source="customer" title="B2B2C Reports" subtitle="Tickets submitted by end-customers." />}
         {tab === 'CONTACT' && <ContactTab />}
+        {tab === 'MENUS' && <MenuUploadsAdmin readOnly={readOnly} onNewCount={setNewMenus} />}
         {tab === 'LOGS' && <LogsTab readOnly={readOnly} />}
         {tab === 'FUNNEL' && <FunnelTab />}
         {tab === 'OFFERS' && <OffersTab />}
