@@ -41,7 +41,8 @@ export async function logConsent(opts: {
 
 /** Current document versions — bump these when the wording changes. */
 export const CONSENT_VERSIONS = {
-  terms: 'ToS_v2.1_2026-08',
+  // v2.2: the free plan covers 5 Cardholders (was 10).
+  terms: 'ToS_v2.2_2026-11',
   cardholder_terms: 'CardholderTerms_v1_2026-08',
   privacy: 'Privacy_v1_2026-08',
   dpa: 'DPA_v1_2026-08',

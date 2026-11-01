@@ -9,11 +9,11 @@ export type Plan = 'free' | 'pro';
 /** Hard-coded limit for the free tier. Centralised here so UI and any
  *  client-side guards agree. The database trigger holds the authoritative
  *  copy; if you change one, change the other. */
-export const FREE_TIER_CARD_LIMIT = 10;
+export const FREE_TIER_CARD_LIMIT = 5;
 
 /** Threshold (80% of FREE_TIER_CARD_LIMIT) at which we start showing the
  *  upgrade banner. Configured separately from the limit itself. */
-export const FREE_TIER_WARNING_THRESHOLD = 8;
+export const FREE_TIER_WARNING_THRESHOLD = 4;
 
 export interface MerchantBilling {
   plan: Plan;

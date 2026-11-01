@@ -1,5 +1,5 @@
 import { Sparkles, AlertTriangle, ArrowRight, X } from 'lucide-react';
-import { FREE_TIER_CARD_LIMIT } from '../types';
+import { FREE_TIER_CARD_LIMIT, FREE_TIER_WARNING_THRESHOLD } from '../types';
 
 import { proPrice } from '../lib/pricing';
 import { useTranslation } from 'react-i18next';
@@ -19,9 +19,9 @@ interface UpgradeBannerProps {
 /**
  * Smart upgrade banner. Three states:
  *
- *  - Hidden:  < 80% of limit (8 customers). Nothing shown.
- *  - Warning: 8 or 9 customers. Friendly nudge, dismissible.
- *  - Blocked: 10+ customers. Hard block, can't be dismissed, explains
+ *  - Hidden:  under FREE_TIER_WARNING_THRESHOLD (80% of the limit). Nothing shown.
+ *  - Warning: from the threshold up to the limit. Friendly nudge, dismissible.
+ *  - Blocked: at FREE_TIER_CARD_LIMIT or more. Hard block, can't be dismissed, explains
  *             that NEW signups are blocked but existing customers still
  *             get stamps as normal.
  *
@@ -30,7 +30,7 @@ interface UpgradeBannerProps {
  */
 export function UpgradeBanner({ customerCount, country, onUpgrade, onDismiss }: UpgradeBannerProps) {
   const { t } = useTranslation();
-  if (customerCount < 8) return null;
+  if (customerCount < FREE_TIER_WARNING_THRESHOLD) return null;
   const atLimit = customerCount >= FREE_TIER_CARD_LIMIT;
 
   const price = proPrice(country).perMonth;

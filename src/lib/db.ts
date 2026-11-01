@@ -411,7 +411,7 @@ export async function createCard(input: {
     .single();
   if (error) {
     // The DB trigger raises `free_tier_limit_reached` when a free-plan
-    // merchant has hit 10 customers. Surface a typed error so callers
+    // merchant has hit the free limit (FREE_TIER_CARD_LIMIT customers). Surface a typed error so callers
     // (customer signup flow, merchant "add customer" form) can render
     // the right message without parsing strings.
     if (error.message?.includes('free_tier_limit_reached')) {

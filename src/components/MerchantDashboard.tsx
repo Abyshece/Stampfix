@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'react-qr-code';
 import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, MerchantBilling } from '../types';
+import { FREE_TIER_CARD_LIMIT, FREE_TIER_WARNING_THRESHOLD } from '../types';
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
@@ -1014,16 +1015,17 @@ export function MerchantDashboard({
             <div className="flex-1 min-h-0 flex flex-col max-w-2xl w-full mx-auto md:mx-0">
               {/* Upgrade banner — sits above the scanner so it's seen the
                *  moment the merchant lands on Dashboard. Free plan only;
-               *  hidden under 8/10 customers; warning at 8-9 (dismissible
-               *  per session); hard block at 10 (not dismissible). */}
-              {showBanner && cards.length >= 8 &&
-               !(cards.length < 10 && warningDismissed) && (
+               *  hidden under the warning threshold; a warning from there up
+               *  to the limit (dismissible per session); hard block at the
+               *  limit (not dismissible). */}
+              {showBanner && cards.length >= FREE_TIER_WARNING_THRESHOLD &&
+               !(cards.length < FREE_TIER_CARD_LIMIT && warningDismissed) && (
                 <div className="hidden md:block mb-4 flex-shrink-0">
                   <UpgradeBanner
                     customerCount={cards.length}
                     country={country}
                     onUpgrade={() => setShowUpgradeModal(true)}
-                    onDismiss={cards.length < 10 ? dismissWarning : undefined}
+                    onDismiss={cards.length < FREE_TIER_CARD_LIMIT ? dismissWarning : undefined}
                   />
                 </div>
               )}
@@ -1745,7 +1747,7 @@ export function MerchantDashboard({
                   posters:   { title: t('dash.settings.postersTitle', { defaultValue: 'Posters & print' }), hint: t('dash.settings.postersHint', { defaultValue: 'Download printable material with your QR code: business cards, A5 pamphlets, A4 posters, an Instagram square, and table stickers. Customers scan these to join.' }) },
                   locations: { title: t('dash.settings.locationsTitle', { defaultValue: 'Locations' }), hint: t('dash.settings.locationsHint', { defaultValue: 'Add each branch so stamps are recorded against the right shop. The Scan screen lets staff pick which location they are working at, and Insights breaks results down per branch.' }) },
                   stamping: { title: t('dash.settings.stampingTitle', { defaultValue: 'Stamping mode' }), hint: t('dash.settings.stampingHint', { defaultValue: 'Choose how customers collect stamps — staff scanner, or self-serve where the customer scans your counter QR (device-free, location-checked).' }) },
-                  billing:   { title: t('dash.settings.billingTitle', { defaultValue: 'Account & billing' }), hint: t('dash.settings.billingHint', { defaultValue: 'Your plan, invoices, and payment method. The free plan covers your first 10 customers; Pro removes that limit and unlocks branding and multi-location features.' }) },
+                  billing:   { title: t('dash.settings.billingTitle', { defaultValue: 'Account & billing' }), hint: t('dash.settings.billingHint', { defaultValue: 'Your plan, invoices, and payment method. The free plan covers your first 5 customers; Pro removes that limit and unlocks branding and multi-location features.' }) },
                   account:   { title: t('dash.settings.accountTitle', { defaultValue: 'Login & security' }), hint: t('dash.settings.accountHint', { defaultValue: 'Change the email address and password you use to sign in. Changing your email requires clicking a confirmation link we send to both your old and new address.' }) },
                   links:     { title: t('dash.settings.linksTitle', { defaultValue: 'Links & socials' }), hint: t('dash.settings.linksHint', { defaultValue: 'Add your website, social profiles, and ordering or delivery links. Each one you fill in becomes a tappable link on the back of the Apple Wallet card and in the Google Wallet card details.' }) },
                   privacy:   { title: t('dash.settings.privacyTitle', { defaultValue: 'Privacy & data' }), hint: t('dash.settings.privacyHint', { defaultValue: 'Your business registration details (needed for GDPR and your Impressum), the privacy notice your customers see at signup, and a full export of your data.' }) },
