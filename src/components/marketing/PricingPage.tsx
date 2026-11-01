@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { proMonthly, type MerchantCountry } from '../../lib/pricing';
 
 const FREE = [
-  'Up to 10 customer cards',
+  'Up to 5 customer cards',
   '1 location',
   'Apple Wallet & Google Wallet passes',
   'Your phone or tablet as the scanner',

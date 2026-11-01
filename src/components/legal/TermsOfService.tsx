@@ -13,7 +13,7 @@ import { LegalPage, LegalH2, Placeholder } from './LegalPage';
  */
 export function TermsOfService() {
   return (
-    <LegalPage title="Terms of Service" lastUpdated="2 August 2026 (v2.1)">
+    <LegalPage title="Terms of Service" lastUpdated="1 November 2026 (v2.2)">
       <p>
         These Terms of Service (“Terms”) govern your use of the Stampfix loyalty-card platform (the
         “Service”) provided by 17999658 Canada Inc. (d/b/a Stampfix) (“Stampfix”, “we”, “us”).
@@ -45,7 +45,7 @@ export function TermsOfService() {
 
       <LegalH2>3. Plans, fees, billing, and taxes</LegalH2>
       <p>
-        The Service is offered free of charge up to 10 Cardholders per Merchant. Beyond that limit, a
+        The Service is offered free of charge up to 5 Cardholders per Merchant. Beyond that limit, a
         paid subscription is required: EUR 19.99 per month for Merchants in Germany or CA$29.99 per
         month for Merchants in Canada, billed monthly through our payment provider, Stripe, and
         cancellable at any time from your dashboard.
