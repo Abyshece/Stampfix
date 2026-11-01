@@ -9,13 +9,15 @@ export interface StaffMember {
 /** Sidebar sections an owner can hide from an individual staff member.
  *  The Scanner is always available — it's what staff are there to use. */
 export const STAFF_HIDEABLE_SECTIONS: { key: string; label: string }[] = [
+  { key: 'ORDERS', label: 'Orders' },
   { key: 'CUSTOMERS', label: 'Customers' },
   { key: 'ACTIVITY', label: 'Activity' },
   { key: 'ANALYTICS', label: 'Insights' },
-  { key: 'VALUE', label: 'Payback' },
+  { key: 'VALUE', label: 'Results' },
   { key: 'STAFF', label: 'Staff' },
   { key: 'PREVIEW', label: 'Preview Card' },
   { key: 'SHARE', label: 'Share & Promote' },
+  { key: 'ADDONS', label: 'Add-ons' },
   { key: 'SETTINGS', label: 'Settings' },
   { key: 'HELP', label: 'Get help' },
 ];

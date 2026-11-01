@@ -25,6 +25,7 @@ const UseCasesPage = lazy(() => import('./components/marketing/UseCasesPage').th
 const BlogPage = lazy(() => import('./components/marketing/BlogPage').then((m) => ({ default: m.BlogPage })));
 const PaybackCalculatorPage = lazy(() => import('./components/marketing/PaybackCalculatorPage').then((m) => ({ default: m.PaybackCalculatorPage })));
 const CardRecovery = lazy(() => import('./components/CardRecovery').then((m) => ({ default: m.CardRecovery })));
+const OrderPage = lazy(() => import('./components/OrderPage').then((m) => ({ default: m.OrderPage })));
 import { MyCardPage } from './components/MyCardPage';
 const AdminPanel = lazy(() => import('./components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
 import { BrandLoading } from './components/BrandLoading';
@@ -41,7 +42,7 @@ import { BrandLoading } from './components/BrandLoading';
 type View = 'landing' | 'merchant';
 
 /** Merchant dashboard pages that open the merchant flow on a deep link / refresh. */
-const MERCHANT_PATHS = ['/scan', '/customers', '/activity', '/insights', '/campaigns', '/offers', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
+const MERCHANT_PATHS = ['/scan', '/orders', '/addons', '/customers', '/activity', '/insights', '/campaigns', '/offers', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
 
 const DEFAULT_TITLE = 'Stampfix | Digital Loyalty Cards for Apple & Google Wallet';
 const PAGE_TITLES: Record<string, string> = {
@@ -230,6 +231,7 @@ export default function App() {
   if (path === '/blog' || path.startsWith('/blog/')) return <Suspense fallback={<BrandLoading />}><BlogPage /></Suspense>;
   if (path === '/savings') return <Suspense fallback={<BrandLoading />}><PaybackCalculatorPage /></Suspense>;
   if (path === '/find-card') return <Suspense fallback={<BrandLoading />}><CardRecovery /></Suspense>;
+  if (path.startsWith('/order/')) return <Suspense fallback={<BrandLoading />}><OrderPage /></Suspense>;
   if (path === '/admin') return <Suspense fallback={<BrandLoading />}><AdminPanel onExit={() => { window.history.pushState({}, '', '/'); setView('merchant'); setNavTick((n) => n + 1); }} /></Suspense>;
   if (path === '/my-card') {
     return (

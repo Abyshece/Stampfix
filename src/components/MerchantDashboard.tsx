@@ -4,7 +4,7 @@ import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, Merch
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone } from 'lucide-react';
+  RotateCcw, Smile, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone, ClipboardList, Puzzle } from 'lucide-react';
 import { CampaignsPanel } from './CampaignsPanel';
 import { MerchantDashboardBanner } from './MerchantBannerBar';
 import { useAuth } from '../lib/auth';
@@ -22,6 +22,9 @@ import { ScanRejection } from './ScanRejection';
 import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { ResultsPanel } from './ResultsPanel';
+import { AddonsPanel } from './AddonsPanel';
+import { OrdersPanel } from './OrdersPanel';
+import { getOrderingSettings, countNewOrders } from '../lib/ordering';
 import { StaffPanel } from './StaffPanel';
 
 import { InfoHint } from './InfoHint';
@@ -81,11 +84,12 @@ interface MerchantDashboardProps {
 }
 
 type SettingsSection = 'stamping' | 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'account' | 'links' | 'privacy' | 'danger';
-type Tab = 'DASHBOARD' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'OFFERS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP';
+type Tab = 'DASHBOARD' | 'ORDERS' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'OFFERS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP' | 'ADDONS';
 
 /** Each dashboard tab has a real URL so refresh, back/forward and deep links work. */
 const TAB_PATH: Record<Tab, string> = {
   DASHBOARD: '/scan',
+  ORDERS: '/orders',
   CUSTOMERS: '/customers',
   ACTIVITY: '/activity',
   ANALYTICS: '/insights',
@@ -96,6 +100,7 @@ const TAB_PATH: Record<Tab, string> = {
   SETTINGS: '/settings',
   SHARE: '/promote',
   HELP: '/help',
+  ADDONS: '/addons',
 };
 const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'stamping', 'posters', 'locations', 'billing', 'account', 'links', 'privacy', 'danger'];
 function pathToTab(path: string): Tab | null {
@@ -162,6 +167,28 @@ export function MerchantDashboard({
   }, [staffHidden, activeTab]);
   // "NEW" badge on Campaigns until it has been opened once (saved to the account).
   const campaignsNew = !onboarding.campaigns_opened;
+  // Table ordering add-on (Pro): whether it's on, and how many orders wait.
+  const [orderingEnabled, setOrderingEnabled] = useState(false);
+  const [orderingKnown, setOrderingKnown] = useState(false);
+  const [newOrders, setNewOrders] = useState(0);
+  useEffect(() => {
+    if (billing.plan !== 'pro') { setOrderingEnabled(false); setOrderingKnown(true); return; }
+    let live = true;
+    getOrderingSettings(campaign.id)
+      .then((s) => { if (live) setOrderingEnabled(s.enabled); })
+      .catch(() => {})
+      .finally(() => { if (live) setOrderingKnown(true); });
+    return () => { live = false; };
+  }, [campaign.id, billing.plan]);
+  useEffect(() => {
+    // The Orders page keeps the count itself; elsewhere check every 15 s.
+    if (!orderingEnabled || activeTab === 'ORDERS') return;
+    let live = true;
+    const check = () => { countNewOrders(campaign.id).then((n) => { if (live) setNewOrders(n); }).catch(() => {}); };
+    check();
+    const h = setInterval(() => { if (document.visibilityState === 'visible') check(); }, 15000);
+    return () => { live = false; clearInterval(h); };
+  }, [orderingEnabled, activeTab, campaign.id]);
   useEffect(() => {
     if (activeTab === 'OFFERS' && !onboarding.campaigns_opened) void onMarkOnboardingStep({ campaigns_opened: true });
   }, [activeTab, onboarding.campaigns_opened, onMarkOnboardingStep]);
@@ -746,6 +773,7 @@ export function MerchantDashboard({
             <div className="text-xs font-semibold text-gray-400 mb-1 px-2">{t('dash.nav.workspace', { defaultValue: 'Workspace' })}</div>
             {([
               ['DASHBOARD', ScanLine, t('dash.nav.scanner', { defaultValue: 'Scanner' })],
+              ['ORDERS', ClipboardList, t('dash.nav.orders', { defaultValue: 'Orders' })],
               ['CUSTOMERS', Users, t('dash.nav.customers', { defaultValue: 'Customers' })],
               ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
               ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
@@ -754,9 +782,10 @@ export function MerchantDashboard({
               ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
               ['PREVIEW', Eye, t('dash.nav.previewCard', { defaultValue: 'Preview Card' })],
               ['SHARE', Share, t('dash.nav.sharePromote', { defaultValue: 'Share & Promote' })],
+              ['ADDONS', Puzzle, t('dash.nav.addons', { defaultValue: 'Add-ons' })],
               ['SETTINGS', Settings, t('dash.nav.settings', { defaultValue: 'Settings' })],
               ['HELP', LifeBuoy, t('dash.nav.getHelp', { defaultValue: 'Get help' })],
-            ] as const).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
+            ] as const).filter(([id]) => !staffHidden.includes(id) && (id !== 'ORDERS' || orderingEnabled)).map(([id, Icon, label]) => (
               <button key={id} onClick={() => handleTabChange(id)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition ${
                   activeTab === id ? 'bg-[#EFEFEE] font-medium' : 'hover:bg-[#EFEFEE] text-gray-600'
@@ -766,7 +795,10 @@ export function MerchantDashboard({
                 {id === 'OFFERS' && campaignsNew && (
                   <span className="text-[9px] font-bold uppercase tracking-wider bg-blue-600 text-white px-1.5 py-0.5 rounded-full flex-shrink-0">{t('dash.nav.new', { defaultValue: 'New' })}</span>
                 )}
-                {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP' || id === 'STAFF') && (
+                {id === 'ORDERS' && newOrders > 0 && (
+                  <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0">{newOrders}</span>
+                )}
+                {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP' || id === 'STAFF' || id === 'ADDONS') && (
                   <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
                 )}
               </button>
@@ -827,7 +859,7 @@ export function MerchantDashboard({
         <div className="hidden md:flex items-center text-sm text-gray-400 mb-6 gap-2">
           <span>{campaign.businessName}</span>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab === 'OFFERS' ? 'campaigns' : activeTab === 'VALUE' ? 'results' : activeTab.toLowerCase() })}</span>
+          <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab === 'OFFERS' ? 'campaigns' : activeTab === 'VALUE' ? 'results' : activeTab === 'ADDONS' ? 'add-ons' : activeTab.toLowerCase() })}</span>
         </div>
 
         {/* Account approval status banner */}
@@ -1644,6 +1676,17 @@ export function MerchantDashboard({
           )
         )}
 
+        {activeTab === 'ORDERS' && (
+          <OrdersPanel campaignId={campaign.id} country={country ?? null} locations={locations}
+            orderingEnabled={orderingEnabled || !orderingKnown} onOpenAddons={() => handleTabChange('ADDONS')} onNewCount={setNewOrders} />
+        )}
+
+        {activeTab === 'ADDONS' && (
+          <AddonsPanel campaignId={campaign.id} businessName={campaign.businessName} country={country ?? null}
+            locations={locations} isPro={isPro} onUpgrade={() => setShowUpgradeModal(true)}
+            onOrderingChanged={setOrderingEnabled} onOpenOrders={() => handleTabChange('ORDERS')} />
+        )}
+
         {activeTab === 'VALUE' && (
           <div className="space-y-12">
             <ResultsPanel campaignId={campaign.id} activities={activities} country={country ?? null}
@@ -2077,22 +2120,35 @@ export function MerchantDashboard({
       {/* Mobile Bottom Nav */}
       <div className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t notion-border z-50 pb-safe">
         <div className="flex justify-around items-center h-16">
-          {([
-            ['DASHBOARD', ScanLine, t('dash.nav.scan', { defaultValue: 'Scan' })],
-            ['CUSTOMERS', Users, t('dash.nav.people', { defaultValue: 'People' })],
-            ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
-          ] as const).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
+          {((orderingEnabled
+            // With table ordering on, Orders takes Insights' place (Insights moves to More).
+            ? [
+                ['DASHBOARD', ScanLine, t('dash.nav.scan', { defaultValue: 'Scan' })],
+                ['ORDERS', ClipboardList, t('dash.nav.orders', { defaultValue: 'Orders' })],
+                ['CUSTOMERS', Users, t('dash.nav.people', { defaultValue: 'People' })],
+              ]
+            : [
+                ['DASHBOARD', ScanLine, t('dash.nav.scan', { defaultValue: 'Scan' })],
+                ['CUSTOMERS', Users, t('dash.nav.people', { defaultValue: 'People' })],
+                ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
+              ]) as Array<[Tab, typeof ScanLine, string]>
+          ).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
             <button key={id} onClick={() => handleTabChange(id)}
               className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
                 activeTab === id ? 'text-[#37352F]' : 'text-gray-400'
               }`}>
-              <Icon className="w-6 h-6" />
+              <span className="relative">
+                <Icon className="w-6 h-6" />
+                {id === 'ORDERS' && newOrders > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">{newOrders}</span>
+                )}
+              </span>
               <span className="text-[10px] font-medium">{label}</span>
             </button>
           ))}
           <button onClick={() => setShowMobileMoreMenu(true)}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE', 'STAFF', 'OFFERS'].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
+              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE', 'STAFF', 'OFFERS', 'ADDONS', ...(orderingEnabled ? ['ANALYTICS'] : [])].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <span className="relative">
               <Menu className="w-6 h-6" />
@@ -2111,14 +2167,16 @@ export function MerchantDashboard({
             <div className="grid grid-cols-4 gap-4 mb-4">
               {([
                 ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Campaigns' })],
+                ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
                 ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
                 ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Results' })],
                 ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
                 ['SHARE', Share, t('dash.nav.share', { defaultValue: 'Share' })],
+                ['ADDONS', Puzzle, t('dash.nav.addons', { defaultValue: 'Add-ons' })],
                 ['PREVIEW', Eye, t('dash.nav.preview', { defaultValue: 'Preview' })],
                 ['SETTINGS', Settings, t('dash.nav.settings', { defaultValue: 'Settings' })],
                 ['HELP', LifeBuoy, t('dash.nav.getHelp', { defaultValue: 'Get help' })],
-              ] as const).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
+              ] as const).filter(([id]) => !staffHidden.includes(id) && (id !== 'ANALYTICS' || orderingEnabled)).map(([id, Icon, label]) => (
                 <button key={id} onClick={() => handleTabChange(id)}
                   className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${
                     activeTab === id ? 'bg-[#F7F7F5] border-[#37352F]' : 'bg-white border-transparent'
