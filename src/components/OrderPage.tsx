@@ -242,8 +242,9 @@ function LoyaltyBanner({ campaign, accent, joinUrl, variant, onHide }: {
           </span>
         </div>
         {/* The card itself, only its top half showing. */}
-        <div aria-hidden className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-[48%] w-[86%] max-w-[330px] rounded-[20px] px-4 pt-3.5 pb-14"
-          style={{ background: th.cardBg, color: th.cardInk, boxShadow: '0 -6px 18px rgba(0,0,0,0.14), 0 -22px 48px rgba(0,0,0,0.18)' }}>
+        {/* A one-row card (6 stamps or fewer) is shorter, so it sits higher to keep its stamps in view. */}
+        <div aria-hidden className="absolute left-1/2 bottom-0 w-[86%] max-w-[330px] rounded-[20px] px-4 pt-3.5 pb-14"
+          style={{ background: th.cardBg, color: th.cardInk, transform: `translate(-50%, ${stamps <= 6 ? 30 : 48}%)`, boxShadow: '0 -6px 18px rgba(0,0,0,0.14), 0 -22px 48px rgba(0,0,0,0.18)' }}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               {logo
