@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import {
-  Puzzle, UtensilsCrossed, Check, Sparkles, Loader2, Plus, Pencil, Trash2, ArrowUp, ArrowDown, X, Printer,
+  Puzzle, UtensilsCrossed, Check, Loader2, Plus, Pencil, Trash2, ArrowUp, ArrowDown, X, Printer,
   ExternalLink, ClipboardList,
 } from 'lucide-react';
 import type { Location } from '../types';
@@ -25,12 +25,12 @@ function parsePrice(s: string): number {
 }
 
 /**
- * Add-ons (dashboard). For now one add-on, included in Pro: a digital menu
+ * Add-ons (dashboard). For now one add-on, free on every plan: a digital menu
  * that guests order from by scanning a QR code on their table.
  */
-export function AddonsPanel({ campaignId, businessName, country, locations, isPro, onUpgrade, onOrderingChanged, onOpenOrders }: {
-  campaignId: string; businessName: string; country: string | null; locations: Location[]; isPro: boolean;
-  onUpgrade: () => void; onOrderingChanged: (enabled: boolean) => void; onOpenOrders: () => void;
+export function AddonsPanel({ campaignId, businessName, country, locations, onOrderingChanged, onOpenOrders }: {
+  campaignId: string; businessName: string; country: string | null; locations: Location[];
+  onOrderingChanged: (enabled: boolean) => void; onOpenOrders: () => void;
 }) {
   const { t } = useTranslation();
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -42,7 +42,7 @@ export function AddonsPanel({ campaignId, businessName, country, locations, isPr
           <Puzzle className="w-4 h-4" /> {t('dash.addons.kicker', { defaultValue: 'Add-ons' })}
         </div>
         <h1 className="text-2xl font-semibold text-[#37352F]">{t('dash.addons.title', { defaultValue: 'Add-ons' })}</h1>
-        <p className="text-gray-500 mt-1">{t('dash.addons.sub', { defaultValue: 'Extra tools for your shop, included in Pro.' })}</p>
+        <p className="text-gray-500 mt-1">{t('dash.addons.sub', { defaultValue: 'Extra tools for your shop, free on every plan.' })}</p>
       </header>
 
       <section className="border notion-border rounded-xl p-5 sm:p-6">
@@ -53,12 +53,11 @@ export function AddonsPanel({ campaignId, businessName, country, locations, isPr
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg font-semibold text-[#37352F]">{t('dash.addons.menuTitle', { defaultValue: 'Digital menu & table ordering' })}</h2>
-              {isPro && enabled !== null && (
+              {enabled !== null && (
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${enabled ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                   {enabled ? t('dash.addons.on', { defaultValue: 'On' }) : t('dash.addons.off', { defaultValue: 'Off' })}
                 </span>
               )}
-              {!isPro && <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Pro</span>}
             </div>
             <p className="text-sm text-gray-600 mt-1">
               {t('dash.addons.menuDesc', { defaultValue: 'Put your menu online. Guests scan the QR code on their table, order from their phone and pay at the counter.' })}
@@ -72,19 +71,14 @@ export function AddonsPanel({ campaignId, businessName, country, locations, isPr
                 <li key={b} className="flex items-start gap-2 text-sm text-[#37352F]"><Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />{b}</li>
               ))}
             </ul>
-            {!isPro && (
-              <button onClick={onUpgrade} className={`${btnDark} mt-4`}><Sparkles className="w-4 h-4" />{t('dash.addons.upgrade', { defaultValue: 'Upgrade to Pro' })}</button>
-            )}
           </div>
         </div>
       </section>
 
-      {isPro && (
-        <OrderingSetup campaignId={campaignId} businessName={businessName} country={country} locations={locations}
-          onEnabledLoaded={setEnabled}
-          onOrderingChanged={(on) => { setEnabled(on); onOrderingChanged(on); }}
-          onOpenOrders={onOpenOrders} />
-      )}
+      <OrderingSetup campaignId={campaignId} businessName={businessName} country={country} locations={locations}
+        onEnabledLoaded={setEnabled}
+        onOrderingChanged={(on) => { setEnabled(on); onOrderingChanged(on); }}
+        onOpenOrders={onOpenOrders} />
     </div>
   );
 }

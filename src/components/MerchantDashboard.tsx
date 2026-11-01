@@ -167,19 +167,18 @@ export function MerchantDashboard({
   }, [staffHidden, activeTab]);
   // "NEW" badge on Campaigns until it has been opened once (saved to the account).
   const campaignsNew = !onboarding.campaigns_opened;
-  // Table ordering add-on (Pro): whether it's on, and how many orders wait.
+  // Table ordering add-on (free on every plan): whether it's on, and how many orders wait.
   const [orderingEnabled, setOrderingEnabled] = useState(false);
   const [orderingKnown, setOrderingKnown] = useState(false);
   const [newOrders, setNewOrders] = useState(0);
   useEffect(() => {
-    if (billing.plan !== 'pro') { setOrderingEnabled(false); setOrderingKnown(true); return; }
     let live = true;
     getOrderingSettings(campaign.id)
       .then((s) => { if (live) setOrderingEnabled(s.enabled); })
       .catch(() => {})
       .finally(() => { if (live) setOrderingKnown(true); });
     return () => { live = false; };
-  }, [campaign.id, billing.plan]);
+  }, [campaign.id]);
   useEffect(() => {
     // The Orders page keeps the count itself; elsewhere check every 15 s.
     if (!orderingEnabled || activeTab === 'ORDERS') return;
@@ -798,7 +797,7 @@ export function MerchantDashboard({
                 {id === 'ORDERS' && newOrders > 0 && (
                   <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0">{newOrders}</span>
                 )}
-                {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP' || id === 'STAFF' || id === 'ADDONS') && (
+                {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP' || id === 'STAFF') && (
                   <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
                 )}
               </button>
@@ -1683,7 +1682,7 @@ export function MerchantDashboard({
 
         {activeTab === 'ADDONS' && (
           <AddonsPanel campaignId={campaign.id} businessName={campaign.businessName} country={country ?? null}
-            locations={locations} isPro={isPro} onUpgrade={() => setShowUpgradeModal(true)}
+            locations={locations}
             onOrderingChanged={setOrderingEnabled} onOpenOrders={() => handleTabChange('ORDERS')} />
         )}
 
