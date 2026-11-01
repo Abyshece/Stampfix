@@ -1069,6 +1069,9 @@ const de = {
     hRejected: 'Leider konnte das Geschäft diese Bestellung nicht annehmen.',
     yourNumber: 'Ihre Bestellnummer', orderMore: 'Noch etwas bestellen',
     keepOpen: 'Diese Seite aktualisiert sich selbst. Sie können sie geöffnet lassen.',
+    loyaltyLabel: 'Stempelkarte', loyaltyTitle: 'Stempel sammeln bei {{business}}', loyaltyFallback: 'Karte füllen und Belohnung erhalten.',
+    loyaltyAfterTitle: 'Holen Sie sich einen Stempel für diese Bestellung', loyaltyAfterHint: 'Melden Sie sich für die Stempelkarte an und sammeln Sie Ihren Stempel beim Bezahlen.',
+    loyaltyCta: 'Kostenlos anmelden', loyaltyHide: 'Ausblenden', stamps: 'Stempel',
   },
   cust: {
     wallet: { addApple: 'Zu Apple Wallet hinzufügen' },
