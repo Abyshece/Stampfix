@@ -87,7 +87,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
         <div className="p-6 border notion-border rounded-lg bg-white shadow-sm space-y-5">
           <Slider
             label="Regulars with a stamp card"
-            hint="Your repeat customers — the ones who carry a paper stamp card today, or a Stampfix card on their phone."
+            hint="Your repeat customers, meaning everyone who carries a paper stamp card today, or a Stampfix card on their phone."
             value={regulars} min={20} max={1000} step={10}
             onChange={setRegulars} format={(v) => v.toLocaleString('en-CA')}
           />
@@ -99,7 +99,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
           />
           <Slider
             label="Extra visits per regular each month"
-            hint="Chasing a reward brings people back more often. A loyalty program usually adds 1–2 extra visits a month for each regular."
+            hint="Chasing a reward brings people back more often. A loyalty program usually adds 1 to 2 extra visits a month for each regular."
             value={extraVisits} min={1} max={6} step={1}
             onChange={setExtraVisits} format={(v) => `+${v} / mo`}
           />
@@ -156,7 +156,7 @@ export function MerchantValueCalculator({ country, businessName }: Props) {
           <p className="text-gray-600 text-sm mt-1 leading-relaxed">
             At {money(monthly)}/month{vat ? ' (incl. USt.)' : ''}, Stampfix costs about the price of{' '}
             <span className="font-semibold text-[#37352F]">{coffees} {coffees === 1 ? 'coffee' : 'coffees'}</span>
-            {' '}— covered by just{' '}
+            , covered by just{' '}
             <span className="font-semibold text-[#37352F]">{paybackCustomers} returning {paybackCustomers === 1 ? 'regular' : 'regulars'}</span>
             {' '}a month. Everything your other regulars spend on top of that is pure upside.
           </p>

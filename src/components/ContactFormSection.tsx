@@ -62,9 +62,9 @@ export function ContactFormSection() {
           <div className="w-12 h-12 bg-green-100 rounded-full mx-auto flex items-center justify-center">
             <Check className="w-6 h-6 text-green-600" strokeWidth={3} />
           </div>
-          <h2 className="text-2xl font-serif-display font-semibold">{t('contact.sentTitle', { defaultValue: 'Got it — thanks!' })}</h2>
+          <h2 className="text-2xl font-serif-display font-semibold">{t('contact.sentTitle', { defaultValue: 'Got it, thanks!' })}</h2>
           <p className="text-sm text-gray-500">
-            {t('contact.sentA', { defaultValue: "We'll get back to you at" })} <strong className="text-[#37352F]">{email}</strong> {t('contact.sentB', { defaultValue: 'within 1-2 business days.' })}
+            {t('contact.sentA', { defaultValue: "We'll get back to you at" })} <strong className="text-[#37352F]">{email}</strong> {t('contact.sentB', { defaultValue: 'within 1 to 2 business days.' })}
           </p>
         </div>
       </section>
@@ -78,7 +78,7 @@ export function ContactFormSection() {
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">{t('contact.title', { defaultValue: 'Get in touch' })}</h2>
           <p className="text-sm text-gray-500 max-w-md mx-auto">
-            {t('contact.sub', { defaultValue: "Questions about getting started, partnerships, or something else? Drop us a line and we'll reply within 1-2 business days." })}
+            {t('contact.sub', { defaultValue: "Questions about getting started, partnerships, or something else? Drop us a line and we'll reply within 1 to 2 business days." })}
           </p>
         </div>
 

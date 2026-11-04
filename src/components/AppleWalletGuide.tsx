@@ -16,7 +16,7 @@ function Step({ n, title, img, alt, children }: {
   const { t } = useTranslation();
   return (
     <div className="pt-2">
-      <LegalH2>{t('cust.guide.step', { n, title, defaultValue: 'Step {{n}} — {{title}}' })}</LegalH2>
+      <LegalH2>{t('cust.guide.step', { n, title, defaultValue: 'Step {{n}}: {{title}}' })}</LegalH2>
       <p>{children}</p>
       <div className="mt-3 rounded-xl border notion-border bg-[#F7F7F5] overflow-hidden flex justify-center items-center min-h-[120px]">
         <img src={img} alt={alt} className="max-h-[520px] w-auto object-contain" loading="lazy" />
@@ -30,7 +30,7 @@ export function AppleWalletGuide() {
   return (
     <LegalPage title={t('cust.guide.title', { defaultValue: 'Updating your Apple Wallet card' })} lastUpdated={t('cust.guide.updated', { defaultValue: '28 June 2026' })}>
       <p>
-        {t('cust.guide.introA', { defaultValue: 'Your Stampfix loyalty card updates' })} <strong>{t('cust.guide.introAuto', { defaultValue: 'automatically' })}</strong> {t('cust.guide.introB', { defaultValue: '— your stamp count usually refreshes within a minute of your last visit, even with your phone in your pocket. If your card ever looks out of date, you can refresh it by hand in a few seconds. These steps are for' })} <strong>{t('cust.guide.introIphone', { defaultValue: 'iPhone (Apple Wallet)' })}</strong> {t('cust.guide.introC', { defaultValue: '. On Android, Google Wallet updates on its own and needs no extra steps.' })}
+        {t('cust.guide.introA', { defaultValue: 'Your Stampfix loyalty card updates' })} <strong>{t('cust.guide.introAuto', { defaultValue: 'automatically' })}</strong>. {t('cust.guide.introB', { defaultValue: 'Your stamp count usually refreshes within a minute of your last visit, even with your phone in your pocket. If your card ever looks out of date, you can refresh it by hand in a few seconds. These steps are for' })} <strong>{t('cust.guide.introIphone', { defaultValue: 'iPhone (Apple Wallet)' })}</strong>. {t('cust.guide.introC', { defaultValue: 'On Android, Google Wallet updates on its own and needs no extra steps.' })}
       </p>
 
       <Step n={1} title={t('cust.guide.s1title', { defaultValue: 'Open Wallet and tap your card' })} img="/wallet-guide/01.png"
@@ -56,7 +56,7 @@ export function AppleWalletGuide() {
 
       <Step n={5} title={t('cust.guide.s5title', { defaultValue: "You're up to date" })} img="/wallet-guide/05.png"
         alt={t('cust.guide.s5alt', { defaultValue: 'The card showing Updated just now with the latest stamps' })}>
-        {t('cust.guide.s5a', { defaultValue: "That's it —" })} <strong>{t('cust.guide.s5updated', { defaultValue: '"Updated just now"' })}</strong> {t('cust.guide.s5b', { defaultValue: 'with your latest stamps.' })}
+        {t('cust.guide.s5a', { defaultValue: "That's it. Your card now shows" })} <strong>{t('cust.guide.s5updated', { defaultValue: '"Updated just now"' })}</strong> {t('cust.guide.s5b', { defaultValue: 'with your latest stamps.' })}
       </Step>
 
       <p className="pt-4">

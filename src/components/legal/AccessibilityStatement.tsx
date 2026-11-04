@@ -23,7 +23,7 @@ export function AccessibilityStatement() {
         The consumer-facing parts of Stampfix (signing up for a card, adding it to a mobile wallet, and
         viewing or recovering a card) are <strong>partially conformant</strong> with WCAG 2.1 AA:
         most content meets the standard, and we are actively improving the remaining areas. Some parts
-        of the service &mdash; in particular the merchant dashboard used by businesses &mdash; have not
+        of the service (in particular the merchant dashboard used by businesses) have not
         yet been fully assessed.
       </p>
 
@@ -48,10 +48,10 @@ export function AccessibilityStatement() {
       </ul>
       <p>We are working to address these, and this statement will be updated as we make progress.</p>
 
-      <LegalH2>5. Feedback &mdash; report a barrier</LegalH2>
+      <LegalH2>5. Feedback: report a barrier</LegalH2>
       <p>
         If you encounter an accessibility barrier, or need information from Stampfix in an accessible
-        format, please tell us &mdash; we want to fix it:
+        format, please tell us. We want to fix it:
       </p>
       <ul className="list-disc pl-6 space-y-1 text-gray-600">
         <li>Email: <a href="mailto:hello@stampfix.app" className="underline">hello@stampfix.app</a></li>
@@ -66,7 +66,7 @@ export function AccessibilityStatement() {
       <LegalH2>6. Enforcement (Germany)</LegalH2>
       <p>
         If you are not satisfied with our response, you can contact the market-surveillance authority
-        responsible for the accessibility of products and services in Germany &mdash; the{' '}
+        responsible for the accessibility of products and services in Germany, the{' '}
         <strong>Marktüberwachungsstelle der Länder für die Barrierefreiheit von Produkten und
         Dienstleistungen (MLBF)</strong>.
       </p>

@@ -98,7 +98,7 @@ export function CardRecovery() {
                 />
                 <div className="flex gap-2 items-start text-xs text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-2.5 mt-1.5">
                   <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-500" />
-                  <span>{t('cust.recover.infoCode', { defaultValue: "You chose this code yourself when you first saved your card — it wasn't emailed or texted to you. Try the 6 digits you picked at sign-up." })}</span>
+                  <span>{t('cust.recover.infoCode', { defaultValue: "You chose this code yourself when you first saved your card. It wasn't emailed or texted to you. Try the 6 digits you picked at sign-up." })}</span>
                 </div>
               </div>
               {error && <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2.5 rounded">{error}</div>}
@@ -143,7 +143,7 @@ export function CardRecovery() {
               <div className="text-center">
                 <div className="text-4xl mb-2">&#9989;</div>
                 <h3 className="text-lg font-serif-display font-semibold mb-1">{t('cust.recover.msgSent', { defaultValue: 'Message sent' })}</h3>
-                <p className="text-sm text-gray-500 mb-4">{t('cust.recover.thanks', { defaultValue: "Thanks — we'll get back to you by email soon." })}</p>
+                <p className="text-sm text-gray-500 mb-4">{t('cust.recover.thanks', { defaultValue: "Thanks, we'll get back to you by email soon." })}</p>
                 <button onClick={() => { setShowContact(false); setCSent(false); }} className="px-5 py-2.5 rounded-lg bg-[#37352F] text-white text-sm font-medium hover:bg-[#2F2D28] transition">{t('cust.recover.close', { defaultValue: 'Close' })}</button>
               </div>
             ) : (

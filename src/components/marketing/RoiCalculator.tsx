@@ -61,7 +61,7 @@ export function RoiCalculator() {
           How much are paper cards costing you?
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          Printing is only the visible cost. Slide the numbers to your shop and see the real total —
+          Printing is only the visible cost. Slide the numbers to your shop and see the real total,
           then compare it to one flat monthly price.
         </p>
       </section>

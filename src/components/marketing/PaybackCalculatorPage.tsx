@@ -21,7 +21,7 @@ export function PaybackCalculatorPage() {
         </h1>
         <p className="text-gray-500 mt-3 max-w-2xl leading-relaxed">
           This is the same payback calculator you get in your dashboard after signing up. Slide in
-          your own numbers and see — week by week, or across a whole year — how much extra revenue
+          your own numbers and see, week by week or across a whole year, how much extra revenue
           returning customers bring in, and how quickly Stampfix pays for itself.
         </p>
 

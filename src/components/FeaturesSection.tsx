@@ -19,18 +19,18 @@ export function FeaturesSection() {
   // list reads as colourful as the cards themselves.
   const { t } = useTranslation();
   const features = [
-    { icon: Smartphone,  c: '#75FBFD', fg: '#1A1A1A', anim: 'sf-fl', text: 'No extra scanner hardware — your phone is the terminal' },
-    { icon: Zap,         c: '#EA3323', fg: '#FFFFFF', anim: 'sf-pu', text: 'Set up your first loyalty card in 1–2 minutes' },
-    { icon: Globe,       c: '#510AF5', fg: '#FCFF54', anim: 'sf-sp', text: 'No app for customers to download — works in any browser' },
+    { icon: Smartphone,  c: '#75FBFD', fg: '#1A1A1A', anim: 'sf-fl', text: 'Your phone is the scanner, no extra hardware needed' },
+    { icon: Zap,         c: '#EA3323', fg: '#FFFFFF', anim: 'sf-pu', text: 'Set up your first loyalty card in a minute or two' },
+    { icon: Globe,       c: '#510AF5', fg: '#FCFF54', anim: 'sf-sp', text: 'Works in any browser, so customers don’t download an app' },
     { icon: BarChart3,   c: '#F7CE46', fg: '#1A1A1A', anim: 'sf-fl', text: 'Detailed dashboard with per-location and per-offer analytics' },
-    { icon: Palette,     c: '#EA33B6', fg: '#FFFFFF', anim: 'sf-wg', text: 'Brand it your way — colours, logo, and offer text, with a live preview' },
+    { icon: Palette,     c: '#EA33B6', fg: '#FFFFFF', anim: 'sf-wg', text: 'Use your own colours, logo and offer text, with a live preview' },
     { icon: Building2,   c: '#1132F5', fg: '#FFFFFF', anim: 'sf-fl', text: 'Run a single offer across multiple branches' },
     { icon: Users,       c: '#F0A479', fg: '#1A1A1A', anim: 'sf-pu', text: 'Add staff, track their activity, assign PINs, and gate parts of the dashboard' },
-    { icon: Wallet,      c: '#75FBE2', fg: '#1A1A1A', anim: 'sf-fl', text: 'Works with Apple Wallet and Google Wallet — no app to download' },
+    { icon: Wallet,      c: '#75FBE2', fg: '#1A1A1A', anim: 'sf-fl', text: 'Works with Apple Wallet and Google Wallet, no app to download' },
     { icon: FileDown,    c: '#ABC2C2', fg: '#1A1A1A', anim: 'sf-bo', text: 'Export CSV files whenever you need them' },
     { icon: Gauge,       c: '#EA3323', fg: '#FFFFFF', anim: 'sf-wg', text: 'Set daily stamp limits per customer' },
-    { icon: Link2,       c: '#75FBFD', fg: '#1A1A1A', anim: 'sf-sp', text: 'Add custom links to your cards — socials, delivery sites, your own website' },
-    { icon: MapPin,      c: '#510AF5', fg: '#FFFFFF', anim: 'sf-fl', text: 'Multi-location ready — one account, every branch tracked separately' },
+    { icon: Link2,       c: '#75FBFD', fg: '#1A1A1A', anim: 'sf-sp', text: 'Link your socials, delivery sites or website right on your cards' },
+    { icon: MapPin,      c: '#510AF5', fg: '#FFFFFF', anim: 'sf-fl', text: 'One account for all your branches, each tracked separately' },
     { icon: BellRing,    c: '#F7CE46', fg: '#1A1A1A', anim: 'sf-wg', text: 'Automatic geo notifications reach customers on their locked phone' },
     { icon: ShieldCheck, c: '#111318', fg: '#FFFFFF', anim: 'sf-pu', text: 'GDPR-compliant by default, with consent flow and data deletion' },
     { icon: Printer,     c: '#EA33B6', fg: '#FFFFFF', anim: 'sf-fl', text: 'Print-ready posters in three sizes (business card, A5, A4)' },
@@ -49,7 +49,7 @@ export function FeaturesSection() {
             {t('landing.feat.title', { defaultValue: 'Everything you get with Pro' })}
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            {t('landing.feat.sub', { defaultValue: 'One flat price — no per-customer fees, no enterprise bloat. Just every tool a café, salon, or shop needs to run loyalty, without the price tag of the big platforms.' })}
+            {t('landing.feat.sub', { defaultValue: 'One flat price with no per-customer fees and no enterprise bloat. Just every tool a café, salon or shop needs to run loyalty, without the price tag of the big platforms.' })}
           </p>
         </div>
 
