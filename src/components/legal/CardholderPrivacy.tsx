@@ -22,7 +22,7 @@ export function CardholderPrivacy() {
       <LegalH2>1. Who processes your data</LegalH2>
       <p>
         The <strong>business (café, shop, or salon) whose card you hold is the data Controller</strong> for
-        its own loyalty program — it decides why your data is used. <strong>Stampfix</strong> (17999658
+        its own loyalty program: it decides why your data is used. <strong>Stampfix</strong> (17999658
         Canada Inc., d/b/a Stampfix) operates the technology and acts as that business’s{' '}
         <strong>Processor</strong>. Stampfix is an independent Controller only for limited technical and
         security data needed to run and protect the service. As a company based outside the EU, Stampfix
@@ -44,7 +44,7 @@ export function CardholderPrivacy() {
       <LegalH2>3. Who can access your data</LegalH2>
       <ul>
         <li>Only the specific business whose card you hold can see your data.</li>
-        <li>Other businesses on Stampfix cannot see it — there is <strong>no cross-store profiling</strong>.</li>
+        <li>Other businesses on Stampfix cannot see it; there is <strong>no cross-store profiling</strong>.</li>
         <li>Stampfix does <strong>not sell your data</strong> and does not use it for advertising.</li>
       </ul>
 

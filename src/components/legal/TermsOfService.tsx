@@ -97,7 +97,7 @@ export function TermsOfService() {
         this feature you confirm that you have a valid legal basis (such as consent or legitimate
         interest) for contacting your customers, that notification content is lawful, accurate, and not
         misleading, and that you will not send unsolicited commercial or marketing messages without the
-        prior consent required by applicable law — including the German Act Against Unfair Competition
+        prior consent required by applicable law, including the German Act Against Unfair Competition
         (<em>Gesetz gegen den unlauteren Wettbewerb</em>, UWG) for German Merchants, the GDPR, and
         Canada's CASL. Where consent is required, you must obtain and record it before sending, and you
         accept full responsibility for notifications that breach these requirements.

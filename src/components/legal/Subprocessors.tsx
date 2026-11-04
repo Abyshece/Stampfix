@@ -16,8 +16,8 @@ const SUBPROCESSORS: Array<{
   {
     name: 'Supabase Inc.',
     purpose: 'Database, authentication, file storage',
-    location: 'EU — Central EU (Frankfurt), eu-central-1',
-    transfer: 'None for stored data — cardholder data stays in the EEA (Frankfurt); Supabase DPA + SCCs cover incidental support access.',
+    location: 'EU, Central EU (Frankfurt), eu-central-1',
+    transfer: 'None for stored data: cardholder data stays in the EEA (Frankfurt); Supabase DPA + SCCs cover incidental support access.',
   },
   {
     name: 'Vercel Inc.',
@@ -76,7 +76,7 @@ export function Subprocessors() {
 
       <p>
         <strong>Where cardholder data is stored:</strong> our database and authentication run on
-        Supabase in the <strong>EU region &mdash; Central EU (Frankfurt), eu-central-1</strong>, so
+        Supabase in the <strong>EU region, Central EU (Frankfurt), eu-central-1</strong>, so
         cardholder personal data is stored within the EEA. The sub-processors below may involve limited
         processing elsewhere (wallet-pass issuance, email delivery, payments, error monitoring) under
         the safeguards shown.

@@ -19,7 +19,7 @@ export function CookiePolicy() {
       <LegalH2>1. What are cookies?</LegalH2>
       <p>
         Cookies are small text files a website stores on your device; <em>localStorage</em> is a
-        similar browser mechanism. They let a site remember things between pages and visits — for
+        similar browser mechanism. They let a site remember things between pages and visits, for
         example, that you are signed in. Under the GDPR and ePrivacy rules, cookies that are strictly
         necessary for a service you request do not require consent; all others do.
       </p>
@@ -28,23 +28,23 @@ export function CookiePolicy() {
       <p>These are required for the site to function and cannot be switched off.</p>
       <ul className="list-disc pl-5 space-y-2 text-gray-600">
         <li>
-          <strong>Sign-in session (Supabase)</strong> — stored in your browser&rsquo;s localStorage to
+          <strong>Sign-in session (Supabase)</strong>: stored in your browser&rsquo;s localStorage to
           keep you securely logged in as a merchant or cardholder. Persists until you sign out or it
           expires.
         </li>
         <li>
-          <strong>Payments &amp; fraud prevention (Stripe)</strong> — set only on the checkout/billing
+          <strong>Payments &amp; fraud prevention (Stripe)</strong>: set only on the checkout/billing
           page when you start a subscription, to process the payment securely and prevent fraud (e.g.
           <code> __stripe_mid</code>, <code>__stripe_sid</code>). Durations range from the length of
           your visit up to about one year.
         </li>
         <li>
-          <strong>Security &amp; delivery (hosting/CDN)</strong> — our hosting and content-delivery
+          <strong>Security &amp; delivery (hosting/CDN)</strong>: our hosting and content-delivery
           providers (Vercel, Cloudflare) may set short-lived cookies to route traffic, balance load,
           and protect against abuse.
         </li>
         <li>
-          <strong>Your cookie choice</strong> — we store your consent decision itself in localStorage
+          <strong>Your cookie choice</strong>: we store your consent decision itself in localStorage
           so we don&rsquo;t ask again on every visit.
         </li>
       </ul>
@@ -53,10 +53,10 @@ export function CookiePolicy() {
         exemption; GDPR Art. 6(1)(b)/(f)).
       </p>
 
-      <LegalH2>3. Optional — error monitoring (only with your consent)</LegalH2>
+      <LegalH2>3. Optional: error monitoring (only with your consent)</LegalH2>
       <ul className="list-disc pl-5 space-y-2 text-gray-600">
         <li>
-          <strong>Sentry</strong> — if you accept, we load Sentry to automatically detect crashes and
+          <strong>Sentry</strong>: if you accept, we load Sentry to automatically detect crashes and
           errors so we can fix them. It is configured to <strong>not</strong> record your IP address,
           <strong> not</strong> capture session replays, and to strip personal data. It sets no
           advertising cookies. If you choose &ldquo;Essential only,&rdquo; Sentry is never loaded.

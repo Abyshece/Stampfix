@@ -70,7 +70,7 @@ export function PrivacyPolicy() {
       <ul className="list-disc pl-6 space-y-1">
         <li>Email address and password (for account creation and login)</li>
         <li>Business name and country</li>
-        <li>Business registration details where required for billing — e.g. German Handelsregister number and VAT ID (USt-IdNr.), or Canadian Business Number</li>
+        <li>Business registration details where required for billing, e.g. German Handelsregister number and VAT ID (USt-IdNr.), or Canadian Business Number</li>
         <li>Loyalty program configuration (offer text, branding, stamp rules)</li>
         <li>Payment information, processed by our payment provider (we do not store full card numbers)</li>
       </ul>
@@ -86,7 +86,7 @@ export function PrivacyPolicy() {
 
       <p>
         <strong>Children.</strong> Stampfix is not directed to children. Cardholders must be at least
-        16 years old &mdash; the age of digital consent under the GDPR in Germany and the EU (and any
+        16 years old, the age of digital consent under the GDPR in Germany and the EU (and any
         higher age required by local law). We do not knowingly collect personal data from children
         under this age. If you believe a child has signed up, contact us or the Merchant and we will
         delete the data.
@@ -98,10 +98,10 @@ export function PrivacyPolicy() {
         reasonable person would consider appropriate. Under GDPR, our legal bases are:
       </p>
       <ul className="list-disc pl-6 space-y-1">
-        <li><strong>Performance of a contract</strong> (Art. 6(1)(b)) — to create accounts, issue loyalty cards, and track stamps</li>
-        <li><strong>Legitimate interests</strong> (Art. 6(1)(f)) — to keep the Service secure and prevent fraud</li>
-        <li><strong>Consent</strong> (Art. 6(1)(a)) — for marketing messages (email and wallet-card notifications), where applicable; you can withdraw consent at any time</li>
-        <li><strong>Legal obligation</strong> (Art. 6(1)(c)) — to retain billing records as required by tax law</li>
+        <li><strong>Performance of a contract</strong> (Art. 6(1)(b)): to create accounts, issue loyalty cards, and track stamps</li>
+        <li><strong>Legitimate interests</strong> (Art. 6(1)(f)): to keep the Service secure and prevent fraud</li>
+        <li><strong>Consent</strong> (Art. 6(1)(a)): for marketing messages (email and wallet-card notifications), where applicable; you can withdraw consent at any time</li>
+        <li><strong>Legal obligation</strong> (Art. 6(1)(c)): to retain billing records as required by tax law</li>
       </ul>
 
       <LegalH2>5. How we share information</LegalH2>
@@ -110,21 +110,21 @@ export function PrivacyPolicy() {
         the Service, under contracts that require them to protect it:
       </p>
       <ul className="list-disc pl-6 space-y-1">
-        <li><strong>Supabase</strong> — database, authentication, and hosting of application data</li>
-        <li><strong>Vercel</strong> — website hosting</li>
-        <li><strong>Resend</strong> — transactional email delivery (confirmation and magic-link emails)</li>
-        <li><strong>Google</strong> — Google Wallet pass issuance, when a Cardholder chooses to save a card to Google Wallet</li>
-        <li><strong>Stripe</strong> — payment processing for paid Merchant subscriptions</li>
+        <li><strong>Supabase</strong>: database, authentication, and hosting of application data</li>
+        <li><strong>Vercel</strong>: website hosting</li>
+        <li><strong>Resend</strong>: transactional email delivery (confirmation and magic-link emails)</li>
+        <li><strong>Google</strong>: Google Wallet pass issuance, when a Cardholder chooses to save a card to Google Wallet</li>
+        <li><strong>Stripe</strong>: payment processing for paid Merchant subscriptions</li>
       </ul>
 
       <LegalH2>6. International data transfers</LegalH2>
       <p>
-        <strong>Cardholder personal data is stored in the EU</strong> &mdash; our database and
+        <strong>Cardholder personal data is stored in the EU</strong>. Our database and
         authentication run on Supabase in the Central EU (Frankfurt) region, so this data stays within
         the EEA. Stampfix itself is operated from Canada, and some personal information may be
         transferred to and processed in Canada. The European Commission has recognised Canada as
         providing an adequate level of data protection for commercial organisations subject to
-        PIPEDA (the EU–Canada adequacy decision), which provides a lawful basis for these transfers.
+        PIPEDA (the EU-Canada adequacy decision), which provides a lawful basis for these transfers.
         Where any provider processes data outside Canada or the EEA, we rely on appropriate
         safeguards such as the European Commission’s Standard Contractual Clauses.
       </p>
@@ -212,7 +212,7 @@ export function PrivacyPolicy() {
       <p>
         Where data must be retained beyond the periods above to comply with a legal obligation
         (e.g. tax law), we isolate it, restrict access, and use it only for that purpose. You can
-        request earlier deletion at any time by contacting us — we will honour the request except
+        request earlier deletion at any time by contacting us; we will honour the request except
         where retention is legally required, in which case we will explain why.
       </p>
 
@@ -254,7 +254,7 @@ export function PrivacyPolicy() {
 
       <LegalH2>12. Cookies and similar technologies</LegalH2>
       <p>
-        We use only strictly necessary cookies and local storage — the items required to make the
+        We use only strictly necessary cookies and local storage, meaning the items required to make the
         Service work. These keep you signed in (your authentication session) and protect the signup
         and login forms against bots and abuse (Cloudflare Turnstile). We do <strong>not</strong> use
         advertising, analytics, or cross-site tracking cookies, and we do not sell or share data for

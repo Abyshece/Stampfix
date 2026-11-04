@@ -55,7 +55,7 @@ export function DataProcessingAgreement() {
       <h2>6. Obligations of Stampfix (Processor)</h2>
       <ul>
         <li>Process Personal Data only on documented instructions from the Merchant, including with regard to international transfers.</li>
-        <li>Never process the Merchant's customer data for Stampfix's own purposes — including advertising, profiling, resale, or training of machine-learning models — and use it only to provide the Services.</li>
+        <li>Never process the Merchant's customer data for Stampfix's own purposes (including advertising, profiling, resale, or training of machine-learning models), and use it only to provide the Services.</li>
         <li>Ensure that personnel authorized to process Personal Data are subject to confidentiality obligations.</li>
         <li>Implement and maintain appropriate technical and organizational security measures (Article 32 GDPR), including:
           <ul>
@@ -66,7 +66,7 @@ export function DataProcessingAgreement() {
             <li>confidentiality obligations for all personnel with data access, regular security review, and a Record of Processing Activities maintained under Article 30(2) GDPR.</li>
           </ul>
         </li>
-        <li>Notify the Merchant without undue delay and within 24 hours of becoming aware of any Personal Data Breach affecting the Merchant's data — so the Merchant can meet its own 72-hour notification obligation under Article 33 GDPR — including, where available, the nature of the incident, the categories and approximate number of data subjects and records affected, the likely consequences, and the measures taken or proposed.</li>
+        <li>Notify the Merchant without undue delay and within 24 hours of becoming aware of any Personal Data Breach affecting the Merchant's data (so the Merchant can meet its own 72-hour notification obligation under Article 33 GDPR), including, where available, the nature of the incident, the categories and approximate number of data subjects and records affected, the likely consequences, and the measures taken or proposed.</li>
         <li>Assist the Merchant in responding to Data Subject Requests (access, rectification, deletion, portability, restriction, objection).</li>
         <li>Make available all information necessary to demonstrate compliance with this DPA, and submit to audits no more than once per twelve-month period upon reasonable notice.</li>
       </ul>
@@ -76,17 +76,17 @@ export function DataProcessingAgreement() {
         The Merchant authorizes Stampfix to engage the following sub-processors, each bound by data protection obligations consistent with this DPA:
       </p>
       <ul>
-        <li><strong>Supabase Inc.</strong> — Database, authentication, file storage. Servers located in the EU and Canada.</li>
-        <li><strong>Vercel Inc.</strong> — Application hosting and edge networking.</li>
-        <li><strong>Resend</strong> — Transactional email delivery.</li>
-        <li><strong>Stripe Inc.</strong> — Payment processing (Merchant subscription billing only; not customer data).</li>
-        <li><strong>Google LLC</strong> — Google Wallet pass distribution (where the customer opts in).</li>
-        <li><strong>Apple Inc.</strong> — Apple Wallet pass distribution and push updates (where the customer opts in).</li>
-        <li><strong>Cloudflare Inc.</strong> — DDoS protection and Turnstile bot detection.</li>
-        <li><strong>Functional Software, Inc. (Sentry)</strong> — Error monitoring and diagnostics.</li>
+        <li><strong>Supabase Inc.</strong>: Database, authentication, file storage. Servers located in the EU and Canada.</li>
+        <li><strong>Vercel Inc.</strong>: Application hosting and edge networking.</li>
+        <li><strong>Resend</strong>: Transactional email delivery.</li>
+        <li><strong>Stripe Inc.</strong>: Payment processing (Merchant subscription billing only; not customer data).</li>
+        <li><strong>Google LLC</strong>: Google Wallet pass distribution (where the customer opts in).</li>
+        <li><strong>Apple Inc.</strong>: Apple Wallet pass distribution and push updates (where the customer opts in).</li>
+        <li><strong>Cloudflare Inc.</strong>: DDoS protection and Turnstile bot detection.</li>
+        <li><strong>Functional Software, Inc. (Sentry)</strong>: Error monitoring and diagnostics.</li>
       </ul>
       <p>
-        The current, canonical list of sub-processors — including each one's purpose, processing location, and transfer mechanism — is maintained at{' '}
+        The current, canonical list of sub-processors (including each one's purpose, processing location, and transfer mechanism) is maintained at{' '}
         <a href="/subprocessors" className="underline">stampfix.app/subprocessors</a>. Stampfix will give the Merchant 30 days' notice of any new sub-processor and the opportunity to object on reasonable grounds.
       </p>
 
