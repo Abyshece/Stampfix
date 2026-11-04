@@ -6,7 +6,7 @@ const MERCHANT_BENEFITS = [
   {
     icon: BarChart3,
     title: 'You finally get customer data',
-    body: 'Hand out a paper card and the customer walks out a ghost — you never learn their name, how often they visit, or what they buy. Stampfix captures that from the first stamp, so you can see who your best regulars are and run promotions that actually land.',
+    body: 'Hand out a paper card and the customer walks out a ghost. You never learn their name, how often they visit, or what they buy. Stampfix captures that from the first stamp, so you can see who your best regulars are and run promotions that actually land.',
   },
   {
     icon: Zap,
@@ -21,7 +21,7 @@ const MERCHANT_BENEFITS = [
   {
     icon: Sparkles,
     title: 'You look like a premium brand',
-    body: 'A sleek, scan-to-stamp card that lives in Apple Wallet tells customers you are modern, efficient, and that you respect their time — the same experience the big chains spent millions building.',
+    body: 'A sleek, scan-to-stamp card that lives in Apple Wallet tells customers you are modern, efficient, and that you respect their time. It’s the same experience the big chains spent millions building.',
   },
 ];
 
@@ -36,7 +36,7 @@ export function AboutPage() {
           {t('about.h1', { defaultValue: 'Because your best customers deserve better than a crumpled piece of paper.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed text-pretty">
-          {t('about.sub', { defaultValue: 'Stampfix is a lightning-fast web tool that gives independent merchants the power of a custom loyalty app — entirely through the mobile browser and native digital wallets. No App Store, no paper.' })}
+          {t('about.sub', { defaultValue: 'Stampfix is a lightning-fast web tool that gives independent merchants the power of a custom loyalty app, entirely through the mobile browser and native digital wallets. No App Store, no paper.' })}
         </p>
       </section>
 
@@ -47,10 +47,10 @@ export function AboutPage() {
           {t('about.bornP1', { defaultValue: 'Every good product starts with an everyday annoyance. We were tired of losing paper punch cards when we were one stamp away from the reward. We were just as tired of being asked to download a 50\u00a0MB app to get a discount on a sandwich.' })}
         </p>
         <p>
-          {t('about.bornP2', { defaultValue: 'There was a real disconnect. Independent merchants — cafés, salons, food trucks, local retailers — need a way to build loyalty and keep customers coming back. But making a customer jump through hoops is the fastest way to lose them. So we asked a simple question:' })}
+          {t('about.bornP2', { defaultValue: 'There was a real disconnect. Independent merchants like cafés, salons, food trucks and local retailers need a way to build loyalty and keep customers coming back. But making a customer jump through hoops is the fastest way to lose them. So we asked a simple question:' })}
         </p>
         <p className="text-xl font-serif-display text-[#37352F] leading-snug py-2">
-          {t('about.bornQ', { defaultValue: 'What if loyalty required zero friction — join, get a stamp, and save your progress in under five seconds, without ever visiting the App Store?' })}
+          {t('about.bornQ', { defaultValue: 'What if loyalty required zero friction, so you could join, get a stamp and save your progress in under five seconds without ever visiting the App Store?' })}
         </p>
         <p>{t('about.bornP3', { defaultValue: 'That question became Stampfix.' })}</p>
       </section>
@@ -64,7 +64,7 @@ export function AboutPage() {
               {t('about.visionText', { defaultValue: 'To become the global standard for frictionless customer loyalty.' })}
             </p>
             <p className="text-sm text-gray-500 mt-4 leading-relaxed">
-              {t('about.visionSub', { defaultValue: 'Building relationships with your regulars shouldn’t need a massive tech budget — and it certainly shouldn’t need paper.' })}
+              {t('about.visionSub', { defaultValue: 'Building relationships with your regulars shouldn’t need a massive tech budget. And it certainly shouldn’t need paper.' })}
             </p>
           </div>
           <div className="bg-[#F7F7F5] border notion-border rounded-2xl p-8">
@@ -73,7 +73,7 @@ export function AboutPage() {
               {t('about.missionText', { defaultValue: 'Level the playing field for independent business.' })}
             </p>
             <p className="text-sm text-gray-500 mt-4 leading-relaxed">
-              {t('about.missionSub', { defaultValue: 'Give local shops the exact same digital-wallet technology the big chains use — for the price of a few lunches a month.' })}
+              {t('about.missionSub', { defaultValue: 'Give local shops the exact same digital-wallet technology the big chains use, for the price of a few lunches a month.' })}
             </p>
           </div>
         </div>
@@ -83,7 +83,7 @@ export function AboutPage() {
       <section className="max-w-2xl mx-auto px-6 py-10 space-y-5 text-[15px] leading-relaxed text-gray-700">
         <h2 className="text-2xl font-serif-display font-semibold text-[#37352F]">{t('about.whyH2', { defaultValue: 'Why we’re building this' })}</h2>
         <p>
-          {t('about.whyP1', { defaultValue: 'For years, big-box retailers and national chains have owned customer loyalty — because they could afford million-dollar apps. Everyone else was left with the paper punch card. We think independent businesses are the heartbeat of a community, and they deserve the same tools.' })}
+          {t('about.whyP1', { defaultValue: 'For years, big-box retailers and national chains have owned customer loyalty, because they could afford million-dollar apps. Everyone else was left with the paper punch card. We think independent businesses are the heartbeat of a community, and they deserve the same tools.' })}
         </p>
         <p>
           {t('about.whyP2', { defaultValue: 'Loyalty is about making customers feel valued, not giving them homework. Stampfix exists to remove the friction on both sides of the counter: nothing to download for the customer, nothing to engineer for the merchant.' })}

@@ -23,13 +23,13 @@ function useInView<T extends HTMLElement>(threshold = 0.2) {
 
 // Colours pulled from the wallet-card palette.
 const STEPS = [
-  { n: '1', c: '#75FBFD', title: 'Customer scans', body: 'They point their phone camera at your Stampfix QR code. A branded page opens instantly in the browser \u2014 nothing to install.' },
+  { n: '1', c: '#75FBFD', title: 'Customer scans', body: 'They point their phone camera at your Stampfix QR code. A branded page opens instantly in the browser, with nothing to install.' },
   { n: '2', c: '#510AF5', title: 'You stamp', body: 'One tap from you (or a scan) adds a digital stamp. Every stamp is signed and server-verified, so it can\u2019t be faked.' },
   { n: '3', c: '#EA3323', title: 'Saved to Wallet', body: 'They tap Add to Apple Wallet or Google Wallet. The card now lives next to their Apple Pay, impossible to lose.' },
 ];
 
 const FEATURES = [
-  { icon: Wallet,      c: '#75FBFD', fg: '#223355', title: 'Apple & Google Wallet, natively', body: 'Customers already have Wallet installed for their credit cards and boarding passes. Your loyalty card slots right in \u2014 no new app, ever.' },
+  { icon: Wallet,      c: '#75FBFD', fg: '#223355', title: 'Apple & Google Wallet, natively', body: 'Customers already have Wallet installed for their credit cards and boarding passes. Your loyalty card slots right in. No new app, ever.' },
   { icon: BellRing,    c: '#EA33B6', fg: '#FFFFFF', title: 'Location-based reminders', body: 'Because the card lives in their native wallet, it can nudge their lock screen when they\u2019re near your shop: \u201cYou\u2019re one stamp away from your reward.\u201d' },
   { icon: RefreshCw,   c: '#510AF5', fg: '#FCFF54', title: 'Dynamic, real-time updates', body: 'Add a stamp and the card in their wallet updates on its own. They always see exactly how close they are to the reward.' },
   { icon: BarChart3,   c: '#F7CE46', fg: '#1A1A1A', title: 'A merchant dashboard', body: 'Know your customers by name, not just by face. See your best regulars, visit frequency, and retention at a glance.' },
@@ -112,7 +112,7 @@ export function FeaturesPage() {
           {t('features.h1', { defaultValue: 'The loyalty program your customers will actually use.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          {t('features.sub', { defaultValue: 'Enterprise-grade retention on a local-business budget — your brand, right next to their Apple\u00a0Pay.' })}
+          {t('features.sub', { defaultValue: 'Enterprise-grade retention on a local-business budget, with your brand right next to their Apple\u00a0Pay.' })}
         </p>
       </section>
 
@@ -132,7 +132,7 @@ export function FeaturesPage() {
         >
           <h2 className="text-2xl font-serif-display font-semibold mb-3">{t('features.walletH2', { defaultValue: 'The secret weapon: native wallets' })}</h2>
           <p className="text-gray-600 leading-relaxed">
-            {t('features.walletBody', { defaultValue: 'This is where Stampfix goes from a cool web tool to a retention strategy. The moment a customer saves your card to Apple Wallet or Google Wallet, your brand lives on their phone forever — front and center, impossible to lose, and quietly reminding them to come back.' })}
+            {t('features.walletBody', { defaultValue: 'This is where Stampfix goes from a cool web tool to a retention strategy. The moment a customer saves your card to Apple Wallet or Google Wallet, your brand lives on their phone for good. It sits front and center, can’t get lost, and quietly reminds them to come back.' })}
           </p>
         </div>
       </section>
