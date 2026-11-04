@@ -43,6 +43,9 @@ export interface Order {
   total: number;
   locationId: string | null;
   createdAt: string;
+  /** Coupon discount already taken off total (0 when none). */
+  discount: number;
+  couponCode: string | null;
   items: OrderLine[];
 }
 
@@ -153,6 +156,7 @@ export async function deleteItem(id: string): Promise<void> {
 type OrderRow = {
   id: string; order_number: number; status: OrderStatus; table_label: string | null; customer_name: string | null;
   note: string | null; reject_reason: string | null; total: number | string; location_id: string | null; created_at: string;
+  discount?: number | string | null; coupon_code?: string | null;
   order_items: Array<{ name: string; quantity: number; price: number | string }> | null;
 };
 
@@ -161,7 +165,8 @@ export async function listOrders(campaignId: string): Promise<Order[]> {
   const since = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from('orders')
-    .select('id, order_number, status, table_label, customer_name, note, reject_reason, total, location_id, created_at, order_items(name, quantity, price)')
+    // "*" so the list keeps working whether or not the coupon columns exist yet.
+    .select('*, order_items(name, quantity, price)')
     .eq('campaign_id', campaignId)
     .or(`status.in.(new,accepted,ready),created_at.gte."${since}"`)
     .order('created_at', { ascending: false })
@@ -170,6 +175,7 @@ export async function listOrders(campaignId: string): Promise<Order[]> {
   return ((data as OrderRow[] | null) ?? []).map((r) => ({
     id: r.id, number: r.order_number, status: r.status, tableLabel: r.table_label, customerName: r.customer_name,
     note: r.note, rejectReason: r.reject_reason, total: Number(r.total), locationId: r.location_id, createdAt: r.created_at,
+    discount: Number(r.discount ?? 0), couponCode: r.coupon_code ?? null,
     items: (r.order_items ?? []).map((i) => ({ name: i.name, quantity: i.quantity, price: Number(i.price) })),
   }));
 }
@@ -201,6 +207,10 @@ export interface PublicMenu {
   note: string | null;
   categories: Array<{ id: string; name: string }>;
   items: Array<{ id: string; categoryId: string | null; name: string; description: string | null; price: number }>;
+  /** The shop has active coupons, so checkout shows a code field. */
+  couponsOn: boolean;
+  /** Coupons the shop shows on the menu (working today). */
+  coupons: PublicCoupon[];
 }
 
 /** The shop's menu for guests; null when the shop doesn't exist. */
@@ -212,25 +222,35 @@ export async function fetchPublicMenu(campaignId: string): Promise<PublicMenu | 
     business_name: string; logo_image: string | null; primary_color: string | null; country: string | null;
     open: boolean; note: string | null; categories: Array<{ id: string; name: string }> | null;
     items: Array<{ id: string; category_id: string | null; name: string; description: string | null; price: number | string }> | null;
+    coupons_on?: boolean; coupons?: Array<{ code: string; title: string | null; kind: CouponKind; value: number | string; min_order: number | string | null; ends_on: string | null }> | null;
   };
   return {
     businessName: d.business_name, logoImage: d.logo_image, primaryColor: d.primary_color, country: d.country,
     open: d.open === true, note: d.note, categories: d.categories ?? [],
     items: (d.items ?? []).map((i) => ({ id: i.id, categoryId: i.category_id, name: i.name, description: i.description, price: Number(i.price) })),
+    couponsOn: d.coupons_on === true,
+    coupons: (d.coupons ?? []).map((c) => ({
+      code: c.code, title: c.title, kind: c.kind, value: Number(c.value),
+      minOrder: c.min_order == null ? null : Number(c.min_order), endsOn: c.ends_on,
+    })),
   };
 }
 
-export type PlaceOrderError = 'ordering_closed' | 'too_many_orders' | 'item_unavailable' | 'invalid_items' | 'unknown';
+export type PlaceOrderError = 'ordering_closed' | 'too_many_orders' | 'item_unavailable' | 'invalid_items' | 'coupon' | 'unknown';
 
 export async function placeOrder(p: {
   campaignId: string; table: string | null; locationId: string | null; name: string; note: string;
-  items: Array<{ id: string; qty: number }>;
+  items: Array<{ id: string; qty: number }>; coupon?: string | null;
 }): Promise<{ token: string; number: number; total: number }> {
   const { data, error } = await supabase.rpc('place_order', {
     p_campaign: p.campaignId, p_table: p.table, p_location: p.locationId,
     p_name: p.name, p_note: p.note, p_items: p.items,
+    // Only sent with a coupon, so ordering also works before the coupon update.
+    ...(p.coupon ? { p_coupon: p.coupon } : {}),
   });
   if (error) {
+    const coupon = /coupon_(not_found|not_started|expired|used_up|min_order)/.exec(error.message ?? '');
+    if (coupon) throw Object.assign(new Error('coupon'), { code: 'coupon' as PlaceOrderError, reason: coupon[1] as CouponProblem });
     const known: PlaceOrderError[] = ['ordering_closed', 'too_many_orders', 'item_unavailable', 'invalid_items'];
     const code = known.find((k) => error.message?.includes(k)) ?? 'unknown';
     throw Object.assign(new Error(code), { code });
@@ -245,6 +265,9 @@ export interface GuestOrderStatus {
   rejectReason: string | null;
   table: string | null;
   total: number;
+  subtotal: number;
+  discount: number;
+  couponCode: string | null;
   createdAt: string;
   businessName: string;
   country: string | null;
@@ -258,10 +281,12 @@ export async function fetchOrderStatus(token: string): Promise<GuestOrderStatus 
   const d = data as {
     number: number; status: OrderStatus; reject_reason: string | null; table: string | null; total: number | string;
     created_at: string; business_name: string; country: string | null;
+    subtotal?: number | string | null; discount?: number | string | null; coupon_code?: string | null;
     items: Array<{ name: string; quantity: number; price: number | string }> | null;
   };
   return {
     number: d.number, status: d.status, rejectReason: d.reject_reason, table: d.table, total: Number(d.total),
+    subtotal: Number(d.subtotal ?? d.total), discount: Number(d.discount ?? 0), couponCode: d.coupon_code ?? null,
     createdAt: d.created_at, businessName: d.business_name, country: d.country,
     items: (d.items ?? []).map((i) => ({ name: i.name, quantity: i.quantity, price: Number(i.price) })),
   };
@@ -399,4 +424,138 @@ export async function adminListMenuUploads(): Promise<AdminMenuUpload[]> {
 export async function adminSetMenuUpload(id: string, status: MenuUploadStatus, adminNote?: string): Promise<void> {
   const { error } = await supabase.rpc('admin_set_menu_upload', { p_id: id, p_status: status, p_admin_note: adminNote ?? null });
   if (error) throw error;
+}
+
+// ---- Coupons (add-on) ------------------------------------------------------------------
+// Guests use a code on their table order; the discount is on the order and
+// staff charge the lower total at the counter (no online payment).
+
+export type CouponKind = 'percent' | 'amount';
+export type CouponProblem = 'not_found' | 'not_started' | 'expired' | 'used_up' | 'min_order';
+
+export interface Coupon {
+  id: string;
+  code: string;
+  title: string | null;
+  kind: CouponKind;
+  value: number;
+  minOrder: number | null;
+  /** Inclusive days (YYYY-MM-DD) in the shop's time zone. */
+  startsOn: string | null;
+  endsOn: string | null;
+  maxUses: number | null;
+  active: boolean;
+  showOnMenu: boolean;
+  createdAt: string;
+}
+export type CouponInput = Omit<Coupon, 'id' | 'createdAt'>;
+export interface PublicCoupon { code: string; title: string | null; kind: CouponKind; value: number; minOrder: number | null; endsOn: string | null }
+export interface CouponUse { uses: number; discountTotal: number }
+
+/** A code people can type: A to Z and 0 to 9, 3 to 20 characters. */
+export const COUPON_CODE = /^[A-Z0-9]{3,20}$/;
+export function cleanCouponCode(s: string): string {
+  return s.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+}
+/** A short random code, without look-alike characters (0/O, 1/I). */
+export function randomCouponCode(prefix = ''): string {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const head = cleanCouponCode(prefix).slice(0, 12);
+  let tail = '';
+  for (let i = 0; i < (head ? 4 : 8); i++) tail += abc[Math.floor(Math.random() * abc.length)];
+  return head + tail;
+}
+
+/** "10%", "€2" or "€2.50": a coupon's value for labels. */
+export function couponValueLabel(c: { kind: CouponKind; value: number }, country: string | null | undefined, lang: string): string {
+  const locale = lang.startsWith('de') ? 'de-DE' : 'en-CA';
+  const whole = Number.isInteger(c.value);
+  const num = c.value.toLocaleString(locale, whole ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return c.kind === 'percent' ? `${c.value.toLocaleString(locale, { maximumFractionDigits: 2 })}%` : menuCurrency(country) + num;
+}
+
+/** The discount a coupon gives on a subtotal (what the server will also work out). */
+export function couponDiscount(c: { kind: CouponKind; value: number; minOrder: number | null }, subtotal: number): number {
+  if (c.minOrder != null && subtotal < c.minOrder) return 0;
+  const d = c.kind === 'percent' ? Math.round(subtotal * c.value) / 100 : Math.min(c.value, subtotal);
+  return Math.max(0, Math.round(d * 100) / 100);
+}
+
+type CouponRow = {
+  id: string; code: string; title: string | null; kind: CouponKind; value: number | string; min_order: number | string | null;
+  starts_on: string | null; ends_on: string | null; max_uses: number | null; active: boolean; show_on_menu: boolean; created_at: string;
+};
+const toCoupon = (r: CouponRow): Coupon => ({
+  id: r.id, code: r.code, title: r.title, kind: r.kind, value: Number(r.value),
+  minOrder: r.min_order == null ? null : Number(r.min_order), startsOn: r.starts_on, endsOn: r.ends_on,
+  maxUses: r.max_uses, active: r.active, showOnMenu: r.show_on_menu, createdAt: r.created_at,
+});
+const couponRow = (c: Partial<CouponInput>) => {
+  const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (c.code !== undefined) row.code = cleanCouponCode(c.code);
+  if (c.title !== undefined) row.title = c.title?.trim() ? c.title.trim().slice(0, 60) : null;
+  if (c.kind !== undefined) row.kind = c.kind;
+  if (c.value !== undefined) row.value = c.value;
+  if (c.minOrder !== undefined) row.min_order = c.minOrder;
+  if (c.startsOn !== undefined) row.starts_on = c.startsOn || null;
+  if (c.endsOn !== undefined) row.ends_on = c.endsOn || null;
+  if (c.maxUses !== undefined) row.max_uses = c.maxUses;
+  if (c.active !== undefined) row.active = c.active;
+  if (c.showOnMenu !== undefined) row.show_on_menu = c.showOnMenu;
+  return row;
+};
+
+export type CouponSaveError = 'duplicate' | 'unknown';
+const saveError = (e: { code?: string } | null) =>
+  Object.assign(new Error('coupon_save'), { code: (e?.code === '23505' ? 'duplicate' : 'unknown') as CouponSaveError });
+
+export async function listCoupons(campaignId: string): Promise<Coupon[]> {
+  const { data, error } = await supabase.from('coupons').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return ((data as CouponRow[] | null) ?? []).map(toCoupon);
+}
+export async function createCoupon(campaignId: string, c: CouponInput): Promise<void> {
+  const { error } = await supabase.from('coupons').insert({ campaign_id: campaignId, ...couponRow(c) });
+  if (error) throw saveError(error);
+}
+export async function updateCoupon(id: string, patch: Partial<CouponInput>): Promise<void> {
+  const { error } = await supabase.from('coupons').update(couponRow(patch)).eq('id', id);
+  if (error) throw saveError(error);
+}
+/** Past orders keep the code and the discount they got. */
+export async function deleteCoupon(id: string): Promise<void> {
+  const { error } = await supabase.from('coupons').delete().eq('id', id);
+  if (error) throw error;
+}
+/** How often each coupon was used (rejected orders don't count). */
+export async function couponUsage(campaignId: string): Promise<Record<string, CouponUse>> {
+  const { data, error } = await supabase.rpc('coupon_usage', { p_campaign: campaignId });
+  if (error) throw error;
+  const out: Record<string, CouponUse> = {};
+  for (const r of (data as Array<{ coupon_id: string; uses: number | string; discount_total: number | string }> | null) ?? []) {
+    out[r.coupon_id] = { uses: Number(r.uses), discountTotal: Number(r.discount_total) };
+  }
+  return out;
+}
+
+export interface CouponCheck {
+  ok: boolean;
+  reason: CouponProblem | null;
+  /** Set when the code works (also when the order is below its minimum). */
+  coupon: PublicCoupon | null;
+  /** For not_started: the first day it works. */
+  startsOn: string | null;
+}
+/** Guest: does this code work on this order? (place_order checks again.) */
+export async function checkCoupon(campaignId: string, code: string, subtotal: number): Promise<CouponCheck> {
+  const { data, error } = await supabase.rpc('check_coupon', { p_campaign: campaignId, p_code: cleanCouponCode(code), p_subtotal: subtotal });
+  if (error) throw error;
+  const d = data as {
+    ok: boolean; reason?: CouponProblem; code?: string; title?: string | null; kind?: CouponKind;
+    value?: number | string; min_order?: number | string | null; starts_on?: string | null;
+  };
+  const coupon = d.code && d.kind
+    ? { code: d.code, title: d.title ?? null, kind: d.kind, value: Number(d.value), minOrder: d.min_order == null ? null : Number(d.min_order), endsOn: null }
+    : null;
+  return { ok: d.ok === true, reason: d.ok ? null : (d.reason ?? 'not_found'), coupon, startsOn: d.starts_on ?? null };
 }

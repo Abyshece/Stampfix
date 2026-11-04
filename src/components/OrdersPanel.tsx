@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ClipboardList, Loader2, Check, X, ChefHat, BellRing, ChevronDown, Puzzle } from 'lucide-react';
+import { ClipboardList, Loader2, Check, X, ChefHat, BellRing, ChevronDown, Puzzle, Ticket } from 'lucide-react';
 import type { Location } from '../types';
 import { useToast } from './ToastProvider';
 import { listOrders, setOrderStatus, menuMoney, isTableNumber, type Order, type OrderStatus } from '../lib/ordering';
@@ -121,6 +121,18 @@ export function OrdersPanel({ campaignId, country, locations, orderingEnabled, o
           </li>
         ))}
       </ul>
+      {o.discount > 0 && (
+        // Coupon: the total above already has the discount taken off; that's what to charge.
+        <div className="mt-2 pt-2 border-t border-dashed border-gray-200 space-y-1 text-sm">
+          <div className="flex justify-between gap-3 text-green-700">
+            <span className="inline-flex items-center gap-1.5 min-w-0"><Ticket className="w-3.5 h-3.5 shrink-0" /><span className="truncate">{t('dash.orders.coupon', { code: o.couponCode ?? '', defaultValue: 'Coupon {{code}}' })}</span></span>
+            <span className="shrink-0">−{money(o.discount)}</span>
+          </div>
+          <div className="flex justify-between gap-3 font-semibold text-[#37352F]">
+            <span>{t('dash.orders.toCharge', { defaultValue: 'To charge' })}</span><span className="shrink-0">{money(o.total)}</span>
+          </div>
+        </div>
+      )}
       {o.note && <p className="mt-2 text-sm bg-amber-50 text-amber-900 rounded-lg px-3 py-2 break-words">“{o.note}”</p>}
       <div className="flex gap-2 mt-3 flex-wrap">
         {o.status === 'new' && (
@@ -215,6 +227,7 @@ export function OrdersPanel({ campaignId, country, locations, orderingEnabled, o
                         {o.status === 'rejected' && o.rejectReason ? <span className="text-gray-500"> · {o.rejectReason}</span> : null}
                       </span>
                       <span className="flex items-center gap-3 shrink-0">
+                        {o.couponCode && o.discount > 0 && <span className="hidden sm:inline-flex items-center gap-1 text-xs text-green-700"><Ticket className="w-3 h-3" />{o.couponCode}</span>}
                         <span className="text-gray-600">{money(o.total)}</span>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${o.status === 'completed' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                           {o.status === 'completed' ? t('dash.orders.stCompleted', { defaultValue: 'Collected' }) : t('dash.orders.stRejected', { defaultValue: 'Rejected' })}
