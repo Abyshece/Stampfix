@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Minus, Plus, ShoppingBag, X, Check, ChefHat, BellRing, UtensilsCrossed, Info, ArrowRight, Wallet } from 'lucide-react';
+import { Loader2, Minus, Plus, ShoppingBag, X, Check, ChefHat, BellRing, UtensilsCrossed, Info, ArrowRight, Wallet, Ticket } from 'lucide-react';
 import {
-  fetchPublicMenu, placeOrder, fetchOrderStatus, menuMoney, isTableNumber,
-  type PublicMenu, type GuestOrderStatus, type PlaceOrderError,
+  fetchPublicMenu, placeOrder, fetchOrderStatus, menuMoney, isTableNumber, checkCoupon, couponDiscount, couponValueLabel, cleanCouponCode,
+  type PublicMenu, type GuestOrderStatus, type PlaceOrderError, type PublicCoupon, type CouponProblem,
 } from '../lib/ordering';
 import { getCampaignById } from '../lib/db';
 import type { Campaign } from '../types';
@@ -12,6 +12,8 @@ import type { Campaign } from '../types';
 // Pick items, send the order, then follow it (received, preparing, ready).
 // Payment happens at the counter. A banner invites guests to the shop's
 // stamp card (opens the normal sign-up in a new tab, so the order stays).
+// Coupons (add-on): guests tap one shown on the menu or enter a code at
+// checkout; the discount is on the order and staff charge the lower total.
 
 const STATUS_POLL_MS = 5000;
 const storeKey = (campaignId: string) => `sf_order_${campaignId}`;
@@ -99,6 +101,8 @@ export function OrderPage() {
   // The shop's stamp card, for the sign-up banner (only when the card is live).
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loyaltyHidden, setLoyaltyHidden] = useState(() => { try { return localStorage.getItem(hideKey(campaignId)) === '1'; } catch { return false; } });
+  // The coupon the guest picked (from the menu or by code). The server checks it again when the order is sent.
+  const [coupon, setCoupon] = useState<PublicCoupon | null>(null);
 
   const loadMenu = useCallback(() => {
     fetchPublicMenu(campaignId).then((m) => { setMenu(m); setLoadError(false); }).catch(() => setLoadError(true));
@@ -118,6 +122,7 @@ export function OrderPage() {
   const onLang = (l: 'en' | 'de') => void i18n.changeLanguage(l);
   const joinUrl = `/?campaign=${encodeURIComponent(campaignId)}${locationId ? `&location=${encodeURIComponent(locationId)}` : ''}`;
   const hideLoyalty = () => { setLoyaltyHidden(true); try { localStorage.setItem(hideKey(campaignId), '1'); } catch { /* this visit only */ } };
+  const couponLabel = (c: { kind: PublicCoupon['kind']; value: number }) => couponValueLabel(c, menu?.country ?? null, i18n.language);
   const banner = (variant: 'menu' | 'after') => (campaign && !loyaltyHidden
     ? <LoyaltyBanner campaign={campaign} accent={accent} joinUrl={joinUrl} variant={variant} onHide={hideLoyalty} />
     : null);
@@ -152,15 +157,18 @@ export function OrderPage() {
   const itemsById = new Map(menu.items.map((i) => [i.id, i]));
   const lines = Object.entries(cart).filter(([id, q]) => q > 0 && itemsById.has(id));
   const total = lines.reduce((n, [id, q]) => n + (itemsById.get(id)!.price * q), 0);
+  const deal: Deal = { coupon, discount: coupon ? couponDiscount(coupon, total) : 0, short: coupon?.minOrder != null && total < coupon.minOrder ? coupon.minOrder - total : 0 };
 
   return (
     <Shell lang={lang} onLang={onLang} title={menu.businessName} logo={menu.logoImage} table={urlTable}>
-      <MenuView menu={menu} cart={cart} money={money} accent={accent} banner={banner('menu')}
+      <MenuView menu={menu} cart={cart} money={money} accent={accent} banner={banner('menu')} deal={deal} couponLabel={couponLabel}
+        onCoupon={(c) => setCoupon((cur) => (cur?.code === c.code ? null : c))}
         onQty={setQty} onOpenCart={() => setSheet(true)} sheetOpen={sheet} total={total} />
       {sheet && (
         <CheckoutSheet menu={menu} lines={lines} total={total} money={money} accent={accent} urlTable={urlTable} campaignId={campaignId} locationId={locationId}
+          deal={deal} couponLabel={couponLabel} onCoupon={setCoupon}
           onQty={setQty} onClose={() => setSheet(false)}
-          onPlaced={(tok) => { saveToken(campaignId, tok); setToken(tok); setSheet(false); setCart({}); }}
+          onPlaced={(tok) => { saveToken(campaignId, tok); setToken(tok); setSheet(false); setCart({}); setCoupon(null); }}
           onMenuChanged={loadMenu} />
       )}
     </Shell>
@@ -271,10 +279,68 @@ function LoyaltyBanner({ campaign, accent, joinUrl, variant, onHide }: {
   );
 }
 
+// ---- Coupons --------------------------------------------------------------------------------
+
+/** The guest's coupon: discount on the current cart, and how much is missing for its minimum order. */
+type Deal = { coupon: PublicCoupon | null; discount: number; short: number };
+type CouponLabel = (c: { kind: PublicCoupon['kind']; value: number }) => string;
+
+function shortDate(day: string, lang: string) {
+  return new Date(`${day}T12:00:00`).toLocaleDateString(lang.startsWith('de') ? 'de-DE' : 'en-CA', { day: 'numeric', month: 'short' });
+}
+
+/** Coupons the shop shows on the menu, as tear-off tickets. Tap one to use it. */
+function CouponStrip({ coupons, applied, accent, money, label, onToggle }: {
+  coupons: PublicCoupon[]; applied: PublicCoupon | null; accent: Accent; money: (n: number) => string; label: CouponLabel;
+  onToggle: (c: PublicCoupon) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const many = coupons.length > 1;
+  return (
+    <div className={`mt-4 ${many ? 'flex gap-3 overflow-x-auto no-scrollbar px-4 scroll-px-4 pb-1 snap-x snap-mandatory' : 'px-4'}`}>
+      {coupons.map((c) => {
+        const on = applied?.code === c.code;
+        const value = label(c);
+        const conds = [
+          c.minOrder != null && c.minOrder > 0 ? t('order.cMin', { amount: money(c.minOrder), defaultValue: 'On orders from {{amount}}' }) : null,
+          c.endsOn ? t('order.cUntil', { date: shortDate(c.endsOn, i18n.language), defaultValue: 'Until {{date}}' }) : null,
+        ].filter(Boolean).join(' · ');
+        return (
+          <button key={c.code} type="button" onClick={() => onToggle(c)} aria-pressed={on} data-coupon={c.code}
+            className={`relative flex items-stretch text-left rounded-2xl bg-white overflow-hidden active:scale-[0.99] transition ${many ? 'shrink-0 w-[86%] snap-start' : 'w-full'}`}
+            style={{ boxShadow: on ? `0 0 0 2px ${accent.bg}, 0 4px 14px rgba(0,0,0,0.08)` : '0 1px 2px rgba(0,0,0,0.06), 0 4px 14px rgba(0,0,0,0.05)' }}>
+            <span className="w-[96px] shrink-0 flex flex-col items-center justify-center px-2 py-4 text-center" style={{ background: accent.bg, color: accent.ink }}>
+              <span className={`${value.length > 5 ? 'text-xl' : 'text-[28px]'} font-extrabold leading-none tracking-tight`}>{value}</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.16em] mt-1.5 opacity-80">{t('order.cOff', { defaultValue: 'off' })}</span>
+            </span>
+            {/* The tear line, with a notch top and bottom. */}
+            <span aria-hidden className="relative w-0 border-l-2 border-dashed border-black/10">
+              <i className="absolute -left-[9px] -top-2 w-4 h-4 rounded-full" style={{ background: PAGE_BG }} />
+              <i className="absolute -left-[9px] -bottom-2 w-4 h-4 rounded-full" style={{ background: PAGE_BG }} />
+            </span>
+            <span className="min-w-0 flex-1 px-4 py-3 flex flex-col justify-center">
+              <span className="font-semibold leading-snug line-clamp-2 break-words">{c.title || t('order.cDefaultTitle', { value, defaultValue: '{{value}} off your order' })}</span>
+              {conds && <span className="text-xs text-gray-500 mt-0.5">{conds}</span>}
+              <span className="flex items-center justify-between gap-2 mt-2.5">
+                <span className="font-mono text-[13px] font-bold tracking-wider truncate">{c.code}</span>
+                <span className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold rounded-full px-3 py-1.5"
+                  style={on ? { background: accent.bg, color: accent.ink } : { background: PAGE_BG }}>
+                  {on ? <><Check className="w-3.5 h-3.5" />{t('order.cApplied', { defaultValue: 'Applied' })}</> : t('order.cUse', { defaultValue: 'Use coupon' })}
+                </span>
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ---- Menu -----------------------------------------------------------------------------------
 
-function MenuView({ menu, cart, money, accent, banner, onQty, onOpenCart, sheetOpen, total }: {
+function MenuView({ menu, cart, money, accent, banner, deal, couponLabel, onCoupon, onQty, onOpenCart, sheetOpen, total }: {
   menu: PublicMenu; cart: Record<string, number>; money: (n: number) => string; accent: Accent; banner: React.ReactNode;
+  deal: Deal; couponLabel: CouponLabel; onCoupon: (c: PublicCoupon) => void;
   onQty: (id: string, q: number) => void; onOpenCart: () => void; sheetOpen: boolean; total: number;
 }) {
   const { t } = useTranslation();
@@ -307,6 +373,9 @@ function MenuView({ menu, cart, money, accent, banner, onQty, onOpenCart, sheetO
   return (
     <>
       {banner && <div className="px-4 mt-4">{banner}</div>}
+      {menu.open && menu.coupons.length > 0 && (
+        <CouponStrip coupons={menu.coupons} applied={deal.coupon} accent={accent} money={money} label={couponLabel} onToggle={onCoupon} />
+      )}
       {!menu.open && (
         <div className="mx-4 mt-4 rounded-2xl bg-amber-50 text-amber-900 ring-1 ring-amber-200/60 px-4 py-3 text-sm">
           {t('order.closed', { defaultValue: 'The shop isn’t taking orders here right now. Please order at the counter.' })}
@@ -381,12 +450,19 @@ function MenuView({ menu, cart, money, accent, banner, onQty, onOpenCart, sheetO
                 <span className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold flex items-center justify-center"
                   style={{ background: accent.ink, color: accent.bg }}>{count}</span>
               </span>
-              <span className="text-left leading-tight">
+              <span className="text-left leading-tight min-w-0">
                 <span className="block font-semibold">{t('order.viewOrder', { defaultValue: 'View order' })}</span>
-                <span className="block text-xs opacity-80">{t('order.itemsCount', { count, defaultValue: 'Items: {{count}}' })}</span>
+                <span className="block text-xs opacity-80 truncate">
+                  {deal.coupon && deal.short > 0
+                    ? t('order.cAddMore', { amount: money(deal.short), code: deal.coupon.code, defaultValue: 'Add {{amount}} more for {{code}}' })
+                    : <>{t('order.itemsCount', { count, defaultValue: 'Items: {{count}}' })}{deal.discount > 0 && deal.coupon ? ` · ${deal.coupon.code}` : ''}</>}
+                </span>
               </span>
             </span>
-            <span className="font-bold tabular-nums">{money(total)}</span>
+            <span className="shrink-0 text-right leading-tight tabular-nums">
+              {deal.discount > 0 && <span className="block text-xs line-through opacity-70">{money(total)}</span>}
+              <span className="block font-bold">{money(total - deal.discount)}</span>
+            </span>
           </button>
         </div>
       )}
@@ -410,19 +486,55 @@ function Stepper({ value, accent, onChange }: { value: number; accent: Accent; o
 
 // ---- Checkout -------------------------------------------------------------------------------
 
-function CheckoutSheet({ menu, lines, total, money, accent, urlTable, campaignId, locationId, onQty, onClose, onPlaced, onMenuChanged }: {
+function CheckoutSheet({ menu, lines, total, money, accent, urlTable, campaignId, locationId, deal, couponLabel, onCoupon, onQty, onClose, onPlaced, onMenuChanged }: {
   menu: PublicMenu; lines: Array<[string, number]>; total: number; money: (n: number) => string; accent: Accent; urlTable: string | null;
-  campaignId: string; locationId: string | null; onQty: (id: string, q: number) => void; onClose: () => void;
+  campaignId: string; locationId: string | null; deal: Deal; couponLabel: CouponLabel; onCoupon: (c: PublicCoupon | null) => void;
+  onQty: (id: string, q: number) => void; onClose: () => void;
   onPlaced: (token: string) => void; onMenuChanged: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
   const [table, setTable] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Coupon code field (only when the shop has coupons).
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const items = new Map(menu.items.map((i) => [i.id, i]));
   const field = 'w-full rounded-xl bg-white ring-1 ring-black/10 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-black/20';
+  const { coupon, discount, short } = deal;
+
+  const problem = (reason: CouponProblem, extra?: { startsOn?: string | null; minOrder?: number | null }) => ({
+    not_found: t('order.cErrNotFound', { defaultValue: 'This code doesn’t work here. Please check it.' }),
+    not_started: extra?.startsOn
+      ? t('order.cErrNotStartedOn', { date: shortDate(extra.startsOn, i18n.language), defaultValue: 'This coupon works from {{date}}.' })
+      : t('order.cErrNotStarted', { defaultValue: 'This coupon doesn’t work yet.' }),
+    expired: t('order.cErrExpired', { defaultValue: 'This coupon has expired.' }),
+    used_up: t('order.cErrUsedUp', { defaultValue: 'This coupon has been used up.' }),
+    min_order: extra?.minOrder != null
+      ? t('order.cErrMin', { amount: money(extra.minOrder), defaultValue: 'This coupon is for orders from {{amount}}.' })
+      : t('order.cErrMinPlain', { defaultValue: 'Your order is below this coupon’s minimum.' }),
+  }[reason]);
+
+  const applyCode = async () => {
+    const c = cleanCouponCode(code);
+    if (!c) return;
+    setChecking(true);
+    setCodeError(null);
+    try {
+      const r = await checkCoupon(campaignId, c, total);
+      // Below the minimum still counts: the guest sees how much to add.
+      if (r.coupon && (r.ok || r.reason === 'min_order')) { onCoupon(r.coupon); setCode(''); setCodeOpen(false); }
+      else setCodeError(problem(r.reason ?? 'not_found', { startsOn: r.startsOn }));
+    } catch {
+      setCodeError(t('order.cErrCheck', { defaultValue: 'Couldn’t check the code. Please try again.' }));
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const send = async () => {
     setSending(true);
@@ -431,10 +543,20 @@ function CheckoutSheet({ menu, lines, total, money, accent, urlTable, campaignId
       const r = await placeOrder({
         campaignId, table: urlTable ?? (table.trim() || null), locationId, name, note,
         items: lines.map(([id, qty]) => ({ id, qty })),
+        // Below its minimum the coupon simply isn't used (the guest was told).
+        coupon: coupon && short === 0 ? coupon.code : null,
       });
       onPlaced(r.token);
     } catch (e) {
       const code = (e as { code?: PlaceOrderError }).code ?? 'unknown';
+      if (code === 'coupon') {
+        // Nothing was sent. Drop the coupon and say why; the guest can send again without it.
+        const reason = (e as { reason?: CouponProblem }).reason ?? 'not_found';
+        setError(`${problem(reason, { minOrder: coupon?.minOrder })} ${t('order.cErrSendAgain', { defaultValue: 'We removed it, so you can send your order now.' })}`);
+        onCoupon(null);
+        onMenuChanged();
+        return;
+      }
       setError({
         ordering_closed: t('order.errClosed', { defaultValue: 'The shop just stopped taking orders here. Please order at the counter.' }),
         too_many_orders: t('order.errTooMany', { defaultValue: 'Please wait a minute before sending another order.' }),
@@ -473,10 +595,62 @@ function CheckoutSheet({ menu, lines, total, money, accent, urlTable, campaignId
                 </div>
               );
             })}
-            <div className="flex justify-between font-semibold text-lg px-4 py-3">
-              <span>{t('order.total', { defaultValue: 'Total' })}</span><span className="tabular-nums">{money(total)}</span>
-            </div>
+            {discount > 0 && coupon ? (
+              <div className="px-4 py-3 space-y-1.5">
+                <div className="flex justify-between text-sm text-gray-600"><span>{t('order.subtotal', { defaultValue: 'Subtotal' })}</span><span className="tabular-nums">{money(total)}</span></div>
+                <div className="flex justify-between gap-3 text-sm font-medium text-green-700">
+                  <span className="inline-flex items-center gap-1.5 min-w-0"><Ticket className="w-4 h-4 shrink-0" /><span className="truncate">{t('order.cLine', { code: coupon.code, defaultValue: 'Coupon {{code}}' })}</span></span>
+                  <span className="tabular-nums shrink-0">−{money(discount)}</span>
+                </div>
+                <div className="flex justify-between font-semibold text-lg pt-1"><span>{t('order.total', { defaultValue: 'Total' })}</span><span className="tabular-nums">{money(total - discount)}</span></div>
+              </div>
+            ) : (
+              <div className="flex justify-between font-semibold text-lg px-4 py-3">
+                <span>{t('order.total', { defaultValue: 'Total' })}</span><span className="tabular-nums">{money(total)}</span>
+              </div>
+            )}
           </div>
+
+          {coupon ? (
+            <div className="rounded-2xl bg-white ring-1 ring-black/5 px-4 py-3" data-applied-coupon={coupon.code}>
+              <div className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: accent.bg, color: accent.ink }}><Ticket className="w-[18px] h-[18px]" /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-mono text-sm font-bold tracking-wider truncate">{coupon.code}</div>
+                  <div className="text-xs text-gray-500 truncate">{coupon.title || t('order.cDefaultTitle', { value: couponLabel(coupon), defaultValue: '{{value}} off your order' })}</div>
+                </div>
+                <button onClick={() => onCoupon(null)} disabled={sending} className="text-sm font-medium text-gray-500 hover:text-gray-800 px-2 py-1 shrink-0">
+                  {t('order.cRemove', { defaultValue: 'Remove' })}
+                </button>
+              </div>
+              {short > 0 && (
+                <p className="mt-2.5 text-sm rounded-xl bg-amber-50 text-amber-900 px-3 py-2">
+                  {t('order.cShort', { amount: money(short), defaultValue: 'Add {{amount}} more to use this coupon.' })}
+                </p>
+              )}
+            </div>
+          ) : menu.couponsOn && (
+            codeOpen ? (
+              <div>
+                <div className="flex gap-2">
+                  <input value={code} autoFocus maxLength={20} onChange={(e) => { setCode(cleanCouponCode(e.target.value)); setCodeError(null); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') void applyCode(); }}
+                    autoCapitalize="characters" autoComplete="off" spellCheck={false}
+                    className={`${field} font-mono tracking-wider uppercase`} placeholder={t('order.cCodePh', { defaultValue: 'Coupon code' })} />
+                  <button onClick={() => void applyCode()} disabled={checking || !code}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-xl px-4 font-semibold disabled:opacity-50"
+                    style={{ background: accent.bg, color: accent.ink }}>
+                    {checking && <Loader2 className="w-4 h-4 animate-spin" />}{t('order.cApply', { defaultValue: 'Apply' })}
+                  </button>
+                </div>
+                {codeError && <p className="text-sm text-red-600 px-1 mt-1.5">{codeError}</p>}
+              </div>
+            ) : (
+              <button onClick={() => setCodeOpen(true)} className="inline-flex items-center gap-2 text-sm font-medium text-gray-700 px-1 py-1">
+                <Ticket className="w-4 h-4 text-gray-400" />{t('order.cHaveCode', { defaultValue: 'Have a coupon code?' })}
+              </button>
+            )
+          )}
 
           {!urlTable && (
             <input value={table} maxLength={40} onChange={(e) => setTable(e.target.value)} className={field}
@@ -492,7 +666,7 @@ function CheckoutSheet({ menu, lines, total, money, accent, urlTable, campaignId
           <button onClick={() => void send()} disabled={sending || lines.length === 0}
             className="w-full flex items-center justify-center gap-2 rounded-2xl px-5 py-4 font-semibold shadow-lg shadow-black/10 disabled:opacity-50 active:scale-[0.99] transition"
             style={{ background: accent.bg, color: accent.ink }}>
-            {sending && <Loader2 className="w-5 h-5 animate-spin" />}{t('order.send', { defaultValue: 'Send order' })} · {money(total)}
+            {sending && <Loader2 className="w-5 h-5 animate-spin" />}{t('order.send', { defaultValue: 'Send order' })} · {money(total - discount)}
           </button>
           <p className="text-[11px] text-gray-400 text-center">
             {t('order.privacy', { defaultValue: 'Your name and note are only shared with this shop to prepare your order.' })}
@@ -596,7 +770,16 @@ function OrderStatusView({ token, money, accent, banner, onOrderMore }: {
             <li key={i} className="flex justify-between gap-3 text-sm"><span className="min-w-0 break-words">{it.quantity}× {it.name}</span><span className="text-gray-500 shrink-0 tabular-nums">{money(it.price * it.quantity)}</span></li>
           ))}
         </ul>
-        <div className="flex justify-between font-semibold mt-3 pt-3 border-t border-black/5"><span>{t('order.total', { defaultValue: 'Total' })}</span><span className="tabular-nums">{money(st.total)}</span></div>
+        {st.discount > 0 && (
+          <div className="mt-3 pt-3 border-t border-black/5 space-y-1.5 text-sm">
+            <div className="flex justify-between text-gray-600"><span>{t('order.subtotal', { defaultValue: 'Subtotal' })}</span><span className="tabular-nums">{money(st.subtotal)}</span></div>
+            <div className="flex justify-between gap-3 font-medium text-green-700">
+              <span className="inline-flex items-center gap-1.5 min-w-0"><Ticket className="w-4 h-4 shrink-0" /><span className="truncate">{t('order.cLine', { code: st.couponCode ?? '', defaultValue: 'Coupon {{code}}' })}</span></span>
+              <span className="tabular-nums shrink-0">−{money(st.discount)}</span>
+            </div>
+          </div>
+        )}
+        <div className={`flex justify-between font-semibold ${st.discount > 0 ? 'mt-2' : 'mt-3 pt-3 border-t border-black/5'}`}><span>{t('order.total', { defaultValue: 'Total' })}</span><span className="tabular-nums">{money(st.total)}</span></div>
         {st.status !== 'rejected' && <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-2"><Wallet className="w-3.5 h-3.5" />{t('order.payAtCounter', { defaultValue: 'You pay at the counter, as usual.' })}</p>}
       </div>
 

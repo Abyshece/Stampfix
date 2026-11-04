@@ -3,36 +3,28 @@ import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import {
   Puzzle, UtensilsCrossed, Check, Loader2, Plus, Pencil, Trash2, ArrowUp, ArrowDown, X, Printer,
-  ExternalLink, ClipboardList, ChevronLeft, ChevronRight, MoreHorizontal, QrCode, BookOpen, FolderPlus,
-  Upload, Clock, FileText, AlertCircle, type LucideIcon,
+  ExternalLink, ClipboardList, ChevronLeft, ChevronRight, QrCode, BookOpen, FolderPlus,
+  Upload, Clock, FileText, AlertCircle, Ticket, type LucideIcon,
 } from 'lucide-react';
 import type { Location } from '../types';
 import { useToast } from './ToastProvider';
+import { inputCls, btnDark, btnLight, iconBtn, parsePrice, ConfirmDialog, Dialog, Switch, ActionMenu } from './addonsUi';
+import { CouponsAddon, TicketPreview, couponState, shopToday } from './CouponsAddon';
 import {
   getOrderingSettings, saveOrderingSettings, listMenu, createCategory, updateCategory, deleteCategory,
   createItem, updateItem, deleteItem, orderUrl, menuMoney, menuCurrency, isTableNumber, MAX_TABLES,
   listMenuUploads, uploadMenu, menuFileUrls, menuFileType, isPreviewableImage, MENU_UPLOAD_MAX_FILES, MENU_UPLOAD_MAX_BYTES,
+  listCoupons, couponValueLabel,
   type OrderingSettings, type MenuCategory, type MenuItem, type ItemInput, type MenuUpload, type MenuUploadError,
 } from '../lib/ordering';
 
-const inputCls = 'w-full border notion-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#37352F]/10';
-const btnDark = 'inline-flex items-center justify-center gap-1.5 bg-[#37352F] text-white px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-[#2a2a28] disabled:opacity-40 transition whitespace-nowrap';
-const btnLight = 'inline-flex items-center justify-center gap-1.5 border notion-border bg-white px-3 py-2 rounded-lg text-sm text-[#37352F] hover:bg-[#F7F7F5] disabled:opacity-40 transition whitespace-nowrap';
-const iconBtn = 'p-1.5 rounded-md text-gray-400 hover:text-[#37352F] hover:bg-[#F1F1EF] disabled:opacity-30 transition';
-
 type Menu = { categories: MenuCategory[]; items: MenuItem[] };
 
-/** "8,50" or "8.50" -> 8.5; NaN when it isn't a valid price. */
-function parsePrice(s: string): number {
-  const v = Number(s.replace(',', '.').trim());
-  return s.trim() !== '' && Number.isFinite(v) && v >= 0 && v <= 100000 ? Math.round(v * 100) / 100 : NaN;
-}
-
 /**
- * Add-ons (dashboard). The home view lists the add-ons; for now one, free on
- * every plan: a digital menu guests order from by scanning a QR code on
- * their table. Opening it shows a setup checklist and two tabs (Menu,
- * Tables & QR codes).
+ * Add-ons (dashboard). The home view lists the add-ons, all free on every
+ * plan: a digital menu guests order from by scanning a QR code on their
+ * table (setup checklist, Menu and Tables & QR codes tabs), and coupons
+ * guests use on that menu.
  */
 export function AddonsPanel({ campaignId, businessName, country, locations, onOrderingChanged, onOpenOrders }: {
   campaignId: string; businessName: string; country: string | null; locations: Location[];
@@ -40,26 +32,39 @@ export function AddonsPanel({ campaignId, businessName, country, locations, onOr
 }) {
   const { t, i18n } = useTranslation();
   const money = useMemo(() => menuMoney(country, i18n.language), [country, i18n.language]);
-  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<'home' | 'ordering' | 'coupons'>('home');
   const [status, setStatus] = useState<{ enabled: boolean; items: number; tables: number; uploads: number } | null>(null);
+  // Coupons: how many there are and how many guests can use today (null until loaded or when it fails).
+  const [couponStatus, setCouponStatus] = useState<{ total: number; live: number } | null>(null);
 
   useEffect(() => {
-    if (open) return;
+    if (view !== 'home') return;
     let live = true;
     Promise.all([getOrderingSettings(campaignId), listMenu(campaignId), listMenuUploads(campaignId).catch(() => [])])
       .then(([s, m, u]) => { if (live) setStatus({ enabled: s.enabled, items: m.items.length, tables: s.tables.length, uploads: u.length }); })
       .catch(() => { /* the card still opens; the add-on shows its own error */ });
+    listCoupons(campaignId)
+      .then((list) => {
+        const today = shopToday(country);
+        // Usage limits aren't counted here; the Coupons page shows "Used up".
+        if (live) setCouponStatus({ total: list.length, live: list.filter((c) => couponState(c, 0, today) === 'live').length });
+      })
+      .catch(() => { /* the card shows no status */ });
     return () => { live = false; };
-  }, [campaignId, open]);
+  }, [campaignId, country, view]);
 
-  if (open) {
+  if (view === 'ordering') {
     return (
       <OrderingAddon campaignId={campaignId} businessName={businessName} country={country} locations={locations}
-        onBack={() => setOpen(false)} onOrderingChanged={onOrderingChanged} onOpenOrders={onOpenOrders} />
+        onBack={() => setView('home')} onOrderingChanged={onOrderingChanged} onOpenOrders={onOpenOrders} />
     );
+  }
+  if (view === 'coupons') {
+    return <CouponsAddon campaignId={campaignId} country={country} onBack={() => setView('home')} onOpenMenu={() => setView('ordering')} />;
   }
 
   const started = !!status && (status.enabled || status.items > 0 || status.tables > 0 || status.uploads > 0);
+  const couponValue = couponValueLabel({ kind: 'percent', value: 10 }, country, i18n.language);
   return (
     <div className="max-w-5xl space-y-6">
       <header>
@@ -70,53 +75,108 @@ export function AddonsPanel({ campaignId, businessName, country, locations, onOr
         <p className="text-gray-500 mt-1">{t('dash.addons.sub', { defaultValue: 'Extra tools for your shop, free on every plan.' })}</p>
       </header>
 
-      <section className="rounded-2xl border notion-border bg-white overflow-hidden">
-        <div className="grid md:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="p-5 sm:p-7">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-11 h-11 rounded-xl bg-[#F7F7F5] flex items-center justify-center shrink-0">
-                <UtensilsCrossed className="w-5 h-5 text-[#37352F]" />
-              </div>
-              {status && (
-                status.enabled ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-600" />{t('dash.addons.statusOn', { defaultValue: 'Taking orders' })}
-                  </span>
-                ) : (
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
-                    {started ? t('dash.addons.statusOff', { defaultValue: 'Off' }) : t('dash.addons.statusNew', { defaultValue: 'Not set up yet' })}
-                  </span>
-                )
-              )}
+      <AddonCard
+        icon={UtensilsCrossed}
+        pill={status && (status.enabled ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-600" />{t('dash.addons.statusOn', { defaultValue: 'Taking orders' })}
+          </span>
+        ) : (
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+            {started ? t('dash.addons.statusOff', { defaultValue: 'Off' }) : t('dash.addons.statusNew', { defaultValue: 'Not set up yet' })}
+          </span>
+        ))}
+        title={t('dash.addons.menuTitle', { defaultValue: 'Digital menu & table ordering' })}
+        desc={t('dash.addons.menuDesc', { defaultValue: 'Put your menu online. Guests scan the QR code on their table, order from their phone and pay at the counter.' })}
+        bullets={[
+          t('dash.addons.menuB1', { defaultValue: 'No app and no sign-up for your guests' }),
+          t('dash.addons.menuB2', { defaultValue: 'Accept orders and mark them ready under Orders' }),
+          t('dash.addons.menuB3', { defaultValue: 'Guests pay at the counter, as usual' }),
+        ]}
+        summary={started && status ? t('dash.addons.summary', { items: status.items, tables: status.tables, defaultValue: 'Menu items: {{items}} · Tables: {{tables}}' }) : null}
+        cta={started ? t('dash.addons.manage', { defaultValue: 'Manage' }) : t('dash.addons.setUp', { defaultValue: 'Set up' })}
+        onOpen={() => setView('ordering')}
+        art={<PhonePreview money={money} />}
+        testId="addon-ordering" />
+
+      <AddonCard
+        icon={Ticket}
+        pill={couponStatus && (couponStatus.live > 0 ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-600" />{t('dash.addons.couponsLive', { count: couponStatus.live, defaultValue: 'Live: {{count}}' })}
+          </span>
+        ) : (
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+            {couponStatus.total > 0 ? t('dash.addons.couponsNoneLive', { defaultValue: 'None live' }) : t('dash.addons.statusNew', { defaultValue: 'Not set up yet' })}
+          </span>
+        ))}
+        title={t('dash.addons.couponsTitle', { defaultValue: 'Coupons' })}
+        desc={t('dash.addons.couponsDesc', { defaultValue: 'Create discount codes for your digital menu. Guests use them when they order, and you charge the lower total at the counter.' })}
+        bullets={[
+          t('dash.addons.couponsB1', { defaultValue: 'Percent or amount off, with an optional minimum order' }),
+          t('dash.addons.couponsB2', { defaultValue: 'Show a coupon on your menu, or share the code yourself' }),
+          t('dash.addons.couponsB3', { defaultValue: 'Set dates and a usage limit, and see how often it was used' }),
+        ]}
+        summary={couponStatus && couponStatus.total > 0 ? t('dash.addons.couponsSummary', { count: couponStatus.total, defaultValue: 'Coupons: {{count}}' }) : null}
+        cta={couponStatus && couponStatus.total > 0 ? t('dash.addons.manage', { defaultValue: 'Manage' }) : t('dash.addons.setUp', { defaultValue: 'Set up' })}
+        onOpen={() => setView('coupons')}
+        art={<CouponPhonePreview money={money} value={couponValue} />}
+        testId="addon-coupons" />
+    </div>
+  );
+}
+
+/** One add-on in the list: what it does, its status, and a button to open it. */
+function AddonCard({ icon: Icon, pill, title, desc, bullets, summary, cta, onOpen, art, testId }: {
+  icon: LucideIcon; pill: ReactNode; title: string; desc: string; bullets: string[]; summary: string | null;
+  cta: string; onOpen: () => void; art: ReactNode; testId: string;
+}) {
+  return (
+    <section className="rounded-2xl border notion-border bg-white overflow-hidden" data-testid={testId}>
+      <div className="grid md:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="p-5 sm:p-7">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-11 h-11 rounded-xl bg-[#F7F7F5] flex items-center justify-center shrink-0">
+              <Icon className="w-5 h-5 text-[#37352F]" />
             </div>
-            <h2 className="text-xl font-semibold text-[#37352F]">{t('dash.addons.menuTitle', { defaultValue: 'Digital menu & table ordering' })}</h2>
-            <p className="text-sm text-gray-600 mt-1.5 max-w-prose">
-              {t('dash.addons.menuDesc', { defaultValue: 'Put your menu online. Guests scan the QR code on their table, order from their phone and pay at the counter.' })}
-            </p>
-            <ul className="mt-4 space-y-2">
-              {[
-                t('dash.addons.menuB1', { defaultValue: 'No app and no sign-up for your guests' }),
-                t('dash.addons.menuB2', { defaultValue: 'Accept orders and mark them ready under Orders' }),
-                t('dash.addons.menuB3', { defaultValue: 'Guests pay at the counter, as usual' }),
-              ].map((b) => (
-                <li key={b} className="flex items-start gap-2 text-sm text-[#37352F]"><Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />{b}</li>
-              ))}
-            </ul>
-            {started && status && (
-              <p className="text-sm text-gray-500 mt-4">
-                {t('dash.addons.summary', { items: status.items, tables: status.tables, defaultValue: 'Menu items: {{items}} · Tables: {{tables}}' })}
-              </p>
-            )}
-            <button onClick={() => setOpen(true)} className={`${btnDark} mt-5 px-5 py-2.5`}>
-              {started ? t('dash.addons.manage', { defaultValue: 'Manage' }) : t('dash.addons.setUp', { defaultValue: 'Set up' })}
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {pill}
           </div>
-          <div className="hidden md:flex items-center justify-center bg-[#F7F7F5] p-6">
-            <PhonePreview money={money} />
-          </div>
+          <h2 className="text-xl font-semibold text-[#37352F]">{title}</h2>
+          <p className="text-sm text-gray-600 mt-1.5 max-w-prose">{desc}</p>
+          <ul className="mt-4 space-y-2">
+            {bullets.map((b) => (
+              <li key={b} className="flex items-start gap-2 text-sm text-[#37352F]"><Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />{b}</li>
+            ))}
+          </ul>
+          {summary && <p className="text-sm text-gray-500 mt-4">{summary}</p>}
+          <button onClick={onOpen} className={`${btnDark} mt-5 px-5 py-2.5`}>
+            {cta}<ChevronRight className="w-4 h-4" />
+          </button>
         </div>
-      </section>
+        <div className="hidden md:flex items-center justify-center bg-[#F7F7F5] p-6">
+          {art}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** The guest's phone with a coupon applied: what the coupons add-on does. */
+function CouponPhonePreview({ money, value }: { money: (n: number) => string; value: string }) {
+  const { t } = useTranslation();
+  return (
+    <div aria-hidden className="w-[200px] rounded-[26px] border-[6px] border-[#37352F] bg-[#FAF7F2] shadow-xl overflow-hidden">
+      <div className="px-3 pt-4 pb-3.5">
+        <TicketPreview compact value={value} code="WELCOME10" applied title={t('dash.coupons.tWelcome', { defaultValue: 'Welcome offer' })} />
+        <div className="mt-3 rounded-lg bg-white px-2.5 py-2 space-y-1 text-[10px]">
+          <div className="flex justify-between text-gray-500"><span>{t('order.subtotal', { defaultValue: 'Subtotal' })}</span><span>{money(9.2)}</span></div>
+          <div className="flex justify-between text-green-700 font-medium"><span>WELCOME10</span><span>−{money(0.92)}</span></div>
+          <div className="flex justify-between font-semibold text-[#37352F] text-[11px] pt-0.5"><span>{t('order.total', { defaultValue: 'Total' })}</span><span>{money(8.28)}</span></div>
+        </div>
+        <div className="mt-2.5 rounded-lg bg-[#37352F] text-white text-[10px] font-semibold text-center py-1.5">
+          {t('order.send', { defaultValue: 'Send order' })} · {money(8.28)}
+        </div>
+      </div>
     </div>
   );
 }
@@ -946,97 +1006,5 @@ function CategoryDialog({ cat, busy, onSave, onClose }: {
         </div>
       </form>
     </Dialog>
-  );
-}
-
-function ConfirmDialog({ title, body, confirmLabel, busy, onConfirm, onClose }: {
-  title: string; body: string; confirmLabel: string; busy: boolean; onConfirm: () => void; onClose: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <Dialog title={title} onClose={onClose}>
-      <p className="px-5 text-sm text-gray-600">{body}</p>
-      <div className="flex justify-end gap-2 px-5 py-4 mt-5 border-t notion-border">
-        <button type="button" className={btnLight} onClick={onClose}>{t('dash.addons.cancel', { defaultValue: 'Cancel' })}</button>
-        <button type="button" className="inline-flex items-center gap-1.5 bg-red-600 text-white px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-40"
-          disabled={busy} onClick={onConfirm}>{busy && <Loader2 className="w-4 h-4 animate-spin" />}{confirmLabel}</button>
-      </div>
-    </Dialog>
-  );
-}
-
-/** Centered on desktop, a sheet from the bottom on phones. Esc or a tap outside closes it. */
-function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  const { t } = useTranslation();
-  const close = useRef(onClose);
-  close.current = onClose;
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close.current(); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, []);
-  return (
-    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-label={title}
-        className="relative w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92vh] overflow-y-auto pb-safe">
-        <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
-          <h3 className="text-lg font-semibold text-[#37352F] min-w-0 break-words">{title}</h3>
-          <button type="button" onClick={onClose} aria-label={t('dash.addons.close', { defaultValue: 'Close' })} className={iconBtn}><X className="w-5 h-5" /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// ---- Small controls -------------------------------------------------------------------------
-
-function Switch({ on, onChange, disabled, label, size = 'md' }: {
-  on: boolean; onChange: () => void; disabled?: boolean; label: string; size?: 'sm' | 'md';
-}) {
-  const sm = size === 'sm';
-  return (
-    <button type="button" role="switch" aria-checked={on} aria-label={label} title={label} disabled={disabled} onClick={onChange}
-      className={`relative ${sm ? 'w-9 h-5' : 'w-11 h-6'} rounded-full shrink-0 transition disabled:opacity-40 ${on ? 'bg-green-600' : 'bg-gray-300'}`}>
-      <span className={`absolute top-0.5 ${sm ? 'w-4 h-4' : 'w-5 h-5'} rounded-full bg-white shadow transition-all ${
-        on ? (sm ? 'left-[18px]' : 'left-[22px]') : 'left-0.5'
-      }`} />
-    </button>
-  );
-}
-
-/** A "⋯" button with a short list of actions. */
-function ActionMenu({ label, actions }: {
-  label: string;
-  actions: Array<{ label: string; icon: LucideIcon; onClick: () => void; disabled?: boolean; danger?: boolean }>;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('pointerdown', away);
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('pointerdown', away); document.removeEventListener('keydown', onKey); };
-  }, [open]);
-  return (
-    <div ref={ref} className="relative shrink-0">
-      <button type="button" aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className={iconBtn}>
-        <MoreHorizontal className="w-4 h-4" />
-      </button>
-      {open && (
-        <div role="menu" className="absolute right-0 top-full mt-1 z-30 min-w-[11rem] rounded-lg border notion-border bg-white shadow-lg py-1">
-          {actions.map((a) => (
-            <button key={a.label} type="button" role="menuitem" disabled={a.disabled}
-              onClick={() => { setOpen(false); a.onClick(); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left whitespace-nowrap hover:bg-[#F7F7F5] disabled:opacity-40 disabled:hover:bg-transparent ${a.danger ? 'text-red-600' : 'text-[#37352F]'}`}>
-              <a.icon className="w-4 h-4" />{a.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
