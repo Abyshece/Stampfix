@@ -1,0 +1,59 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Job Application for Senior Data Engineer at Acme Robotics</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}.field{margin:12px 0}label{display:block}</style></head>
+<body>
+<h1>Senior Data Engineer</h1>
+<form id="application_form">
+  <div id="main_fields">
+    <div class="field"><label for="first_name">First Name <span class="asterisk">*</span></label><input type="text" id="first_name" name="job_application[first_name]"></div>
+    <div class="field"><label for="last_name">Last Name <span class="asterisk">*</span></label><input type="text" id="last_name" name="job_application[last_name]"></div>
+    <div class="field"><label for="email">Email <span class="asterisk">*</span></label><input type="text" id="email" name="job_application[email]"></div>
+    <div class="field"><label for="phone">Phone</label><input type="text" id="phone" name="job_application[phone]"></div>
+    <div class="field"><label>Location (City)<br><input type="text" id="job_application_location" name="job_application[location]"></label></div>
+    <div class="field" id="resume_fieldset"><label>Resume/CV <span class="asterisk">*</span></label>
+      <button type="button">Attach</button><input type="file" id="resume_file" style="display:none"></div>
+    <div class="field" id="cover_letter_fieldset"><label>Cover Letter</label>
+      <button type="button">Attach</button><input type="file" id="cover_file" style="display:none"></div>
+  </div>
+
+  <div id="education_section">
+    <h3>Education</h3>
+    <div class="field"><label>School<br><select id="education_school_name_0" name="education[school_name_id][]">
+      <option value="">--</option><option value="11">Stanford University</option><option value="12">University of California, Berkeley</option><option value="13">University of Michigan</option></select></label></div>
+    <div class="field"><label>Degree<br><select id="education_degree_0" name="education[degree_id][]">
+      <option value="">--</option><option value="1">High School</option><option value="2">Associate's Degree</option><option value="3">Bachelor's Degree</option><option value="4">Master's Degree</option><option value="5">Doctor of Philosophy (Ph.D.)</option></select></label></div>
+    <div class="field"><label>Discipline<br><select id="education_discipline_0" name="education[discipline_id][]">
+      <option value="">--</option><option value="7">Biology</option><option value="8">Computer Science</option><option value="9">Economics</option></select></label></div>
+    <fieldset><legend>Start Date</legend>
+      <input type="text" placeholder="MM" name="education[start_date][][month]" id="edu_start_month" size="2">
+      <input type="text" placeholder="YYYY" name="education[start_date][][year]" id="edu_start_year" size="4"></fieldset>
+    <fieldset><legend>End Date</legend>
+      <input type="text" placeholder="MM" name="education[end_date][][month]" id="edu_end_month" size="2">
+      <input type="text" placeholder="YYYY" name="education[end_date][][year]" id="edu_end_year" size="4"></fieldset>
+  </div>
+
+  <div id="custom_fields">
+    <div class="field"><label>LinkedIn Profile<br><input type="text" id="q_linkedin" name="job_application[answers_attributes][0][text_value]"></label></div>
+    <div class="field"><label>Website<br><input type="text" id="q_website" name="job_application[answers_attributes][1][text_value]"></label></div>
+    <div class="field"><label>Are you legally authorized to work in the United States? <span class="asterisk">*</span><br>
+      <select id="q_auth" name="job_application[answers_attributes][2][boolean_value]"><option value="">--</option><option value="1">Yes</option><option value="0">No</option></select></label></div>
+    <div class="field"><label>Will you now or in the future require sponsorship for employment visa status (e.g. H-1B visa status)? <span class="asterisk">*</span><br>
+      <select id="q_sponsor" name="job_application[answers_attributes][3][boolean_value]"><option value="">--</option><option value="1">Yes</option><option value="0">No</option></select></label></div>
+    <div class="field"><label>Why do you want to work at Acme Robotics?<br><textarea id="q_why" name="job_application[answers_attributes][4][text_value]"></textarea></label></div>
+    <div class="field"><label>What's your favorite robot?<br><input type="text" id="q_robot" name="job_application[answers_attributes][5][text_value]"></label></div>
+    <div class="field"><label>How did you hear about this job?<br><select id="q_hear" name="job_application[answers_attributes][6][answer_selected_options_attributes][0][question_option_id]">
+      <option value="">--</option><option value="a">Indeed</option><option value="b">LinkedIn</option><option value="c">Company Website</option><option value="d">Referral</option></select></label></div>
+  </div>
+
+  <div id="eeoc_fields">
+    <h4>U.S. Equal Employment Opportunity Information</h4>
+    <div class="field"><label for="gender">Gender</label><select id="gender" name="job_application[gender]"><option value="">Please select</option><option value="1">Male</option><option value="2">Female</option><option value="3">Decline To Self Identify</option></select></div>
+    <div class="field"><label for="hispanic">Are you Hispanic/Latino?</label><select id="hispanic" name="job_application[hispanic_ethnicity]"><option value="">Please select</option><option value="Yes">Yes</option><option value="No">No</option><option value="Decline To Self Identify">Decline To Self Identify</option></select></div>
+    <div class="field"><label for="race">Race</label><select id="race" name="job_application[race]"><option value="">Please select</option><option value="1">American Indian or Alaskan Native</option><option value="2">Asian</option><option value="3">Black or African American</option><option value="5">White</option><option value="6">Two or More Races</option><option value="7">Decline To Self Identify</option></select></div>
+    <div class="field"><label for="veteran">Veteran Status</label><select id="veteran" name="job_application[veteran_status]"><option value="">Please select</option><option value="1">I am not a protected veteran</option><option value="2">I identify as one or more of the classifications of protected veteran</option><option value="3">I don't wish to answer</option></select></div>
+    <div class="field"><label for="disability">Disability Status</label><select id="disability" name="job_application[disability_status]"><option value="">Please select</option><option value="1">Yes, I have a disability, or have had one in the past</option><option value="2">No, I do not have a disability and have not had one in the past</option><option value="3">I do not want to answer</option></select></div>
+  </div>
+  <div class="field"><label><input type="checkbox" id="consent" name="consent"> I agree to the Acme Robotics privacy policy</label></div>
+  <input type="submit" value="Submit Application">
+</form>
+</body></html>

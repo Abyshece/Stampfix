@@ -1,0 +1,44 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>(3) Senior Data Engineer | Acme Robotics | LinkedIn</title>
+<style>body{font-family:sans-serif}.bg{height:300px;background:#eee}.modal{position:fixed;inset:40px 15%;background:#fff;border:1px solid #ccc;overflow:auto;padding:20px}.fb-dash-form-element{margin:12px 0}label{display:block}</style>
+<script src="widgets.js"></script></head>
+<body>
+<main class="bg" aria-hidden="true"><label for="bg-search">Search jobs</label><input id="bg-search" type="text"></main>
+<div class="modal jobs-easy-apply-modal" role="dialog" aria-labelledby="dlg-h">
+  <h2 id="dlg-h">Apply to Acme Robotics</h2>
+  <h3>Contact info</h3>
+  <div class="fb-dash-form-element"><label for="single-line-text-form-component-formElement-urn-li-jsonMember-firstName-123">First name</label>
+    <input id="single-line-text-form-component-formElement-urn-li-jsonMember-firstName-123" type="text" value="Alexander" required></div>
+  <div class="fb-dash-form-element"><label for="ln-input">Last name</label><input id="ln-input" type="text" required></div>
+  <div class="fb-dash-form-element"><label for="text-entity-list-form-component-email">Email address</label>
+    <select id="text-entity-list-form-component-email" required><option>Select an option</option><option>alex.old@example.org</option><option>alex.rivera@example.com</option></select></div>
+  <div class="fb-dash-form-element"><label for="text-entity-list-form-component-phoneCountryCode">Phone country code</label>
+    <select id="text-entity-list-form-component-phoneCountryCode" required><option>Select an option</option><option>Canada (+1)</option><option>India (+91)</option><option>United States (+1)</option><option>United Kingdom (+44)</option></select></div>
+  <div class="fb-dash-form-element"><label for="single-line-text-form-component-phoneNumber-nationalNumber">Mobile phone number</label>
+    <input id="single-line-text-form-component-phoneNumber-nationalNumber" type="text" required></div>
+  <div class="fb-dash-form-element"><label for="li-city">Location (city)</label>
+    <input id="li-city" role="combobox" aria-autocomplete="list" data-async="1" data-options="San Diego, California, United States|San Francisco, California, United States|San Francisco Bay Area|Santa Fe, New Mexico, United States"><span id="li-city-chosen"></span></div>
+
+  <h3>Resume</h3>
+  <div class="fb-dash-form-element"><label for="jobs-document-upload-file-input-upload-resume">Upload resume</label>
+    <input id="jobs-document-upload-file-input-upload-resume" type="file" accept=".pdf,.doc,.docx" style="display:none"></div>
+
+  <h3>Additional Questions</h3>
+  <div class="fb-dash-form-element"><label for="y-python">How many years of work experience do you have with Python (Programming Language)?</label><input id="y-python" type="text" required></div>
+  <div class="fb-dash-form-element"><label for="y-k8s">How many years of work experience do you have with Kubernetes?</label><input id="y-k8s" type="text" required></div>
+  <div class="fb-dash-form-element"><label for="y-total">How many years of total professional experience do you have?</label><input id="y-total" type="text" required></div>
+  <fieldset class="fb-dash-form-element" id="fs-sql"><legend>Do you have experience with SQL?</legend>
+    <input type="radio" id="sql-y" name="urn-sql" value="Yes"><label for="sql-y">Yes</label>
+    <input type="radio" id="sql-n" name="urn-sql" value="No"><label for="sql-n">No</label></fieldset>
+  <fieldset class="fb-dash-form-element" id="fs-auth"><legend><span>Are you legally authorized to work in the United States?</span> <span class="required">Required</span></legend>
+    <input type="radio" id="auth-y" name="urn-auth" value="Yes"><label for="auth-y">Yes</label>
+    <input type="radio" id="auth-n" name="urn-auth" value="No"><label for="auth-n">No</label></fieldset>
+  <div class="fb-dash-form-element"><label for="sp">Will you now, or in the future, require sponsorship for employment visa status (e.g. H-1B visa status)?</label>
+    <select id="sp" required><option>Select an option</option><option>Yes</option><option>No</option></select></div>
+  <fieldset class="fb-dash-form-element" id="fs-commute"><legend>Are you comfortable commuting to this job's location?</legend>
+    <input type="radio" id="cm-y" name="urn-cm" value="Yes"><label for="cm-y">Yes</label>
+    <input type="radio" id="cm-n" name="urn-cm" value="No"><label for="cm-n">No</label></fieldset>
+  <div class="fb-dash-form-element"><label for="sal">What is your desired salary?</label><input id="sal" type="text"></div>
+  <button type="button">Next</button>
+</div>
+</body></html>

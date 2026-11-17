@@ -1,0 +1,55 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Job Application for Platform Engineer at Globex</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}.field{margin:12px 0;position:relative}label{display:block;font-weight:600}
+.control{border:1px solid #999;display:flex;gap:4px;padding:4px;min-height:28px;align-items:center}.control input{border:0;outline:0;flex:1}
+[role=listbox]{position:absolute;background:#fff;border:1px solid #999;width:100%;z-index:5}[role=option]{padding:4px}</style>
+<script src="/vendor/react.js"></script><script src="/vendor/react-dom.js"></script></head>
+<body><div id="root"></div><pre id="state"></pre>
+<script>
+const e = React.createElement;
+const { useState } = React;
+
+// A stripped-down React-Select: an <input role="combobox"> that filters a popup list.
+function Combo({ id, label, options, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const shown = options.filter((o) => o.toLowerCase().includes(q.toLowerCase()));
+  return e('div', { className: 'field' },
+    e('label', { htmlFor: id }, label),
+    e('div', { className: 'control', onMouseDown: () => setOpen(true) },
+      value ? e('div', { className: 'single-value' }, value) : !q && e('div', { className: 'placeholder' }, 'Select...'),
+      e('input', { id, role: 'combobox', 'aria-expanded': open, 'aria-autocomplete': 'list', 'aria-controls': open ? id + '-lb' : undefined, value: q,
+        onChange: (ev) => { setQ(ev.target.value); setOpen(true); },
+        onKeyDown: (ev) => { if (ev.key === 'ArrowDown') setOpen(true); if (ev.key === 'Escape') setOpen(false); },
+        onBlur: () => { setOpen(false); setQ(''); } })),
+    open && e('div', { id: id + '-lb', role: 'listbox' },
+      shown.length ? shown.map((o) => e('div', { role: 'option', key: o, onMouseDown: (ev) => ev.preventDefault(), onClick: () => { onChange(o); setOpen(false); setQ(''); } }, o))
+        : e('div', { className: 'none' }, 'No options')));
+}
+
+function App() {
+  const [s, set] = useState({ first_name: '', last_name: '', email: '', phone: '', linkedin: '', country: '', school: '', degree: '', gender: '', relocate: '', remote: false, years: '', sponsorship: '' });
+  const up = (k) => (v) => set((p) => ({ ...p, [k]: v }));
+  const text = (id, label, extra) => e('div', { className: 'field' }, e('label', { htmlFor: id }, label),
+    e('input', { id, value: s[id], onChange: (ev) => up(id)(ev.target.value), ...(extra || {}) }));
+  document.getElementById('state').textContent = JSON.stringify(s);
+  return e('form', { onSubmit: (ev) => ev.preventDefault() },
+    e('h2', null, 'Apply for this job'),
+    text('first_name', 'First Name*'), text('last_name', 'Last Name*'), text('email', 'Email*'), text('phone', 'Phone'),
+    text('linkedin', 'LinkedIn Profile'),
+    e(Combo, { id: 'country', label: 'Country*', options: ['Canada', 'Germany', 'United Kingdom', 'United States'], value: s.country, onChange: up('country') }),
+    e(Combo, { id: 'sponsorship', label: 'Will you require visa sponsorship?*', options: ['Yes', 'No'], value: s.sponsorship, onChange: up('sponsorship') }),
+    e('div', { className: 'field' }, e('label', { htmlFor: 'years' }, 'Years of relevant experience'),
+      e('select', { id: 'years', value: s.years, onChange: (ev) => up('years')(ev.target.value) },
+        e('option', { value: '' }, 'Select...'), ['0-2', '3-5', '6-9', '10+'].map((o) => e('option', { key: o, value: o }, o)))),
+    e('fieldset', null, e('legend', null, 'Are you open to relocation?'),
+      ['Yes', 'No'].map((o) => e('label', { key: o }, e('input', { type: 'radio', name: 'relocate', value: o, checked: s.relocate === o, onChange: () => up('relocate')(o) }), ' ' + o))),
+    e('h3', null, 'Education'),
+    e(Combo, { id: 'school', label: 'School', options: ['Massachusetts Institute of Technology', 'Stanford University', 'University of California, Berkeley'], value: s.school, onChange: up('school') }),
+    e(Combo, { id: 'degree', label: 'Degree', options: ["Associate's Degree", "Bachelor's Degree", "Master's Degree", 'Doctor of Philosophy'], value: s.degree, onChange: up('degree') }),
+    e('h3', null, 'Voluntary Self-Identification'),
+    e(Combo, { id: 'gender', label: 'Gender', options: ['Male', 'Female', 'Decline To Self Identify'], value: s.gender, onChange: up('gender') }),
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(e(App));
+</script></body></html>

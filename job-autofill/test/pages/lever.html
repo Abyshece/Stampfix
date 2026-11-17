@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Acme Robotics - Senior Data Engineer</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}ul{list-style:none;padding:0}li{margin:12px 0}.application-label{font-weight:bold}</style></head>
+<body>
+<form>
+  <h4>Submit your application</h4>
+  <ul>
+    <li class="application-question resume"><div class="application-label">Resume/CV<span class="required">✱</span></div>
+      <div class="application-field"><a class="awesome">ATTACH RESUME/CV</a><input type="file" name="resume" id="resume-upload-input" style="opacity:0;position:absolute;width:1px"></div></li>
+    <li class="application-question"><div class="application-label">Full name<span class="required">✱</span></div><div class="application-field"><input type="text" name="name" id="lv_name"></div></li>
+    <li class="application-question"><div class="application-label">Email<span class="required">✱</span></div><div class="application-field"><input type="email" name="email" id="lv_email"></div></li>
+    <li class="application-question"><div class="application-label">Phone</div><div class="application-field"><input type="text" name="phone" id="lv_phone"></div></li>
+    <li class="application-question"><div class="application-label">Current location</div><div class="application-field"><input type="text" name="location" id="lv_location"></div></li>
+    <li class="application-question"><div class="application-label">Current company</div><div class="application-field"><input type="text" name="org" id="lv_org"></div></li>
+  </ul>
+  <h4>Links</h4>
+  <ul>
+    <li class="application-question"><div class="application-label">LinkedIn URL</div><div class="application-field"><input type="text" name="urls[LinkedIn]" id="lv_li"></div></li>
+    <li class="application-question"><div class="application-label">GitHub URL</div><div class="application-field"><input type="text" name="urls[GitHub]" id="lv_gh"></div></li>
+    <li class="application-question"><div class="application-label">Portfolio URL</div><div class="application-field"><input type="text" name="urls[Portfolio]" id="lv_pf"></div></li>
+  </ul>
+  <h4>Questions</h4>
+  <ul>
+    <li class="application-question"><div class="application-label">Are you willing to relocate?<span class="required">✱</span></div>
+      <ul data-qa="multiple-choice">
+        <li><label><input type="radio" name="cards[1][field0]" value="Yes" id="lv_rel_yes"><span class="application-answer-alternative">Yes</span></label></li>
+        <li><label><input type="radio" name="cards[1][field0]" value="No" id="lv_rel_no"><span class="application-answer-alternative">No</span></label></li>
+      </ul></li>
+    <li class="application-question"><div class="application-label">How many years of experience do you have with SQL?</div>
+      <div class="application-field"><select name="cards[1][field1]" id="lv_sql"><option value="">Select…</option><option>0-1</option><option>2-4</option><option>5+</option></select></div></li>
+    <li class="application-question"><div class="application-label">Do you have experience with Python?</div>
+      <ul data-qa="multiple-choice">
+        <li><label><input type="radio" name="cards[1][field2]" value="Yes" id="lv_py_yes"><span>Yes</span></label></li>
+        <li><label><input type="radio" name="cards[1][field2]" value="No" id="lv_py_no"><span>No</span></label></li>
+      </ul></li>
+  </ul>
+  <h4>Additional information</h4>
+  <textarea name="comments" id="lv_comments" placeholder="Add a cover letter or anything else you want to share."></textarea>
+  <h4>U.S. Equal Employment Opportunity information</h4>
+  <ul>
+    <li><div class="application-label">Gender</div><select name="eeo[gender]" id="lv_gender"><option value="">Select ...</option><option>Male</option><option>Female</option><option>Decline to self-identify</option></select></li>
+    <li><div class="application-label">Race</div><select name="eeo[race]" id="lv_race"><option value="">Select ...</option><option>Asian (Not Hispanic or Latino)</option><option>White (Not Hispanic or Latino)</option><option>Hispanic or Latino</option><option>Decline to self-identify</option></select></li>
+    <li><div class="application-label">Veteran status</div><select name="eeo[veteran]" id="lv_vet"><option value="">Select ...</option><option>I am a veteran</option><option>I am not a veteran</option><option>Decline to self-identify</option></select></li>
+  </ul>
+  <button type="submit">Submit application</button>
+</form>
+</body></html>

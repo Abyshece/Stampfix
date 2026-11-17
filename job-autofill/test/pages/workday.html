@@ -1,0 +1,85 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Senior Data Engineer - Careers</title>
+<style>body{font-family:sans-serif;max-width:760px;margin:20px auto}[data-automation-id^="formField"]{margin:10px 0}label{display:block;font-weight:600}fieldset{margin:10px 0}</style>
+<script src="widgets.js"></script></head>
+<body>
+<div data-automation-id="applyFlowPage">
+  <h2>My Information</h2>
+  <div data-automation-id="formField-sourceDropdown"><label for="src">How Did You Hear About Us?*</label>
+    <button type="button" id="src" aria-haspopup="listbox" data-automation-id="sourceDropdown" data-options="Agency|Career Fair|Job Board|LinkedIn|Referral|Social Media">Select One</button></div>
+  <fieldset data-automation-id="formField-candidateIsPreviousWorker"><legend>Have you previously worked for Acme Robotics?*</legend>
+    <input type="radio" id="pw-yes" name="candidateIsPreviousWorker" value="true"><label for="pw-yes" style="display:inline">Yes</label>
+    <input type="radio" id="pw-no" name="candidateIsPreviousWorker" value="false"><label for="pw-no" style="display:inline">No</label></fieldset>
+  <div data-automation-id="formField-countryDropdown"><label for="country">Country*</label>
+    <button type="button" id="country" aria-haspopup="listbox" data-options="Canada|India|United Kingdom|United States of America">Select One</button></div>
+  <div data-automation-id="formField-legalNameSection_firstName"><label for="wd-fn">First Name*</label><input id="wd-fn" data-automation-id="legalNameSection_firstName"></div>
+  <div data-automation-id="formField-legalNameSection_lastName"><label for="wd-ln">Last Name*</label><input id="wd-ln" data-automation-id="legalNameSection_lastName"></div>
+  <div data-automation-id="formField-addressSection_addressLine1"><label for="wd-a1">Address Line 1*</label><input id="wd-a1" data-automation-id="addressSection_addressLine1"></div>
+  <div data-automation-id="formField-addressSection_city"><label for="wd-city">City*</label><input id="wd-city" data-automation-id="addressSection_city"></div>
+  <div data-automation-id="formField-addressSection_countryRegion"><label for="wd-state">State*</label>
+    <button type="button" id="wd-state" aria-haspopup="listbox" data-options="Arizona|California|Colorado|New York|Texas|Washington">Select One</button></div>
+  <div data-automation-id="formField-addressSection_postalCode"><label for="wd-zip">Postal Code*</label><input id="wd-zip" data-automation-id="addressSection_postalCode"></div>
+  <div data-automation-id="formField-email"><label for="wd-email">Email Address*</label><input id="wd-email" data-automation-id="email"></div>
+  <div data-automation-id="formField-phoneType"><label for="wd-ptype">Phone Device Type*</label>
+    <button type="button" id="wd-ptype" aria-haspopup="listbox" data-options="Home|Mobile|Work">Select One</button></div>
+  <div data-automation-id="formField-countryPhoneCode"><label for="wd-pcc">Country Phone Code*</label>
+    <input id="wd-pcc" role="combobox" aria-autocomplete="list" data-options="Canada (+1)|India (+91)|United Kingdom (+44)|United States of America (+1)"><span id="wd-pcc-chosen"></span></div>
+  <div data-automation-id="formField-phoneNumber"><label for="wd-phone">Phone Number*</label><input id="wd-phone" data-automation-id="phone-number"></div>
+
+  <h2>My Experience</h2>
+  <div data-automation-id="workExperienceSection">
+    <div role="group" aria-labelledby="we1-h">
+      <h4 id="we1-h">Work Experience 1</h4>
+      <div data-automation-id="formField-jobTitle"><label for="we1-title">Job Title*</label><input id="we1-title" data-automation-id="jobTitle"></div>
+      <div data-automation-id="formField-companyName"><label for="we1-co">Company*</label><input id="we1-co" data-automation-id="company"></div>
+      <div data-automation-id="formField-location"><label for="we1-loc">Location</label><input id="we1-loc" data-automation-id="location"></div>
+      <div data-automation-id="formField-currentlyWorkHere"><input type="checkbox" id="we1-cur" data-automation-id="currentlyWorkHere"><label for="we1-cur" style="display:inline">I currently work here</label></div>
+      <div data-automation-id="formField-startDate"><label>From*</label>
+        <div role="group"><input id="we1-sm" aria-label="Month" data-automation-id="dateSectionMonth-input" placeholder="MM" size="2"><input id="we1-sy" aria-label="Year" data-automation-id="dateSectionYear-input" placeholder="YYYY" size="4"></div></div>
+      <div data-automation-id="formField-endDate"><label>To*</label>
+        <div role="group"><input id="we1-em" aria-label="Month" data-automation-id="dateSectionMonth-input" placeholder="MM" size="2"><input id="we1-ey" aria-label="Year" data-automation-id="dateSectionYear-input" placeholder="YYYY" size="4"></div></div>
+      <div data-automation-id="formField-roleDescription"><label for="we1-desc">Role Description</label><textarea id="we1-desc" data-automation-id="description"></textarea></div>
+    </div>
+    <div role="group" aria-labelledby="we2-h">
+      <h4 id="we2-h">Work Experience 2</h4>
+      <div data-automation-id="formField-jobTitle"><label for="we2-title">Job Title*</label><input id="we2-title" data-automation-id="jobTitle"></div>
+      <div data-automation-id="formField-companyName"><label for="we2-co">Company*</label><input id="we2-co" data-automation-id="company"></div>
+      <div data-automation-id="formField-location"><label for="we2-loc">Location</label><input id="we2-loc" data-automation-id="location"></div>
+      <div data-automation-id="formField-currentlyWorkHere"><input type="checkbox" id="we2-cur" data-automation-id="currentlyWorkHere"><label for="we2-cur" style="display:inline">I currently work here</label></div>
+      <div data-automation-id="formField-startDate"><label>From*</label>
+        <div role="group"><input id="we2-sm" aria-label="Month" data-automation-id="dateSectionMonth-input" placeholder="MM" size="2"><input id="we2-sy" aria-label="Year" data-automation-id="dateSectionYear-input" placeholder="YYYY" size="4"></div></div>
+      <div data-automation-id="formField-endDate"><label>To*</label>
+        <div role="group"><input id="we2-em" aria-label="Month" data-automation-id="dateSectionMonth-input" placeholder="MM" size="2"><input id="we2-ey" aria-label="Year" data-automation-id="dateSectionYear-input" placeholder="YYYY" size="4"></div></div>
+      <div data-automation-id="formField-roleDescription"><label for="we2-desc">Role Description</label><textarea id="we2-desc" data-automation-id="description"></textarea></div>
+    </div>
+  </div>
+  <div data-automation-id="educationSection">
+    <h4>Education 1</h4>
+    <div data-automation-id="formField-schoolName"><label for="ed-school">School or University*</label><input id="ed-school" data-automation-id="school"></div>
+    <div data-automation-id="formField-degree"><label for="ed-degree">Degree*</label>
+      <button type="button" id="ed-degree" aria-haspopup="listbox" data-options="Associate's Degree|Bachelor's Degree|High School Diploma|Master's Degree|MBA|PhD">Select One</button></div>
+    <div data-automation-id="formField-fieldOfStudy"><label for="ed-field">Field of Study</label><input id="ed-field" data-automation-id="fieldOfStudy"></div>
+    <div data-automation-id="formField-gradeAverage"><label for="ed-gpa">Overall Result (GPA)</label><input id="ed-gpa" data-automation-id="gpa"></div>
+    <div data-automation-id="formField-firstYearAttended"><label>From</label><input id="ed-from" aria-label="Year" data-automation-id="dateSectionYear-input" placeholder="YYYY"></div>
+    <div data-automation-id="formField-lastYearAttended"><label>To (Actual or Expected)</label><input id="ed-to" aria-label="Year" data-automation-id="dateSectionYear-input" placeholder="YYYY"></div>
+  </div>
+  <div data-automation-id="formField-websites"><label for="wd-li">LinkedIn</label><input id="wd-li" data-automation-id="linkedinQuestion"></div>
+
+  <h2>Application Questions</h2>
+  <fieldset data-automation-id="formField-q1"><legend>Are you legally authorized to work in the country in which this job is located?*</legend>
+    <input type="radio" id="q1y" name="q1" value="1"><label for="q1y" style="display:inline">Yes</label>
+    <input type="radio" id="q1n" name="q1" value="0"><label for="q1n" style="display:inline">No</label></fieldset>
+  <div data-automation-id="formField-q2"><label for="q2">Will you now or in the future require sponsorship for employment visa status?*</label>
+    <button type="button" id="q2" aria-haspopup="listbox" data-options="Yes|No">Select One</button></div>
+  <div data-automation-id="formField-q3"><label for="q3">Please describe your favorite project.</label><textarea id="q3"></textarea></div>
+
+  <h2>Voluntary Disclosures</h2>
+  <div data-automation-id="formField-gender"><label for="vd-gender">Gender</label>
+    <button type="button" id="vd-gender" aria-haspopup="listbox" data-options="Female|Male|I do not wish to answer">Select One</button></div>
+  <div data-automation-id="formField-ethnicity"><label for="vd-eth">Please select the ethnicity which most accurately describes how you identify yourself</label>
+    <button type="button" id="vd-eth" aria-haspopup="listbox" data-options="Asian (United States of America)|Black or African American (United States of America)|White (United States of America)|I do not wish to answer. (United States of America)">Select One</button></div>
+  <div data-automation-id="formField-veteranStatus"><label for="vd-vet">Veteran Status</label>
+    <button type="button" id="vd-vet" aria-haspopup="listbox" data-options="I am not a veteran|I identify as one or more of the classifications of protected veteran|I do not wish to answer">Select One</button></div>
+  <div data-automation-id="formField-agreementCheckbox"><input type="checkbox" id="vd-terms"><label for="vd-terms" style="display:inline">I have read and consent to the terms and conditions</label></div>
+</div>
+</body></html>

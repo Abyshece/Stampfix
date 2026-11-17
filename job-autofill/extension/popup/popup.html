@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Job Autofill</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="../icons/icon32.png" alt="" width="24" height="24">
+    <div>
+      <div class="name">Job Autofill</div>
+      <div class="who" id="who">Loading…</div>
+    </div>
+  </header>
+
+  <button id="fill" class="primary" type="button">Autofill this page</button>
+
+  <label class="opt">
+    <input type="checkbox" id="overwrite">
+    <span>Replace answers already in the form</span>
+  </label>
+
+  <div id="result" class="result" hidden aria-live="polite"></div>
+
+  <footer>
+    <a href="#" id="edit">Edit my profile</a>
+    <span class="shortcut">Shortcut <kbd id="shortcut">Alt+Shift+F</kbd></span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

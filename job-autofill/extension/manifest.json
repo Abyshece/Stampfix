@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Job Autofill",
+  "version": "1.0.0",
+  "description": "Save your details once, then fill job applications on any site (Greenhouse, Lever, Workday, LinkedIn and more) in one click. Data stays in your browser.",
+  "permissions": ["storage", "unlimitedStorage", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "Job Autofill",
+    "default_popup": "popup/popup.html",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" }
+  },
+  "options_ui": { "page": "options/options.html", "open_in_tab": true },
+  "commands": {
+    "fill-page": {
+      "suggested_key": { "default": "Alt+Shift+F", "mac": "Alt+Shift+F" },
+      "description": "Autofill the job application on this page"
+    }
+  },
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+}

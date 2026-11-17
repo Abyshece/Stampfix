@@ -1,0 +1,7 @@
+{
+  "name": "job-autofill-tests",
+  "private": true,
+  "description": "Browser tests for the Job Autofill extension (needs Playwright + Chromium).",
+  "scripts": { "test": "node run-tests.cjs" },
+  "devDependencies": { "react": "18.3.1", "react-dom": "18.3.1" }
+}

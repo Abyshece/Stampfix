@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Job Autofill · My profile</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header class="top">
+    <div class="top-inner">
+      <div class="brand">
+        <img src="../icons/icon48.png" alt="" width="36" height="36">
+        <div>
+          <h1>My application profile</h1>
+          <p>Fill this in once. Job Autofill uses it to fill applications on any site. It's stored only in this browser.</p>
+        </div>
+      </div>
+      <div class="status">
+        <div class="meter" aria-hidden="true"><div id="meterBar"></div></div>
+        <span id="meterText" class="meter-text"></span>
+        <span id="saveState" class="save" role="status" aria-live="polite">Saved</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav id="nav" aria-label="Sections"></nav>
+    <main id="main">
+      <section class="howto" aria-label="How to use">
+        <ol>
+          <li><b>Fill in this page.</b> Changes save automatically.</li>
+          <li><b>Open any job application</b>, then click the <span class="kbd">Job Autofill</span> icon and press <b>Autofill this page</b>, or press <span class="kbd" id="shortcut">Alt+Shift+F</span>.</li>
+          <li><b>Check the form.</b> Green outline = filled. Amber = left for you. Multi-page forms (Workday, LinkedIn Easy Apply): press it again on each page.</li>
+        </ol>
+      </section>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

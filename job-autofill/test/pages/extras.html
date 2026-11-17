@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Northwind Labs - Solutions Engineer</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}li{margin:12px 0;list-style:none}.dropdown-container{display:none;border:1px solid #999}.dropdown-location{padding:4px;cursor:pointer}</style></head>
+<body>
+<h1>Solutions Engineer</h1>
+<form><ul>
+  <!-- Lever-style location search: searches on keydown, picks on mousedown, clears on blur without a pick -->
+  <li><label><div class="application-label">Current location ✱</div>
+    <div class="application-field"><input class="location-input" id="x-loc" name="location" type="text">
+      <div class="dropdown-container"><div class="dropdown-results"></div><div class="dropdown-no-results">No location found.</div></div></div></label></li>
+  <li><div class="application-label">Are you a Singapore citizen?✱</div>
+    <ul><li><label><input type="radio" name="sg" value="Yes" id="sg-y"> Yes</label></li><li><label><input type="radio" name="sg" value="No" id="sg-n"> No</label></li></ul></li>
+  <li><div class="application-label">Are you a U.S. citizen?</div>
+    <ul><li><label><input type="radio" name="usc" value="Yes" id="usc-y"> Yes</label></li><li><label><input type="radio" name="usc" value="No" id="usc-n"> No</label></li></ul></li>
+  <li><label for="x-inus">Are you currently located in the US?</label><select id="x-inus"><option value="">Select...</option><option>Yes</option><option>No</option></select></li>
+  <li><div class="application-label">Language Skill(s) (Check all that apply)✱</div>
+    <ul><li><label><input type="checkbox" name="lang" value="English (ENG)" id="l-en"><span>English (ENG)</span></label></li>
+        <li><label><input type="checkbox" name="lang" value="Spanish (SPA)" id="l-es"><span>Spanish (SPA)</span></label></li>
+        <li><label><input type="checkbox" name="lang" value="French (FRA)" id="l-fr"><span>French (FRA)</span></label></li></ul></li>
+  <li><label for="x-pron">Name Pronunciation | How do you pronounce your name?</label><input id="x-pron"></li>
+  <li><label for="x-heard">Please tell us how you heard about this opportunity.✱</label>
+    <select id="x-heard"><option value="">Select...</option><option>Glassdoor</option><option>LinkedIn</option><option>Referral</option></select></li>
+  <li><label for="x-where">Where do you plan on working from (for payroll tax purposes)?</label><input id="x-where"></li>
+  <li><label for="x-join">Why do you want to join Northwind?</label><textarea id="x-join"></textarea></li>
+</ul></form>
+<script>
+  const PLACES = ['San Diego, CA, USA', 'San Francisco, CA, USA', 'South San Francisco, CA, USA'];
+  const inp = document.getElementById('x-loc');
+  const box = document.querySelector('.dropdown-container');
+  const res = document.querySelector('.dropdown-results');
+  let t;
+  inp.addEventListener('input', () => { box.style.display = 'block'; });
+  inp.addEventListener('keydown', () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      res.textContent = '';
+      PLACES.filter((p) => p.toLowerCase().includes(inp.value.toLowerCase())).forEach((p, i) => {
+        const d = document.createElement('div'); d.className = 'dropdown-location'; d.id = 'location-' + i; d.textContent = p; res.append(d);
+      });
+    }, 500);
+  });
+  document.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('dropdown-location')) { box.style.display = 'none'; inp.value = e.target.textContent; inp.dataset.picked = '1'; res.textContent = ''; }
+  });
+  inp.addEventListener('blur', () => { if (box.style.display !== 'none') { box.style.display = 'none'; res.textContent = ''; inp.value = ''; } });
+</script>
+</body></html>

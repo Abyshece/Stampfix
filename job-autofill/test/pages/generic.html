@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Careers | Northwind Labs</title>
+<meta property="og:site_name" content="Northwind Labs">
+<style>body{font-family:sans-serif;max-width:760px;margin:20px auto}p,label{display:block;margin:10px 0}</style></head>
+<body>
+<h1>Product Analyst</h1>
+<form>
+  <h2>About you</h2>
+  <my-field id="shadow-email" label="Email address"></my-field>
+  <p><label for="g-phone">Phone</label><input id="g-phone" value="000-000"></p>
+  <p>Zip <input id="g-zip" autocomplete="postal-code"></p>
+  <p><label for="g-country">Country of residence</label><select id="g-country"><option value="">Choose…</option><option>Canada</option><option>Mexico</option><option value="US">United States of America</option></select></p>
+  <p><label for="g-state">State</label><select id="g-state"><option value="">--</option><option>AZ</option><option>CA</option><option>NY</option></select></p>
+  <p><label for="g-start">Earliest start date</label><input type="date" id="g-start"></p>
+  <p><label for="g-salary">Expected salary (USD)</label><input type="number" id="g-salary"></p>
+  <p><label for="g-years">Years of experience</label><select id="g-years"><option value="">Select</option><option>0-2 years</option><option>3-5 years</option><option>6-10 years</option><option>10+ years</option></select></p>
+  <fieldset><legend>Are you at least 18 years of age?</legend>
+    <label><input type="radio" name="adult" value="y" id="adult-y"> Yes</label><label><input type="radio" name="adult" value="n" id="adult-n"> No</label></fieldset>
+  <p><label for="g-why">Why are you interested in this position?</label><textarea id="g-why"></textarea></p>
+  <p><label for="g-cover">Cover letter</label><textarea id="g-cover" rows="6"></textarea></p>
+  <p><label for="g-odd">Describe a time you disagreed with a coworker.</label><textarea id="g-odd" required></textarea></p>
+
+  <h2>Employment history</h2>
+  <div class="job"><p><label for="j0-emp">Employer</label><input id="j0-emp"></p><p><label for="j0-title">Job title</label><input id="j0-title"></p>
+    <p><label for="j0-start">Start date (MM/YYYY)</label><input id="j0-start"></p><p><label for="j0-end">End date (MM/YYYY)</label><input id="j0-end"></p></div>
+  <div class="job"><p><label for="j1-emp">Employer</label><input id="j1-emp"></p><p><label for="j1-title">Job title</label><input id="j1-title"></p>
+    <p><label for="j1-start">Start date (MM/YYYY)</label><input id="j1-start"></p><p><label for="j1-end">End date (MM/YYYY)</label><input id="j1-end"></p></div>
+
+  <h2>Education</h2>
+  <p><label for="e-uni">University</label><input id="e-uni"></p>
+  <p><label for="e-deg">Degree</label><select id="e-deg"><option value="">--</option><option>A.A.</option><option>B.A.</option><option>B.S.</option><option>M.S.</option><option>Ph.D.</option></select></p>
+  <p><label for="e-grad">Graduation date</label><input type="month" id="e-grad"></p>
+
+  <!-- traps -->
+  <input type="text" name="website" id="hp1" aria-label="Website" style="position:absolute;left:-9999px">
+  <div style="display:none"><label for="hp2">Company URL</label><input id="hp2"></div>
+  <label><input type="checkbox" id="g-terms"> I certify that the information above is accurate</label>
+  <iframe id="frame" src="about:blank" style="width:100%;height:200px;border:1px solid #ccc"></iframe>
+  <button type="submit">Submit</button>
+</form>
+<script>
+  customElements.define('my-field', class extends HTMLElement {
+    connectedCallback() {
+      const r = this.attachShadow({ mode: 'open' });
+      r.innerHTML = '<label for="inner">' + this.getAttribute('label') + '</label> <input id="inner" type="text">';
+    }
+  });
+  // cross-origin iframe: same server, different host name
+  const other = location.hostname === 'localhost' ? '127.0.0.1' : 'localhost';
+  document.getElementById('frame').src = location.protocol + '//' + other + ':' + location.port + '/frame.html';
+</script>
+</body></html>
