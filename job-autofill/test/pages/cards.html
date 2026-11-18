@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Application</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}.card{position:absolute;top:80px;left:0;right:0;transition:opacity .2s}.card.off{opacity:0;visibility:hidden}
+.track{position:relative;height:240px;overflow:hidden}.slide{position:absolute;top:0;width:100%}</style></head>
+<body>
+<!-- Like Jotform's card layout: one question visible, the rest hidden in the page -->
+<div class="card"><label for="c-first">First Name</label><input id="c-first"></div>
+<div class="card off"><label for="c-email-hidden">Email</label><input id="c-email-hidden" type="email"></div>
+<!-- A slider: the second panel sits outside the clipped area -->
+<div class="track" style="margin-top:160px">
+  <div class="slide" style="left:0"><label for="c-city">City</label><input id="c-city"></div>
+  <div class="slide" style="left:110%"><label for="c-slid">Phone</label><input id="c-slid"></div>
+</div>
+<!-- A references block on screen: Name / Email / Phone / Relationship -->
+<div class="refs" style="margin-top:20px">
+  <div><label for="r-name">Name</label><input id="r-name"></div>
+  <div><label for="r-email">Email</label><input id="r-email"></div>
+  <div><label for="r-phone">Phone Number</label><input id="r-phone"></div>
+  <div><label for="r-rel">Relationship</label><input id="r-rel"></div>
+</div>
+</body></html>

@@ -4,6 +4,7 @@
  * is stored, so no file is uploaded.
  *
  *   node real-sites.cjs <url> [<url> ...]      (SHOTS=dir to save screenshots)
+ *   node real-sites.cjs '<url>@@Apply now'     (click a button first to open the form)
  */
 const { chromium } = require('playwright');
 const fs = require('fs');
@@ -40,11 +41,22 @@ const PROFILE = {
   await sw.evaluate(async (p) => { await chrome.storage.local.clear(); await chrome.storage.local.set({ profile: p }); }, PROFILE);
   const page = await ctx.newPage();
 
-  for (const [i, url] of urls.entries()) {
+  for (const [i, arg] of urls.entries()) {
+    // "url@@Apply now" = click the "Apply now" button first (like you would) to open the form.
+    const [url, clickText] = arg.split('@@');
     try {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(1500);
+      if (clickText) {
+        await page.getByRole('button', { name: /accept all|allow all|alle akzeptieren|alles akzeptieren|alle zulassen|akzeptieren|zustimmen|accept|agree|reject non-essential/i }).first().click({ timeout: 4000 }).catch(() => {});
+        await page.waitForTimeout(500);
+        const re = new RegExp(clickText, 'i');
+        const target = page.getByRole('button', { name: re }).or(page.getByRole('link', { name: re })).first();
+        await target.click({ timeout: 8000 }).catch(() => target.click({ timeout: 4000, force: true })).catch((e) => console.log('could not click', clickText, e.message.split('\n')[0]));
+        await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(2000);
+      }
       await page.bringToFront();
       const t0 = Date.now();
       const r = await sw.evaluate(async (u) => {

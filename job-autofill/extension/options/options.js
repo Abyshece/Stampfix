@@ -8,6 +8,8 @@ const SECTIONS = [
   {
     id: 'basics', title: 'Name & contact',
     fields: [
+      { k: 'salutation', l: 'Salutation (Anrede)', t: 'select', o: ['', 'Mr', 'Ms', 'Mx', 'None'], h: 'Matched to Herr / Frau / Divers on German forms.' },
+      { k: 'academicTitle', l: 'Academic title (Titel)', ph: 'e.g. Dr.' },
       { k: 'firstName', l: 'First name', key: true },
       { k: 'lastName', l: 'Last name', key: true },
       { k: 'middleName', l: 'Middle name' },
@@ -16,6 +18,9 @@ const SECTIONS = [
       { k: 'pronouns', l: 'Pronouns', ph: 'e.g. she/her' },
       { k: 'phoneCountryCode', l: 'Phone country code', ph: '+1' },
       { k: 'phone', l: 'Phone number', t: 'tel', key: true, h: 'Without the country code.' },
+      { k: 'dateOfBirth', l: 'Date of birth', t: 'date', h: 'Optional. Many German forms ask (Geburtsdatum). Leave empty to type it yourself.' },
+      { k: 'placeOfBirth', l: 'Place of birth (Geburtsort)', h: 'Optional.' },
+      { k: 'maritalStatus', l: 'Marital status (Familienstand)', t: 'select', o: ['', 'Single', 'Married', 'Registered partnership', 'Divorced', 'Widowed', 'Prefer not to say'], h: 'Optional. Some German forms still ask.' },
     ],
   },
   {
@@ -36,6 +41,7 @@ const SECTIONS = [
       { k: 'github', l: 'GitHub', t: 'url', ph: 'https://github.com/…' },
       { k: 'portfolio', l: 'Portfolio', t: 'url' },
       { k: 'website', l: 'Personal website', t: 'url' },
+      { k: 'xing', l: 'XING', t: 'url', ph: 'https://www.xing.com/profile/…' },
       { k: 'twitter', l: 'X / Twitter', t: 'url' },
     ],
   },
@@ -51,8 +57,13 @@ const SECTIONS = [
       { k: 'noticePeriod', l: 'Notice period', ph: 'e.g. 2 weeks' },
       { k: 'availability', l: 'When can you start?', ph: 'e.g. Immediately' },
       { k: 'availableStartDate', l: 'Earliest start date', t: 'date', h: 'Used when a form asks for an actual date.' },
+      { k: 'employmentType', l: 'Employment type', t: 'select', o: ['', 'Full-time', 'Part-time', 'Working student', 'Internship', 'Freelance', 'Apprenticeship'], h: 'Vollzeit / Teilzeit / Werkstudent…' },
+      { k: 'weeklyHours', l: 'Hours per week', t: 'number', ph: 'e.g. 40' },
       { k: 'workPreference', l: 'Work arrangement', t: 'select', o: ['', 'Remote', 'Hybrid', 'On-site', 'Flexible'] },
+      { k: 'desiredLocation', l: 'Preferred work location', ph: 'e.g. Berlin' },
       { k: 'willingToRelocate', l: 'Willing to relocate?', t: 'select', o: YESNO },
+      { k: 'willingToTravel', l: 'Willing to travel? (Reisebereitschaft)', t: 'select', o: YESNO },
+      { k: 'referredBy', l: 'Referred by', ph: 'Name, if someone referred you', h: 'Leave empty unless you have a referral.' },
     ],
   },
   {
@@ -99,7 +110,9 @@ const SECTIONS = [
     fields: [
       { k: 'skills', l: 'Skills', t: 'textarea', w: 'full', rows: 2, ph: 'Python, SQL, React, Project management' },
       { k: 'skillYears', l: 'Years per skill', t: 'textarea', w: 'full', rows: 4, ph: 'Python: 5\nSQL: 4\nReact: 3', h: 'One per line. Answers questions like "How many years of experience do you have with Python?"' },
-      { k: 'languages', l: 'Languages', w: 'full', ph: 'e.g. English (native), Spanish (conversational)' },
+      { k: 'germanLevel', l: 'German level (Deutschkenntnisse)', t: 'select', o: ['', 'Native', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1', 'None'], h: 'Matched to "Muttersprache", "verhandlungssicher", "fließend", "gut"…' },
+      { k: 'englishLevel', l: 'English level', t: 'select', o: ['', 'Native', 'C2', 'C1', 'B2', 'B1', 'A2', 'A1', 'None'] },
+      { k: 'languages', l: 'Languages (all)', w: 'full', ph: 'e.g. German (native), English (C1), Spanish (B1)' },
     ],
   },
   {
@@ -141,7 +154,7 @@ const BLANK_ENTRY = {
 };
 
 let state = {};
-let files = { resume: null, coverLetter: null };
+let files = { resume: null, coverLetter: null, photo: null, certificates: null };
 let saveTimer = null;
 
 /* ───────── tiny DOM helper ───────── */
@@ -280,11 +293,11 @@ const fmtSize = (n) => (n > 1024 * 1024 ? (n / 1024 / 1024).toFixed(1) + ' MB' :
 
 function renderFiles(body) {
   body.textContent = '';
-  body.append(h('p', { class: 'desc', text: 'Attached to upload fields labelled Resume/CV or Cover letter. PDF is the safest format.' }));
+  body.append(h('p', { class: 'desc', text: 'Each goes into the matching upload field: Resume/CV (Lebenslauf), Cover letter (Anschreiben), Photo (Bewerbungsfoto), Certificates (Zeugnisse). PDF is the safest format; combine several certificates into one PDF.' }));
   const row = h('div', { class: 'files' });
-  for (const [key, label] of [['resume', 'Resume / CV'], ['coverLetter', 'Cover letter file']]) {
+  for (const [key, label, accept] of [['resume', 'Resume / CV'], ['coverLetter', 'Cover letter file'], ['photo', 'Photo (optional)', 'image/*'], ['certificates', 'Certificates / Zeugnisse (one PDF)']]) {
     const rec = files[key];
-    const input = h('input', { type: 'file', accept: '.pdf,.doc,.docx,.txt,.rtf,.odt', id: 'file-' + key, class: 'visually-hidden' });
+    const input = h('input', { type: 'file', accept: accept || '.pdf,.doc,.docx,.txt,.rtf,.odt', id: 'file-' + key, class: 'visually-hidden' });
     input.addEventListener('change', async () => {
       const f = input.files[0];
       if (!f) return;
@@ -323,8 +336,8 @@ function renderBackup(body) {
       const profile = data.profile || data;
       if (typeof profile !== 'object' || Array.isArray(profile)) throw new Error('bad');
       state = normalize(profile);
-      files = { resume: data.files?.resume || files.resume, coverLetter: data.files?.coverLetter || files.coverLetter };
-      await chrome.storage.local.set({ profile: state, file_resume: files.resume, file_coverLetter: files.coverLetter });
+      for (const k of Object.keys(files)) files[k] = (data.files && data.files[k]) || files[k];
+      await chrome.storage.local.set({ profile: state, ...Object.fromEntries(Object.entries(files).map(([k, v]) => ['file_' + k, v])) });
       renderAll();
       setSaveState('Imported', '');
     } catch (e) {
@@ -354,7 +367,7 @@ async function clearAll() {
   if (!confirm('Delete your whole profile and files from this browser? This can\'t be undone.')) return;
   await chrome.storage.local.clear();
   state = normalize({});
-  files = { resume: null, coverLetter: null };
+  files = { resume: null, coverLetter: null, photo: null, certificates: null };
   renderAll();
 }
 
@@ -392,9 +405,9 @@ function renderAll() {
 }
 
 async function init() {
-  const store = await chrome.storage.local.get(['profile', 'file_resume', 'file_coverLetter']);
+  const store = await chrome.storage.local.get(['profile', 'file_resume', 'file_coverLetter', 'file_photo', 'file_certificates']);
   state = normalize(store.profile || {});
-  files = { resume: store.file_resume || null, coverLetter: store.file_coverLetter || null };
+  files = { resume: store.file_resume || null, coverLetter: store.file_coverLetter || null, photo: store.file_photo || null, certificates: store.file_certificates || null };
   renderAll();
   try {
     const cmds = await chrome.commands.getAll();

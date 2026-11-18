@@ -1,11 +1,11 @@
 # Job Autofill (Chrome extension)
 
 Enter your details once on the extension's own profile page. Then fill any job
-application with one click or a keyboard shortcut. It works on Greenhouse, Lever,
-Workday, LinkedIn Easy Apply, Ashby, company career sites, and plain forms. It
-doesn't depend on one site's layout. It reads each field's label ("First name",
-"Are you authorized to work in the US?", "How many years of Python?"), works out
-what the field is asking, and fills it from your profile.
+application with one click or a keyboard shortcut. There's no per-site code: it
+reads each field's label ("First name", "Vorname", "Are you authorized to work in
+the US?", "Wie hast Du von uns erfahren?", "How many years of Python?"), works out
+what the field is asking, and fills it from your profile. It understands
+**English and German** forms.
 
 It **never submits** anything. Fields it fills get a green outline, fields it
 leaves for you get an amber outline, and you review before you send.
@@ -38,30 +38,60 @@ Running it twice is safe. It only fills empty fields, unless you tick **Replace 
 
 | From your profile | Examples of what it answers |
 |---|---|
-| Name, email, phone, address | First / last / full / preferred name, phone + country code, city, state, ZIP, country, "Location (City)" search boxes |
-| Links | LinkedIn, GitHub, portfolio, website, X |
+| Name, email, phone, address | Salutation (Herr/Frau/Divers), academic title, first / last / full / preferred name, date and place of birth, marital status, phone + country code, street, "PLZ / Ort", city, state, ZIP, country, nationality, "Location (City)" search boxes |
+| Links | LinkedIn, XING, GitHub, portfolio, website, X |
 | Work eligibility | Authorized to work? Need sponsorship? Over 18? Willing to relocate? "Are you a U.S. citizen?" "Are you located in the US?" Worked here before? |
-| Current job & preferences | Current company/title, total years of experience, salary, notice period, start date, "How did you hear about us?" |
+| Current job & preferences | Current company/title, total years of experience, salary (Gehaltsvorstellung), notice period (Kündigungsfrist), start date (Eintrittstermin), employment type (Vollzeit/Teilzeit/Werkstudent), hours per week, preferred location, willingness to travel (Reisebereitschaft), "How did you hear about us?", "Referred by" |
 | Work experience (list) | Job title, company, location, start/end month+year, "I currently work here", description. Several job blocks are filled in order |
 | Education (list) | School, degree (matches "Bachelor's Degree", "B.S.", "BS"…), field of study, GPA, start/graduation dates |
-| Skills | "How many years of experience with Python?" (from your "Python: 5" list), "Do you have experience with SQL?" → Yes, spoken languages |
+| Skills & languages | "How many years of experience with Python?" (from your "Python: 5" list), "Do you have experience with SQL?" → Yes, German / English level (matched to "Muttersprache", "verhandlungssicher", "C1"…), spoken languages |
 | Summary & cover letter | Cover-letter boxes, "Additional information". `{company}` and `{role}` are replaced with the company name and job title |
 | Saved answers | Your own answers to recurring questions like "Why do you want to work here?". They don't need to match word for word |
 | Voluntary self-identification | Gender, race, Hispanic/Latino, veteran, disability, or "decline to answer" |
-| Files | Resume and cover-letter files go into the matching upload fields |
+| Files | Resume (Lebenslauf), cover letter (Anschreiben), photo (Bewerbungsfoto), certificates (Zeugnisse) go into the matching upload fields |
 
 It handles normal inputs, dropdowns, radio buttons, checkboxes, custom dropdowns
 (React-Select, Workday-style, MUI), search-as-you-type boxes (Lever and Greenhouse
 location, school pickers), date fields in any format (MM/YYYY, separate month/year
 boxes, date pickers), number ranges ("3-5 years"), forms inside iframes, and shadow DOM.
 
-It deliberately leaves alone: consent and "I agree" checkboxes, signatures,
-passwords, CAPTCHAs, open-ended questions you haven't saved an answer for, and
-questions about skills that aren't in your list. Those are outlined amber.
+It deliberately leaves alone: consent / Datenschutz checkboxes, cookie banners,
+signatures, passwords, CAPTCHAs, open-ended questions you haven't saved an answer
+for, questions about skills that aren't in your list, **reference and emergency-contact
+sections** (those are someone else's details), and questions on steps or cards you
+can't see yet. Those are outlined amber or left for the next press.
+
+## Tested on live application forms
+
+Filled with a fake profile, never submitted, no files uploaded:
+
+| Platform | Result |
+|---|---|
+| Greenhouse (Discord, Figma) | 16–22 fields filled per form; left: consent, optional identity questions, resume |
+| Lever (Palantir) | 15 filled, incl. location search box, citizenship and language checkboxes |
+| Ashby (Linear, Ramp) | Name, email, links, country filled; the rest are essay questions |
+| Personio (ottonova EN, thermondo DE) | 8 of 10 and 5 of 6 filled; German labels understood |
+| Recruitee (bunq) | Personal fields, salary, "worked here before"; rest are essay questions |
+| Teamtailor | 7 filled |
+| Rippling | 11 filled incl. EEO dropdowns |
+| Jobvite | 8 filled incl. full address |
+| Breezy HR | Name, email, phone, summary, cover letter |
+| Gem | 6 filled |
+| Manatal | 4 filled |
+| Homerun (Dutch form) | 6 filled |
+| softgarden, JOIN | First step of their multi-step forms filled |
+| Google Forms, Jotform | Personal fields, combined "Email and Phone", address, employment questions |
+
+Could not be tested from a cloud server: SmartRecruiters, Workable and Odoo block
+automated browsers; Workday, SuccessFactors, Taleo, iCIMS, Oracle, Avature and other
+enterprise systems need an account before the form appears. They use the same kinds
+of fields, so they should work in your own browser once you're on the form.
 
 ## Limits
 
 - Some sites use unusual widgets it can't operate. Those fields stay amber for you.
+- Labels in languages other than English and German are only partly understood.
+- Several platforms on recruiter-side tools (Metaview, hireEZ, SeekOut, Beamery…) have no candidate form at all.
 - Workday's date boxes and "Add" buttons can need a manual touch.
 - It can't log in for you or click Next/Submit. That's intentional.
 
@@ -77,7 +107,8 @@ extension/
   icons/
 test/
   run-tests.cjs        End-to-end tests against mock Greenhouse, Lever, Workday,
-                       LinkedIn, React, shadow-DOM/iframe pages (174 checks)
+                       LinkedIn, React, Google Forms, German, card-style and
+                       shadow-DOM/iframe pages (230 checks)
   real-sites.cjs       Fills live public application pages (never submits)
   pages/               The mock pages
 ```

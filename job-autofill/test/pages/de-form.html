@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Bewerbung: Data Engineer (m/w/d) bei Nordlicht GmbH</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}.feld{margin:10px 0}label{display:block}</style></head>
+<body>
+<h1>Data Engineer (m/w/d)</h1>
+<form>
+  <h2>Persönliche Daten</h2>
+  <div class="feld"><label for="d-anrede">Anrede *</label><select id="d-anrede"><option value="">Bitte wählen</option><option>Herr</option><option>Frau</option><option>Divers</option></select></div>
+  <div class="feld"><label for="d-titel">Titel</label><input id="d-titel"></div>
+  <div class="feld"><label for="d-vorname">Vorname *</label><input id="d-vorname"></div>
+  <div class="feld"><label for="d-nachname">Nachname *</label><input id="d-nachname"></div>
+  <div class="feld"><label for="d-mail">E-Mail-Adresse *</label><input id="d-mail" type="email"></div>
+  <div class="feld"><label for="d-tel">Telefonnummer</label><input id="d-tel" type="tel"></div>
+  <div class="feld"><label for="d-geb">Geburtsdatum</label><input id="d-geb" placeholder="TT.MM.JJJJ"></div>
+  <div class="feld"><label for="d-gebort">Geburtsort</label><input id="d-gebort"></div>
+  <div class="feld"><label for="d-fam">Familienstand</label><select id="d-fam"><option value="">Bitte wählen</option><option>ledig</option><option>verheiratet</option><option>geschieden</option></select></div>
+  <div class="feld"><label for="d-str">Straße und Hausnummer</label><input id="d-str"></div>
+  <div class="feld"><label for="d-plzort">PLZ / Ort</label><input id="d-plzort"></div>
+  <div class="feld"><label for="d-land">Land</label><select id="d-land"><option value="">Bitte auswählen</option><option>Deutschland</option><option>Österreich</option><option>Schweiz</option><option>Vereinigte Staaten</option></select></div>
+  <div class="feld"><label for="d-staat">Staatsangehörigkeit</label><input id="d-staat"></div>
+  <div class="feld"><label for="d-xing">XING-Profil</label><input id="d-xing"></div>
+  <div class="feld"><label for="d-li">LinkedIn-Profil</label><input id="d-li"></div>
+
+  <h2>Fragen zur Stelle</h2>
+  <div class="feld"><label for="d-gehalt">Gehaltsvorstellung (brutto/Jahr in EUR)</label><input id="d-gehalt"></div>
+  <div class="feld"><label for="d-kf">Kündigungsfrist</label><input id="d-kf"></div>
+  <div class="feld"><label for="d-eintritt">Frühestmöglicher Eintrittstermin</label><input id="d-eintritt" type="date"></div>
+  <div class="feld"><label for="d-quelle">Wie sind Sie auf uns aufmerksam geworden?</label><select id="d-quelle"><option value="">Bitte auswählen</option><option>StepStone</option><option>XING</option><option>LinkedIn</option><option>Empfehlung</option></select></div>
+  <fieldset><legend>Benötigen Sie eine Arbeitserlaubnis oder ein Visum?</legend>
+    <label><input type="radio" name="visum" id="d-visum-ja" value="ja"> Ja</label><label><input type="radio" name="visum" id="d-visum-nein" value="nein"> Nein</label></fieldset>
+  <fieldset><legend>Führerschein Klasse B vorhanden?</legend>
+    <label><input type="radio" name="fs" id="d-fs-ja" value="ja"> Ja</label><label><input type="radio" name="fs" id="d-fs-nein" value="nein"> Nein</label></fieldset>
+  <div class="feld"><label for="d-sprachen">Sprachkenntnisse</label><input id="d-sprachen"></div>
+  <div class="feld"><label for="d-de">Deutschkenntnisse</label><select id="d-de"><option value="">Bitte wählen</option><option>Muttersprache</option><option>Verhandlungssicher (C1/C2)</option><option>Gut (B1/B2)</option><option>Grundkenntnisse (A1/A2)</option><option>Keine</option></select></div>
+  <div class="feld"><label for="d-en">Englischkenntnisse</label><select id="d-en"><option value="">Bitte wählen</option><option>Muttersprache</option><option>Verhandlungssicher (C1/C2)</option><option>Gut (B1/B2)</option><option>Grundkenntnisse (A1/A2)</option></select></div>
+  <div class="feld"><label for="d-art">Anstellungsart</label><select id="d-art"><option value="">Bitte wählen</option><option>Vollzeit</option><option>Teilzeit</option><option>Werkstudent</option></select></div>
+  <fieldset><legend>Reisebereitschaft</legend>
+    <label><input type="radio" name="reise" id="d-reise-ja"> Ja</label><label><input type="radio" name="reise" id="d-reise-nein"> Nein</label></fieldset>
+  <div class="feld"><label for="d-jahre">Wie viele Jahre Berufserfahrung haben Sie?</label><input id="d-jahre"></div>
+
+  <h2>Beruflicher Werdegang</h2>
+  <div class="feld"><label for="d-ag">Arbeitgeber</label><input id="d-ag"></div>
+  <div class="feld"><label for="d-pos">Position</label><input id="d-pos"></div>
+  <div class="feld"><label for="d-von">Von (MM.JJJJ)</label><input id="d-von"></div>
+  <div class="feld"><label for="d-bis">Bis (MM.JJJJ)</label><input id="d-bis"></div>
+
+  <h2>Ausbildung</h2>
+  <div class="feld"><label for="d-hs">Hochschule</label><input id="d-hs"></div>
+  <div class="feld"><label for="d-abschluss">Abschluss</label><select id="d-abschluss"><option value="">Bitte wählen</option><option>Abitur</option><option>Bachelor</option><option>Master</option><option>Promotion</option></select></div>
+  <div class="feld"><label for="d-studiengang">Studiengang</label><input id="d-studiengang"></div>
+
+  <h2>Unterlagen</h2>
+  <div class="feld"><label for="d-cv">Lebenslauf *</label><input type="file" id="d-cv"></div>
+  <div class="feld"><label for="d-anschreiben">Anschreiben</label><input type="file" id="d-anschreiben"></div>
+  <div class="feld"><label for="d-zeugnisse">Zeugnisse</label><input type="file" id="d-zeugnisse"></div>
+  <div class="feld"><label for="d-foto">Bewerbungsfoto</label><input type="file" id="d-foto"></div>
+  <label><input type="checkbox" id="d-dsgvo"> Ich habe die Datenschutzerklärung gelesen und stimme der Verarbeitung meiner Daten zu.</label>
+  <button type="submit">Bewerbung absenden</button>
+</form>
+</body></html>

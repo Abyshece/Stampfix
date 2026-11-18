@@ -1,0 +1,41 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Job Application Form</title>
+<style>body{font-family:sans-serif;max-width:640px;margin:20px auto}[role=listitem]{border:1px solid #ddd;padding:12px;margin:10px 0}
+[role=radio],[role=checkbox]{display:block;cursor:pointer;padding:3px}[role=radio][aria-checked=true]::before,[role=checkbox][aria-checked=true]::before{content:"● "}
+[role=listbox]{border:1px solid #999;padding:6px;width:220px;cursor:pointer}.popup{position:absolute;background:#fff;border:1px solid #999}.popup [role=option]{padding:4px 8px}</style></head>
+<body>
+<!-- Built like Google Forms: divs with ARIA roles instead of native radio/checkbox/select elements -->
+<div role="list">
+  <div role="listitem"><div role="heading" id="q1">Name (First and Last) <span>*</span></div><input type="text" id="gf-name" aria-labelledby="q1"></div>
+  <div role="listitem"><div role="heading" id="q2">Email and Phone # *</div><input type="text" id="gf-contact" aria-labelledby="q2"></div>
+  <div role="listitem"><div role="heading" id="q3">Your Country of Residence</div>
+    <div role="listbox" id="gf-country" aria-expanded="false" aria-labelledby="q3"><span class="sel">Choose</span></div></div>
+  <div role="listitem"><div role="heading" id="q4">Are you legally authorized to work in the United States?</div>
+    <div role="radiogroup" aria-labelledby="q4"><div role="radio" id="gf-auth-y" aria-checked="false" aria-label="Yes">Yes</div><div role="radio" id="gf-auth-n" aria-checked="false" aria-label="No">No</div></div></div>
+  <div role="listitem"><div role="heading" id="q5">Languages you speak</div>
+    <div role="list"><div role="checkbox" id="gf-l-en" aria-checked="false" aria-label="English">English</div><div role="checkbox" id="gf-l-es" aria-checked="false" aria-label="Spanish">Spanish</div><div role="checkbox" id="gf-l-de" aria-checked="false" aria-label="German">German</div></div></div>
+  <div role="listitem"><div role="heading" id="q6">What days of the week are you available?</div>
+    <div role="list"><div role="checkbox" id="gf-mon" aria-checked="false" aria-label="Monday">Monday</div><div role="checkbox" id="gf-tue" aria-checked="false" aria-label="Tuesday">Tuesday</div></div></div>
+  <div role="listitem"><div role="heading" id="q7">Highest level of education</div>
+    <div role="listbox" id="gf-edu" aria-expanded="false" aria-labelledby="q7"><span class="sel">Choose</span></div></div>
+  <div role="listitem"><div role="checkbox" id="gf-terms" aria-checked="false" aria-label="I agree to the terms and conditions">I agree to the terms and conditions</div></div>
+</div>
+<script>
+  for (const el of document.querySelectorAll('[role=radio],[role=checkbox]')) el.addEventListener('click', () => {
+    if (el.getAttribute('role') === 'radio') for (const r of el.parentElement.querySelectorAll('[role=radio]')) r.setAttribute('aria-checked', 'false');
+    el.setAttribute('aria-checked', el.getAttribute('role') === 'radio' ? 'true' : String(el.getAttribute('aria-checked') !== 'true'));
+  });
+  const OPTS = { 'gf-country': ['Canada', 'India', 'United Kingdom', 'United States'], 'gf-edu': ['High school', "Bachelor's degree", "Master's degree", 'PhD'] };
+  for (const lb of document.querySelectorAll('[role=listbox]')) lb.addEventListener('click', () => {
+    document.querySelectorAll('.popup').forEach((p) => p.remove());
+    lb.setAttribute('aria-expanded', 'true');
+    const pop = document.createElement('div'); pop.className = 'popup';
+    for (const o of OPTS[lb.id]) {
+      const d = document.createElement('div'); d.setAttribute('role', 'option'); d.textContent = o;
+      d.addEventListener('click', (e) => { e.stopPropagation(); lb.querySelector('.sel').textContent = o; lb.dataset.value = o; lb.setAttribute('aria-expanded', 'false'); pop.remove(); });
+      pop.append(d);
+    }
+    lb.after(pop);
+  });
+</script>
+</body></html>

@@ -15,6 +15,7 @@
   const clean = (s) => (s == null ? '' : String(s)).replace(/\s+/g, ' ').trim();
   const norm = (s) =>
     clean(s)
+      .replace(/ß/g, 'ss')
       .normalize('NFKD')
       .replace(/[̀-ͯ]/g, '')
       .toLowerCase()
@@ -43,6 +44,9 @@
   /* ───────────────────────── reference data ───────────────────────── */
 
   const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+  const MONTHS_DE = ['januar', 'februar', 'marz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
+  const isMonthName = (t) => MONTHS.some((m) => t === m || t === m.slice(0, 3)) || MONTHS_DE.some((m) => t === m || t === m.slice(0, 3)) || t === 'maerz' || t === 'mrz';
+  const pageLang = () => (document.documentElement.lang || navigator.language || '').slice(0, 2).toLowerCase();
 
   const US_STATES = {
     AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut',
@@ -55,51 +59,64 @@
     VT: 'Vermont', VA: 'Virginia', WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
   };
 
+  // Each group lists names for one country, English and German, so either one matches.
   const COUNTRY_ALIASES = [
-    ['united states', 'united states of america', 'usa', 'us', 'u s', 'u s a', 'america'],
-    ['united kingdom', 'uk', 'great britain', 'britain', 'england', 'gb'],
-    ['united arab emirates', 'uae'],
-    ['india', 'bharat'],
-    ['germany', 'deutschland'],
-    ['netherlands', 'the netherlands', 'holland'],
-    ['south korea', 'korea republic of', 'republic of korea', 'korea'],
-    ['russia', 'russian federation'],
-    ['czech republic', 'czechia'],
-    ['turkey', 'turkiye'],
+    ['united states', 'united states of america', 'usa', 'us', 'u s', 'u s a', 'america', 'vereinigte staaten', 'vereinigte staaten von amerika'],
+    ['united kingdom', 'uk', 'great britain', 'britain', 'england', 'gb', 'vereinigtes konigreich', 'grossbritannien'],
+    ['united arab emirates', 'uae', 'vereinigte arabische emirate'],
+    ['india', 'bharat', 'indien'],
+    ['germany', 'deutschland', 'de', 'federal republic of germany', 'bundesrepublik deutschland'],
+    ['austria', 'osterreich', 'oesterreich', 'at'],
+    ['switzerland', 'schweiz', 'suisse', 'svizzera', 'ch'],
+    ['netherlands', 'the netherlands', 'holland', 'niederlande', 'nl'],
+    ['belgium', 'belgien'], ['france', 'frankreich'], ['spain', 'spanien'], ['italy', 'italien'], ['poland', 'polen'],
+    ['denmark', 'danemark', 'daenemark'], ['sweden', 'schweden'], ['norway', 'norwegen'], ['finland', 'finnland'],
+    ['portugal'], ['greece', 'griechenland'], ['hungary', 'ungarn'], ['romania', 'rumanien', 'rumaenien'], ['bulgaria', 'bulgarien'],
+    ['croatia', 'kroatien'], ['serbia', 'serbien'], ['ukraine'], ['luxembourg', 'luxemburg'], ['liechtenstein'],
+    ['south korea', 'korea republic of', 'republic of korea', 'korea', 'sudkorea', 'suedkorea'],
+    ['russia', 'russian federation', 'russland'],
+    ['czech republic', 'czechia', 'tschechien', 'tschechische republik'],
+    ['slovakia', 'slowakei'], ['slovenia', 'slowenien'],
+    ['turkey', 'turkiye', 'turkei', 'tuerkei'],
     ['vietnam', 'viet nam'],
-    ['ireland', 'republic of ireland'],
-    ['china', 'peoples republic of china'],
-    ['pakistan', 'islamic republic of pakistan'],
+    ['ireland', 'republic of ireland', 'irland'],
+    ['china', 'peoples republic of china', 'volksrepublik china'],
+    ['japan'], ['brazil', 'brasilien'], ['mexico', 'mexiko'], ['canada', 'kanada'], ['australia', 'australien'],
+    ['egypt', 'agypten', 'aegypten'], ['south africa', 'sudafrika', 'suedafrika'], ['saudi arabia', 'saudi arabien'],
+    ['pakistan', 'islamic republic of pakistan'], ['bangladesch', 'bangladesh'], ['indonesia', 'indonesien'], ['philippines', 'philippinen'],
   ];
 
   const DECLINE = [
     'decline', 'prefer not', 'not to say', 'not to answer', 'not to disclose', 'wish to answer',
     'wish to disclose', 'wish to self identify', 'dont want to', 'do not want to', 'choose not', 'rather not',
+    'keine angabe', 'nicht angeben', 'mochte ich nicht', 'mochte keine angabe',
   ];
-  const isDecline = (v) => /decline|prefer not|rather not|wish to|choose not|not to (say|answer|disclose)/i.test(v || '');
+  const isDecline = (v) => /decline|prefer not|rather not|wish to|choose not|not to (say|answer|disclose)|keine angabe|nicht angeben/i.test(v || '');
 
   const DEGREES = [
-    [/\b(ph ?d|doctor|doctorate|doctoral|dphil)\b/, ['phd', 'doctorate', 'doctor', 'doctoral']],
+    [/\b(ph ?d|doctor|doctorate|doctoral|dphil|promotion|doktor\w*)\b/, ['phd', 'doctorate', 'doctor', 'doctoral', 'promotion', 'doktor']],
     [/\bmba\b|business administration/, ['mba', 'master of business administration', 'masters', 'master']],
     [/\b(masters?|m ?sc|m ?s|m ?a|m ?eng|m ?tech|postgrad\w*)\b/, ['masters', 'master', 'masters degree', 'ms', 'm s', 'msc', 'm sc', 'ma', 'm a', 'graduate', 'postgraduate']],
     [/\b(bachelors?|b ?sc|b ?s|b ?a|b ?eng|b ?e|b ?tech|undergrad\w*)\b/, ['bachelors', 'bachelor', 'bachelors degree', 'bs', 'b s', 'ba', 'b a', 'bsc', 'b sc', 'undergraduate']],
     [/\bassociates?\b/, ['associates', 'associate', 'associates degree']],
-    [/\b(high school|secondary|ged)\b/, ['high school', 'secondary', 'ged']],
+    [/\b(high school|secondary|ged|abitur|fachabitur|matura)\b/, ['high school', 'secondary', 'ged', 'abitur', 'matura']],
+    [/\b(diplom\w*|diploma)\b/, ['diplom', 'diploma']],
+    [/\b(ausbildung|apprenticeship|vocational)\b/, ['ausbildung', 'berufsausbildung', 'apprenticeship', 'vocational']],
   ];
 
   const EEO_ALIASES = {
     gender: [
-      [/^(male|man)$/i, ['male', 'man']],
-      [/^(female|woman)$/i, ['female', 'woman']],
-      [/non ?binary/i, ['non binary', 'nonbinary', 'genderqueer', 'gender non conforming']],
+      [/^(male|man)$/i, ['male', 'man', 'mannlich', 'maennlich', 'herr', 'm']],
+      [/^(female|woman)$/i, ['female', 'woman', 'weiblich', 'frau', 'w', 'f']],
+      [/non ?binary/i, ['non binary', 'nonbinary', 'divers', 'genderqueer', 'gender non conforming', 'd']],
     ],
     veteran: [
       [/not/i, ['i am not a protected veteran', 'not a protected veteran', 'i am not a veteran', 'not a veteran', 'no']],
       [/veteran/i, ['i identify as one or more of the classifications of protected veteran', 'protected veteran', 'i am a protected veteran', 'i am a veteran', 'yes']],
     ],
     disability: [
-      [/^no/i, ['no i do not have a disability', 'no i dont have a disability', 'no']],
-      [/^yes/i, ['yes i have a disability', 'yes']],
+      [/^no/i, ['no i do not have a disability', 'no i dont have a disability', 'no', 'nein']],
+      [/^yes/i, ['yes i have a disability', 'yes', 'ja']],
     ],
     race: [
       [/black/i, ['black or african american', 'black', 'african american']],
@@ -113,6 +130,42 @@
     ],
   };
 
+  const SALUTATIONS = [
+    [/^(mr|mister|herr|monsieur)\.?$/i, ['herr', 'mr', 'mister', 'monsieur']],
+    [/^(ms|mrs|miss|frau|madame)\.?$/i, ['frau', 'ms', 'mrs', 'miss', 'madame']],
+    [/^(mx|divers|diverse)\.?$/i, ['divers', 'mx', 'keine anrede', 'ohne anrede', 'neutral', 'diverse']],
+    [/^(none|keine)/i, ['keine anrede', 'ohne anrede', 'keine angabe', 'none', 'divers']],
+  ];
+
+  const LANG_LEVELS = [
+    [/^native/i, ['native', 'muttersprache', 'mother tongue', 'first language', 'native speaker', 'c2']],
+    [/^c2/i, ['c2', 'verhandlungssicher', 'proficient', 'business fluent', 'fluent', 'fliessend', 'sehr gut', 'expert']],
+    [/^c1/i, ['c1', 'fliessend', 'fluent', 'verhandlungssicher', 'advanced', 'sehr gut', 'fortgeschritten']],
+    [/^b2/i, ['b2', 'gut', 'good', 'upper intermediate', 'conversational', 'gute kenntnisse']],
+    [/^b1/i, ['b1', 'intermediate', 'mittel', 'befriedigend', 'conversational']],
+    [/^a2/i, ['a2', 'basic', 'grundkenntnisse', 'elementary', 'beginner', 'basis']],
+    [/^a1/i, ['a1', 'basic', 'grundkenntnisse', 'beginner', 'anfanger', 'anfaenger']],
+    [/^none/i, ['none', 'keine', 'no knowledge', 'keine kenntnisse']],
+  ];
+  const EMPLOYMENT_TYPES = [
+    [/full/i, ['full time', 'full-time', 'fulltime', 'vollzeit', 'permanent', 'festanstellung']],
+    [/part/i, ['part time', 'part-time', 'teilzeit']],
+    [/student/i, ['working student', 'werkstudent', 'werkstudentin', 'student']],
+    [/intern/i, ['internship', 'praktikum', 'intern', 'praktikant']],
+    [/freelan|contract/i, ['freelance', 'freiberuflich', 'contractor', 'contract', 'freelancer', 'freier mitarbeiter']],
+    [/apprentic/i, ['apprenticeship', 'ausbildung', 'azubi', 'trainee']],
+  ];
+  const MARITAL = [
+    [/^single/i, ['single', 'ledig']], [/^married/i, ['married', 'verheiratet']], [/^divorced/i, ['divorced', 'geschieden']],
+    [/^widow/i, ['widowed', 'verwitwet']], [/partnership/i, ['registered partnership', 'eingetragene lebenspartnerschaft', 'lebenspartnerschaft']],
+    [/prefer|decline/i, ['prefer not to say', 'keine angabe', 'decline']],
+  ];
+  const aliasCands = (table, v) => {
+    if (!clean(v)) return [];
+    const g = table.find(([re]) => re.test(clean(v)));
+    return uniq([v, ...(g ? g[1] : [])]);
+  };
+
   /* ───────────────────────── matching rules ─────────────────────────
    * Each rule is tested against a field's label (normalised: lower case,
    * punctuation removed). Rules are ordered from most to least specific and
@@ -122,12 +175,18 @@
   const PEOPLE = /\b(emergency|reference|referr\w*|parent|guardian|spouse|manager|supervisor|recruiter|hiring|contact person|company|employer|school|university|college|institution|user ?name)\b/;
   const CHOICE_KINDS = ['select', 'radio', 'combo', 'checkbox', 'checkgroup'];
 
-  const SKIP_RE = /\b(i agree|agree to|i accept|terms (and|of)|consent|privacy (policy|notice)|acknowledg\w*|i certify|certify that|attest\w*|captcha|password|verification code|security question|signature|sign here)\b/;
+  const SKIP_RE = /\b(i agree|agree to|i accept|terms (and|of)|consent|privacy (policy|notice)|acknowledg\w*|i certify|certify that|attest\w*|captcha|password|verification code|security question|signature|sign here|datenschutz\w*|einwillig\w*|einverstanden|zustimm\w*|ich akzeptiere|akzeptiere|agb|bestatige|bestaetige|passwort|unterschrift)\b/;
 
   const RULES = [
-    { key: 'howDidYouHear', re: /\bhow (did )?you (hear|heard|find|found|learn|learned|come across|came across|discover|discovered)\b|\bwhere did you (hear|find|see|learn)\b|\b(referral|application|candidate|lead) source\b|^source$|\bhear(d)? about (us|this)\b/ },
+    { key: 'howDidYouHear', re: /\bhow (did )?you (first |originally )?(hear|heard|find|found|learn|learned|come across|came across|discover|discovered)\b|\bwhere did you (hear|find|see|learn)\b|\b(referral|application|candidate|lead) source\b|^source$|\bhear(d)? about (us|this)\b/ },
     { key: 'referredBy', re: /\breferred by\b|\bwho referred\b|\breferrer\b|\breferral name\b|\bemployee referral\b|\bname of (the )?(person|employee) who referred\b/ },
 
+    { key: 'placeOfBirth', re: /\bplace of birth\b|\bbirth ?place\b|\bcity of birth\b|\bgeburtsort\b/ },
+    { key: 'dateOfBirth', re: /\bdate of birth\b|\bbirth ?date\b|\bdob\b|\bbirthday\b|\bgeburtsdatum\b/ },
+    { key: 'maritalStatus', re: /\bmarital status\b|\bfamilienstand\b|\bcivil status\b/ },
+    { key: 'germanLevel', re: /\bgerman\b.*\b(level|skills?|proficiency|knowledge|fluency)\b|\b(level|skills?|proficiency|knowledge|command) (of|in) german\b|\bdeutschkenntnisse\b|\bdeutsch\w* ?(sprach)?kenntnisse\b|\bniveau deutsch\b|^deutsch$|\bdo you speak german\b/ },
+    { key: 'englishLevel', re: /\benglish\b.*\b(level|skills?|proficiency|knowledge|fluency)\b|\b(level|skills?|proficiency|knowledge|command) (of|in) english\b|\benglischkenntnisse\b|\benglisch\w* ?(sprach)?kenntnisse\b|\bniveau englisch\b|^englisch$|\bdo you speak english\b/ },
+    { key: 'fullName', re: /\bname (first (and|&) last|first last)\b|\bfirst (and|&) last names?\b|\bfull name\b/, not: PEOPLE },
     { key: 'preferredName', re: /\b(preferred|nick) ?(first )?name\b|\bgo by\b|\bwhat should we call you\b|\bname you prefer\b/ },
     { key: 'firstName', re: /\b(first|given|fore) ?names?\b|\bfname\b/, not: PEOPLE },
     { key: 'middleName', re: /\bmiddle (name|initial)s?\b/, not: PEOPLE },
@@ -136,6 +195,7 @@
     { key: 'fullName', re: /^(your |full |legal |candidate |applicant )*name$|\bfull (legal )?name\b|\blegal name\b|\byour name\b/, not: PEOPLE },
     { key: 'pronouns', re: /\bpronouns?\b/ },
 
+    { key: 'emailAndPhone', kinds: ['text'], re: /\be ?mail\b.*\b(phone|mobile|cell)\b|\b(phone|mobile|cell)\b.*\be ?mail\b/, not: /\b(reference|referr\w*|manager|emergency)\b/ },
     { key: 'email', re: /\be ?mail\b/, not: /\b(reference|referr\w*|manager|emergency|supervisor|receive|subscribe|updates|newsletter|future|contact you|opt in)\b/ },
     { key: 'phoneCountryCode', re: /\b(country|dial(ing)?|calling) code\b|\bphone (number )?(country|prefix|code)\b|^country phone\b|^country (mobile|cell)\b/ },
     { key: 'phone', re: /\b(phone|mobile|cell|telephone|tel|contact number|whatsapp)\b/, not: /\b(type|extension|ext|reference|emergency|manager|device|text you|sms)\b/ },
@@ -147,8 +207,13 @@
     { key: 'visaStatus', re: /\bvisa\b|\bimmigration status\b|\bwork status\b|\bresidency status\b/ },
     { key: 'over18', re: /\b(18|eighteen) (years|yrs)\b|\bover (the age of )?(18|eighteen)\b|\bat least (18|eighteen)\b|\blegal (working )?age\b/ },
     { key: 'relocate', re: /\brelocat\w*/ },
+    { key: 'willingToTravel', re: /\b(willing|able|open) to travel\b|\btravel (requirement|willingness)\b|\bwillingness to travel\b|\breisebereit\w*\b|\breisetatigkeit\w*\b|\breisetaetigkeit\w*\b|\bcan you travel\b/ },
+    { key: 'employmentType', re: /\b(employment|job|contract|position|work) type\b|\btype of (employment|contract|position|work)\b|\banstellungsart\b|\bbeschaftigungsart\b|\bbeschaeftigungsart\b|\barbeitszeitmodell\b|\bfull ?time or part ?time\b|\bvollzeit oder teilzeit\b|\bvollzeit\b.*\bteilzeit\b/ },
+    { key: 'weeklyHours', re: /\bhours per week\b|\bweekly hours\b|\bwochenstunden\b|\bstunden pro woche\b|\bhow many hours\b|\bwochentliche arbeitszeit\b/ },
+    { key: 'desiredLocation', re: /\b(preferred|desired|wish|target) (work )?(location|office|city)\b|\bwunschort\b|\bwunschstandort\b|\bbevorzugte\w* (standort|arbeitsort|einsatzort)\b|\bwhich (office|location) would you\b/ },
     { key: 'driversLicense', re: /\bdriv(er|ers|ing) licen[cs]e\b/ },
     { key: 'clearance', re: /\bsecurity clearance\b|\bclearance\b/ },
+    { key: 'currentlyEmployed', re: /\bare you (currently |presently )?(employed|working)\b|\bcurrent employment status\b|\bemployment status\b/ },
     { key: 'previouslyEmployed', re: /\b(previously|ever|formerly) (been )?(employed|worked)\b|\bhave you (ever )?(been employed|worked) (by|for|at|with)\b|\bformer employee\b|\bworked (here|for us) before\b/ },
 
     { key: 'linkedin', re: /\blinked ?in\b/ },
@@ -173,11 +238,11 @@
     { key: 'hispanicLatino', re: /\bhispanic\b|\blatin[oax]\b/ },
     { key: 'race', re: /\brace\b|\bethnicit\w*/ },
     { key: 'veteran', re: /\bveteran\b|\bmilitary\b|\barmed forces\b/ },
-    { key: 'disability', re: /\bdisabilit\w*/ },
+    { key: 'disability', re: /\bdisabilit\w*|\bschwerbehinder\w*|\bbehinderung\b/ },
 
     { key: 'highestDegree', re: /\bhighest (level of )?(education|degree|qualification)\b|\b(education|degree) level\b|\blevel of (education|study)\b/ },
 
-    { key: 'coverLetter', re: /\bcover ?letter\b|\bmotivation(al)? letter\b/ },
+    { key: 'coverLetter', re: /\bcover ?letter\b|\bmotivation(al)? letter\b|\bnachricht an\b|\bpersonliche nachricht\b|\bmessage (to|for) (the )?(recruiter|hiring|team|us)\b/ },
     { key: 'summary', re: /\b(professional |profile |personal )?summary\b|\babout (yourself|you|me)\b|\btell us (a bit |a little )?about (yourself|you)\b|\bintroduce yourself\b|\bbio\b|\bpersonal statement\b/ },
     { key: 'languages', re: /\blanguages?\b/, not: /\bprogramming\b/ },
     { key: 'skills', re: /\bskills?\b|\btechnologies\b|\btech stack\b/, not: /\byears\b/ },
@@ -193,35 +258,74 @@
     { key: 'workPreference', re: /\b(remote|hybrid|on ?site|in office|work (arrangement|model|setup|mode|location preference)|work from home)\b/ },
   ];
 
+  // German labels (normalised: umlauts dropped, ß → ss).
+  const DE_RULES = [
+    { key: 'howDidYouHear', re: /\bvon uns erfahren\b|\bwie (hast|habt|haben) (du|ihr|sie) (von )?(uns|der stelle|dieser stelle|diesem job|der position)\b|\baufmerksam geworden\b|\bwie (sind|bist) (sie|du) auf\b|\bwo haben sie (von )?(uns|der stelle|dieser stelle)\b|\bquelle\b|\bwie haben sie (von )?(uns|der stelle)\b/ },
+    { key: 'salutation', re: /\banrede\b|\bsalutation\b/ },
+    { key: 'academicTitle', re: /\btitel\b|\bakademischer (grad|titel)\b/ },
+    { key: 'firstName', re: /\bvornamen?\b/ },
+    { key: 'lastName', re: /\bnachnamen?\b|\bfamiliennamen?\b|\bzunamen?\b/ },
+    { key: 'fullName', re: /\bvor (und|&) nachname\b|\bvollstandiger name\b|\bvollstaendiger name\b|\bihr name\b/ },
+    { key: 'dateOfBirth', re: /\bgeburtsdatum\b|\bgeburtstag\b/ },
+    { key: 'phone', re: /\btelefon\w*\b|\bmobil\w*\b|\bhandy\w*\b|\brufnummer\b/ },
+    { key: 'xing', re: /\bxing\b/ },
+    { key: 'website', re: /\bwebseite\b|\binternetseite\b/ },
+    { key: 'sponsorship', test: (t) => /\b(benotigen|brauchen)\b/.test(t) && /\b(visum|arbeitserlaubnis|aufenthalts\w*|arbeitsgenehmigung)\b/.test(t) },
+    { key: 'workAuthorized', re: /\barbeitserlaubnis\b|\barbeitsgenehmigung\b|\baufenthaltstitel\b|\bberechtigt\b.*\barbeiten\b/ },
+    { key: 'relocate', re: /\bumzug\w*\b|\bumziehen\b|\bumzugsbereit\w*\b/ },
+    { key: 'driversLicense', re: /\bfuhrerschein\w*\b|\bfuehrerschein\w*\b/ },
+    { key: 'currentSalary', re: /\b(aktuelles|derzeitiges|jetziges) (gehalt|jahresgehalt|bruttogehalt)\b/ },
+    { key: 'desiredSalary', re: /\bgehalt\w*\b|\bjahresbrutto\w*\b|\bvergutung\w*\b|\bverguetung\w*\b|\bentgelt\w*\b|\bsalar\b/ },
+    { key: 'noticePeriod', re: /\bkundigungsfrist\b|\bkuendigungsfrist\b/ },
+    { key: 'availableStartDate', re: /\beintritt\w*\b|\bstarttermin\b|\barbeitsbeginn\b|\bab wann\b|\bverfugbar\w*\b|\bverfuegbar\w*\b|\bfruhest\w*\b|\bfruehest\w*\b/ },
+    { key: 'currentCompany', re: /\b(aktueller|derzeitiger|jetziger|letzter) arbeitgeber\b/ },
+    { key: 'currentTitle', re: /\b(aktuelle|derzeitige|jetzige|letzte) (position|stelle|tatigkeit|taetigkeit|berufsbezeichnung)\b|^berufsbezeichnung$/ },
+    { key: 'yearsExperience', test: (t) => /\bjahre\w*\b/.test(t) && /\b(erfahrung|berufserfahrung)\b/.test(t) },
+    { key: 'coverLetter', re: /\banschreiben\b|\bmotivationsschreiben\b|\bmotivation\b/ },
+    { key: 'summary', re: /\buber mich\b|\bueber mich\b|\bkurzprofil\b|\bzusammenfassung\b/ },
+    { key: 'languages', re: /\bsprach(en|kenntnisse)\b/ },
+    { key: 'skills', re: /\bkenntnisse\b|\bfahigkeiten\b|\bfaehigkeiten\b|\bkompetenzen\b/ },
+    { key: 'gender', re: /\bgeschlecht\b/ },
+    { key: 'citizenship', re: /\bstaatsangehorigkeit\b|\bstaatsangehoerigkeit\b|\bnationalitat\b|\bnationalitaet\b|\bstaatsburgerschaft\b/ },
+    { key: 'highestDegree', re: /\bhochster (abschluss|bildungsabschluss|schulabschluss)\b|\bhoechster (abschluss|bildungsabschluss)\b/ },
+    { key: 'postalCity', re: /\bplz\b.*\b(ort|wohnort|stadt)\b|\bpostleitzahl\b.*\b(ort|stadt)\b/ },
+    { key: 'postalCode', re: /\bplz\b|\bpostleitzahl\b/ },
+    { key: 'address1', re: /\bstrasse\b|\bstr\b|\bhausnummer\b|\banschrift\b|^adresse$|\bwohnadresse\b/ },
+    { key: 'city', re: /\b(ort|wohnort|stadt)\b/ },
+    { key: 'state', re: /\bbundesland\b|\bkanton\b/ },
+    { key: 'country', re: /\bland\b|\bwohnsitzland\b|\bherkunftsland\b/ },
+  ];
+
   // Fields that sit inside a "Work experience" or "Education" block.
   const SECTION_RULES = {
     exp: [
-      { key: 'current', kinds: ['checkbox'], re: /\b(currently|still) (work|working|employed)\b|\bcurrent (job|role|position|employer)\b|\bpresent\b|\bi work here\b/ },
-      { key: 'title', re: /\b(job |position |role )?title\b|\bposition\b|\brole\b|\bdesignation\b/, not: /\bdescription\b/ },
-      { key: 'company', re: /\bcompany\b|\bemployer\b|\borgani[sz]ation\b|\bfirm\b/ },
-      { key: 'location', re: /\blocation\b|\bcity\b/ },
-      { key: 'description', re: /\b(description|responsibilit\w*|duties|achievements|accomplishments|summary|details)\b/ },
+      { key: 'current', kinds: ['checkbox'], re: /\b(currently|still) (work|working|employed)\b|\bcurrent (job|role|position|employer)\b|\bpresent\b|\bi work here\b|\bbis heute\b|\baktuell\b|\bderzeit\b/ },
+      { key: 'title', re: /\b(job |position |role )?title\b|\bposition\b|\brole\b|\bdesignation\b|\bberufsbezeichnung\b|\bstellenbezeichnung\b|\bfunktion\b/, not: /\bdescription\b|\bbeschreibung\b/ },
+      { key: 'company', re: /\bcompany\b|\bemployer\b|\borgani[sz]ation\b|\bfirm\b|\barbeitgeber\b|\bfirma\b|\bunternehmen\b/ },
+      { key: 'location', re: /\blocation\b|\bcity\b|\bort\b|\bstandort\b/ },
+      { key: 'description', re: /\b(description|responsibilit\w*|duties|achievements|accomplishments|details|beschreibung|tatigkeit\w*|taetigkeit\w*|aufgaben)\b/, not: /\b(experience summary|professional summary|summary of)\b/ },
     ],
     edu: [
-      { key: 'school', re: /\b(school|university|college|institution|institute|academy)\b/ },
-      { key: 'field', re: /\b(field of study|major|discipline|area of study|speciali[sz]ation|concentration|course of study|subject)\b/ },
-      { key: 'degree', re: /\bdegree\b|\bqualification\b|\bdiploma\b/ },
-      { key: 'gpa', re: /\b(gpa|cgpa|grade point|grades?|marks|percentage)\b/ },
-      { key: '_none', re: /\b(location|city|country)\b/ },
+      { key: 'school', re: /\b(school|university|college|institution|institute|academy|hochschule|universitat|universitaet|schule|bildungseinrichtung|institut)\b/ },
+      { key: 'field', re: /\b(field of study|major|discipline|area of study|speciali[sz]ation|concentration|course of study|subject|studiengang|studienfach|fachrichtung|schwerpunkt)\b/ },
+      { key: 'degree', re: /\bdegree\b|\bqualification\b|\bdiploma\b|\babschluss\b/ },
+      { key: 'gpa', re: /\b(gpa|cgpa|grade point|grades?|marks|percentage|note|abschlussnote|durchschnitt)\b/ },
+      { key: '_none', re: /\b(location|city|country|ort|land)\b/ },
     ],
   };
 
   // Education questions that are unambiguous even outside an Education block.
   const GLOBAL_EDU = [
-    { key: 'school', re: /\b(school|university|college)( name)?$/ },
-    { key: 'field', re: /\b(field of study|major|discipline|area of study)\b/ },
+    { key: 'school', re: /\b(school|university|college)( name)?$|^(hochschule|universitat|universitaet)$/ },
+    { key: 'field', re: /\b(field of study|major|discipline|area of study|studiengang|studienfach|fachrichtung)\b/ },
     { key: 'degree', re: /^degree\b|\bdegree (type|obtained|earned)\b/ },
     { key: 'gpa', re: /\b(gpa|cgpa)\b/ },
     { key: 'end', date: true, re: /\bgraduat\w*\b/ },
   ];
 
-  const SEC_EXP = /\b(work|employment|professional|job|career|relevant) (experience|history)\b|^experience\b|\bemployment\b|\bwork history\b|\bprevious (jobs?|employers?|positions?)\b/;
-  const SEC_EDU = /\beducation\b|\bacademic\b|\bschools?\b|\buniversit(y|ies)\b|^degrees?\b|^qualifications?\b/;
+  const SEC_EXP = /\b(work|employment|professional|job|career|relevant) (experience|history)\b|^experience\b|\bemployment\b|\bwork history\b|\bprevious (jobs?|employers?|positions?)\b|\bberufserfahrung\b|\bberuflicher werdegang\b|\bwerdegang\b|\bpraxiserfahrung\b/;
+  const SEC_EDU = /\beducation\b|\bacademic\b|\bschools?\b|\buniversit(y|ies)\b|^degrees?\b|^qualifications?\b|\bausbildung\b|\bbildungsweg\b|\bschulbildung\b|\bstudium\b|\bbildung\b/;
+  const SEC_REF = /\breferences?\b|\breferees?\b|\bemergency contacts?\b|\bemergency\b|\bnext of kin\b|\bguardian\b|\breferenz\w*\b|\bnotfallkontakt\w*\b/;
 
   /* ───────────────────────── DOM helpers ───────────────────────── */
 
@@ -235,14 +339,56 @@
   const qa = (roots, sel) => roots.flatMap((r) => [...r.querySelectorAll(sel)]);
   const byId = (root, id) => (root && root.getElementById ? root.getElementById(id) : null) || document.getElementById(id);
 
+  // Visible to a person: rendered, not faded out or hidden by an ancestor
+  // (card-style forms keep later questions in the page, invisible), not
+  // parked off-screen, not clipped away inside a sliding panel.
   function isVisible(el) {
-    if (!el || !el.isConnected) return false;
-    if (!el.getClientRects().length) return false;
-    const cs = getComputedStyle(el);
-    if (cs.visibility === 'hidden' || cs.display === 'none') return false;
+    if (!el || !el.isConnected || !el.getClientRects().length) return false;
+    if (el.checkVisibility) {
+      if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return false;
+    } else {
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden' || cs.display === 'none') return false;
+    }
+    return onScreenish(el);
+  }
+
+  // Same, for form fields: a field may itself be transparent (a native
+  // <select> or checkbox laid over a styled look-alike), its parents may not.
+  function isFieldVisible(el) {
+    if (!el || !el.isConnected || !el.getClientRects().length) return false;
+    if (el.checkVisibility) {
+      if (!el.checkVisibility({ visibilityProperty: true })) return false;
+      const p = el.parentElement;
+      if (p && p.checkVisibility && !p.checkVisibility({ opacityProperty: true })) return false;
+      if (/^(INPUT|TEXTAREA)$/.test(el.tagName) && !/^(checkbox|radio|file)$/.test(el.type) && getComputedStyle(el).opacity === '0') return false;
+    } else {
+      const cs = getComputedStyle(el);
+      if (cs.visibility === 'hidden' || cs.display === 'none') return false;
+    }
+    return onScreenish(el) && !clippedAway(el);
+  }
+
+  function onScreenish(el) {
     const r = el.getBoundingClientRect();
     if (r.right + window.scrollX < 0 || r.bottom + window.scrollY < 0) return false; // parked off-screen
+    const docW = Math.max(document.documentElement.scrollWidth, window.innerWidth);
+    if (r.left + window.scrollX > docW + 5) return false;
     return r.width > 0 || r.height > 0;
+  }
+
+  // Inside an overflow:hidden box (carousel, slide-in step) but outside its visible area.
+  function clippedAway(el) {
+    const r = el.getBoundingClientRect();
+    let n = el.parentElement;
+    for (let d = 0; n && d < 25 && n !== document.body && n !== document.documentElement; d++, n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (!/hidden|clip/.test(cs.overflowX + ' ' + cs.overflowY)) continue;
+      const b = n.getBoundingClientRect();
+      if (b.width === 0 && b.height === 0) continue;
+      if (r.right <= b.left || r.left >= b.right || r.bottom <= b.top || r.top >= b.bottom) return true;
+    }
+    return false;
   }
 
   function textWithoutControls(node) {
@@ -273,7 +419,7 @@
 
   function groupLabel(el) {
     const fs = el.closest('fieldset');
-    const grp = el.closest('[role="radiogroup"],[role="group"]');
+    const grp = el.closest('[role="radiogroup"],[role="group"],[role="list"][aria-labelledby],[role="list"][aria-label]');
     const g = fs && grp ? (fs.contains(grp) ? grp : fs) : fs || grp;
     if (!g) return '';
     let t = '';
@@ -284,7 +430,7 @@
     return t || labelsText(g);
   }
 
-  const CONTROL_SEL = 'input:not([type="hidden"]),select,textarea,[role="combobox"],button[aria-haspopup="listbox"],[role="radio"]';
+  const CONTROL_SEL = 'input:not([type="hidden"]),select,textarea,[role="combobox"],button[aria-haspopup="listbox"],[role="radio"],[role="checkbox"],[role="listbox"][aria-expanded]';
 
   // Text near the field when there is no proper <label>: the closest wrapper
   // that holds only this one question, e.g. Lever's
@@ -301,7 +447,12 @@
       let t = textWithoutControls(node);
       for (const o of optionTexts || []) if (o) t = t.replace(o, ' ');
       t = clean(t);
-      if (t.length > 300) break;
+      if (t.length > 80) {
+        // A big wrapper (a whole page section): the label is the text just above the field.
+        const near = textJustBefore(el, node, optionTexts);
+        if (near) { text = near; break; }
+        if (t.length > 300) break;
+      }
       if (t) { text = t; break; }
     }
     if (!text) {
@@ -310,6 +461,22 @@
       if (t && t.length <= 150) text = t;
     }
     return text;
+  }
+
+  // Walks backwards from the field (previous siblings, then the parents'
+  // previous siblings) and returns the first bit of text it meets, stopping at
+  // another form control.
+  function textJustBefore(el, stopAt, optionTexts) {
+    for (let n = el; n && n !== stopAt; n = n.parentElement) {
+      for (let sib = n.previousElementSibling; sib; sib = sib.previousElementSibling) {
+        if (sib.matches(CONTROL_SEL) || sib.querySelector(CONTROL_SEL)) return '';
+        let t = textWithoutControls(sib);
+        for (const o of optionTexts || []) if (o) t = t.replace(o, ' ');
+        t = clean(t);
+        if (t) return t.length <= 150 ? t : '';
+      }
+    }
+    return '';
   }
 
   function attrText(el) {
@@ -333,7 +500,7 @@
 
   const isChecked = (e) => (e.tagName === 'INPUT' ? e.checked : e.getAttribute('aria-checked') === 'true');
   const isPlaceholderOpt = (o) =>
-    (!o.value && !clean(o.text)) || (/^(select|choose|please|pick|--|—|none selected|-+$)/i.test(clean(o.text)) && (o.index === 0 || !o.value));
+    (!o.value && !clean(o.text)) || (/^(select|choose|please|pick|--|—|none selected|-+$|bitte|auswahl|ausw[aä]hlen|w[aä]hlen|keine auswahl)/i.test(clean(o.text)) && (o.index === 0 || !o.value));
   const optText = (o) => clean(o.innerText || o.textContent || '');
 
   function isEnhancedSelect(sel) {
@@ -348,7 +515,16 @@
     if (role === 'combobox') return true;
     if (el.tagName === 'BUTTON' && el.getAttribute('aria-haspopup') === 'listbox') return true;
     if (el.tagName === 'INPUT' && (el.getAttribute('aria-autocomplete') === 'list' || el.getAttribute('aria-haspopup') === 'listbox')) return true;
+    if (role === 'listbox' && el.hasAttribute('aria-expanded') && el.getAttribute('aria-expanded') !== 'true') return true;
     return false;
+  }
+
+  // Cookie / consent pop-ups are not part of the application.
+  const COOKIE_SEL = '#onetrust-consent-sdk,#onetrust-banner-sdk,#usercentrics-root,#CybotCookiebotDialog,#didomi-host,#cmpbox,#cmpwrapper,.cmpbox,#BorlabsCookieBox,#cookiescript_injected,#ccm19,.ccm-root,.ccm-modal,#iubenda-cs-banner,.cc-window,.cookie-banner,.cookie-consent,#cookie-banner,#cookie-consent,#cookieConsent,[aria-label*="cookie" i],[id^="ccm-"],[class*="cookie-notice"],[class*="CookieConsent"]';
+  function inCookieBanner(el) {
+    if (el.closest(COOKIE_SEL)) return true;
+    const dlg = el.closest('[role="dialog"],[role="alertdialog"],[aria-modal="true"]');
+    return !!(dlg && /\bcookies?\b/i.test((dlg.getAttribute('aria-label') || '') + ' ' + (dlg.textContent || '').slice(0, 600)) && !dlg.querySelector('input[type="email"],input[type="file"],textarea'));
   }
 
   /* ───────────────────────── collect fields ───────────────────────── */
@@ -363,7 +539,8 @@
     const ariaRadioGroups = new Map();
     let radioAnon = 0;
 
-    for (const el of qa(roots, 'input,select,textarea,[role="combobox"],button[aria-haspopup="listbox"],[role="radio"]')) {
+    const ariaChecks = new Map();
+    for (const el of qa(roots, 'input,select,textarea,[role="combobox"],button[aria-haspopup="listbox"],[role="radio"],[role="checkbox"],[role="listbox"][aria-expanded]')) {
       if (el.disabled || el.getAttribute('aria-disabled') === 'true') continue;
       const tag = el.tagName;
       const type = tag === 'INPUT' ? (el.type || 'text').toLowerCase() : '';
@@ -371,9 +548,14 @@
       if (HONEYPOT.test((el.name || '') + ' ' + (el.id || '') + ' ' + (el.getAttribute('aria-label') || ''))) continue;
       if (el.getAttribute('aria-hidden') === 'true' && type !== 'file') continue;
       if (type !== 'file' && el.closest('[aria-hidden="true"]')) continue;
-      if (el.closest('#__jaf_toast')) continue;
+      if (el.closest('#__jaf_toast') || inCookieBanner(el)) continue;
 
-      if (type === 'file') { items.push({ kind: 'file', el }); continue; }
+      if (type === 'file') {
+        let box = el;
+        for (let d = 0; box && d < 4 && !isVisible(box); d++) box = box.parentElement;
+        if (box && isVisible(box) && !clippedAway(box)) items.push({ kind: 'file', el });
+        continue;
+      }
       if (type === 'radio') {
         const scope = el.form || el.getRootNode();
         let key = el.name ? scope : el.closest('fieldset,[role="radiogroup"]') || el.parentElement;
@@ -391,13 +573,21 @@
         continue;
       }
       if (type === 'checkbox') { checkboxes.push(el); continue; }
+      if (el.getAttribute('role') === 'checkbox' && tag !== 'INPUT') {
+        if (el.querySelector('input[type="checkbox"]')) continue; // the real input inside handles it
+        const g = el.closest('[role="group"],[role="list"],fieldset') || el.parentElement;
+        if (!ariaChecks.has(g)) ariaChecks.set(g, []);
+        ariaChecks.get(g).push(el);
+        continue;
+      }
+      if (el.getAttribute('role') === 'listbox' && el.closest('[role="combobox"]')) continue;
       if (el.readOnly && !isComboEl(el)) continue;
 
       if (tag === 'SELECT') {
-        if (isVisible(el) || isEnhancedSelect(el)) items.push({ kind: 'select', el });
+        if (isFieldVisible(el) || (isEnhancedSelect(el) && el.parentElement && isVisible(el.parentElement))) items.push({ kind: 'select', el });
         continue;
       }
-      if (!isVisible(el)) continue;
+      if (!isFieldVisible(el)) continue;
       if (isComboEl(el)) {
         if (tag !== 'INPUT' && tag !== 'BUTTON' && el.querySelector('input')) continue; // the inner input is the real control
         items.push({ kind: 'combo', el });
@@ -406,10 +596,15 @@
       if (tag === 'TEXTAREA' || tag === 'INPUT') items.push({ kind: 'text', el });
     }
 
-    const groupVisible = (els) => els.some((r) => isVisible(r) || (r.labels && [...r.labels].some(isVisible)));
+    const groupVisible = (els) => els.some((r) => isFieldVisible(r) || (r.labels && [...r.labels].some(isVisible)));
     for (const byName of radioGroups.values())
       for (const els of byName.values()) if (groupVisible(els)) items.push({ kind: 'radio', el: els[0], els });
-    for (const els of ariaRadioGroups.values()) if (els.some(isVisible)) items.push({ kind: 'radio', el: els[0], els });
+    for (const els of ariaRadioGroups.values()) if (els.some(isFieldVisible)) items.push({ kind: 'radio', el: els[0], els });
+    for (const els of ariaChecks.values()) {
+      if (!els.some(isFieldVisible)) continue;
+      if (els.length > 1) items.push({ kind: 'checkgroup', el: els[0], els });
+      else items.push({ kind: 'checkbox', el: els[0] });
+    }
 
     // Checkboxes that share a name are one multi-choice question.
     const cbByName = new Map();
@@ -458,7 +653,9 @@
     }
     it.attrs = attrText(el);
     it.ph = norm(el.getAttribute('placeholder') || el.getAttribute('title') || '');
-    it.labelRaw = clean(it.raw || el.getAttribute('placeholder') || splitAttr(el.name || el.id || ''));
+    const attrName = el.name || el.id || '';
+    const randomId = /[A-Za-z0-9]{14,}/.test(attrName.replace(/[a-z]+(?=[A-Z_-]|$)/g, (w) => (w.length > 3 ? '_' : w))) || /[a-z][A-Z][a-z]?[A-Z]/.test(attrName);
+    it.labelRaw = clean(it.raw || el.getAttribute('placeholder') || (randomId ? '' : splitAttr(attrName))) || '(unlabelled question)';
     if (/^(month|year|day|mm|yyyy|dd)\W*$/i.test(it.labelRaw)) {
       const outer = groupLabel(el) || (el.parentElement && el.parentElement.previousElementSibling && textWithoutControls(el.parentElement.previousElementSibling)) || '';
       if (outer && outer.length < 60) it.labelRaw = clean(outer.replace(/[*✱]/g, '')) + ' · ' + it.labelRaw;
@@ -471,7 +668,7 @@
 
   function annotateSections(items, roots) {
     const headings = qa(roots, 'h1,h2,h3,h4,h5,h6,[role="heading"]').filter(isVisible);
-    const secOf = (t) => (SEC_EDU.test(t) ? 'edu' : SEC_EXP.test(t) ? 'exp' : null);
+    const secOf = (t) => (SEC_REF.test(t) ? 'ref' : SEC_EDU.test(t) ? 'edu' : SEC_EXP.test(t) ? 'exp' : null);
     const idxOf = (t) => {
       const m = t.match(/\b(\d{1,2})$/);
       return m ? Math.max(0, parseInt(m[1], 10) - 1) : null;
@@ -506,6 +703,19 @@
         if (s && s === it.section && it.secIndex == null) it.secIndex = idxOf(t);
       }
     }
+    // A block that asks for a "Relationship" (to you) is about someone else:
+    // a reference or an emergency contact. Mark the whole block.
+    for (const it of items) {
+      if (!/\brelationship\b/.test(it.primary || it.context) || /\bstatus\b/.test(it.primary || it.context)) continue;
+      let box = it.el.parentElement;
+      for (let d = 0; box && d < 8 && box !== document.body; d++, box = box.parentElement) {
+        const inside = items.filter((o) => box.contains(o.el));
+        if (inside.length >= 3) {
+          if (inside.length <= 12) for (const o of inside) o.section = 'ref';
+          break;
+        }
+      }
+    }
   }
 
   /* ───────────────────────── profile helpers ───────────────────────── */
@@ -538,6 +748,8 @@
     const t = it.primary || it.context;
     const m = t.match(/\b(?:with|in|using|on|of working with)\s+(.+)$/);
     if (m && !/^experience\b/.test(m[1]) && !GENERIC_TAIL.test(m[1])) return null; // asks about a skill you haven't listed
+    const mid = t.match(/\byears? of (.+?) (experience|exp)\b/); // "years of B2B SaaS experience"
+    if (mid && !GENERIC_TAIL.test(mid[1]) && !/^(work|working|professional|relevant|total|overall|industry|full time|paid|related)$/.test(mid[1])) return null;
     return ctx.P.yearsExperience;
   }
 
@@ -610,21 +822,21 @@
     if (el.type === 'date' || el.type === 'month') return true;
     if (it.kind === 'select') {
       const texts = [...el.options].map((o) => norm(o.text));
-      if (texts.filter((t) => MONTHS.some((m) => t === m || t === m.slice(0, 3))).length >= 12) return true;
+      if (texts.filter(isMonthName).length >= 12) return true;
       if (texts.filter((t) => /^(19|20)\d\d$/.test(t)).length >= 5) return true;
     }
-    return /\b(date|dates|month|year|mm|yyyy|yy|period)\b/.test(it.all);
+    return /\b(date|dates|month|year|mm|yyyy|yy|period|datum|monat|jahr|zeitraum|jjjj|tt)\b/.test(it.all);
   }
 
   function datePart(it) {
     if (it.kind === 'select') {
       const texts = [...it.el.options].map((o) => norm(o.text));
-      if (texts.filter((t) => MONTHS.some((m) => t === m || t === m.slice(0, 3))).length >= 12) return 'month';
+      if (texts.filter(isMonthName).length >= 12) return 'month';
       if (texts.filter((t) => /^(19|20)\d\d$/.test(t)).length >= 5) return 'year';
     }
     const own = clean(it.primary + ' ' + it.attrs + ' ' + it.ph);
-    const mo = /\b(month|mm)\b/.test(own);
-    const yr = /\b(year|yyyy|yy)\b/.test(own);
+    const mo = /\b(month|mm|monat)\b/.test(own);
+    const yr = /\b(year|yyyy|yy|jahr|jjjj)\b/.test(own);
     if (mo && !yr) return 'month';
     if (yr && !mo) return 'year';
     return 'full';
@@ -664,9 +876,11 @@
 
     if (it.kind === 'file') {
       const kindOf = (h) =>
-        /\bcover\b/.test(h) ? 'coverLetterFile'
-          : /\b(resume|cv|curriculum)\b/.test(h) ? 'resume'
-          : /\b(transcript|portfolio|writing|sample|additional|supporting|other|photo|image|avatar)\b/.test(h) ? 'none'
+        /\bcover\b|\banschreiben\b|\bmotivationsschreiben\b/.test(h) ? 'coverLetterFile'
+          : /\b(resume|cv|curriculum|lebenslauf)\b/.test(h) ? 'resume'
+          : /\b(photo|foto|bewerbungsfoto|picture|portrait|bild|profilbild)\b/.test(h) ? 'photo'
+          : /\b(zeugnis\w*|arbeitszeugnis\w*|certificates?|zertifikat\w*|transcripts?|diplomas?|nachweise?)\b/.test(h) ? 'certificates'
+          : /\b(portfolio|writing|sample|additional|supporting|other|image|avatar|weitere|sonstige|anlagen?)\b/.test(h) ? 'none'
           : null;
       const own = norm([it.primary, it.context, it.attrs].join(' '));
       if (/\b(auto ?fill|autofill|parse|import) (from|with|using)?\b/.test(own) && /\bresume|cv\b/.test(own) && ctx.fileCount > 1) { it.key = null; return; }
@@ -681,13 +895,16 @@
     const custom = matchCustom(it, ctx.P.customAnswers);
     if (custom) { it.key = 'custom'; it.custom = custom; return; }
 
+    // Someone else's details (a reference, an emergency contact): never yours.
+    if (it.section === 'ref') { it.key = null; return; }
+
     // Inside a Work experience / Education block
     if (it.section) {
       const sec = it.section;
       let hit = null;
       if (it.kind !== 'checkbox' && it.kind !== 'radio' && it.kind !== 'checkgroup' && isDateLike(it)) {
-        if (/\b(start|from|begin|since|commenc\w*)\b/.test(it.all)) hit = 'start';
-        else if (/\b(end|to|until|finish|graduat\w*|complet\w*|left)\b/.test(it.all)) hit = 'end';
+        if (/\b(start|from|begin|since|commenc\w*|von|beginn|seit|ab)\b/.test(it.all)) hit = 'start';
+        else if (/\b(end|to|until|finish|graduat\w*|complet\w*|left|bis|ende|abschluss)\b/.test(it.all)) hit = 'end';
         if (hit) it.part = datePart(it);
       }
       if (!hit) {
@@ -699,6 +916,7 @@
 
     for (const src of sources(it)) {
       for (const r of RULES) if (ruleHits(r, src, it, ctx)) { it.key = r.key; return; }
+      for (const r of DE_RULES) if (ruleHits(r, src, it, ctx)) { it.key = r.key; return; }
     }
 
     for (const src of sources(it)) {
@@ -773,6 +991,19 @@
 
     switch (k) {
       case 'fullName': return T([P.firstName, P.lastName].filter(Boolean).join(' '));
+      case 'salutation': {
+        const g = SALUTATIONS.find(([re]) => re.test(clean(P.salutation)));
+        return P.salutation ? T(P.salutation, { cands: uniq([P.salutation, ...(g ? g[1] : [])]) }) : null;
+      }
+      case 'dateOfBirth': return D(P.dateOfBirth, 'full');
+      case 'maritalStatus': return T(P.maritalStatus, { cands: aliasCands(MARITAL, P.maritalStatus) });
+      case 'employmentType': return T(P.employmentType, { cands: aliasCands(EMPLOYMENT_TYPES, P.employmentType) });
+      case 'germanLevel':
+      case 'englishLevel': return T(P[k], { cands: aliasCands(LANG_LEVELS, P[k]) });
+      case 'willingToTravel': return YN(P.willingToTravel);
+      case 'weeklyHours': return T(P.weeklyHours, { numeric: parseFloat(P.weeklyHours) });
+      case 'postalCity': return T([P.postalCode, P.city].filter(Boolean).join(' '));
+      case 'emailAndPhone': return T([P.email, [P.phoneCountryCode, P.phone].filter(Boolean).join(' ')].filter(Boolean).join(', '));
       case 'preferredName': return T(P.preferredName || P.firstName);
       case 'location': {
         const st = P.state && (US_STATES[P.state.toUpperCase()] || P.state);
@@ -793,6 +1024,14 @@
         const abbr = Object.keys(US_STATES).find((a) => US_STATES[a].toLowerCase() === s.toLowerCase());
         return T(full || s, { cands: uniq([full || s, s, abbr]) });
       }
+      case 'address1': {
+        const lineOnly = /\b(street|line ?1|address ?1)\b/.test(it.primary + ' ' + it.context + ' ' + it.attrs);
+        if (!lineOnly && !ctx.hasCityField) {
+          const full = [P.address1, P.address2, P.city, [P.state, P.postalCode].filter(Boolean).join(' '), P.country].filter((x) => clean(x)).join(', ');
+          return T(full);
+        }
+        return T(P.address1);
+      }
       case 'website': return T(P.website || P.portfolio || P.github);
       case 'portfolio': return T(P.portfolio || P.website);
       case 'sponsorship': return YN(P.requiresSponsorship);
@@ -802,6 +1041,12 @@
       case 'driversLicense': return YN(P.driversLicense);
       case 'previouslyEmployed': return YN(P.previouslyEmployed);
       case 'clearance': return T(P.securityClearance);
+      case 'currentlyEmployed': {
+        const cur = (P.experience || []).find((e) => e && e.current && (e.company || e.title));
+        if (!(P.experience || []).some((e) => e && (e.company || e.title))) return null;
+        if (it.kind === 'text') return T(cur ? (/\bwhere\b|\bwhich company\b/.test(it.primary + ' ' + it.context) ? `Yes, at ${cur.company || cur.title}` : 'Yes') : 'No');
+        return YN(cur ? 'Yes' : 'No');
+      }
       case 'citizenOf': {
         const c = mentionedCountry(it.labelRaw);
         if (!c || !clean(P.citizenship)) return null;
@@ -831,7 +1076,7 @@
       }
       case 'coverLetter':
       case 'summary': {
-        const f = fillTemplate(k === 'coverLetter' ? P.coverLetter : P.summary || P.coverLetter, ctx, it);
+        const f = fillTemplate(k === 'coverLetter' ? P.coverLetter : P.summary, ctx, it);
         return T(f.text, { review: f.unresolved || (k === 'coverLetter' && f.templated) });
       }
       case 'gender':
@@ -887,14 +1132,14 @@
 
   function candidates(val, it) {
     if (!val) return [];
-    if (val.type === 'yesno') return val.value === 'Yes' ? ['Yes', 'yes', 'true', 'y'] : ['No', 'no', 'false', 'n'];
+    if (val.type === 'yesno') return val.value === 'Yes' ? ['Yes', 'yes', 'true', 'y', 'ja', 'oui', 'si'] : ['No', 'no', 'false', 'n', 'nein', 'non'];
     if (val.type === 'date') {
       const { y, m } = val.date;
-      if (val.part === 'month') return [MONTHS[m - 1], MONTHS[m - 1].slice(0, 3), pad2(m), String(m)];
+      if (val.part === 'month') return [MONTHS[m - 1], MONTHS_DE[m - 1], MONTHS[m - 1].slice(0, 3), MONTHS_DE[m - 1].slice(0, 3), pad2(m), String(m)];
       if (val.part === 'year') return [String(y)];
       return [formatDate(it, val)];
     }
-    if (val.type === 'bool') return val.value ? ['Yes', 'true'] : ['No', 'false'];
+    if (val.type === 'bool') return val.value ? ['Yes', 'true', 'ja'] : ['No', 'false', 'nein'];
     return val.cands && val.cands.length ? val.cands : [val.value];
   }
 
@@ -905,22 +1150,27 @@
     if (val.part === 'year') return String(y);
     if (el.type === 'date') return `${y}-${pad2(m)}-${pad2(d)}`;
     if (el.type === 'month') return `${y}-${pad2(m)}`;
-    const hint = (el.getAttribute('placeholder') || '') + ' ' + (el.getAttribute('aria-label') || '') + ' ' + it.labelRaw;
+    const hint = ((el.getAttribute('placeholder') || '') + ' ' + (el.getAttribute('aria-label') || '') + ' ' + it.labelRaw).replace(/tt/gi, 'dd').replace(/jjjj/gi, 'yyyy');
     let f;
     if ((f = hint.match(/dd([/.\- ])mm\1yyyy/i))) return `${pad2(d)}${f[1]}${pad2(m)}${f[1]}${y}`;
     if ((f = hint.match(/mm([/.\- ])dd\1yyyy/i))) return `${pad2(m)}${f[1]}${pad2(d)}${f[1]}${y}`;
     if ((f = hint.match(/yyyy([/.\- ])mm\1dd/i))) return `${y}${f[1]}${pad2(m)}${f[1]}${pad2(d)}`;
     if ((f = hint.match(/mm([/.\- ])yyyy/i))) return `${pad2(m)}${f[1]}${y}`;
     if ((f = hint.match(/yyyy([/.\- ])mm/i))) return `${y}${f[1]}${pad2(m)}`;
-    if (/month\s*\/\s*year/i.test(hint)) return `${pad2(m)}/${y}`;
-    return it.key && /^(exp|edu)\./.test(it.key) ? `${pad2(m)}/${y}` : `${pad2(m)}/${pad2(d)}/${y}`;
+    if (/month\s*\/\s*year|monat\s*\/\s*jahr/i.test(hint)) return `${pad2(m)}/${y}`;
+    const de = /^(de|at|ch)$/.test(pageLang()) || pageLang() === 'de';
+    const monthOnly = it.key && /^(exp|edu)\./.test(it.key);
+    if (de) return monthOnly ? `${pad2(m)}.${y}` : `${pad2(d)}.${pad2(m)}.${y}`;
+    return monthOnly ? `${pad2(m)}/${y}` : `${pad2(m)}/${pad2(d)}/${y}`;
   }
 
   function textFor(val, it) {
     if (!val) return '';
     let s;
+    const de = pageLang() === 'de';
     if (val.type === 'date') s = formatDate(it, val);
-    else if (val.type === 'bool') s = val.value ? 'Yes' : 'No';
+    else if (val.type === 'bool') s = val.value ? (de ? 'Ja' : 'Yes') : de ? 'Nein' : 'No';
+    else if (val.type === 'yesno' && de) s = val.value === 'Yes' ? 'Ja' : 'Nein';
     else s = String(val.value);
     const el = it.el;
     if (el.type === 'number') {
@@ -1209,12 +1459,12 @@
         let t = clean(c.textContent);
         for (const b of labelBits) if (b) t = clean(t.replace(b, ''));
         t = t.replace(/^[*✱\s]+|[*✱\s]+$/g, '');
-        if (t) return !/^(select|choose|please|search|start typing|type|--|—|none)\b/i.test(t);
+        if (t) return !/^(select|choose|please|search|start typing|type|--|—|none|bitte|ausw[aä]hlen|w[aä]hlen|suchen)\b/i.test(t);
       }
       return false;
     }
     const t = clean(el.innerText || el.textContent);
-    return !!t && !/^(select|choose|please|search|start typing|type|--|—|none)\b/i.test(t);
+    return !!t && !/^(select|choose|please|search|start typing|type|--|—|none|bitte|ausw[aä]hlen|w[aä]hlen|suchen)\b/i.test(t);
   }
 
   function base64ToBytes(dataUrl) {
@@ -1369,7 +1619,7 @@
     DEBUG = !!opts.debug;
     let store;
     try {
-      store = await chrome.storage.local.get(['profile', 'file_resume', 'file_coverLetter']);
+      store = await chrome.storage.local.get(['profile', 'file_resume', 'file_coverLetter', 'file_photo', 'file_certificates']);
     } catch (e) {
       return { error: 'The extension was updated. Reload this page and try again.' };
     }
@@ -1389,7 +1639,7 @@
       counters: {},
       skills: parseSkills(P),
       page: pageContext(),
-      files: { resume: store.file_resume, coverLetter: store.file_coverLetter },
+      files: { resume: store.file_resume, coverLetter: store.file_coverLetter, photo: store.file_photo, certificates: store.file_certificates },
       fileCount: items.filter((i) => i.kind === 'file').length,
     };
 
@@ -1397,6 +1647,10 @@
     annotateSections(items, roots);
     for (const it of items) {
       try { resolve(it, ctx); } catch (e) { it.key = null; }
+    }
+    ctx.hasCityField = items.some((i) => i.key === 'city' || i.key === 'postalCode' || i.key === 'postalCity');
+    if (items.some((i) => i.key === 'firstName') && !items.some((i) => i.key === 'lastName')) {
+      for (const i of items) if (i.key === 'fullName' && /^(name|surname)$/.test(i.primary || i.context)) i.key = 'lastName';
     }
 
     // Files go last: some sites parse an uploaded resume and rewrite fields.
@@ -1420,7 +1674,7 @@
       if (empty && it.required) out.review.push({ label: name, required: true });
       return;
     }
-    const rec = it.key === 'resume' ? ctx.files.resume : ctx.files.coverLetter;
+    const rec = ctx.files[it.key === 'coverLetterFile' ? 'coverLetter' : it.key];
     if (!rec) {
       if (empty && (it.key === 'resume' || it.required)) {
         out.review.push({ label: name + (it.key === 'resume' ? ' (no resume saved in your profile)' : ''), required: it.required });

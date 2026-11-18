@@ -11,9 +11,15 @@ async function fillTab(tabId, opts = {}) {
     throw new Error("Chrome doesn't let extensions fill this kind of page. Open a job application and try again.");
   }
 
-  await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content/filler.js'] });
+  // Skip embedded forms that are hidden on the page (e.g. a later step of a
+  // card-style form): each frame reports which of its iframes can't be seen.
+  const probe = await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, func: hiddenFrameUrls });
+  const hidden = new Set(probe.flatMap((r) => (r.result ? r.result.hidden : [])));
+  const frameIds = probe.filter((r) => r.frameId === 0 || !(r.result && hidden.has(r.result.href))).map((r) => r.frameId);
+
+  await chrome.scripting.executeScript({ target: { tabId, frameIds }, files: ['content/filler.js'] });
   const results = await chrome.scripting.executeScript({
-    target: { tabId, allFrames: true },
+    target: { tabId, frameIds },
     func: (o) => (window.__jobAutofill ? window.__jobAutofill.run(o) : null),
     args: [opts],
   });
@@ -35,6 +41,23 @@ async function fillTab(tabId, opts = {}) {
     .executeScript({ target: { tabId, frameIds: [0] }, func: showToast, args: [toastText(summary)] })
     .catch(() => {});
   return summary;
+}
+
+// Runs inside every frame: lists the iframes on this page that a person can't see.
+function hiddenFrameUrls() {
+  const hidden = [];
+  for (const f of document.querySelectorAll('iframe,frame')) {
+    let visible = f.getClientRects().length > 0;
+    if (visible && f.checkVisibility) visible = f.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+    if (visible) {
+      const r = f.getBoundingClientRect();
+      visible = r.width > 2 && r.height > 2;
+    }
+    if (!visible) {
+      try { hidden.push(new URL(f.getAttribute('src') || 'about:blank', location.href).href); } catch (e) { /* ignore */ }
+    }
+  }
+  return { href: location.href, hidden };
 }
 
 function toastText(s) {

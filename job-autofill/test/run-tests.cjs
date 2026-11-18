@@ -25,6 +25,8 @@ const VENDOR = {
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
 
 const PROFILE = {
+  salutation: 'Mr', academicTitle: '', dateOfBirth: '1994-04-12', xing: 'https://www.xing.com/profile/Alex_Rivera',
+  placeOfBirth: 'Boston', maritalStatus: 'Single', germanLevel: 'B2', englishLevel: 'Native', employmentType: 'Full-time', willingToTravel: 'Yes', weeklyHours: '40',
   firstName: 'Alex', lastName: 'Rivera', middleName: '', preferredName: '', pronouns: '',
   email: 'alex.rivera@example.com', phoneCountryCode: '+1', phone: '415-555-0134',
   address1: '500 Market St', address2: 'Apt 4', city: 'San Francisco', state: 'CA', postalCode: '94105', country: 'United States',
@@ -107,7 +109,8 @@ async function expectAll(name, target, table) {
   if (!sw) sw = await ctx.waitForEvent('serviceworker');
   const extId = sw.url().split('/')[2];
 
-  await sw.evaluate(async ({ p, r }) => { await chrome.storage.local.clear(); await chrome.storage.local.set({ profile: p, file_resume: r }); }, { p: PROFILE, r: RESUME });
+  await sw.evaluate(async ({ p, r, c }) => { await chrome.storage.local.clear(); await chrome.storage.local.set({ profile: p, file_resume: r, file_certificates: c }); },
+    { p: PROFILE, r: RESUME, c: { ...RESUME, name: 'Zeugnisse.pdf' } });
 
   const page = await ctx.newPage();
   async function open(file) {
@@ -245,6 +248,44 @@ async function expectAll(name, target, table) {
     ['#x-where', 'San Francisco, CA'], ['#x-join', 'I love what Northwind is building.'],
   ]);
   check('extras', 'location picked from the list', await page.evaluate(() => document.getElementById('x-loc').dataset.picked), '1');
+
+  /* Google Forms-style ARIA widgets */
+  await open('gforms.html');
+  r = await fill();
+  report('Google Forms style', r);
+  const aria = (id) => page.evaluate((id) => { const el = document.getElementById(id); return el.getAttribute('role') === 'listbox' ? el.dataset.value || '' : el.getAttribute('aria-checked') === 'true'; }, id);
+  check('gforms', 'full name', await val(page, '#gf-name'), 'Alex Rivera');
+  check('gforms', 'email and phone', await val(page, '#gf-contact'), 'alex.rivera@example.com, +1 415-555-0134');
+  check('gforms', 'country dropdown', await aria('gf-country'), 'United States');
+  check('gforms', 'authorized radio', await aria('gf-auth-y'), true);
+  check('gforms', 'english checked', await aria('gf-l-en'), true);
+  check('gforms', 'spanish checked', await aria('gf-l-es'), true);
+  check('gforms', 'german not checked', await aria('gf-l-de'), false);
+  check('gforms', 'days left alone', (await aria('gf-mon')) || (await aria('gf-tue')), false);
+  check('gforms', 'education dropdown', await aria('gf-edu'), "Bachelor's degree");
+  check('gforms', 'terms left alone', await aria('gf-terms'), false);
+
+  /* German form (Personio / softgarden style) */
+  await open('de-form.html');
+  r = await fill();
+  report('German form', r);
+  await expectAll('german', page, [
+    ['#d-anrede', 'Herr'], ['#d-titel', ''], ['#d-vorname', 'Alex'], ['#d-nachname', 'Rivera'], ['#d-mail', 'alex.rivera@example.com'],
+    ['#d-tel', '415-555-0134'], ['#d-geb', '12.04.1994'], ['#d-str', '500 Market St'], ['#d-plzort', '94105 San Francisco'],
+    ['#d-land', 'Vereinigte Staaten'], ['#d-staat', 'United States'], ['#d-xing', 'https://www.xing.com/profile/Alex_Rivera'],
+    ['#d-li', 'https://linkedin.com/in/alexrivera-test'], ['#d-gehalt', '150000'], ['#d-kf', '2 weeks'], ['#d-eintritt', '2027-01-11'],
+    ['#d-quelle', 'LinkedIn'], ['#d-visum-nein', true], ['#d-fs-ja', true], ['#d-sprachen', 'English (native), Spanish (conversational)'],
+    ['#d-jahre', '7'], ['#d-ag', 'Initech'], ['#d-pos', 'Data Engineer'], ['#d-von', '03.2021'], ['#d-bis', ''],
+    ['#d-hs', 'University of California, Berkeley'], ['#d-abschluss', 'Bachelor'], ['#d-studiengang', 'Computer Science'],
+    ['#d-cv', 'Alex_Rivera_Resume.pdf'], ['#d-anschreiben', ''], ['#d-zeugnisse', 'Zeugnisse.pdf'], ['#d-foto', ''], ['#d-dsgvo', false],
+    ['#d-gebort', 'Boston'], ['#d-fam', 'ledig'], ['#d-de', 'Gut (B1/B2)'], ['#d-en', 'Muttersprache'], ['#d-art', 'Vollzeit'], ['#d-reise-ja', true],
+  ]);
+
+  /* Card-style form: questions on hidden cards are not touched; a references block is never filled with your details */
+  await open('cards.html');
+  r = await fill();
+  report('Card form', r);
+  await expectAll('cards', page, [['#c-first', 'Alex'], ['#c-email-hidden', ''], ['#c-city', 'San Francisco'], ['#c-slid', ''], ['#r-name', ''], ['#r-email', ''], ['#r-phone', '']]);
 
   /* Running again is harmless: nothing is changed. */
   await open('greenhouse.html');
