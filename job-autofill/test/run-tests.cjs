@@ -32,7 +32,7 @@ const PROFILE = {
   address1: '500 Market St', address2: 'Apt 4', city: 'San Francisco', state: 'CA', postalCode: '94105', country: 'United States',
   linkedin: 'linkedin.com/in/alexrivera-test', github: 'https://github.com/alexrivera-test', portfolio: 'https://alexrivera.dev', website: '', twitter: '',
   currentTitle: 'Data Engineer', currentCompany: 'Initech', yearsExperience: '7', howDidYouHear: 'LinkedIn',
-  desiredSalary: '150000', currentSalary: '', noticePeriod: '2 weeks', availability: 'Two weeks after an offer', availableStartDate: '2027-01-11',
+  desiredSalary: '150000', currentSalary: '', noticePeriod: '2 weeks', startDate: '2027-01-11', startAfter: '3 months',
   workPreference: 'Hybrid', willingToRelocate: 'Yes',
   workAuthorized: 'Yes', requiresSponsorship: 'No', visaStatus: 'US Citizen', citizenship: 'United States', over18: 'Yes',
   driversLicense: 'Yes', securityClearance: 'None', previouslyEmployed: 'No',
@@ -222,7 +222,7 @@ async function expectAll(name, target, table) {
   report('Generic', r);
   await expectAll('generic', page, [
     ['#shadow-email >>> #inner', 'alex.rivera@example.com'], ['#g-phone', '000-000'], ['#g-zip', '94105'],
-    ['#g-country', 'United States of America'], ['#g-state', 'CA'], ['#g-start', ''], ['#g-salary', '150000'],
+    ['#g-country', 'United States of America'], ['#g-state', 'CA'], ['#g-start', '2027-01-11'], ['#g-salary', '150000'],
     ['#g-years', '6-10 years'], ['#adult-y', true], ['#g-why', 'I love what Northwind Labs is building.'],
     ['#g-cover', 'Dear Northwind Labs team,\n\nI am excited to apply for the Product Analyst position.'], ['#g-odd', ''],
     ['#j0-emp', 'Initech'], ['#j0-title', 'Data Engineer'], ['#j0-start', '03/2021'], ['#j0-end', ''],
@@ -274,7 +274,7 @@ async function expectAll(name, target, table) {
     ['#d-anrede', 'Herr'], ['#d-titel', ''], ['#d-vorname', 'Alex'], ['#d-nachname', 'Rivera'], ['#d-mail', 'alex.rivera@example.com'],
     ['#d-tel', '415-555-0134'], ['#d-geb', '12.04.1994'], ['#d-str', '500 Market St'], ['#d-plzort', '94105 San Francisco'],
     ['#d-land', 'Vereinigte Staaten'], ['#d-staat', 'United States'], ['#d-xing', 'https://www.xing.com/profile/Alex_Rivera'],
-    ['#d-li', 'https://linkedin.com/in/alexrivera-test'], ['#d-gehalt', '150000'], ['#d-kf', '2 weeks'], ['#d-eintritt', ''],
+    ['#d-li', 'https://linkedin.com/in/alexrivera-test'], ['#d-gehalt', '150000'], ['#d-kf', '2 weeks'], ['#d-eintritt', '2027-01-11'],
     ['#d-quelle', 'LinkedIn'], ['#d-visum-nein', true], ['#d-fs-ja', true], ['#d-sprachen', 'English (native), Spanish (conversational)'],
     ['#d-jahre', '7'], ['#d-ag', 'Initech'], ['#d-pos', 'Data Engineer'], ['#d-von', '03.2021'], ['#d-bis', ''],
     ['#d-hs', 'University of California, Berkeley'], ['#d-abschluss', 'Bachelor'], ['#d-studiengang', 'Computer Science'],
@@ -295,8 +295,23 @@ async function expectAll(name, target, table) {
   await sw.evaluate(async () => { const { profile } = await chrome.storage.local.get('profile'); profile.howDidYouHear = 'LinkedIn'; await chrome.storage.local.set({ profile }); });
   report('LOGA style', r);
   await expectAll('loga', page, [['#l-anrede', 'Herr'], ['#l-vorname', 'Alex'], ['#l-nachname', 'Rivera'], ['#l-mail2', 'alex.rivera@example.com'],
-    ['#l-start', ''], ['#l-zeugnis', ''], ['#l-quelle', 'Google-Schlagwortsuche'], ['#l-sonst', 'Nein'], ['#l-dsgvo', true]]);
-  check('loga', 'start date left for you', r.review.some((x) => /arbeitsbeginn/i.test(x.label)), true);
+    ['#l-start', '11.01.2027'], ['#l-zeugnis', ''], ['#l-quelle', 'Google-Schlagwortsuche'], ['#l-sonst', 'Nein'], ['#l-dsgvo', true]]);
+
+  // Start date "3 months after the day you apply" (months round up to the 1st), and a past fixed date with no fallback.
+  const setProfile = (patch) => sw.evaluate(async (patch) => { const { profile } = await chrome.storage.local.get('profile'); await chrome.storage.local.set({ profile: { ...profile, ...patch } }); }, patch);
+  const now = new Date();
+  const in3 = new Date(now.getFullYear(), now.getMonth() + 3 + (now.getDate() > 1 ? 1 : 0), 1);
+  const want3 = `${String(in3.getDate()).padStart(2, '0')}.${String(in3.getMonth() + 1).padStart(2, '0')}.${in3.getFullYear()}`;
+  await setProfile({ startDate: '2020-01-01', startAfter: '3 months' });
+  await open('loga.html');
+  await fill();
+  check('loga', 'start date 3 months out (past fixed date ignored)', await val(page, '#l-start'), want3);
+  await setProfile({ startDate: '2020-01-01', startAfter: '' });
+  await open('loga.html');
+  r = await fill();
+  check('loga', 'past start date not used', await val(page, '#l-start'), '');
+  check('loga', 'start date then left for you', r.review.some((x) => /arbeitsbeginn/i.test(x.label)), true);
+  await setProfile({ startDate: '2027-01-11', startAfter: '3 months' });
 
   /* Running again is harmless: nothing is changed. */
   await open('greenhouse.html');
@@ -321,7 +336,8 @@ async function expectAll(name, target, table) {
   check('options', 'adds a job', saved.profile.experience.length === 3 && saved.profile.experience[2].title === 'Intern', true);
   const gone = await sw.evaluate(() => chrome.storage.local.get(['file_resume', 'file_certificates']));
   check('options', 'old resume / certificate files cleared', !gone.file_resume && !gone.file_certificates, true);
-  check('options', 'no resume / start date fields', await opt.evaluate(() => !document.getElementById('file-resume') && !document.getElementById('job-availableStartDate')), true);
+  check('options', 'no resume upload', await opt.evaluate(() => !document.getElementById('file-resume')), true);
+  check('options', 'start date preview', await opt.textContent('#startPreview'), 'Start-date questions get: 11.01.2027 (if you applied today).');
   await opt.setInputFiles('#file-photo', { name: 'Photo.png', mimeType: 'image/png', buffer: PDF });
   await opt.waitForSelector('#files .file-card.has');
   const files = await sw.evaluate(() => chrome.storage.local.get('file_photo'));

@@ -60,9 +60,12 @@ Standard answers (all changeable on the profile page):
 - "How did you hear about us?" / "aufmerksam geworden durch" → **Google** (picks the closest option, e.g. "Google-Schlagwortsuche").
 - "Anything else you'd like to tell us?" / "Möchten Sie uns sonst noch etwas mitteilen?" → **"Nein"** on German forms, "No" on English ones.
 - Privacy-notice / Datenschutz checkboxes → **ticked**. Newsletter, SMS, talent-pool and future-job boxes stay unticked.
+- Start date (Frühester Arbeitsbeginn, Eintrittstermin, "When can you start?") → your **estimated start date**: a fixed
+  date while it's still in the future, otherwise N weeks / months after the day you apply (months rounded up to the 1st).
+  Leave both empty to fill start dates yourself.
 
 It deliberately leaves for you (outlined amber): resume / cover letter / certificate
-uploads and start-date questions (these change per company), "I agree to the terms" and "I certify" boxes, cookie banners,
+uploads (these change per company), "I agree to the terms" and "I certify" boxes, cookie banners,
 signatures, passwords, CAPTCHAs, open-ended questions you haven't saved an answer
 for, questions about skills that aren't in your list, **reference and emergency-contact
 sections** (those are someone else's details), and questions on steps or cards you
@@ -116,7 +119,7 @@ extension/
 test/
   run-tests.cjs        End-to-end tests against mock Greenhouse, Lever, Workday,
                        LinkedIn, React, Google Forms, German, card-style and
-                       shadow-DOM/iframe and P&I LOGA-style pages (246 checks)
+                       shadow-DOM/iframe and P&I LOGA-style pages (249 checks)
   real-sites.cjs       Fills live public application pages (never submits)
   pages/               The mock pages
 ```

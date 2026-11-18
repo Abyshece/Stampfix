@@ -57,6 +57,8 @@ const SECTIONS = [
       { k: 'desiredSalary', l: 'Desired salary', ph: 'e.g. 120000', h: 'Plain numbers work best.' },
       { k: 'currentSalary', l: 'Current salary' },
       { k: 'noticePeriod', l: 'Notice period', ph: 'e.g. 2 weeks' },
+      { k: 'startDate', l: 'Estimated start date', t: 'date', h: 'A fixed date. Once it has passed it is no longer filled in.' },
+      { k: 'startAfter', l: '…or this long after the day you apply', t: 'select', o: ['', '2 weeks', '4 weeks', '1 month', '2 months', '3 months', '4 months', '6 months'], h: 'Used when no fixed date is set (or it has passed). Months are rounded up to the 1st.' },
       { k: 'employmentType', l: 'Employment type', t: 'select', o: ['', 'Full-time', 'Part-time', 'Working student', 'Internship', 'Freelance', 'Apprenticeship'], h: 'Vollzeit / Teilzeit / Werkstudent…' },
       { k: 'weeklyHours', l: 'Hours per week', t: 'number', ph: 'e.g. 40' },
       { k: 'workPreference', l: 'Work arrangement', t: 'select', o: ['', 'Remote', 'Hybrid', 'On-site', 'Flexible'] },
@@ -194,7 +196,32 @@ function scheduleSave() {
   }, 350);
 }
 
+// Same rule the filler uses (content/filler.js: estimatedStart).
+function estimatedStart(p) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const f = String(p.startDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (f) {
+    const d = new Date(+f[1], +f[2] - 1, +f[3]);
+    if (d >= today) return d;
+  }
+  const m = String(p.startAfter || '').match(/(\d+)\s*(week|month)/i);
+  if (!m) return null;
+  if (/week/i.test(m[2])) return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7 * +m[1]);
+  return new Date(today.getFullYear(), today.getMonth() + +m[1] + (today.getDate() > 1 ? 1 : 0), 1);
+}
+
+function updateStartPreview() {
+  const el = document.getElementById('startPreview');
+  if (!el) return;
+  const d = estimatedStart(state);
+  el.textContent = d
+    ? `Start-date questions get: ${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })} (if you applied today).`
+    : 'Start-date questions are left for you to fill in.';
+}
+
 function updateMeter() {
+  updateStartPreview();
   const keys = SECTIONS.flatMap((s) => (s.list || !s.fields ? [] : s.fields.filter((f) => f.key).map((f) => f.k)));
   let total = keys.length + 2;
   let done = keys.filter((k) => String(state[k] || '').trim()).length;
@@ -241,7 +268,8 @@ function fieldControl(f, value, onValue, idBase) {
 function renderSimple(sec) {
   const grid = h('div', { class: 'grid' });
   for (const f of sec.fields) {
-    grid.append(fieldControl(f, state[f.k], (v) => { state[f.k] = v; scheduleSave(); }, sec.id));
+    grid.append(fieldControl(f, state[f.k], (v) => { state[f.k] = v; scheduleSave(); updateStartPreview(); }, sec.id));
+    if (f.k === 'startAfter') grid.append(h('p', { class: 'hint full preview', id: 'startPreview', role: 'status' }));
   }
   return grid;
 }

@@ -1103,7 +1103,10 @@
         return y != null && clean(y) !== '' ? T(y, { numeric: parseFloat(y) }) : null;
       }
       case 'hasSkill': return { type: 'yesno', value: 'Yes' };
-      case 'availableStartDate': return null; // differs per company: left for you
+      case 'availableStartDate': {
+        const d = estimatedStart(P); // your setting; empty = left for you
+        return d ? D(d, 'full') : null;
+      }
       case 'highestDegree': {
         const d = P.education && P.education[0] && P.education[0].degree;
         return T(d, { cands: degreeCands(d) });
@@ -1142,6 +1145,23 @@
     return ca.some((x) => cb.includes(x));
   }
   const splitList = (v) => uniq(String(v || '').split(/[,;\n]/).map((x) => clean(x.replace(/\(.*?\)/g, ''))));
+
+  // Estimated start date: a fixed date (only while it's still in the future),
+  // otherwise N weeks / months after today (months rounded up to the 1st).
+  function estimatedStart(P) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const iso = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    const f = parseYM(P.startDate);
+    if (f) {
+      const d = new Date(f.y, f.m - 1, f.d);
+      if (d >= today) return iso(d);
+    }
+    const m = String(P.startAfter || '').match(/(\d+)\s*(week|month)/i);
+    if (!m) return null;
+    if (/week/i.test(m[2])) return iso(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7 * +m[1]));
+    return iso(new Date(today.getFullYear(), today.getMonth() + +m[1] + (today.getDate() > 1 ? 1 : 0), 1));
+  }
 
   // A date picker, even when it's a plain text box (GWT DateBox, flatpickr, jQuery UI…).
   function looksLikeDateBox(it) {
