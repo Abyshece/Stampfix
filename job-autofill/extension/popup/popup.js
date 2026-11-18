@@ -10,10 +10,10 @@ function h(tag, cls, text) {
 }
 
 async function init() {
-  const { profile, file_resume: resume } = await chrome.storage.local.get(['profile', 'file_resume']);
+  const { profile } = await chrome.storage.local.get(['profile']);
   const name = profile && [profile.firstName, profile.lastName].filter(Boolean).join(' ');
   if (name || (profile && profile.email)) {
-    $('who').textContent = (name || profile.email) + (resume ? ' · resume attached' : ' · no resume yet');
+    $('who').textContent = name || profile.email;
   } else {
     $('who').textContent = 'No profile yet';
     $('fill').textContent = 'Set up my profile';

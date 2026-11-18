@@ -19,7 +19,7 @@ const PROFILE = {
   salutation: 'Mr', firstName: 'Alex', lastName: 'Rivera', email: 'alex.rivera@example.com', phoneCountryCode: '+1', phone: '415-555-0134',
   address1: '500 Market St', city: 'San Francisco', state: 'CA', postalCode: '94105', country: 'United States',
   linkedin: 'https://linkedin.com/in/alexrivera-test', github: 'https://github.com/alexrivera-test', portfolio: 'https://alexrivera.dev',
-  currentTitle: 'Data Engineer', currentCompany: 'Initech', yearsExperience: '7', howDidYouHear: 'LinkedIn', desiredSalary: '150000',
+  currentTitle: 'Data Engineer', currentCompany: 'Initech', yearsExperience: '7', desiredSalary: '150000',
   availability: 'Two weeks after an offer', availableStartDate: '2027-01-11', willingToRelocate: 'Yes', workPreference: 'Hybrid',
   workAuthorized: 'Yes', requiresSponsorship: 'No', visaStatus: 'US Citizen', citizenship: 'United States', over18: 'Yes', previouslyEmployed: 'No',
   experience: [{ title: 'Data Engineer', company: 'Initech', location: 'San Francisco, CA', start: '2021-03', end: '', current: true, description: 'Built the data platform.' }],

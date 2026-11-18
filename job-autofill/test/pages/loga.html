@@ -12,14 +12,17 @@
   <tr><td><label id="L4">E-Mail Bestätigung<span>*</span></label></td><td><input type="text" class="LG-TextBox" aria-labelledby="L4" id="l-mail2"></td></tr>
   <tr><td><label id="L5">Frühester Arbeitsbeginn</label></td><td><input type="text" class="gwt-DateBox" aria-roledescription="Datumsfeld" aria-labelledby="L5" id="l-start"></td></tr>
   <tr><td><label id="L6">Abschlusszeugnis</label></td><td><input type="file" name="fileUploader" id="l-zeugnis"></td></tr>
+  <tr><td><label id="L7">Ich bin auf die Ausschreibung aufmerksam geworden durch<span>*</span></label></td><td><input type="text" class="gwt-combo-box-input" role="combobox" aria-labelledby="L7" id="l-quelle"></td></tr>
+  <tr><td><label id="L8">Möchten Sie uns sonst noch etwas mitteilen?</label></td><td><textarea aria-labelledby="L8" id="l-sonst"></textarea></td></tr>
+  <tr><td><label id="L9">Ich habe die Datenschutzhinweise gelesen und verstanden.<span>*</span></label></td><td><input type="checkbox" aria-labelledby="L9" id="l-dsgvo"></td></tr>
 </table>
 </div>
 <script>
-  const inp = document.getElementById('l-anrede');
-  inp.addEventListener('click', () => {
+  const OPTS = { 'l-anrede': ['Frau', 'Herr', 'Divers', 'keine Angabe'], 'l-quelle': ['Bing-Schlagwortsuche', 'Google-Schlagwortsuche', 'Google-Jobs', 'Stepstone', 'LinkedIn', 'Indeed', 'Empfehlung', 'Sonstiges'] };
+  for (const inp of document.querySelectorAll('.gwt-combo-box-input')) inp.addEventListener('click', () => {
     document.querySelectorAll('.pop').forEach((p) => p.remove());
     const pop = document.createElement('div'); pop.className = 'pop';
-    for (const o of ['Frau', 'Herr', 'Divers', 'keine Angabe']) {
+    for (const o of OPTS[inp.id]) {
       const d = document.createElement('div'); d.className = 'gwt-combo-box-option-cell'; d.textContent = o;
       d.addEventListener('click', () => { inp.value = o; pop.remove(); });
       pop.append(d);

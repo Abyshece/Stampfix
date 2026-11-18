@@ -138,7 +138,7 @@ async function expectAll(name, target, table) {
   report('Greenhouse', r);
   await expectAll('greenhouse', page, [
     ['#first_name', 'Alex'], ['#last_name', 'Rivera'], ['#email', 'alex.rivera@example.com'], ['#phone', '415-555-0134'],
-    ['#job_application_location', 'San Francisco, CA'], ['#resume_file', 'Alex_Rivera_Resume.pdf'], ['#cover_file', ''],
+    ['#job_application_location', 'San Francisco, CA'], ['#resume_file', ''], ['#cover_file', ''],
     ['#education_school_name_0', 'University of California, Berkeley'], ['#education_degree_0', "Bachelor's Degree"],
     ['#education_discipline_0', 'Computer Science'], ['#edu_start_month', '08'], ['#edu_start_year', '2014'],
     ['#edu_end_month', '05'], ['#edu_end_year', '2018'],
@@ -146,10 +146,11 @@ async function expectAll(name, target, table) {
     ['#q_auth', 'Yes'], ['#q_sponsor', 'No'], ['#q_why', 'I love what Acme Robotics is building.'], ['#q_robot', ''],
     ['#q_hear', 'LinkedIn'], ['#gender', 'Decline To Self Identify'], ['#hispanic', 'No'], ['#race', 'Asian'],
     ['#veteran', 'I am not a protected veteran'], ['#disability', 'No, I do not have a disability and have not had one in the past'],
-    ['#consent', false],
+    ['#consent', true],
   ]);
   check('greenhouse', 'review lists favourite robot', r.review.some((x) => /robot/i.test(x.label)), true);
-  check('greenhouse', 'review lists consent', r.review.some((x) => /privacy/i.test(x.label)), true);
+  check('greenhouse', 'privacy box ticked, not listed', r.review.some((x) => /privacy/i.test(x.label)), false);
+  check('greenhouse', 'resume left for you to attach', r.review.some((x) => /resume/i.test(x.label) && /attach your file/.test(x.label)), true);
   await shot('greenhouse');
 
   /* Lever */
@@ -157,7 +158,7 @@ async function expectAll(name, target, table) {
   r = await fill();
   report('Lever', r);
   await expectAll('lever', page, [
-    ['#resume-upload-input', 'Alex_Rivera_Resume.pdf'], ['#lv_name', 'Alex Rivera'], ['#lv_email', 'alex.rivera@example.com'],
+    ['#resume-upload-input', ''], ['#lv_name', 'Alex Rivera'], ['#lv_email', 'alex.rivera@example.com'],
     ['#lv_phone', '415-555-0134'], ['#lv_location', 'San Francisco, CA'], ['#lv_org', 'Initech'],
     ['#lv_li', 'https://linkedin.com/in/alexrivera-test'], ['#lv_gh', 'https://github.com/alexrivera-test'], ['#lv_pf', 'https://alexrivera.dev'],
     ['#lv_rel_yes', true], ['#lv_sql', '2-4'], ['#lv_py_yes', true],
@@ -194,7 +195,7 @@ async function expectAll(name, target, table) {
     ['#bg-search', ''], ['#single-line-text-form-component-formElement-urn-li-jsonMember-firstName-123', 'Alexander'], ['#ln-input', 'Rivera'],
     ['#text-entity-list-form-component-email', 'alex.rivera@example.com'], ['#text-entity-list-form-component-phoneCountryCode', 'United States (+1)'],
     ['#single-line-text-form-component-phoneNumber-nationalNumber', '415-555-0134'], ['#li-city-chosen', 'San Francisco, California, United States'],
-    ['#jobs-document-upload-file-input-upload-resume', 'Alex_Rivera_Resume.pdf'],
+    ['#jobs-document-upload-file-input-upload-resume', ''],
     ['#y-python', '6'], ['#y-k8s', ''], ['#y-total', '7'], ['#sql-y', true], ['#auth-y', true], ['#sp', 'No'],
     ['#cm-y', false], ['#cm-n', false], ['#sal', '150000'],
   ]);
@@ -221,7 +222,7 @@ async function expectAll(name, target, table) {
   report('Generic', r);
   await expectAll('generic', page, [
     ['#shadow-email >>> #inner', 'alex.rivera@example.com'], ['#g-phone', '000-000'], ['#g-zip', '94105'],
-    ['#g-country', 'United States of America'], ['#g-state', 'CA'], ['#g-start', '2027-01-11'], ['#g-salary', '150000'],
+    ['#g-country', 'United States of America'], ['#g-state', 'CA'], ['#g-start', ''], ['#g-salary', '150000'],
     ['#g-years', '6-10 years'], ['#adult-y', true], ['#g-why', 'I love what Northwind Labs is building.'],
     ['#g-cover', 'Dear Northwind Labs team,\n\nI am excited to apply for the Product Analyst position.'], ['#g-odd', ''],
     ['#j0-emp', 'Initech'], ['#j0-title', 'Data Engineer'], ['#j0-start', '03/2021'], ['#j0-end', ''],
@@ -273,11 +274,11 @@ async function expectAll(name, target, table) {
     ['#d-anrede', 'Herr'], ['#d-titel', ''], ['#d-vorname', 'Alex'], ['#d-nachname', 'Rivera'], ['#d-mail', 'alex.rivera@example.com'],
     ['#d-tel', '415-555-0134'], ['#d-geb', '12.04.1994'], ['#d-str', '500 Market St'], ['#d-plzort', '94105 San Francisco'],
     ['#d-land', 'Vereinigte Staaten'], ['#d-staat', 'United States'], ['#d-xing', 'https://www.xing.com/profile/Alex_Rivera'],
-    ['#d-li', 'https://linkedin.com/in/alexrivera-test'], ['#d-gehalt', '150000'], ['#d-kf', '2 weeks'], ['#d-eintritt', '2027-01-11'],
+    ['#d-li', 'https://linkedin.com/in/alexrivera-test'], ['#d-gehalt', '150000'], ['#d-kf', '2 weeks'], ['#d-eintritt', ''],
     ['#d-quelle', 'LinkedIn'], ['#d-visum-nein', true], ['#d-fs-ja', true], ['#d-sprachen', 'English (native), Spanish (conversational)'],
     ['#d-jahre', '7'], ['#d-ag', 'Initech'], ['#d-pos', 'Data Engineer'], ['#d-von', '03.2021'], ['#d-bis', ''],
     ['#d-hs', 'University of California, Berkeley'], ['#d-abschluss', 'Bachelor'], ['#d-studiengang', 'Computer Science'],
-    ['#d-cv', 'Alex_Rivera_Resume.pdf'], ['#d-anschreiben', ''], ['#d-zeugnisse', 'Zeugnisse.pdf'], ['#d-foto', ''], ['#d-dsgvo', false],
+    ['#d-cv', ''], ['#d-anschreiben', ''], ['#d-zeugnisse', ''], ['#d-foto', ''], ['#d-dsgvo', true], ['#d-pool', false], ['#d-news', false], ['#d-sonst', 'Nein'],
     ['#d-gebort', 'Boston'], ['#d-fam', 'ledig'], ['#d-de', 'Gut (B1/B2)'], ['#d-en', 'Muttersprache'], ['#d-art', 'Vollzeit'], ['#d-reise-ja', true],
   ]);
 
@@ -289,10 +290,13 @@ async function expectAll(name, target, table) {
 
   /* P&I LOGA style (Helios): aria-hidden app, div options, text-box date picker */
   await open('loga.html');
+  await sw.evaluate(async () => { const { profile } = await chrome.storage.local.get('profile'); profile.howDidYouHear = ''; await chrome.storage.local.set({ profile }); });
   r = await fill();
+  await sw.evaluate(async () => { const { profile } = await chrome.storage.local.get('profile'); profile.howDidYouHear = 'LinkedIn'; await chrome.storage.local.set({ profile }); });
   report('LOGA style', r);
   await expectAll('loga', page, [['#l-anrede', 'Herr'], ['#l-vorname', 'Alex'], ['#l-nachname', 'Rivera'], ['#l-mail2', 'alex.rivera@example.com'],
-    ['#l-start', '11.01.2027'], ['#l-zeugnis', 'Zeugnisse.pdf']]);
+    ['#l-start', ''], ['#l-zeugnis', ''], ['#l-quelle', 'Google-Schlagwortsuche'], ['#l-sonst', 'Nein'], ['#l-dsgvo', true]]);
+  check('loga', 'start date left for you', r.review.some((x) => /arbeitsbeginn/i.test(x.label)), true);
 
   /* Running again is harmless: nothing is changed. */
   await open('greenhouse.html');
@@ -315,10 +319,13 @@ async function expectAll(name, target, table) {
   const saved = await sw.evaluate(() => chrome.storage.local.get('profile'));
   check('options', 'saves first name', saved.profile.firstName, 'Alexandra');
   check('options', 'adds a job', saved.profile.experience.length === 3 && saved.profile.experience[2].title === 'Intern', true);
-  await opt.setInputFiles('#file-coverLetter', { name: 'Cover.pdf', mimeType: 'application/pdf', buffer: PDF });
-  await opt.waitForSelector('#files .file-card.has >> nth=1');
-  const files = await sw.evaluate(() => chrome.storage.local.get('file_coverLetter'));
-  check('options', 'stores cover letter file', files.file_coverLetter && files.file_coverLetter.name, 'Cover.pdf');
+  const gone = await sw.evaluate(() => chrome.storage.local.get(['file_resume', 'file_certificates']));
+  check('options', 'old resume / certificate files cleared', !gone.file_resume && !gone.file_certificates, true);
+  check('options', 'no resume / start date fields', await opt.evaluate(() => !document.getElementById('file-resume') && !document.getElementById('job-availableStartDate')), true);
+  await opt.setInputFiles('#file-photo', { name: 'Photo.png', mimeType: 'image/png', buffer: PDF });
+  await opt.waitForSelector('#files .file-card.has');
+  const files = await sw.evaluate(() => chrome.storage.local.get('file_photo'));
+  check('options', 'stores photo', files.file_photo && files.file_photo.name, 'Photo.png');
   if (SHOTS) {
     await opt.setViewportSize({ width: 1200, height: 900 });
     await opt.screenshot({ path: path.join(SHOTS, 'options.png'), fullPage: false });
@@ -331,7 +338,7 @@ async function expectAll(name, target, table) {
   pop.on('pageerror', (e) => pageErrors.push(e.message));
   await pop.goto(`chrome-extension://${extId}/popup/popup.html`);
   await pop.waitForFunction(() => document.getElementById('who').textContent !== 'Loading…');
-  check('popup', 'shows who', await pop.textContent('#who'), 'Alexandra Rivera · resume attached');
+  check('popup', 'shows who', await pop.textContent('#who'), 'Alexandra Rivera');
   await pop.evaluate(() => showResult({ fields: 10, filled: ['a', 'b'], review: [{ label: 'Why us?', required: true }], kept: 1 }));
   check('popup', 'result headline', await pop.textContent('.headline'), 'Filled 2 fields');
   check('popup', 'no script errors', pageErrors.join(' | '), '');

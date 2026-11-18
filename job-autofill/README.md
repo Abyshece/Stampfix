@@ -41,21 +41,28 @@ Running it twice is safe. It only fills empty fields, unless you tick **Replace 
 | Name, email, phone, address | Salutation (Herr/Frau/Divers), academic title, first / last / full / preferred name, date and place of birth, marital status, phone + country code, street, "PLZ / Ort", city, state, ZIP, country, nationality, "Location (City)" search boxes |
 | Links | LinkedIn, XING, GitHub, portfolio, website, X |
 | Work eligibility | Authorized to work? Need sponsorship? Over 18? Willing to relocate? "Are you a U.S. citizen?" "Are you located in the US?" Worked here before? |
-| Current job & preferences | Current company/title, total years of experience, salary (Gehaltsvorstellung), notice period (Kündigungsfrist), start date (Eintrittstermin), employment type (Vollzeit/Teilzeit/Werkstudent), hours per week, preferred location, willingness to travel (Reisebereitschaft), "How did you hear about us?", "Referred by" |
+| Current job & preferences | Current company/title, total years of experience, salary (Gehaltsvorstellung), notice period (Kündigungsfrist), employment type (Vollzeit/Teilzeit/Werkstudent), hours per week, preferred location, willingness to travel (Reisebereitschaft), "How did you hear about us?", "Referred by" |
 | Work experience (list) | Job title, company, location, start/end month+year, "I currently work here", description. Several job blocks are filled in order |
 | Education (list) | School, degree (matches "Bachelor's Degree", "B.S.", "BS"…), field of study, GPA, start/graduation dates |
 | Skills & languages | "How many years of experience with Python?" (from your "Python: 5" list), "Do you have experience with SQL?" → Yes, German / English level (matched to "Muttersprache", "verhandlungssicher", "C1"…), spoken languages |
 | Summary & cover letter | Cover-letter boxes, "Additional information". `{company}` and `{role}` are replaced with the company name and job title |
 | Saved answers | Your own answers to recurring questions like "Why do you want to work here?". They don't need to match word for word |
 | Voluntary self-identification | Gender, race, Hispanic/Latino, veteran, disability, or "decline to answer" |
-| Files | Resume (Lebenslauf), cover letter (Anschreiben), photo (Bewerbungsfoto), certificates (Zeugnisse) go into the matching upload fields |
+| Files | Only an optional photo (Bewerbungsfoto). Resume, cover letter and certificates differ per company, so you attach them yourself; their upload fields are outlined amber and listed in the popup |
 
 It handles normal inputs, dropdowns, radio buttons, checkboxes, custom dropdowns
 (React-Select, Workday-style, MUI), search-as-you-type boxes (Lever and Greenhouse
 location, school pickers), date fields in any format (MM/YYYY, separate month/year
 boxes, date pickers), number ranges ("3-5 years"), forms inside iframes, and shadow DOM.
 
-It deliberately leaves alone: consent / Datenschutz checkboxes, cookie banners,
+Standard answers (all changeable on the profile page):
+
+- "How did you hear about us?" / "aufmerksam geworden durch" → **Google** (picks the closest option, e.g. "Google-Schlagwortsuche").
+- "Anything else you'd like to tell us?" / "Möchten Sie uns sonst noch etwas mitteilen?" → **"Nein"** on German forms, "No" on English ones.
+- Privacy-notice / Datenschutz checkboxes → **ticked**. Newsletter, SMS, talent-pool and future-job boxes stay unticked.
+
+It deliberately leaves for you (outlined amber): resume / cover letter / certificate
+uploads and start-date questions (these change per company), "I agree to the terms" and "I certify" boxes, cookie banners,
 signatures, passwords, CAPTCHAs, open-ended questions you haven't saved an answer
 for, questions about skills that aren't in your list, **reference and emergency-contact
 sections** (those are someone else's details), and questions on steps or cards you
@@ -71,7 +78,7 @@ Filled with a fake profile, never submitted, no files uploaded:
 | Lever (Palantir) | 15 filled, incl. location search box, citizenship and language checkboxes |
 | Ashby (Linear, Ramp) | Name, email, links, country filled; the rest are essay questions |
 | Personio (ottonova EN, thermondo DE) | 8 of 10 and 5 of 6 filled; German labels understood |
-| P&I LOGA (Helios) | 10 filled: Anrede, names, both e-mails, phone, city, start date (TT.MM.JJJJ), salary, source; left: consent, title, resume, optional message |
+| P&I LOGA (Helios) | 11 filled: Anrede, names, both e-mails, phone, city, salary, source (Google), "Nein", Datenschutz ticked; left for you: uploads, start date, title |
 | Recruitee (bunq) | Personal fields, salary, "worked here before"; rest are essay questions |
 | Teamtailor | 7 filled |
 | Rippling | 11 filled incl. EEO dropdowns |
@@ -109,7 +116,7 @@ extension/
 test/
   run-tests.cjs        End-to-end tests against mock Greenhouse, Lever, Workday,
                        LinkedIn, React, Google Forms, German, card-style and
-                       shadow-DOM/iframe and P&I LOGA-style pages (236 checks)
+                       shadow-DOM/iframe and P&I LOGA-style pages (246 checks)
   real-sites.cjs       Fills live public application pages (never submits)
   pages/               The mock pages
 ```

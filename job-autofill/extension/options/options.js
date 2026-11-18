@@ -51,12 +51,12 @@ const SECTIONS = [
       { k: 'currentTitle', l: 'Current job title' },
       { k: 'currentCompany', l: 'Current company' },
       { k: 'yearsExperience', l: 'Total years of experience', t: 'number', key: true },
-      { k: 'howDidYouHear', l: '"How did you hear about us?"', ph: 'e.g. LinkedIn' },
+      { k: 'howDidYouHear', l: '"How did you hear about us?"', ph: 'Google', h: 'Used for every "How did you hear…" / "aufmerksam geworden durch" question.' },
+      { k: 'anythingElse', l: '"Anything else you\'d like to tell us?"', ph: 'No', h: 'Typed as "Nein" on German forms, "No" on English ones. Write a sentence here to use that instead.' },
+      { k: 'autoConsent', l: 'Tick privacy-policy / Datenschutz checkboxes for me', t: 'checkbox', w: 'full', h: 'Only the "I have read the privacy notice" box. Newsletter, SMS, talent-pool and future-job boxes stay unticked.' },
       { k: 'desiredSalary', l: 'Desired salary', ph: 'e.g. 120000', h: 'Plain numbers work best.' },
       { k: 'currentSalary', l: 'Current salary' },
       { k: 'noticePeriod', l: 'Notice period', ph: 'e.g. 2 weeks' },
-      { k: 'availability', l: 'When can you start?', ph: 'e.g. Immediately' },
-      { k: 'availableStartDate', l: 'Earliest start date', t: 'date', h: 'Used when a form asks for an actual date.' },
       { k: 'employmentType', l: 'Employment type', t: 'select', o: ['', 'Full-time', 'Part-time', 'Working student', 'Internship', 'Freelance', 'Apprenticeship'], h: 'Vollzeit / Teilzeit / Werkstudent…' },
       { k: 'weeklyHours', l: 'Hours per week', t: 'number', ph: 'e.g. 40' },
       { k: 'workPreference', l: 'Work arrangement', t: 'select', o: ['', 'Remote', 'Hybrid', 'On-site', 'Flexible'] },
@@ -143,7 +143,7 @@ const SECTIONS = [
       { k: 'disability', l: 'Disability status', t: 'select', o: ['', "No, I don't have a disability", 'Yes, I have a disability', DECLINE] },
     ],
   },
-  { id: 'files', title: 'Resume & documents', custom: renderFiles },
+  { id: 'files', title: 'Photo', custom: renderFiles },
   { id: 'backup', title: 'Backup & reset', custom: renderBackup },
 ];
 
@@ -154,8 +154,10 @@ const BLANK_ENTRY = {
 };
 
 let state = {};
-let files = { resume: null, coverLetter: null, photo: null, certificates: null };
+let files = { photo: null };
 let saveTimer = null;
+
+const clean = (v) => String(v == null ? '' : v).trim();
 
 /* ───────── tiny DOM helper ───────── */
 function h(tag, attrs = {}, ...kids) {
@@ -194,11 +196,10 @@ function scheduleSave() {
 
 function updateMeter() {
   const keys = SECTIONS.flatMap((s) => (s.list || !s.fields ? [] : s.fields.filter((f) => f.key).map((f) => f.k)));
-  let total = keys.length + 3;
+  let total = keys.length + 2;
   let done = keys.filter((k) => String(state[k] || '').trim()).length;
   if ((state.experience || []).some((e) => e.title || e.company)) done++;
   if ((state.education || []).some((e) => e.school)) done++;
-  if (files.resume) done++;
   const pct = Math.round((done / total) * 100);
   document.getElementById('meterBar').style.width = pct + '%';
   document.getElementById('meterText').textContent = `Profile ${pct}% complete`;
@@ -211,7 +212,7 @@ function fieldControl(f, value, onValue, idBase) {
     const input = h('input', { type: 'checkbox', id });
     input.checked = !!value;
     input.addEventListener('change', () => onValue(input.checked));
-    return h('div', { class: 'field check ' + (f.w || '') }, h('label', { for: id }, input, h('span', { text: f.l })));
+    return h('div', { class: 'field check ' + (f.w || '') }, h('label', { for: id }, input, h('span', { text: f.l })), f.h ? h('p', { class: 'hint', text: f.h }) : null);
   }
   let input;
   if (f.t === 'select') {
@@ -293,9 +294,9 @@ const fmtSize = (n) => (n > 1024 * 1024 ? (n / 1024 / 1024).toFixed(1) + ' MB' :
 
 function renderFiles(body) {
   body.textContent = '';
-  body.append(h('p', { class: 'desc', text: 'Each goes into the matching upload field: Resume/CV (Lebenslauf), Cover letter (Anschreiben), Photo (Bewerbungsfoto), Certificates (Zeugnisse). PDF is the safest format; combine several certificates into one PDF.' }));
+  body.append(h('p', { class: 'desc', text: 'Optional. Goes into photo uploads (Bewerbungsfoto). Your resume, cover letter and certificates differ per company, so you attach those yourself: the extension outlines those upload fields in amber.' }));
   const row = h('div', { class: 'files' });
-  for (const [key, label, accept] of [['resume', 'Resume / CV'], ['coverLetter', 'Cover letter file'], ['photo', 'Photo (optional)', 'image/*'], ['certificates', 'Certificates / Zeugnisse (one PDF)']]) {
+  for (const [key, label, accept] of [['photo', 'Photo (optional)', 'image/*']]) {
     const rec = files[key];
     const input = h('input', { type: 'file', accept: accept || '.pdf,.doc,.docx,.txt,.rtf,.odt', id: 'file-' + key, class: 'visually-hidden' });
     input.addEventListener('change', async () => {
@@ -367,7 +368,7 @@ async function clearAll() {
   if (!confirm('Delete your whole profile and files from this browser? This can\'t be undone.')) return;
   await chrome.storage.local.clear();
   state = normalize({});
-  files = { resume: null, coverLetter: null, photo: null, certificates: null };
+  files = { photo: null };
   renderAll();
 }
 
@@ -379,6 +380,9 @@ function normalize(p) {
   out.customAnswers = Array.isArray(p.customAnswers) ? p.customAnswers : [];
   if (!out.experience.length) out.experience.push({ ...BLANK_ENTRY.experience });
   if (!out.education.length) out.education.push({ ...BLANK_ENTRY.education });
+  if (!clean(out.howDidYouHear)) out.howDidYouHear = 'Google';
+  if (!clean(out.anythingElse)) out.anythingElse = 'No';
+  if (out.autoConsent === undefined) out.autoConsent = true;
   if (!out.customAnswers.length) out.customAnswers.push({ question: 'Why do you want to work here? | Why are you interested in this role?', answer: '' });
   return out;
 }
@@ -404,10 +408,23 @@ function renderAll() {
   updateMeter();
 }
 
+// Resume, cover letter, certificates and start date differ per company: the
+// user attaches / enters them on each form. Drop anything saved earlier.
+async function forgetPerCompanyData() {
+  await chrome.storage.local.remove(['file_resume', 'file_coverLetter', 'file_certificates']);
+  const { profile } = await chrome.storage.local.get('profile');
+  if (profile && ('availableStartDate' in profile || 'availability' in profile)) {
+    delete profile.availableStartDate;
+    delete profile.availability;
+    await chrome.storage.local.set({ profile });
+  }
+}
+
 async function init() {
-  const store = await chrome.storage.local.get(['profile', 'file_resume', 'file_coverLetter', 'file_photo', 'file_certificates']);
+  await forgetPerCompanyData();
+  const store = await chrome.storage.local.get(['profile', 'file_photo']);
   state = normalize(store.profile || {});
-  files = { resume: store.file_resume || null, coverLetter: store.file_coverLetter || null, photo: store.file_photo || null, certificates: store.file_certificates || null };
+  files = { photo: store.file_photo || null };
   renderAll();
   try {
     const cmds = await chrome.commands.getAll();

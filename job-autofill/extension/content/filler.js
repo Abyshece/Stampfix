@@ -161,6 +161,12 @@
     [/^widow/i, ['widowed', 'verwitwet']], [/partnership/i, ['registered partnership', 'eingetragene lebenspartnerschaft', 'lebenspartnerschaft']],
     [/prefer|decline/i, ['prefer not to say', 'keine angabe', 'decline']],
   ];
+  const HEARD = [
+    [/^google/i, ['google', 'google search', 'google suche', 'google schlagwortsuche', 'google jobs', 'suchmaschine', 'search engine', 'internet', 'internetrecherche', 'online search']],
+    [/linkedin/i, ['linkedin']], [/xing/i, ['xing']], [/indeed/i, ['indeed']], [/stepstone/i, ['stepstone']],
+    [/referr|empfehl/i, ['empfehlung', 'mitarbeiterempfehlung', 'employee referral', 'referral', 'friend']],
+    [/website|homepage|career/i, ['company website', 'career site', 'karriereseite', 'unternehmenswebseite', 'homepage', 'website']],
+  ];
   const aliasCands = (table, v) => {
     if (!clean(v)) return [];
     const g = table.find(([re]) => re.test(clean(v)));
@@ -244,6 +250,7 @@
     { key: 'highestDegree', re: /\bhighest (level of )?(education|degree|qualification)\b|\b(education|degree) level\b|\blevel of (education|study)\b/ },
 
     { key: 'coverLetter', re: /\bcover ?letter\b|\bmotivation(al)? letter\b|\bnachricht an\b|\bpersonliche nachricht\b|\bmessage (to|for) (the )?(recruiter|hiring|team|us)\b/ },
+    { key: 'anythingElse', kinds: ['text'], re: /\banything else\b|\bsonst noch (etwas|was)\b|\bnoch etwas mitteilen\b|\b(weitere|sonstige) (anmerkungen|hinweise|bemerkungen|mitteilungen|kommentare)\b|^(anmerkungen|bemerkungen|kommentar|kommentare)$|\badditional (comments|remarks|notes)\b|\bis there anything (else )?(you|we)\b/ },
     { key: 'summary', re: /\b(professional |profile |personal )?summary\b|\babout (yourself|you|me)\b|\btell us (a bit |a little )?about (yourself|you)\b|\bintroduce yourself\b|\bbio\b|\bpersonal statement\b/ },
     { key: 'languages', re: /\blanguages?\b/, not: /\bprogramming\b/ },
     { key: 'skills', re: /\bskills?\b|\btechnologies\b|\btech stack\b/, not: /\byears\b/ },
@@ -905,6 +912,7 @@
       return;
     }
 
+    if (it.kind === 'checkbox' && ctx.P.autoConsent !== false && isPrivacyConsent(label)) { it.key = 'privacyConsent'; return; }
     if (label && SKIP_RE.test(label)) { it.key = '_skip'; return; }
 
     const custom = matchCustom(it, ctx.P.customAnswers);
@@ -947,6 +955,14 @@
     if (it.el.type === 'email') it.key = 'email';
     else if (it.el.type === 'tel') it.key = 'phone';
     else it.key = null;
+  }
+
+  // "I have read the privacy notice" / "Datenschutzhinweise gelesen" - but not
+  // newsletters, SMS, talent pools or contact about future jobs.
+  function isPrivacyConsent(label) {
+    if (!label) return false;
+    if (!/datenschutz|privacy|data protection|datenverarbeitung|verarbeitung (meiner|der|von) (personenbezogenen )?daten|\bgdpr\b|\bdsgvo\b|personal data|personenbezogen/.test(label)) return false;
+    return !/newsletter|marketing|\bsms\b|text messages?|whatsapp|future (vacancies|opportunities|jobs|roles|positions|openings)|talent ?pool|talentpool|weitere stellen|andere stellen|zukunftig|kunftig|contact me about|kontaktieren|aufbewahr\w* .{0,40}(monate|jahre|longer|langer)/.test(label);
   }
 
   function setSectionKey(it, sec, field, ctx) {
@@ -1011,6 +1027,12 @@
         return P.salutation ? T(P.salutation, { cands: uniq([P.salutation, ...(g ? g[1] : [])]) }) : null;
       }
       case 'dateOfBirth': return D(P.dateOfBirth, 'full');
+      case 'privacyConsent': return { type: 'bool', value: true };
+      case 'anythingElse': return YN(clean(P.anythingElse) || 'No');
+      case 'howDidYouHear': {
+        const v = clean(P.howDidYouHear) || 'Google';
+        return T(v, { cands: aliasCands(HEARD, v) });
+      }
       case 'maritalStatus': return T(P.maritalStatus, { cands: aliasCands(MARITAL, P.maritalStatus) });
       case 'employmentType': return T(P.employmentType, { cands: aliasCands(EMPLOYMENT_TYPES, P.employmentType) });
       case 'germanLevel':
@@ -1081,10 +1103,7 @@
         return y != null && clean(y) !== '' ? T(y, { numeric: parseFloat(y) }) : null;
       }
       case 'hasSkill': return { type: 'yesno', value: 'Yes' };
-      case 'availableStartDate': {
-        if (looksLikeDateBox(it)) return D(P.availableStartDate, 'full');
-        return T(P.availability) || D(P.availableStartDate, 'full');
-      }
+      case 'availableStartDate': return null; // differs per company: left for you
       case 'highestDegree': {
         const d = P.education && P.education[0] && P.education[0].degree;
         return T(d, { cands: degreeCands(d) });
@@ -1662,7 +1681,7 @@
     DEBUG = !!opts.debug;
     let store;
     try {
-      store = await chrome.storage.local.get(['profile', 'file_resume', 'file_coverLetter', 'file_photo', 'file_certificates']);
+      store = await chrome.storage.local.get(['profile', 'file_photo']);
     } catch (e) {
       return { error: 'The extension was updated. Reload this page and try again.' };
     }
@@ -1682,7 +1701,7 @@
       counters: {},
       skills: parseSkills(P),
       page: pageContext(),
-      files: { resume: store.file_resume, coverLetter: store.file_coverLetter, photo: store.file_photo, certificates: store.file_certificates },
+      files: { photo: store.file_photo },
       fileCount: items.filter((i) => i.kind === 'file').length,
     };
 
@@ -1712,16 +1731,13 @@
 
   async function fillFileItem(it, ctx, out) {
     let name = it.labelRaw.slice(0, 90) || 'File upload';
-    if (/^(attach|upload|choose|browse|select|add)( file)?\W*$/i.test(name) || name.length > 60) name = it.key === 'coverLetterFile' ? 'Cover letter' : it.key === 'resume' ? 'Resume/CV' : name.slice(0, 40);
+    const nice = { resume: 'Resume/CV', coverLetterFile: 'Cover letter', certificates: 'Certificates', photo: 'Photo' };
+    if (/^(attach|upload|choose|browse|select|add|drop)\b/i.test(name) || name.length > 60) name = nice[it.key] || name.slice(0, 40);
     const empty = !hasValue(it);
-    if (!it.key) {
-      if (empty && it.required) out.review.push({ label: name, required: true });
-      return;
-    }
-    const rec = ctx.files[it.key === 'coverLetterFile' ? 'coverLetter' : it.key];
+    const rec = it.key === 'photo' ? ctx.files.photo : null; // resume, cover letter, certificates: you attach those per company
     if (!rec) {
-      if (empty && (it.key === 'resume' || it.required)) {
-        out.review.push({ label: name + (it.key === 'resume' ? ' (no resume saved in your profile)' : ''), required: it.required });
+      if (empty && (it.required || /^(resume|coverLetterFile|certificates)$/.test(it.key || ''))) {
+        out.review.push({ label: name + ' (attach your file)', required: it.required });
         mark(it, 'review');
       }
       return;

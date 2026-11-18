@@ -140,8 +140,16 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   }
 });
 
-chrome.runtime.onInstalled.addListener((details) => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') chrome.runtime.openOptionsPage();
+  // Resume, cover letter, certificates and start date are attached / entered per company.
+  await chrome.storage.local.remove(['file_resume', 'file_coverLetter', 'file_certificates']);
+  const { profile } = await chrome.storage.local.get('profile');
+  if (profile && ('availableStartDate' in profile || 'availability' in profile)) {
+    delete profile.availableStartDate;
+    delete profile.availability;
+    await chrome.storage.local.set({ profile });
+  }
 });
 
 // Exposed for automated tests.
