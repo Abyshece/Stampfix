@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Fastned - Operations Lead DACH</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}.PhoneInput{display:flex;gap:8px}</style></head>
+<body>
+<!-- Like Recruitee: a country-code dropdown (button + closed menu) and a phone box pre-filled with "+49" -->
+<form>
+  <div><label for="ph-name">Full name *</label><input id="ph-name" name="candidate.name" autocomplete="name"></div>
+  <div><label for="ph-tel">Phone number *</label>
+    <div class="PhoneInput">
+      <div><button type="button" id="ph-cc" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-controls="ph-menu" aria-label="Select country calling code: Germany">Germany</button>
+        <div id="ph-menu" role="listbox" aria-expanded="false" aria-labelledby="ph-cc" style="position:absolute;height:0;width:240px;overflow:hidden"></div></div>
+      <input type="tel" id="ph-tel" name="candidate.phone" autocomplete="tel" value="+49">
+    </div></div>
+  <fieldset><legend>Do you speak fluent German? *</legend>
+    <input type="radio" name="de" id="ph-de-y" value="true"><label for="ph-de-y">Yes</label>
+    <input type="radio" name="de" id="ph-de-n" value="false"><label for="ph-de-n">No</label></fieldset>
+  <fieldset><legend>Do you speak English?</legend>
+    <input type="radio" name="en" id="ph-en-y" value="true"><label for="ph-en-y">Yes</label>
+    <input type="radio" name="en" id="ph-en-n" value="false"><label for="ph-en-n">No</label></fieldset>
+</form>
+</body></html>

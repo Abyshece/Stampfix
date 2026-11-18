@@ -119,7 +119,7 @@ extension/
 test/
   run-tests.cjs        End-to-end tests against mock Greenhouse, Lever, Workday,
                        LinkedIn, React, Google Forms, German, card-style and
-                       shadow-DOM/iframe and P&I LOGA-style pages (249 checks)
+                       shadow-DOM/iframe and P&I LOGA-style pages (256 checks)
   real-sites.cjs       Fills live public application pages (never submits)
   pages/               The mock pages
 ```

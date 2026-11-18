@@ -313,6 +313,18 @@ async function expectAll(name, target, table) {
   check('loga', 'start date then left for you', r.review.some((x) => /arbeitsbeginn/i.test(x.label)), true);
   await setProfile({ startDate: '2027-01-11', startAfter: '3 months' });
 
+  /* Recruitee-style phone: box pre-filled with a dialling code, closed country menu */
+  await open('phone.html');
+  r = await fill();
+  report('Phone widget', r);
+  await expectAll('phone', page, [['#ph-name', 'Alex Rivera'], ['#ph-tel', '+1 415-555-0134'], ['#ph-de-n', true], ['#ph-de-y', false], ['#ph-en-y', true]]);
+  check('phone', 'closed country menu not listed', r.review.some((x) => /germany/i.test(x.label)), false);
+  await setProfile({ phoneCountryCode: '+49', phone: '0151 23456789' });
+  await open('phone.html');
+  await fill();
+  check('phone', 'keeps +49 and drops the leading 0', await val(page, '#ph-tel'), '+49 151 23456789');
+  await setProfile({ phoneCountryCode: '+1', phone: '415-555-0134' });
+
   /* Running again is harmless: nothing is changed. */
   await open('greenhouse.html');
   await fill();

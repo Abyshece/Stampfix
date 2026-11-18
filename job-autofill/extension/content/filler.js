@@ -191,6 +191,8 @@
     { key: 'placeOfBirth', re: /\bplace of birth\b|\bbirth ?place\b|\bcity of birth\b|\bgeburtsort\b/ },
     { key: 'dateOfBirth', re: /\bdate of birth\b|\bbirth ?date\b|\bdob\b|\bbirthday\b|\bgeburtsdatum\b/ },
     { key: 'maritalStatus', re: /\bmarital status\b|\bfamilienstand\b|\bcivil status\b/ },
+    { key: 'speaksGerman', kinds: CHOICE_KINDS, re: /\b(do|can) you speak (fluent |good |business )?german\b|\bfluent (in )?german\b|\bgerman speaker\b|\bsprechen sie (fliessend |gut )?deutsch\b|\bsprichst du (fliessend |gut )?deutsch\b/ },
+    { key: 'speaksEnglish', kinds: CHOICE_KINDS, re: /\b(do|can) you speak (fluent |good |business )?english\b|\bfluent (in )?english\b|\bsprechen sie (fliessend |gut )?englisch\b|\bsprichst du (fliessend |gut )?englisch\b/ },
     { key: 'germanLevel', re: /\bgerman\b.*\b(level|skills?|proficiency|knowledge|fluency)\b|\b(level|skills?|proficiency|knowledge|command) (of|in) german\b|\bdeutschkenntnisse\b|\bdeutsch\w* ?(sprach)?kenntnisse\b|\bniveau deutsch\b|^deutsch$|\bdo you speak german\b/ },
     { key: 'englishLevel', re: /\benglish\b.*\b(level|skills?|proficiency|knowledge|fluency)\b|\b(level|skills?|proficiency|knowledge|command) (of|in) english\b|\benglischkenntnisse\b|\benglisch\w* ?(sprach)?kenntnisse\b|\bniveau englisch\b|^englisch$|\bdo you speak english\b/ },
     { key: 'fullName', re: /\bname (first (and|&) last|first last)\b|\bfirst (and|&) last names?\b|\bfull name\b/, not: PEOPLE },
@@ -535,6 +537,14 @@
     return !!(dlg && /\bcookies?\b/i.test((dlg.getAttribute('aria-label') || '') + ' ' + (dlg.textContent || '').slice(0, 600)) && !dlg.querySelector('input[type="email"],input[type="file"],textarea'));
   }
 
+  // The list that opens under another dropdown (aria-controls / aria-labelledby point at each other).
+  function isPopupOfAnother(el) {
+    const root = el.getRootNode();
+    if (el.id && root.querySelector && root.querySelector(`[aria-controls~="${CSS.escape(el.id)}"],[aria-owns~="${CSS.escape(el.id)}"]`)) return true;
+    const lb = (el.getAttribute('aria-labelledby') || '').split(/\s+/).filter(Boolean);
+    return lb.some((id) => { const n = byId(root, id); return n && n !== el && (n.getAttribute('role') === 'combobox' || n.getAttribute('aria-haspopup') === 'listbox'); });
+  }
+
   /* ───────────────────────── collect fields ───────────────────────── */
 
   const INPUT_SKIP = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'password', 'range', 'color', 'search']);
@@ -602,7 +612,7 @@
         ariaChecks.get(g).push(el);
         continue;
       }
-      if (el.getAttribute('role') === 'listbox' && el.closest('[role="combobox"]')) continue;
+      if (el.getAttribute('role') === 'listbox' && (el.closest('[role="combobox"]') || isPopupOfAnother(el) || el.getBoundingClientRect().height < 4)) continue;
       if (el.readOnly && !isComboEl(el)) continue;
 
       if (tag === 'SELECT') {
@@ -1038,6 +1048,14 @@
       case 'germanLevel':
       case 'englishLevel': return T(P[k], { cands: aliasCands(LANG_LEVELS, P[k]) });
       case 'willingToTravel': return YN(P.willingToTravel);
+      case 'speaksGerman':
+      case 'speaksEnglish': {
+        const lvl = clean(P[k === 'speaksGerman' ? 'germanLevel' : 'englishLevel']).toUpperCase();
+        if (!lvl) return null;
+        const fluentAsked = /\b(fluent|fliessend|business|verhandlungssicher)\b/.test(it.primary + ' ' + it.context);
+        const yes = /^(NATIVE|C2|C1)$/.test(lvl) || (lvl === 'B2' && !fluentAsked);
+        return YN(yes ? 'Yes' : 'No');
+      }
       case 'weeklyHours': return T(P.weeklyHours, { numeric: parseFloat(P.weeklyHours) });
       case 'postalCity': return T([P.postalCode, P.city].filter(Boolean).join(' '));
       case 'emailAndPhone': return T([P.email, [P.phoneCountryCode, P.phone].filter(Boolean).join(' ')].filter(Boolean).join(', '));
@@ -1247,6 +1265,20 @@
     if (max && max > 0 && s.length > max) s = s.slice(0, max);
     return s;
   }
+
+  // Phone boxes that come pre-filled with a dialling code (react-phone-number-input,
+  // intl-tel-input…): keep the code, add the number without its leading 0.
+  function phoneText(it, val) {
+    const typed = textFor(val, it);
+    const existing = clean(it.el.value);
+    if (!isDialCodeOnly(existing)) return typed;
+    if (/^\s*(\+|00)/.test(typed)) return typed; // your number already has a country code
+    const code = existing.replace(/\s+/g, '').replace(/^00/, '+');
+    const own = clean(ctx_P_phoneCode).replace(/\s+/g, '').replace(/^00/, '+');
+    if (own && own !== code) return own + ' ' + typed.replace(/^\s*0+/, ''); // the box defaulted to another country
+    return code + ' ' + typed.replace(/^\s*0+/, '');
+  }
+  let ctx_P_phoneCode = '';
 
   /* ───────────────────────── option matching ───────────────────────── */
 
@@ -1568,10 +1600,12 @@
     return input.files.length > 0;
   }
 
+  const isDialCodeOnly = (v) => /^\s*(\+|00)\s*\d{1,4}\s*$/.test(String(v || ''));
+
   function hasValue(it) {
     const el = it.el;
     switch (it.kind) {
-      case 'text': return clean(el.value) !== '';
+      case 'text': return clean(el.value) !== '' && !(it.key === 'phone' && isDialCodeOnly(el.value));
       case 'select': {
         const o = el.options[el.selectedIndex];
         return !!o && !isPlaceholderOpt(o);
@@ -1650,6 +1684,7 @@
     const name = it.labelRaw.slice(0, 90) || '(unlabelled field)';
 
     if (!val) {
+      if (ctx.opts.debug) console.log('[jaf] no value', it.kind, it.el.tagName, JSON.stringify(name), '→', it.key, 'empty:', empty);
       if (empty && (it.labelRaw || it.required) && it.kind !== 'file') {
         out.review.push({ label: name, required: it.required });
         mark(it, 'review');
@@ -1666,7 +1701,7 @@
     let ok = false;
     switch (it.kind) {
       case 'text':
-        ok = val.type === 'text' && looksLikeTypeahead(it) ? await setTypeahead(it, val, cands) : setText(it.el, textFor(val, it));
+        ok = val.type === 'text' && looksLikeTypeahead(it) ? await setTypeahead(it, val, cands) : setText(it.el, it.key === 'phone' ? phoneText(it, val) : textFor(val, it));
         break;
       case 'select': ok = setSelect(it.el, cands, numeric); break;
       case 'radio': ok = await setGroup(it, cands, numeric); break;
@@ -1715,6 +1750,7 @@
     out.fields = items.length;
     if (!items.length) return out;
 
+    ctx_P_phoneCode = P.phoneCountryCode || '';
     const ctx = {
       P,
       opts,
