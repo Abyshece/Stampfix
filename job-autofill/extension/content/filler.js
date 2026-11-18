@@ -46,7 +46,8 @@
   const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
   const MONTHS_DE = ['januar', 'februar', 'marz', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'dezember'];
   const isMonthName = (t) => MONTHS.some((m) => t === m || t === m.slice(0, 3)) || MONTHS_DE.some((m) => t === m || t === m.slice(0, 3)) || t === 'maerz' || t === 'mrz';
-  const pageLang = () => (document.documentElement.lang || navigator.language || '').slice(0, 2).toLowerCase();
+  let GERMAN_PAGE = false;
+  const pageLang = () => (GERMAN_PAGE ? 'de' : (document.documentElement.lang || '').slice(0, 2).toLowerCase());
 
   const US_STATES = {
     AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado', CT: 'Connecticut',
@@ -532,8 +533,22 @@
   const INPUT_SKIP = new Set(['hidden', 'submit', 'button', 'reset', 'image', 'password', 'range', 'color', 'search']);
   const HONEYPOT = /honeypot|hp_|^hp$|leave (this )?(field )?(blank|empty)|bot_?check|\bnospam\b/i;
 
+  // An open pop-up window with form fields (LinkedIn Easy Apply, "Apply" modals):
+  // fields behind it are not part of what you're filling in.
+  function openModal(roots) {
+    const vw = window.innerWidth * window.innerHeight;
+    const cands = qa(roots, '[aria-modal="true"],[role="dialog"],dialog[open]').filter((d) => {
+      if (!isVisible(d) || inCookieBanner(d)) return false;
+      if (d.querySelectorAll(CONTROL_SEL).length < 2) return false;
+      const r = d.getBoundingClientRect();
+      return d.getAttribute('aria-modal') === 'true' || d.tagName === 'DIALOG' || r.width * r.height > vw * 0.15;
+    });
+    return cands.length ? cands[cands.length - 1] : null;
+  }
+
   function collect(roots) {
     const items = [];
+    const modal = openModal(roots);
     const radioGroups = new Map();
     const checkboxes = [];
     const ariaRadioGroups = new Map();
@@ -547,7 +562,7 @@
       if (tag === 'INPUT' && INPUT_SKIP.has(type)) continue;
       if (HONEYPOT.test((el.name || '') + ' ' + (el.id || '') + ' ' + (el.getAttribute('aria-label') || ''))) continue;
       if (el.getAttribute('aria-hidden') === 'true' && type !== 'file') continue;
-      if (type !== 'file' && el.closest('[aria-hidden="true"]')) continue;
+      if (modal && !modal.contains(el)) continue; // behind an open pop-up window
       if (el.closest('#__jaf_toast') || inCookieBanner(el)) continue;
 
       if (type === 'file') {
@@ -879,7 +894,7 @@
         /\bcover\b|\banschreiben\b|\bmotivationsschreiben\b/.test(h) ? 'coverLetterFile'
           : /\b(resume|cv|curriculum|lebenslauf)\b/.test(h) ? 'resume'
           : /\b(photo|foto|bewerbungsfoto|picture|portrait|bild|profilbild)\b/.test(h) ? 'photo'
-          : /\b(zeugnis\w*|arbeitszeugnis\w*|certificates?|zertifikat\w*|transcripts?|diplomas?|nachweise?)\b/.test(h) ? 'certificates'
+          : /zeugnis|\bcertificates?\b|zertifikat|\btranscripts?\b|\bdiplomas?\b|nachweise?\b/.test(h) ? 'certificates'
           : /\b(portfolio|writing|sample|additional|supporting|other|image|avatar|weitere|sonstige|anlagen?)\b/.test(h) ? 'none'
           : null;
       const own = norm([it.primary, it.context, it.attrs].join(' '));
@@ -916,7 +931,7 @@
 
     for (const src of sources(it)) {
       for (const r of RULES) if (ruleHits(r, src, it, ctx)) { it.key = r.key; return; }
-      for (const r of DE_RULES) if (ruleHits(r, src, it, ctx)) { it.key = r.key; return; }
+      for (const r of DE_RULES) if (ruleHits(r, src, it, ctx)) { it.key = r.key; it.germanLabel = true; return; }
     }
 
     for (const src of sources(it)) {
@@ -1067,7 +1082,7 @@
       }
       case 'hasSkill': return { type: 'yesno', value: 'Yes' };
       case 'availableStartDate': {
-        if (it.el.type === 'date' || it.el.type === 'month' || /\b(mm|dd|yyyy)\b/.test(it.ph)) return D(P.availableStartDate, 'full');
+        if (looksLikeDateBox(it)) return D(P.availableStartDate, 'full');
         return T(P.availability) || D(P.availableStartDate, 'full');
       }
       case 'highestDegree': {
@@ -1108,6 +1123,16 @@
     return ca.some((x) => cb.includes(x));
   }
   const splitList = (v) => uniq(String(v || '').split(/[,;\n]/).map((x) => clean(x.replace(/\(.*?\)/g, ''))));
+
+  // A date picker, even when it's a plain text box (GWT DateBox, flatpickr, jQuery UI…).
+  function looksLikeDateBox(it) {
+    const el = it.el;
+    if (el.type === 'date' || el.type === 'month') return true;
+    const hints = [el.className, el.getAttribute('aria-roledescription'), el.getAttribute('data-provide'), el.getAttribute('placeholder'), it.attrs].join(' ');
+    if (/date ?box|datepicker|date-picker|flatpickr|hasdatepicker|datumsfeld|\bdatum\b|\bdate\b|\b(mm|dd|tt)\W+(mm|dd|tt)\W+(yyyy|jjjj)\b/i.test(hints)) return true;
+    const box = el.parentElement && el.parentElement.parentElement;
+    return !!(box && box.querySelector('[class*="calendar" i],[class*="kalender" i],[class*="datepicker" i],[title*="kalender" i],[title*="calendar" i]'));
+  }
 
   function countryCands(c) {
     const n = norm(c);
@@ -1158,7 +1183,7 @@
     if ((f = hint.match(/mm([/.\- ])yyyy/i))) return `${pad2(m)}${f[1]}${y}`;
     if ((f = hint.match(/yyyy([/.\- ])mm/i))) return `${y}${f[1]}${pad2(m)}`;
     if (/month\s*\/\s*year|monat\s*\/\s*jahr/i.test(hint)) return `${pad2(m)}/${y}`;
-    const de = /^(de|at|ch)$/.test(pageLang()) || pageLang() === 'de';
+    const de = pageLang() === 'de';
     const monthOnly = it.key && /^(exp|edu)\./.test(it.key);
     if (de) return monthOnly ? `${pad2(m)}.${y}` : `${pad2(d)}.${pad2(m)}.${y}`;
     return monthOnly ? `${pad2(m)}/${y}` : `${pad2(m)}/${pad2(d)}/${y}`;
@@ -1313,13 +1338,25 @@
     return opts.filter((o) => isVisible(o) && o.getAttribute('aria-disabled') !== 'true' && !/^(loading|no (options|results|items|matches))/i.test(optText(o)));
   }
 
-  async function pollOptions(el, cands, numeric, wait) {
+  const OPTIONISH_SEL = '[role="option"],[class*="option" i],[class*="item" i],[class*="choice" i],[class*="suggest" i],li';
+  function optionish(roots) {
+    return qa(roots, OPTIONISH_SEL).filter((o) => {
+      if (o.matches('select,option,input,textarea') || o.querySelector('input,select,textarea')) return false;
+      const t = optText(o);
+      if (!t || t.length > 120) return false;
+      if (o.children.length && [...o.children].some((c) => optText(c) === t)) return false; // innermost only
+      return isVisible(o);
+    });
+  }
+
+  async function pollOptions(el, cands, numeric, wait, before) {
     const end = Date.now() + wait;
     let firstSeen = 0;
     let seen = false;
     while (Date.now() < end) {
       await sleep(120);
-      const opts = visibleOptions(el);
+      let opts = visibleOptions(el);
+      if (!opts.length && before) opts = optionish(allRoots()).filter((o) => !before.has(o));
       if (!opts.length) continue;
       seen = true;
       const i = bestIndex(opts.map(optText), cands, numeric);
@@ -1411,9 +1448,15 @@
   async function setCombo(it, cands, numeric, search) {
     const el = it.el;
     const isInput = el.tagName === 'INPUT';
+    const before = new Set(optionish(allRoots()));
     realClick(el);
     if (isInput) pressKey(el, 'ArrowDown');
-    let r = await pollOptions(el, cands, numeric, 900);
+    let r = await pollOptions(el, cands, numeric, 900, before);
+    if (!r.pick && !r.seen) {
+      // Some dropdowns open from the arrow button next to the box.
+      const arrow = el.parentElement && el.parentElement.parentElement && el.parentElement.parentElement.querySelector('[class*="arrow" i],[class*="down" i],[class*="toggle" i],[class*="action-icon" i],button');
+      if (arrow && arrow !== el && isVisible(arrow)) { realClick(arrow); r = await pollOptions(el, cands, numeric, 900, before); }
+    }
     if (DEBUG) console.log('[jaf] combo open', JSON.stringify(it.labelRaw), 'options:', visibleOptions(el).length, 'pick:', r.pick && optText(r.pick));
     let sawAny = r.seen;
     if (!r.pick && isInput) {
@@ -1421,7 +1464,7 @@
       const longest = first.split(/[\s,()\-–]+/).filter((w) => w.length > 3).sort((a, b) => b.length - a.length)[0];
       for (const term of uniq([search, cands[0], first.split(/[,(]/)[0], longest, cands[1]]).slice(0, 4)) {
         typeInto(el, term);
-        r = await pollOptions(el, cands, numeric, 3000);
+        r = await pollOptions(el, cands, numeric, 3000, before);
         if (DEBUG) console.log('[jaf] combo typed', JSON.stringify(term), 'options:', visibleOptions(el).map(optText).slice(0, 6), 'pick:', r.pick && optText(r.pick));
         sawAny = sawAny || r.seen;
         if (r.pick) break;
@@ -1649,6 +1692,7 @@
       try { resolve(it, ctx); } catch (e) { it.key = null; }
     }
     ctx.hasCityField = items.some((i) => i.key === 'city' || i.key === 'postalCode' || i.key === 'postalCity');
+    GERMAN_PAGE = /^de/i.test(document.documentElement.lang || '') || items.filter((i) => i.germanLabel).length >= 2;
     if (items.some((i) => i.key === 'firstName') && !items.some((i) => i.key === 'lastName')) {
       for (const i of items) if (i.key === 'fullName' && /^(name|surname)$/.test(i.primary || i.context)) i.key = 'lastName';
     }

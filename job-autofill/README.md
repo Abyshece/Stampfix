@@ -71,6 +71,7 @@ Filled with a fake profile, never submitted, no files uploaded:
 | Lever (Palantir) | 15 filled, incl. location search box, citizenship and language checkboxes |
 | Ashby (Linear, Ramp) | Name, email, links, country filled; the rest are essay questions |
 | Personio (ottonova EN, thermondo DE) | 8 of 10 and 5 of 6 filled; German labels understood |
+| P&I LOGA (Helios) | 10 filled: Anrede, names, both e-mails, phone, city, start date (TT.MM.JJJJ), salary, source; left: consent, title, resume, optional message |
 | Recruitee (bunq) | Personal fields, salary, "worked here before"; rest are essay questions |
 | Teamtailor | 7 filled |
 | Rippling | 11 filled incl. EEO dropdowns |
@@ -108,7 +109,7 @@ extension/
 test/
   run-tests.cjs        End-to-end tests against mock Greenhouse, Lever, Workday,
                        LinkedIn, React, Google Forms, German, card-style and
-                       shadow-DOM/iframe pages (230 checks)
+                       shadow-DOM/iframe and P&I LOGA-style pages (236 checks)
   real-sites.cjs       Fills live public application pages (never submits)
   pages/               The mock pages
 ```

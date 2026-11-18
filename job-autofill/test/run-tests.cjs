@@ -287,6 +287,13 @@ async function expectAll(name, target, table) {
   report('Card form', r);
   await expectAll('cards', page, [['#c-first', 'Alex'], ['#c-email-hidden', ''], ['#c-city', 'San Francisco'], ['#c-slid', ''], ['#r-name', ''], ['#r-email', ''], ['#r-phone', '']]);
 
+  /* P&I LOGA style (Helios): aria-hidden app, div options, text-box date picker */
+  await open('loga.html');
+  r = await fill();
+  report('LOGA style', r);
+  await expectAll('loga', page, [['#l-anrede', 'Herr'], ['#l-vorname', 'Alex'], ['#l-nachname', 'Rivera'], ['#l-mail2', 'alex.rivera@example.com'],
+    ['#l-start', '11.01.2027'], ['#l-zeugnis', 'Zeugnisse.pdf']]);
+
   /* Running again is harmless: nothing is changed. */
   await open('greenhouse.html');
   await fill();

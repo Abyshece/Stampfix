@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Bewerber Web</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}td{padding:4px}.pop{position:absolute;background:#fff;border:1px solid #999}.gwt-combo-box-option-cell{padding:3px 8px;cursor:pointer}</style></head>
+<body>
+<!-- Like P&I LOGA "Bewerber Web" (Helios): the whole app is marked aria-hidden,
+     dropdown options are plain divs, the date picker is a text box. -->
+<div aria-hidden="true">
+<table>
+  <tr><td><label id="L1">Anrede<span>*</span></label></td><td><input type="text" class="gwt-combo-box-input" role="combobox" aria-expanded="false" aria-labelledby="L1" id="l-anrede"></td><td><div class="combo-box-action-icon"></div></td></tr>
+  <tr><td><label id="L2">Vorname<span>*</span></label></td><td><input type="text" class="LG-TextBox" aria-labelledby="L2" id="l-vorname" name="d31760f2-7219-40be-85c6-834f192408e3"></td></tr>
+  <tr><td><label id="L3">Nachname<span>*</span></label></td><td><input type="text" class="LG-TextBox" aria-labelledby="L3" id="l-nachname"></td></tr>
+  <tr><td><label id="L4">E-Mail Bestätigung<span>*</span></label></td><td><input type="text" class="LG-TextBox" aria-labelledby="L4" id="l-mail2"></td></tr>
+  <tr><td><label id="L5">Frühester Arbeitsbeginn</label></td><td><input type="text" class="gwt-DateBox" aria-roledescription="Datumsfeld" aria-labelledby="L5" id="l-start"></td></tr>
+  <tr><td><label id="L6">Abschlusszeugnis</label></td><td><input type="file" name="fileUploader" id="l-zeugnis"></td></tr>
+</table>
+</div>
+<script>
+  const inp = document.getElementById('l-anrede');
+  inp.addEventListener('click', () => {
+    document.querySelectorAll('.pop').forEach((p) => p.remove());
+    const pop = document.createElement('div'); pop.className = 'pop';
+    for (const o of ['Frau', 'Herr', 'Divers', 'keine Angabe']) {
+      const d = document.createElement('div'); d.className = 'gwt-combo-box-option-cell'; d.textContent = o;
+      d.addEventListener('click', () => { inp.value = o; pop.remove(); });
+      pop.append(d);
+    }
+    document.body.append(pop);
+  });
+</script>
+</body></html>

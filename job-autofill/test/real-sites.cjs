@@ -16,7 +16,7 @@ const SHOTS = process.env.SHOTS;
 const urls = process.argv.slice(2);
 
 const PROFILE = {
-  firstName: 'Alex', lastName: 'Rivera', email: 'alex.rivera@example.com', phoneCountryCode: '+1', phone: '415-555-0134',
+  salutation: 'Mr', firstName: 'Alex', lastName: 'Rivera', email: 'alex.rivera@example.com', phoneCountryCode: '+1', phone: '415-555-0134',
   address1: '500 Market St', city: 'San Francisco', state: 'CA', postalCode: '94105', country: 'United States',
   linkedin: 'https://linkedin.com/in/alexrivera-test', github: 'https://github.com/alexrivera-test', portfolio: 'https://alexrivera.dev',
   currentTitle: 'Data Engineer', currentCompany: 'Initech', yearsExperience: '7', howDidYouHear: 'LinkedIn', desiredSalary: '150000',
