@@ -334,6 +334,24 @@ async function expectAll(name, target, table) {
     ['#pp-li', 'https://linkedin.com/in/alexrivera-test'], ['#pp-de-n', true], ['#pp-en-y', true], ['#pp-age', '25-34'], ['#pp-consent', true], ['#pp-future', false]]);
   check('pinpoint', 'question names without yes/no', r.review.some((x) => /\b(yes|no)$/i.test(x.label)), false);
 
+  /* Ashby-style: Yes/No toggle buttons, "Yes"-labelled privacy box, no console warnings while reading labels */
+  const warnings = [];
+  const onConsole = (m) => { if (/cannot be parsed|out of range/i.test(m.text())) warnings.push(m.text()); };
+  await open('ashby.html');
+  page.on('console', onConsole); // only warnings caused while filling (the page logs one itself as it loads)
+  r = await fill();
+  report('Ashby style', r);
+  const pressed = (id) => page.evaluate((id) => document.getElementById(id).getAttribute('aria-pressed') === 'true', id);
+  check('ashby', 'name', await val(page, '#_systemfield_name'), 'Alex Rivera');
+  check('ashby', 'authorised: Yes', await pressed('auth-yes'), true);
+  check('ashby', 'sponsorship: No', await pressed('sp-no'), true);
+  check('ashby', 'relocate: Yes', await pressed('rel-yes'), true);
+  check('ashby', 'privacy box ticked', await val(page, '#privacy-yes'), true);
+  check('ashby', 'something to tell us', await val(page, '#tell'), 'No');
+  check('ashby', 'no hidden checkbox listed', r.review.some((x) => /^(yes|no)$/i.test(x.label)), false);
+  check('ashby', 'no "cannot be parsed" warnings', warnings.join(' | '), '');
+  page.off('console', onConsole);
+
   /* Running again is harmless: nothing is changed. */
   await open('greenhouse.html');
   await fill();
@@ -380,8 +398,23 @@ async function expectAll(name, target, table) {
   check('popup', 'result headline', await pop.textContent('.headline'), 'Filled 2 fields');
   check('popup', 'no script errors', pageErrors.join(' | '), '');
 
-  console.log(`\n${passes} checks passed, ${failures} failed`);
+  /* Updating: the same extension loaded from a different folder keeps its ID and your profile */
   await ctx.close();
+  const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'jaf-update-')) + '/job-autofill-extension 2';
+  fs.cpSync(EXT, copy, { recursive: true });
+  const ctx2 = await chromium.launchPersistentContext(userDir, { headless: true, channel: 'chromium', args: [`--disable-extensions-except=${copy}`, `--load-extension=${copy}`] });
+  let [sw2] = ctx2.serviceWorkers();
+  if (!sw2) sw2 = await ctx2.waitForEvent('serviceworker');
+  check('update', 'same extension ID from another folder', sw2.url().split('/')[2], extId);
+  check('update', 'profile kept after update', (await sw2.evaluate(() => chrome.storage.local.get('profile'))).profile.firstName, 'Alexandra');
+  await sw2.evaluate(() => chrome.storage.local.clear());
+  const opt2 = await ctx2.newPage();
+  await opt2.goto(`chrome-extension://${extId}/options/options.html`);
+  await opt2.waitForSelector('#basics-firstName');
+  check('update', 'empty profile offers import', await opt2.isVisible('#importBanner'), true);
+  await ctx2.close();
+
+  console.log(`\n${passes} checks passed, ${failures} failed`);
   srv.close();
   process.exit(failures ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(2); });

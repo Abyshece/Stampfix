@@ -1,22 +1,46 @@
 {
   "manifest_version": 3,
   "name": "Job Autofill",
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1V53SKgG9vXZBP/kwyUkiKoAMHtpXqTnhEb2rQyXTPFHbjOLE883lKvkNg9FhoFe+5L5XrhCj7rsRaO7Cs4VoK90v3UVU2PWED6U/IKACn6mth0lt73iEjRIHVeMDrO5+qu8IlpPEMnP3dHU6yqTpggj45Q7TmtYH74iQKSRtcFgArgMuRTPpDC9MjwRpe8bmowcQG5ckZLGGg8eIbt2aZlBuZZ93hYyHKXSybSnqPWbQ7OpTVeideinXlX9dZ7GUJjUk2ImqOUurEzk+2fiJBzrsFMT3BTaNsDoKRChUq0Iwoo621nmkO871rowu9ryVVRvmZfPDqrDAWuXO60u4QIDAQAB",
   "description": "Save your details once, then fill job applications on any site (Greenhouse, Lever, Workday, LinkedIn and more) in one click. Data stays in your browser.",
-  "permissions": ["storage", "unlimitedStorage", "scripting"],
-  "host_permissions": ["<all_urls>"],
-  "background": { "service_worker": "background.js" },
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_title": "Job Autofill",
     "default_popup": "popup/popup.html",
-    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" }
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
   },
-  "options_ui": { "page": "options/options.html", "open_in_tab": true },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
   "commands": {
     "fill-page": {
-      "suggested_key": { "default": "Alt+Shift+F", "mac": "Alt+Shift+F" },
+      "suggested_key": {
+        "default": "Alt+Shift+F",
+        "mac": "Alt+Shift+F"
+      },
       "description": "Autofill the job application on this page"
     }
   },
-  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" }
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }

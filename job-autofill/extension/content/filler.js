@@ -253,7 +253,7 @@
     { key: 'highestDegree', re: /\bhighest (level of )?(education|degree|qualification)\b|\b(education|degree) level\b|\blevel of (education|study)\b/ },
 
     { key: 'coverLetter', re: /\bcover ?letter\b|\bmotivation(al)? letter\b|\bnachricht an\b|\bpersonliche nachricht\b|\bmessage (to|for) (the )?(recruiter|hiring|team|us)\b/ },
-    { key: 'anythingElse', kinds: ['text'], re: /\banything else\b|\bsonst noch (etwas|was)\b|\bnoch etwas mitteilen\b|\b(weitere|sonstige) (anmerkungen|hinweise|bemerkungen|mitteilungen|kommentare)\b|^(anmerkungen|bemerkungen|kommentar|kommentare)$|\badditional (comments|remarks|notes)\b|\bis there anything (else )?(you|we)\b/ },
+    { key: 'anythingElse', kinds: ['text'], re: /\banything else\b|\bsomething (else )?(you want|you d like|you would like|youd like) to (tell|share with) us\b|\banything (you want|you d like|youd like|you would like) to (tell|share with) us\b|\bsonst noch (etwas|was)\b|\bnoch etwas mitteilen\b|\b(weitere|sonstige) (anmerkungen|hinweise|bemerkungen|mitteilungen|kommentare)\b|^(anmerkungen|bemerkungen|kommentar|kommentare)$|\badditional (comments|remarks|notes)\b|\bis there anything (else )?(you|we)\b/ },
     { key: 'summary', re: /\b(professional |profile |personal )?summary\b|\babout (yourself|you|me)\b|\btell us (a bit |a little )?about (yourself|you)\b|\bintroduce yourself\b|\bbio\b|\bpersonal statement\b/ },
     { key: 'languages', re: /\blanguages?\b/, not: /\bprogramming\b/ },
     { key: 'skills', re: /\bskills?\b|\btechnologies\b|\btech stack\b/, not: /\byears\b/ },
@@ -402,11 +402,29 @@
     return false;
   }
 
-  function textWithoutControls(node) {
+  // The text inside an element, leaving out form controls, buttons, scripts and
+  // pop-up lists. Walks the page instead of copying it.
+  const SKIP_TEXT_TAGS = new Set(['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'OPTION', 'SCRIPT', 'STYLE', 'NOSCRIPT', 'TEMPLATE', 'SVG']);
+  function textWithoutControls(node, alsoSkip) {
     if (!node) return '';
-    const c = node.cloneNode(true);
-    c.querySelectorAll('input,select,textarea,button,option,script,style,svg,[role="listbox"],[role="option"]').forEach((n) => n.remove());
-    return clean(c.textContent);
+    if (node.nodeType === 3) return clean(node.nodeValue);
+    let out = '';
+    const walk = (n) => {
+      for (let c = n.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType === 3) out += c.nodeValue;
+        else if (c.nodeType === 1) {
+          const tag = c.tagName.toUpperCase();
+          if (SKIP_TEXT_TAGS.has(tag) || (alsoSkip && alsoSkip.has(tag))) continue;
+          const role = c.getAttribute('role');
+          if (role === 'listbox' || role === 'option') continue;
+          out += ' ';
+          walk(c);
+          out += ' ';
+        }
+      }
+    };
+    walk(node);
+    return clean(out);
   }
 
   function labelsText(el) {
@@ -513,7 +531,7 @@
     return clean(t);
   }
 
-  const isChecked = (e) => (e.tagName === 'INPUT' ? e.checked : e.getAttribute('aria-checked') === 'true');
+  const isChecked = (e) => (e.tagName === 'INPUT' ? e.checked : e.getAttribute('aria-checked') === 'true' || e.getAttribute('aria-pressed') === 'true');
   const isPlaceholderOpt = (o) =>
     (!o.value && !clean(o.text)) || (/^(select|choose|please|pick|--|—|none selected|-+$|bitte|auswahl|ausw[aä]hlen|w[aä]hlen|keine auswahl)/i.test(clean(o.text)) && (o.index === 0 || !o.value));
   const optText = (o) => clean(o.innerText || o.textContent || '');
@@ -619,7 +637,11 @@
         ariaRadioGroups.get(g).push(el);
         continue;
       }
-      if (type === 'checkbox') { checkboxes.push(el); continue; }
+      if (type === 'checkbox') {
+        if (el.parentElement && el.parentElement.querySelectorAll(':scope > button[aria-pressed]').length >= 2) continue;
+        checkboxes.push(el);
+        continue;
+      }
       if (el.getAttribute('role') === 'checkbox' && tag !== 'INPUT') {
         if (el.querySelector('input[type="checkbox"]')) continue; // the real input inside handles it
         const g = el.closest('[role="group"],[role="list"],fieldset') || el.parentElement;
@@ -642,6 +664,16 @@
       }
       if (tag === 'TEXTAREA' || tag === 'INPUT') items.push({ kind: 'text', el });
     }
+
+    // Toggle buttons standing in for radio buttons ("Yes" / "No" with aria-pressed).
+    const btnGroups = new Map();
+    for (const b of qa(roots, 'button[aria-pressed]')) {
+      if (!isVisible(b) || clean(b.textContent).length > 40 || (modal && !modal.contains(b))) continue;
+      const g = b.parentElement;
+      if (!btnGroups.has(g)) btnGroups.set(g, []);
+      btnGroups.get(g).push(b);
+    }
+    for (const [g, els] of btnGroups) if (els.length >= 2 && els.length <= 6) items.push({ kind: 'radio', el: els[0], els, buttonGroup: g });
 
     const groupVisible = (els) => els.some((r) => isFieldVisible(r) || (r.labels && [...r.labels].some(isVisible)));
     for (const byName of radioGroups.values())
@@ -684,15 +716,22 @@
     const el = it.el;
     if (it.kind === 'radio' || it.kind === 'checkgroup') {
       it.options = it.els.map(optionLabel);
-      const g = groupLabel(el, it.els);
-      const c = contextLabel(it.els[it.els.length - 1].closest('label') || it.els[it.els.length - 1], it.els, it.options);
+      const g = it.buttonGroup ? '' : groupLabel(el, it.els);
+      const c = it.buttonGroup
+        ? contextLabel(it.buttonGroup, [...it.els, ...it.buttonGroup.querySelectorAll('input')], it.options)
+        : contextLabel(it.els[it.els.length - 1].closest('label') || it.els[it.els.length - 1], it.els, it.options);
       it.raw = clean(g || c).replace(/\s+(yes|no|ja|nein)$/i, '');
       it.primary = norm(g);
       it.context = norm(clean(c).replace(/\s+(yes|no|ja|nein)$/i, ''));
       it.group = '';
     } else {
-      const p = labelsText(el);
-      const c = contextLabel(el, [el], []);
+      let p = labelsText(el);
+      let c = contextLabel(el, [el], []);
+      if (it.kind === 'checkbox' && /^(yes|ja|no|nein|i agree|agree|ok|accept|ich stimme zu|zustimmen)\W*$/i.test(clean(p))) {
+        // The box only says "Yes": the question around it is the real label.
+        const q = contextLabel(el.closest('label') || el, [el], [p]);
+        if (q) { c = q; p = ''; }
+      }
       it.raw = p || c;
       it.primary = norm(p);
       it.context = norm(c);
@@ -1602,9 +1641,7 @@
       let n = el.parentElement;
       for (let d = 0; n && d < 3; d++, n = n.parentElement) {
         if (n.querySelectorAll(CONTROL_SEL).length > 1) break;
-        const c = n.cloneNode(true);
-        c.querySelectorAll('label,input,select,textarea,button,option,script,style,svg,[role="listbox"],[role="option"]').forEach((x) => x.remove());
-        let t = clean(c.textContent);
+        let t = textWithoutControls(n, new Set(['LABEL']));
         for (const b of labelBits) if (b) t = clean(t.replace(b, ''));
         t = t.replace(/^[*✱\s]+|[*✱\s]+$/g, '');
         if (t) return !/^(select|choose|please|search|start typing|type|--|—|none|bitte|ausw[aä]hlen|w[aä]hlen|suchen)\b/i.test(t);

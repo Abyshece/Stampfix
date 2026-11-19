@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Junior Product Manager @ Sereact</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}.entry{margin:14px 0}button[aria-pressed=true]{background:#333;color:#fff}input.hide{position:absolute;opacity:0;pointer-events:none}</style></head>
+<body>
+<!-- Like Ashby: Yes/No answered with two toggle buttons over a hidden checkbox -->
+<form>
+  <div class="entry"><label for="_systemfield_name">Name</label><input id="_systemfield_name" name="_systemfield_name"></div>
+  <div class="entry"><label for="sal">Please enter your annual gross salary expectation</label><input id="sal" type="number" value="undefined"></div>
+  <div class="entry"><label for="tell">Something you want to tell us:</label><input id="tell"></div>
+  <div class="section"><h2>Right To Work</h2>
+    <div class="entry"><label for="q-auth">1. Are you currently authorised to work in this role's location?</label>
+      <div class="yesno"><button type="button" aria-pressed="false" data-option="yes" id="auth-yes">Yes</button><button type="button" aria-pressed="false" data-option="no" id="auth-no">No</button><input type="checkbox" class="hide" tabindex="-1" name="q-auth"></div></div>
+    <div class="entry"><label for="q-sp">2. Will you now or in the future need sponsorship for a work visa or permit?</label>
+      <div class="yesno"><button type="button" aria-pressed="false" id="sp-yes">Yes</button><button type="button" aria-pressed="false" id="sp-no">No</button><input type="checkbox" class="hide" tabindex="-1" name="q-sp"></div></div>
+    <div class="entry"><label for="q-rel">Willing to relocate</label>
+      <div class="yesno"><button type="button" aria-pressed="false" id="rel-yes">Yes</button><button type="button" aria-pressed="false" id="rel-no">No</button><input type="checkbox" class="hide" tabindex="-1" name="q-rel"></div></div>
+  </div>
+  <fieldset><label for="privacy">Data Privacy Consent</label>
+    <div><p>I have read and accept the <a href="#">Data Privacy Notice for Applicants</a> regarding the processing of my application data.</p></div>
+    <div><input type="checkbox" id="privacy-yes" name="Yes"><label for="privacy-yes">Yes</label></div></fieldset>
+</form>
+<script>
+  for (const b of document.querySelectorAll('button[aria-pressed]')) b.addEventListener('click', () => {
+    for (const o of b.parentElement.querySelectorAll('button')) o.setAttribute('aria-pressed', 'false');
+    b.setAttribute('aria-pressed', 'true');
+    b.parentElement.querySelector('input').checked = b.textContent === 'Yes';
+  });
+</script>
+</body></html>

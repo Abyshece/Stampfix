@@ -368,6 +368,7 @@ function renderBackup(body) {
       for (const k of Object.keys(files)) files[k] = (data.files && data.files[k]) || files[k];
       await chrome.storage.local.set({ profile: state, ...Object.fromEntries(Object.entries(files).map(([k, v]) => ['file_' + k, v])) });
       renderAll();
+      document.getElementById('importBanner')?.remove();
       setSaveState('Imported', '');
     } catch (e) {
       alert("That file isn't a Job Autofill backup.");
@@ -448,6 +449,17 @@ async function forgetPerCompanyData() {
   }
 }
 
+// Empty profile: offer to bring back a backup (e.g. from an older version).
+function showImportBanner() {
+  const howto = document.querySelector('.howto');
+  const banner = h('section', { class: 'card banner', id: 'importBanner' },
+    h('h2', { text: 'Have a backup of your details?' }),
+    h('p', { class: 'desc', text: 'If you exported your profile from an earlier version (Backup & reset → Export backup), import it here to get everything back.' }),
+    h('div', { class: 'row' }, h('label', { for: 'importFile', class: 'btn' }, 'Import backup'), h('button', { type: 'button', class: 'ghost', onclick: () => banner.remove() }, 'Start fresh'))
+  );
+  howto.after(banner);
+}
+
 async function init() {
   await forgetPerCompanyData();
   const store = await chrome.storage.local.get(['profile', 'file_photo']);
@@ -459,6 +471,7 @@ async function init() {
     const c = cmds.find((x) => x.name === 'fill-page');
     if (c && c.shortcut) document.getElementById('shortcut').textContent = c.shortcut;
   } catch (e) { /* ignore */ }
+  if (!store.profile) showImportBanner();
   if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
 }
 

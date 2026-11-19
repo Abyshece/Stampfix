@@ -24,6 +24,22 @@ network requests of its own.
 
 To change the shortcut, open `chrome://extensions/shortcuts`. The default is **Alt+Shift+F** (Option+Shift+F on a Mac).
 
+## Updating to a new version
+
+The extension has a fixed ID (`ajhkokjkjdeoncjgkilkelebmbimnfha`), so Chrome treats every new
+version as the same extension and **your profile stays**, whichever folder you unzip it into.
+
+1. Unzip the new version (replacing the old files in the same folder is easiest).
+2. Open `chrome://extensions` and press the reload ↻ icon on Job Autofill
+   (or **Load unpacked** if you put it in a new folder).
+
+Don't press **Remove**: that deletes the saved profile. For safety you can always
+**Export backup** on the profile page (Backup & reset) and **Import backup** later.
+
+Versions before 1.1.0 had no fixed ID. Moving from one of those once: export a backup
+from the old version, remove the old card(s), load the new version, then import the
+backup (the empty profile page offers an **Import backup** button).
+
 ## Use it
 
 1. Open a job application form. On LinkedIn, click **Easy Apply** first.
@@ -89,6 +105,7 @@ Filled with a fake profile, never submitted, no files uploaded:
 | Breezy HR | Name, email, phone, summary, cover letter |
 | Gem | 6 filled |
 | Pinpoint | 16 filled incl. equal-opportunities dropdowns (gender, pronouns, age bracket, education) |
+| Ashby (Sereact) | 11 filled incl. Yes/No buttons (work permit, sponsorship, relocation) and privacy consent |
 | Manatal | 4 filled |
 | Homerun (Dutch form) | 6 filled |
 | softgarden, JOIN | First step of their multi-step forms filled |
@@ -120,7 +137,7 @@ extension/
 test/
   run-tests.cjs        End-to-end tests against mock Greenhouse, Lever, Workday,
                        LinkedIn, React, Google Forms, German, card-style and
-                       shadow-DOM/iframe and P&I LOGA-style pages (269 checks)
+                       shadow-DOM/iframe and P&I LOGA-style pages (280 checks)
   real-sites.cjs       Fills live public application pages (never submits)
   pages/               The mock pages
 ```
