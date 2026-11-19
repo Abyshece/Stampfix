@@ -88,6 +88,7 @@ Filled with a fake profile, never submitted, no files uploaded:
 | Jobvite | 8 filled incl. full address |
 | Breezy HR | Name, email, phone, summary, cover letter |
 | Gem | 6 filled |
+| Pinpoint | 16 filled incl. equal-opportunities dropdowns (gender, pronouns, age bracket, education) |
 | Manatal | 4 filled |
 | Homerun (Dutch form) | 6 filled |
 | softgarden, JOIN | First step of their multi-step forms filled |
@@ -119,7 +120,7 @@ extension/
 test/
   run-tests.cjs        End-to-end tests against mock Greenhouse, Lever, Workday,
                        LinkedIn, React, Google Forms, German, card-style and
-                       shadow-DOM/iframe and P&I LOGA-style pages (256 checks)
+                       shadow-DOM/iframe and P&I LOGA-style pages (269 checks)
   real-sites.cjs       Fills live public application pages (never submits)
   pages/               The mock pages
 ```

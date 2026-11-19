@@ -27,7 +27,7 @@ const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
 const PROFILE = {
   salutation: 'Mr', academicTitle: '', dateOfBirth: '1994-04-12', xing: 'https://www.xing.com/profile/Alex_Rivera',
   placeOfBirth: 'Boston', maritalStatus: 'Single', germanLevel: 'B2', englishLevel: 'Native', employmentType: 'Full-time', willingToTravel: 'Yes', weeklyHours: '40',
-  firstName: 'Alex', lastName: 'Rivera', middleName: '', preferredName: '', pronouns: '',
+  firstName: 'Alex', lastName: 'Rivera', middleName: '', preferredName: '', pronouns: 'he/him',
   email: 'alex.rivera@example.com', phoneCountryCode: '+1', phone: '415-555-0134',
   address1: '500 Market St', address2: 'Apt 4', city: 'San Francisco', state: 'CA', postalCode: '94105', country: 'United States',
   linkedin: 'linkedin.com/in/alexrivera-test', github: 'https://github.com/alexrivera-test', portfolio: 'https://alexrivera.dev', website: '', twitter: '',
@@ -45,7 +45,7 @@ const PROFILE = {
   summary: 'Data engineer with 7 years of experience.',
   coverLetter: 'Dear {company} team,\n\nI am excited to apply for the {role} position.',
   customAnswers: [{ question: 'Why do you want to work here? | Why are you interested in this role?', answer: 'I love what {company} is building.' }],
-  gender: 'Decline to answer', transgender: '', sexualOrientation: '', hispanicLatino: 'No', race: 'Asian',
+  gender: 'Decline to answer', transgender: 'No', sexualOrientation: '', hispanicLatino: 'No', race: 'Asian',
   veteran: 'I am not a protected veteran', disability: "No, I don't have a disability",
 };
 
@@ -212,6 +212,7 @@ async function expectAll(name, target, table) {
     first_name: 'Alex', last_name: 'Rivera', email: 'alex.rivera@example.com', phone: '415-555-0134',
     linkedin: 'https://linkedin.com/in/alexrivera-test', country: 'United States', sponsorship: 'No', years: '6-9', relocate: 'Yes',
     school: 'University of California, Berkeley', degree: "Bachelor's Degree", gender: 'Decline To Self Identify',
+    trans: 'No', pronouns: 'He/him',
   };
   for (const [k, v] of Object.entries(wantState)) check('react', 'state.' + k, st[k], v);
 
@@ -324,6 +325,14 @@ async function expectAll(name, target, table) {
   await fill();
   check('phone', 'keeps +49 and drops the leading 0', await val(page, '#ph-tel'), '+49 151 23456789');
   await setProfile({ phoneCountryCode: '+1', phone: '415-555-0134' });
+
+  /* Pinpoint-style: section-wide fieldsets, hidden option labels, level questions, age bracket */
+  await open('pinpoint.html');
+  r = await fill();
+  report('Pinpoint style', r);
+  await expectAll('pinpoint', page, [['#pp-first', 'Alex'], ['#pp-email', 'alex.rivera@example.com'], ['#pp-addr', '500 Market St'], ['#pp-town', 'San Francisco'],
+    ['#pp-li', 'https://linkedin.com/in/alexrivera-test'], ['#pp-de-n', true], ['#pp-en-y', true], ['#pp-age', '25-34'], ['#pp-consent', true], ['#pp-future', false]]);
+  check('pinpoint', 'question names without yes/no', r.review.some((x) => /\b(yes|no)$/i.test(x.label)), false);
 
   /* Running again is harmless: nothing is changed. */
   await open('greenhouse.html');

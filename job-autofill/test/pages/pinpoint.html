@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>New Application | Team Lead</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:20px auto}fieldset{margin:16px 0}.q{margin:10px 0}</style></head>
+<body>
+<!-- Like Pinpoint: each section is one big fieldset whose legend is the section title -->
+<form>
+<fieldset><legend>1.Personal Details <span>We'll need these details in order to be able to contact you.</span> <a href="#">Apply with LinkedIn</a></legend>
+  <div class="q"><label for="pp-first">First Name</label><input id="pp-first"></div>
+  <div class="q"><label for="pp-email">Email Address</label><input id="pp-email" type="email"></div>
+  <div class="q"><label for="pp-addr">Address Line 1</label><input id="pp-addr"></div>
+  <div class="q"><label for="pp-town">Town</label><input id="pp-town"></div>
+  <div class="q"><label for="pp-li">LinkedIn URL</label><input id="pp-li"></div>
+</fieldset>
+<fieldset><legend>3.Questions</legend>
+  <div class="q"><label class="external-form__label" for="pp-de"><span>Do you have a C1 level proficiency in German?</span></label>
+    <div id="pp-de-l-y" style="display:none">Do you have a C1 level proficiency in German? yes</div><div id="pp-de-l-n" style="display:none">Do you have a C1 level proficiency in German? no</div>
+    <input type="radio" name="de" id="pp-de-y" aria-labelledby="pp-de-l-y"><label for="pp-de-y">Yes</label>
+    <input type="radio" name="de" id="pp-de-n" aria-labelledby="pp-de-l-n"><label for="pp-de-n">No</label></div>
+  <div class="q"><label class="external-form__label" for="pp-en"><span>Do you have a C1 Level of English (written &amp; verbal)?</span></label>
+    <div id="pp-en-l-y" style="display:none">Do you have a C1 Level of English (written &amp; verbal)? yes</div><div id="pp-en-l-n" style="display:none">Do you have a C1 Level of English (written &amp; verbal)? no</div>
+    <input type="radio" name="en" id="pp-en-y" aria-labelledby="pp-en-l-y"><label for="pp-en-y">Yes</label>
+    <input type="radio" name="en" id="pp-en-n" aria-labelledby="pp-en-l-n"><label for="pp-en-n">No</label></div>
+  <div class="q"><label for="pp-age">Age Bracket</label><select id="pp-age"><option value="">Select...</option><option>18-24</option><option>25-34</option><option>35-44</option><option>45+</option></select></div>
+  <div class="q"><label><input type="checkbox" id="pp-consent"> (Required) Allow us to process your personal information. *</label></div>
+  <div class="q"><label><input type="checkbox" id="pp-future"> In order to contact you with future jobs that you may be interested in, we need to store your personal data.</label></div>
+</fieldset>
+</form>
+</body></html>

@@ -190,9 +190,10 @@
 
     { key: 'placeOfBirth', re: /\bplace of birth\b|\bbirth ?place\b|\bcity of birth\b|\bgeburtsort\b/ },
     { key: 'dateOfBirth', re: /\bdate of birth\b|\bbirth ?date\b|\bdob\b|\bbirthday\b|\bgeburtsdatum\b/ },
+    { key: 'ageBracket', re: /\bage (bracket|range|group|band|category)\b|\baltersgruppe\b|\baltersklasse\b|^age$|^alter$|\bhow old are you\b|\bwie alt sind sie\b/ },
     { key: 'maritalStatus', re: /\bmarital status\b|\bfamilienstand\b|\bcivil status\b/ },
-    { key: 'speaksGerman', kinds: CHOICE_KINDS, re: /\b(do|can) you speak (fluent |good |business )?german\b|\bfluent (in )?german\b|\bgerman speaker\b|\bsprechen sie (fliessend |gut )?deutsch\b|\bsprichst du (fliessend |gut )?deutsch\b/ },
-    { key: 'speaksEnglish', kinds: CHOICE_KINDS, re: /\b(do|can) you speak (fluent |good |business )?english\b|\bfluent (in )?english\b|\bsprechen sie (fliessend |gut )?englisch\b|\bsprichst du (fliessend |gut )?englisch\b/ },
+    { key: 'speaksGerman', kinds: CHOICE_KINDS, re: /\b(a1|a2|b1|b2|c1|c2)\b.*\b(german|deutsch)\b|\b(german|deutsch)\b.*\b(a1|a2|b1|b2|c1|c2)\b|\b(do|can) you speak (fluent |good |business )?german\b|\bfluent (in )?german\b|\bgerman speaker\b|\bsprechen sie (fliessend |gut )?deutsch\b|\bsprichst du (fliessend |gut )?deutsch\b/ },
+    { key: 'speaksEnglish', kinds: CHOICE_KINDS, re: /\b(a1|a2|b1|b2|c1|c2)\b.*\b(english|englisch)\b|\b(english|englisch)\b.*\b(a1|a2|b1|b2|c1|c2)\b|\b(do|can) you speak (fluent |good |business )?english\b|\bfluent (in )?english\b|\bsprechen sie (fliessend |gut )?englisch\b|\bsprichst du (fliessend |gut )?englisch\b/ },
     { key: 'germanLevel', re: /\bgerman\b.*\b(level|skills?|proficiency|knowledge|fluency)\b|\b(level|skills?|proficiency|knowledge|command) (of|in) german\b|\bdeutschkenntnisse\b|\bdeutsch\w* ?(sprach)?kenntnisse\b|\bniveau deutsch\b|^deutsch$|\bdo you speak german\b/ },
     { key: 'englishLevel', re: /\benglish\b.*\b(level|skills?|proficiency|knowledge|fluency)\b|\b(level|skills?|proficiency|knowledge|command) (of|in) english\b|\benglischkenntnisse\b|\benglisch\w* ?(sprach)?kenntnisse\b|\bniveau englisch\b|^englisch$|\bdo you speak english\b/ },
     { key: 'fullName', re: /\bname (first (and|&) last|first last)\b|\bfirst (and|&) last names?\b|\bfull name\b/, not: PEOPLE },
@@ -427,11 +428,15 @@
     return ps.filter((x, i) => !ps.some((y, j) => j !== i && norm(y).includes(norm(x)) && (norm(y) !== norm(x) || j < i))).join(' ');
   }
 
-  function groupLabel(el) {
+  function groupLabel(el, own) {
     const fs = el.closest('fieldset');
     const grp = el.closest('[role="radiogroup"],[role="group"],[role="list"][aria-labelledby],[role="list"][aria-label]');
     const g = fs && grp ? (fs.contains(grp) ? grp : fs) : fs || grp;
     if (!g) return '';
+    // A whole section ("1. Personal Details", "3. Questions"), not this question's own group.
+    const ownSet = new Set(own || [el]);
+    const others = [...g.querySelectorAll(CONTROL_SEL)].filter((c) => !ownSet.has(c) && c.getAttribute('aria-hidden') !== 'true');
+    if (others.length > 3 || g.querySelector('fieldset,[role="radiogroup"]')) return '';
     let t = '';
     if (g.tagName === 'FIELDSET') {
       const lg = g.querySelector('legend');
@@ -518,6 +523,16 @@
     if (/select2-hidden-accessible|chosen-select|selectized/.test(sel.className)) return true;
     const sib = sel.nextElementSibling;
     return !!(sib && /select2|chosen-container|selectize/.test(sib.className || ''));
+  }
+
+  function visibleComboBox(el) {
+    let n = el.parentElement;
+    for (let d = 0; n && d < 5 && n !== document.body; d++, n = n.parentElement) {
+      if (n.querySelectorAll(CONTROL_SEL).length > 1) return null;
+      const r = n.getBoundingClientRect();
+      if (r.width >= 40 && r.height >= 20 && isVisible(n) && !clippedAway(n)) return n;
+    }
+    return null;
   }
 
   function isComboEl(el) {
@@ -619,7 +634,7 @@
         if (isFieldVisible(el) || (isEnhancedSelect(el) && el.parentElement && isVisible(el.parentElement))) items.push({ kind: 'select', el });
         continue;
       }
-      if (!isFieldVisible(el)) continue;
+      if (!isFieldVisible(el) && !(isComboEl(el) && visibleComboBox(el))) continue;
       if (isComboEl(el)) {
         if (tag !== 'INPUT' && tag !== 'BUTTON' && el.querySelector('input')) continue; // the inner input is the real control
         items.push({ kind: 'combo', el });
@@ -669,11 +684,11 @@
     const el = it.el;
     if (it.kind === 'radio' || it.kind === 'checkgroup') {
       it.options = it.els.map(optionLabel);
-      const g = groupLabel(el);
+      const g = groupLabel(el, it.els);
       const c = contextLabel(it.els[it.els.length - 1].closest('label') || it.els[it.els.length - 1], it.els, it.options);
-      it.raw = g || c;
+      it.raw = clean(g || c).replace(/\s+(yes|no|ja|nein)$/i, '');
       it.primary = norm(g);
-      it.context = norm(c);
+      it.context = norm(clean(c).replace(/\s+(yes|no|ja|nein)$/i, ''));
       it.group = '';
     } else {
       const p = labelsText(el);
@@ -839,8 +854,9 @@
 
   /* ───────────────────────── resolve: what does this field want? ───────────────────────── */
 
+  // The field's own label first; its small group ("From" around Month/Year) next.
   function sources(it) {
-    return uniq([clean(it.primary + ' ' + (it.group || '')), it.primary, it.context, clean(it.attrs + ' ' + it.ph)]);
+    return uniq([it.primary, clean(it.primary + ' ' + (it.group || '')), it.context, clean(it.attrs + ' ' + it.ph)]);
   }
 
   function ruleHits(r, t, it, ctx) {
@@ -971,7 +987,7 @@
   // newsletters, SMS, talent pools or contact about future jobs.
   function isPrivacyConsent(label) {
     if (!label) return false;
-    if (!/datenschutz|privacy|data protection|datenverarbeitung|verarbeitung (meiner|der|von) (personenbezogenen )?daten|\bgdpr\b|\bdsgvo\b|personal data|personenbezogen/.test(label)) return false;
+    if (!/datenschutz|privacy|data protection|datenverarbeitung|verarbeitung (meiner|der|von) (personenbezogenen )?daten|\bgdpr\b|\bdsgvo\b|personal (data|information|details)|personenbezogen|process\w* (of )?(my|your) (personal )?(data|information|details)/.test(label)) return false;
     return !/newsletter|marketing|\bsms\b|text messages?|whatsapp|future (vacancies|opportunities|jobs|roles|positions|openings)|talent ?pool|talentpool|weitere stellen|andere stellen|zukunftig|kunftig|contact me about|kontaktieren|aufbewahr\w* .{0,40}(monate|jahre|longer|langer)/.test(label);
   }
 
@@ -1038,6 +1054,14 @@
       }
       case 'dateOfBirth': return D(P.dateOfBirth, 'full');
       case 'privacyConsent': return { type: 'bool', value: true };
+      case 'ageBracket': {
+        const b = parseYM(P.dateOfBirth);
+        if (!b) return null;
+        const now = new Date();
+        let age = now.getFullYear() - b.y;
+        if (now.getMonth() + 1 < b.m || (now.getMonth() + 1 === b.m && now.getDate() < b.d)) age--;
+        return T(String(age), { numeric: age });
+      }
       case 'anythingElse': return YN(clean(P.anythingElse) || 'No');
       case 'howDidYouHear': {
         const v = clean(P.howDidYouHear) || 'Google';
@@ -1052,8 +1076,13 @@
       case 'speaksEnglish': {
         const lvl = clean(P[k === 'speaksGerman' ? 'germanLevel' : 'englishLevel']).toUpperCase();
         if (!lvl) return null;
-        const fluentAsked = /\b(fluent|fliessend|business|verhandlungssicher)\b/.test(it.primary + ' ' + it.context);
-        const yes = /^(NATIVE|C2|C1)$/.test(lvl) || (lvl === 'B2' && !fluentAsked);
+        const q = it.primary + ' ' + it.context;
+        const RANK = { NONE: 0, A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C2: 6, NATIVE: 7 };
+        const asked = (q.match(/\b(a1|a2|b1|b2|c1|c2)\b/) || [])[1];
+        const fluentAsked = /\b(fluent|fliessend|business|verhandlungssicher)\b/.test(q);
+        const mine = RANK[lvl] != null ? RANK[lvl] : null;
+        if (mine == null) return null;
+        const yes = asked ? mine >= RANK[asked.toUpperCase()] : mine >= 5 || (mine === 4 && !fluentAsked);
         return YN(yes ? 'Yes' : 'No');
       }
       case 'weeklyHours': return T(P.weeklyHours, { numeric: parseFloat(P.weeklyHours) });
@@ -1345,12 +1374,17 @@
     el.dispatchEvent(ev);
   }
 
-  function realClick(el) {
+  // Like a mouse click. `focus` is off for options in a pop-up list: moving
+  // keyboard focus onto an option makes many dropdowns close before the click.
+  function realClick(el, focus = true) {
     const r = el.getBoundingClientRect();
     const base = { bubbles: true, cancelable: true, composed: true, view: window, button: 0, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 };
-    el.dispatchEvent(new PointerEvent('pointerdown', { ...base, pointerType: 'mouse', isPrimary: true }));
-    el.dispatchEvent(new MouseEvent('mousedown', base));
-    if (el.focus) el.focus({ preventScroll: true });
+    el.dispatchEvent(new PointerEvent('pointerover', { ...base, pointerType: 'mouse', isPrimary: true }));
+    el.dispatchEvent(new MouseEvent('mouseover', base));
+    el.dispatchEvent(new MouseEvent('mousemove', base));
+    el.dispatchEvent(new PointerEvent('pointerdown', { ...base, buttons: 1, pointerType: 'mouse', isPrimary: true }));
+    el.dispatchEvent(new MouseEvent('mousedown', { ...base, buttons: 1 }));
+    if (focus && el.focus) el.focus({ preventScroll: true });
     el.dispatchEvent(new PointerEvent('pointerup', { ...base, pointerType: 'mouse', isPrimary: true }));
     el.dispatchEvent(new MouseEvent('mouseup', base));
     el.dispatchEvent(new MouseEvent('click', base));
@@ -1492,7 +1526,7 @@
         if (!opts.length) continue;
         const i = bestIndex(opts.map(optText), cands, null);
         if (i >= 0) {
-          realClick(opts[i]);
+          realClick(opts[i], false);
           await sleep(200);
           el.blur();
           return clean(el.value) !== '';
@@ -1542,7 +1576,7 @@
       }
     }
     if (r.pick) {
-      realClick(r.pick);
+      realClick(r.pick, false);
       await sleep(150);
       if (isInput) el.blur();
       return true;

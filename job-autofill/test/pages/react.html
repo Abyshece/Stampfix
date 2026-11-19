@@ -10,7 +10,7 @@ const e = React.createElement;
 const { useState } = React;
 
 // A stripped-down React-Select: an <input role="combobox"> that filters a popup list.
-function Combo({ id, label, options, value, onChange }) {
+function Combo({ id, label, options, value, onChange, searchable = true }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const shown = options.filter((o) => o.toLowerCase().includes(q.toLowerCase()));
@@ -19,16 +19,17 @@ function Combo({ id, label, options, value, onChange }) {
     e('div', { className: 'control', onMouseDown: () => setOpen(true) },
       value ? e('div', { className: 'single-value' }, value) : !q && e('div', { className: 'placeholder' }, 'Select...'),
       e('input', { id, role: 'combobox', 'aria-expanded': open, 'aria-autocomplete': 'list', 'aria-controls': open ? id + '-lb' : undefined, value: q,
+        readOnly: !searchable, style: searchable ? undefined : { opacity: 0, width: 0, height: 0, padding: 0, border: 0, position: 'absolute' },
         onChange: (ev) => { setQ(ev.target.value); setOpen(true); },
         onKeyDown: (ev) => { if (ev.key === 'ArrowDown') setOpen(true); if (ev.key === 'Escape') setOpen(false); },
         onBlur: () => { setOpen(false); setQ(''); } })),
     open && e('div', { id: id + '-lb', role: 'listbox' },
-      shown.length ? shown.map((o) => e('div', { role: 'option', key: o, onMouseDown: (ev) => ev.preventDefault(), onClick: () => { onChange(o); setOpen(false); setQ(''); } }, o))
+      shown.length ? shown.map((o) => e('div', { role: searchable ? 'option' : undefined, className: 'rs__option', tabIndex: -1, key: o, onMouseDown: (ev) => ev.preventDefault(), onClick: () => { onChange(o); setOpen(false); setQ(''); } }, o))
         : e('div', { className: 'none' }, 'No options')));
 }
 
 function App() {
-  const [s, set] = useState({ first_name: '', last_name: '', email: '', phone: '', linkedin: '', country: '', school: '', degree: '', gender: '', relocate: '', remote: false, years: '', sponsorship: '' });
+  const [s, set] = useState({ first_name: '', last_name: '', email: '', phone: '', linkedin: '', country: '', school: '', degree: '', gender: '', relocate: '', remote: false, years: '', sponsorship: '', pronouns: '', trans: '' });
   const up = (k) => (v) => set((p) => ({ ...p, [k]: v }));
   const text = (id, label, extra) => e('div', { className: 'field' }, e('label', { htmlFor: id }, label),
     e('input', { id, value: s[id], onChange: (ev) => up(id)(ev.target.value), ...(extra || {}) }));
@@ -49,6 +50,8 @@ function App() {
     e(Combo, { id: 'degree', label: 'Degree', options: ["Associate's Degree", "Bachelor's Degree", "Master's Degree", 'Doctor of Philosophy'], value: s.degree, onChange: up('degree') }),
     e('h3', null, 'Voluntary Self-Identification'),
     e(Combo, { id: 'gender', label: 'Gender', options: ['Male', 'Female', 'Decline To Self Identify'], value: s.gender, onChange: up('gender') }),
+    e(Combo, { id: 'trans', label: 'Do you identify as transgender?', searchable: false, options: ['Yes', 'No', 'Prefer not to say'], value: s.trans, onChange: up('trans') }),
+    e(Combo, { id: 'pronouns', label: 'Preferred Pronouns', searchable: false, options: ['She/her', 'He/him', 'They/them'], value: s.pronouns, onChange: up('pronouns') }),
   );
 }
 ReactDOM.createRoot(document.getElementById('root')).render(e(App));
