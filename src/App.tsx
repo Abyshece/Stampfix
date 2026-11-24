@@ -15,6 +15,7 @@ import { CardholderPrivacy } from './components/legal/CardholderPrivacy';
 import { CookiePolicy } from './components/legal/CookiePolicy';
 import { AccessibilityStatement } from './components/legal/AccessibilityStatement';
 import { Unsubscribe } from './components/Unsubscribe';
+import { StopEmails } from './components/StopEmails';
 import { Faq } from './components/Faq';
 import { AppleWalletGuide } from './components/AppleWalletGuide';
 const AboutPage = lazy(() => import('./components/marketing/AboutPage').then((m) => ({ default: m.AboutPage })));
@@ -221,6 +222,7 @@ export default function App() {
   if (path === '/cookies') return <CookiePolicy />;
   if (path === '/accessibility') return <AccessibilityStatement />;
   if (path === '/unsubscribe') return <Unsubscribe />;
+  if (path === '/stop-emails') return <StopEmails />;
   if (path === '/faq') return <Faq />;
   if (path === '/wallet-guide') return <AppleWalletGuide />;
   if (path === '/about') return <Suspense fallback={<BrandLoading />}><AboutPage /></Suspense>;

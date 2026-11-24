@@ -14,3 +14,14 @@ verify_jwt = false
 # service-role key once it rotates, so Apple Wallet pushes never go out.
 [functions.push-apple-update]
 verify_jwt = false
+
+# Outreach: these check their callers themselves (the cron secret or an admin's
+# token; Resend's signature; the unsubscribe token). Mail apps and Resend send no JWT.
+[functions.outreach-send]
+verify_jwt = false
+
+[functions.outreach-webhook]
+verify_jwt = false
+
+[functions.outreach-unsubscribe]
+verify_jwt = false
