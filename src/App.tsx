@@ -30,6 +30,11 @@ const OrderPage = lazy(() => import('./components/OrderPage').then((m) => ({ def
 import { MyCardPage } from './components/MyCardPage';
 const AdminPanel = lazy(() => import('./components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
 import { BrandLoading } from './components/BrandLoading';
+import { captureReferralFromUrl } from './lib/referrals';
+
+// A shop's invite link (stampfix.app/r/CODE or ?ref=CODE): remember the code
+// and open the sign-up form. Runs once, before App reads the address bar.
+captureReferralFromUrl();
 
 /**
  * Top-level routing.

@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
   Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell, Pencil, KeyRound,
-  Download, Eye, Megaphone, Utensils, Send, MailPlus,
+  Download, Eye, Megaphone, Utensils, Send, MailPlus, Gift,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
@@ -30,11 +30,12 @@ import { MerchantBannersTab } from './MerchantBannersTab';
 import { MenuUploadsAdmin } from './MenuUploadsAdmin';
 import { OutreachAdmin } from './outreach/OutreachAdmin';
 import { ShopEmailsAdmin } from './ShopEmailsAdmin';
+import { ReferralsAdmin } from './ReferralsAdmin';
 import { adminListMenuUploads } from '../lib/ordering';
 import { setMerchantApproval, getMerchantApproval, setRejectionReason, getMerchantRejectionReason, getMerchantActivity, type MerchantActivityRow } from '../lib/db';
 import { fetchExtendedKPIs, type ExtendedKPIs } from '../lib/db';
 
-type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'MENUS' | 'OUTREACH' | 'SHOP_EMAILS' | 'OFFERS' | 'MERCHANT_BANNERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
+type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'MENUS' | 'OUTREACH' | 'SHOP_EMAILS' | 'REFERRALS' | 'OFFERS' | 'MERCHANT_BANNERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
 
 export function AdminPanel({ onExit }: { onExit: () => void }) {
   const { user, loading: authLoading } = useAuth();
@@ -137,6 +138,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
             ['MENUS', Utensils, 'Menus'],
             ['OUTREACH', Send, 'Outreach'],
             ['SHOP_EMAILS', MailPlus, 'Email shops'],
+            ['REFERRALS', Gift, 'Referrals'],
             ['OFFERS', Tag, 'Offers'],
             ['MERCHANT_BANNERS', Megaphone, 'Merchant Banners'],
             ['LOGS', Activity, 'Logs'],
@@ -193,6 +195,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         {tab === 'MENUS' && <MenuUploadsAdmin readOnly={readOnly} onNewCount={setNewMenus} />}
         {tab === 'OUTREACH' && <OutreachAdmin readOnly={readOnly} />}
         {tab === 'SHOP_EMAILS' && <ShopEmailsAdmin readOnly={readOnly} />}
+        {tab === 'REFERRALS' && <ReferralsAdmin readOnly={readOnly} />}
         {tab === 'LOGS' && <LogsTab readOnly={readOnly} />}
         {tab === 'FUNNEL' && <FunnelTab />}
         {tab === 'OFFERS' && <OffersTab />}

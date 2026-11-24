@@ -17,6 +17,7 @@ import type { ScanOutcome } from '../lib/scanOutcome';
 import { useTranslation } from 'react-i18next';
 import { WalletCard } from './WalletCard';
 import { QRScanner, parseCardQRPayload } from './QRScanner';
+import { ReferralPill } from './ReferralPill';
 import { ScanCelebration } from './ScanCelebration';
 import { playScanSound } from '../lib/scanSounds';
 import { ScanRejection } from './ScanRejection';
@@ -1081,6 +1082,8 @@ export function MerchantDashboard({
                   </div>
                 </div>
               </div>
+              {/* Referral pill: "invite a shop, you both get a month free". */}
+              <ReferralPill isPro={isPro} hide={isScannerOpen} onUpgrade={() => setShowUpgradeModal(true)} />
             </div>
           </div>
         )}

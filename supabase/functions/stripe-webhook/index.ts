@@ -17,6 +17,11 @@
 //   customer.subscription.updated  - status changes -> pro while active/trialing, else free
 //   customer.subscription.deleted  - cancellation finalised -> set free
 //   invoice.payment_failed         - recurring charge failed -> log only (Stripe retries)
+//   invoice.paid                   - referrals: the invited shop's first payment rewards the invite
+//   charge.refunded                - referrals: a refunded first payment cancels the invite
+//
+// Referral steps never change the plan and never fail the webhook: any
+// problem is logged and the plan update above it still stands.
 //
 // Notes on idempotency:
 //   Stripe may deliver the same event multiple times. Our updates are
@@ -30,6 +35,21 @@ const STRIPE_SECRET = Deno.env.get('STRIPE_SECRET_KEY');
 const WEBHOOK_SECRET = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+/** Asks referral-credit to put due referral months on Stripe. */
+async function runReferralCredit(): Promise<void> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/referral-credit`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: AbortSignal.timeout(20000),
+    });
+    console.log(`[webhook] referral-credit -> ${res.status}`);
+  } catch (e) {
+    console.error('[webhook] referral-credit call failed:', e instanceof Error ? e.message : e);
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -105,6 +125,15 @@ Deno.serve(async (req) => {
         const { error } = await admin.from('merchants').update(update).eq('id', merchantId);
         if (error) console.error(`[webhook] failed to upgrade merchant ${merchantId}:`, error);
         else console.log(`[webhook] merchant ${merchantId} upgraded to pro`);
+        // Referral months waiting for this shop's Stripe customer can go on now.
+        if (!error) {
+          try {
+            const { data: due } = await admin.rpc('referral_rewards_due', { p_force: false });
+            if (Array.isArray(due) && due.length > 0) await runReferralCredit();
+          } catch (e) {
+            console.error('[webhook] referral check failed:', e instanceof Error ? e.message : e);
+          }
+        }
         break;
       }
 
@@ -174,6 +203,53 @@ Deno.serve(async (req) => {
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         console.warn(`[webhook] invoice payment_failed for customer ${invoice.customer}`);
+        break;
+      }
+
+      // -------------------------------------------------------------
+      // A payment went through. Referrals only: the first real payment
+      // of an invited shop rewards the invite (or flags it for review).
+      // -------------------------------------------------------------
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice;
+        try {
+          if ((invoice.amount_paid ?? 0) <= 0) break;
+          const customer = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id ?? null;
+          let merchantId: string | null = invoice.subscription_details?.metadata?.merchant_id ?? null;
+          if (!merchantId && customer) {
+            const { data: m } = await admin.from('merchants').select('id').eq('stripe_customer_id', customer).maybeSingle();
+            merchantId = (m as { id: string } | null)?.id ?? null;
+          }
+          if (!merchantId) break;
+          // The card's fingerprint (not the card number), to spot one person paying for two shops.
+          let fingerprint: string | null = null;
+          const chargeId = typeof invoice.charge === 'string' ? invoice.charge : invoice.charge?.id ?? null;
+          if (chargeId) {
+            const charge = await stripe.charges.retrieve(chargeId).catch(() => null);
+            fingerprint = charge?.payment_method_details?.card?.fingerprint ?? null;
+          }
+          const { data, error } = await admin.rpc('referral_invoice_paid', {
+            p_merchant: merchantId, p_invoice: invoice.id, p_fingerprint: fingerprint,
+          });
+          if (error) console.error(`[webhook] referral_invoice_paid failed for ${merchantId}:`, error);
+          else if ((data as { due?: boolean } | null)?.due) await runReferralCredit();
+        } catch (e) {
+          console.error('[webhook] referral step failed:', e instanceof Error ? e.message : e);
+        }
+        break;
+      }
+
+      // -------------------------------------------------------------
+      // Money given back. Referrals only: if it was an invited shop's
+      // first payment, the invite no longer counts.
+      // -------------------------------------------------------------
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        const invoiceId = typeof charge.invoice === 'string' ? charge.invoice : charge.invoice?.id ?? null;
+        if (invoiceId) {
+          const { error } = await admin.rpc('referral_invoice_refunded', { p_invoice: invoiceId });
+          if (error) console.error(`[webhook] referral_invoice_refunded failed for ${invoiceId}:`, error);
+        }
         break;
       }
 
