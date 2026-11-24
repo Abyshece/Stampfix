@@ -15,6 +15,7 @@ import { CardholderPrivacy } from './components/legal/CardholderPrivacy';
 import { CookiePolicy } from './components/legal/CookiePolicy';
 import { AccessibilityStatement } from './components/legal/AccessibilityStatement';
 import { Unsubscribe } from './components/Unsubscribe';
+import { StopEmails } from './components/StopEmails';
 import { Faq } from './components/Faq';
 import { AppleWalletGuide } from './components/AppleWalletGuide';
 const AboutPage = lazy(() => import('./components/marketing/AboutPage').then((m) => ({ default: m.AboutPage })));
@@ -29,6 +30,11 @@ const OrderPage = lazy(() => import('./components/OrderPage').then((m) => ({ def
 import { MyCardPage } from './components/MyCardPage';
 const AdminPanel = lazy(() => import('./components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
 import { BrandLoading } from './components/BrandLoading';
+import { captureReferralFromUrl } from './lib/referrals';
+
+// A shop's invite link (stampfix.app/r/CODE or ?ref=CODE): remember the code
+// and open the sign-up form. Runs once, before App reads the address bar.
+captureReferralFromUrl();
 
 /**
  * Top-level routing.
@@ -221,6 +227,7 @@ export default function App() {
   if (path === '/cookies') return <CookiePolicy />;
   if (path === '/accessibility') return <AccessibilityStatement />;
   if (path === '/unsubscribe') return <Unsubscribe />;
+  if (path === '/stop-emails') return <StopEmails />;
   if (path === '/faq') return <Faq />;
   if (path === '/wallet-guide') return <AppleWalletGuide />;
   if (path === '/about') return <Suspense fallback={<BrandLoading />}><AboutPage /></Suspense>;

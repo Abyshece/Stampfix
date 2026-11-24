@@ -1,6 +1,6 @@
 import { PhoneField } from './PhoneField';
-import { useState } from 'react';
-import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff, Info } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowRight, Mail, Loader2, ArrowLeft, Smile, Check, Eye, EyeOff, Info, Gift } from 'lucide-react';
 import { signUpMerchant, signInMerchant } from '../lib/auth';
 import { CountrySelect } from './CountrySelect';
 import { createCampaign, createLocation } from '../lib/db';
@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 import { Turnstile } from './Turnstile';
 import { verifyTurnstile } from '../services/turnstile';
 import { logConsent, CONSENT_VERSIONS } from '../lib/consent';
+import { storedReferralCode, lookupReferral, forgetReferralCode } from '../lib/referrals';
 import { useTranslation } from 'react-i18next';
 
 const NOTION_COLORS = [
@@ -94,6 +95,15 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   // submit button is gated on this so bots can't bypass the check by
   // simply clicking before it fires.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  // Invited through another shop's link (stampfix.app/r/CODE)?
+  const [refCode] = useState<string | null>(() => storedReferralCode());
+  const [refName, setRefName] = useState<string | null>(null);
+  useEffect(() => {
+    if (!refCode) return;
+    let alive = true;
+    lookupReferral(refCode).then((n) => { if (alive) setRefName(n); }).catch(() => {});
+    return () => { alive = false; };
+  }, [refCode]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -154,8 +164,9 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
         return;
       }
       const { needsEmailConfirmation } = await signUpMerchant(
-        emailTrimmed, password, busName, country, marketingOptIn, phone,
+        emailTrimmed, password, busName, country, marketingOptIn, phone, refName ? refCode : null,
       );
+      if (refName) forgetReferralCode();
       // Consent audit trail — record the three required acceptances.
       logConsent({ subjectType: 'merchant', document: 'terms', version: CONSENT_VERSIONS.terms });
       logConsent({ subjectType: 'merchant', document: 'privacy', version: CONSENT_VERSIONS.privacy });
@@ -352,6 +363,12 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
           <div className="h-1.5 w-16 rounded-full mx-auto mb-4" style={{ background: 'linear-gradient(90deg,#75FBFD,#1132F5,#510AF5,#EA33B6,#EA3323,#F0A479,#F7CE46,#75FBFD)' }} />
           <h2 className="text-3xl font-serif-display font-semibold mb-2">{t('dash.signup.createWorkspace', { defaultValue: 'Create your workspace' })}</h2>
           <p className="text-gray-500">{t('dash.signup.createSub', { defaultValue: "Set up your business's loyalty program in under a minute." })}</p>
+          {refName && (
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white text-sm font-medium px-4 py-1.5 shadow-sm" data-invited-by>
+              <Gift className="w-4 h-4 shrink-0" />
+              <span>{t('dash.referral.invitedSignup', { defaultValue: 'Invited by {{name}}: your second month of Pro is free', name: refName })}</span>
+            </p>
+          )}
         </div>
 
         <div className="bg-white rounded-lg p-8 shadow-sm border notion-border space-y-8">

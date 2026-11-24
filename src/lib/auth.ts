@@ -96,6 +96,7 @@ export async function signUpMerchant(
   country: string,
   marketingOptIn: boolean,
   phone?: string,
+  referralCode?: string | null,
 ): Promise<{ needsEmailConfirmation: boolean }> {
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -111,6 +112,8 @@ export async function signUpMerchant(
         // form requires before this function is ever reached.
         terms_accepted_at: new Date().toISOString(),
         accepted_documents: ['terms', 'privacy', 'dpa'],
+        // The shop that invited them (stampfix.app/r/CODE), if any.
+        ...(referralCode ? { referral_code: referralCode } : {}),
       },
       emailRedirectTo: `${window.location.origin}/?confirmed=1`,
     },

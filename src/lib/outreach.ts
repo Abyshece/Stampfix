@@ -1,0 +1,273 @@
+import { supabase } from './supabase';
+// The same time-zone guess the outreach-tools function uses for map results.
+import { guessTimezone } from '../../supabase/functions/outreach-tools/lib';
+
+// Admin > Outreach: find shops anywhere, email them through Resend (queued
+// and sent within limits by the outreach-send function) or message them on
+// Instagram by hand. See supabase/migrations/20261125000000_outreach.sql.
+
+export type EmailStatus = 'new' | 'queued' | 'sent' | 'followup_queued' | 'followed_up' | 'replied'
+  | 'not_interested' | 'bounced' | 'complained' | 'unsubscribed' | 'skipped';
+export type IgStatus = 'new' | 'sent' | 'replied' | 'not_interested' | 'skipped';
+export type BlockReason = 'no_email' | 'opted_out' | 'has_account' | 'customer_domain' | 'consent_country' | 'french_required';
+
+export interface Lead {
+  id: string;
+  business_name: string;
+  category_key: string | null;
+  category: string | null;
+  city: string | null;
+  country: string;
+  region: string | null;
+  timezone: string | null;
+  lat: number | null;
+  lon: number | null;
+  address: string | null;
+  website: string | null;
+  phone: string | null;
+  email: string | null;
+  email_source: string | null;
+  instagram: string | null;
+  first_line: string | null;
+  notes: string | null;
+  email_status: EmailStatus;
+  ig_status: IgStatus;
+  email_sent_at: string | null;
+  ig_sent_at: string | null;
+  website_checked_at: string | null;
+  created_at: string;
+  ig_message: string;
+  blocked: BlockReason | null;
+  followup_due: boolean;
+  last_error: string | null;
+}
+
+export interface OutreachSettings {
+  paused: boolean;
+  pause_reason: 'bounces' | 'complaint' | null;
+  daily_cap: number;
+  window_start: number;
+  window_end: number;
+  weekdays_only: boolean;
+  followup_days: number;
+  from_name: string;
+  default_first_line: string;
+  subject_tpl: string;
+  body_tpl: string;
+  followup_subject_tpl: string;
+  followup_tpl: string;
+  footer: string;
+  ig_tpl: string;
+  ig_account: string | null;
+  ig_daily_limit: number;
+}
+
+export interface OutreachState {
+  settings: OutreachSettings;
+  leads: number;
+  with_email: number;
+  with_instagram: number;
+  unchecked: number;
+  email: Partial<Record<EmailStatus, number>>;
+  ig: Partial<Record<IgStatus, number>>;
+  sent_24h: number;
+  queued: number;
+  followups_due: number;
+  ig_24h: number;
+  bounced: number;
+  complained: number;
+  sent_total: number;
+}
+
+export type LeadView = 'all' | 'unchecked' | 'email_ready' | 'email_queued' | 'email_sent' | 'email_followup'
+  | 'email_replied' | 'email_stopped' | 'ig_ready' | 'ig_sent' | 'ig_replied' | 'ig_stopped';
+
+/** The 23 kinds of shop on the landing page (labels come from industries.* translations). */
+export const INDUSTRIES: Array<{ key: string; icon: string }> = [
+  { key: 'cafe', icon: '☕' }, { key: 'restaurant', icon: '🍽️' }, { key: 'bakery', icon: '🥐' },
+  { key: 'iceCream', icon: '🍦' }, { key: 'snackBar', icon: '🌮' }, { key: 'pizzeria', icon: '🍕' },
+  { key: 'bar', icon: '🍸' }, { key: 'florist', icon: '🌸' }, { key: 'nailStudio', icon: '💅' },
+  { key: 'hairdresser', icon: '✂️' }, { key: 'barbershop', icon: '💈' }, { key: 'tattoo', icon: '🎨' },
+  { key: 'gym', icon: '💪' }, { key: 'retail', icon: '🛍️' }, { key: 'doner', icon: '🥙' },
+  { key: 'bubbleTea', icon: '🧋' }, { key: 'foodTruck', icon: '🚚' }, { key: 'lashBrow', icon: '👁️' },
+  { key: 'spa', icon: '💆' }, { key: 'carWash', icon: '🚗' }, { key: 'dogGrooming', icon: '🐶' },
+  { key: 'dryCleaner', icon: '👔' }, { key: 'yoga', icon: '🧘' },
+];
+
+export const BLOCK_LABEL: Record<BlockReason, string> = {
+  no_email: 'No email address',
+  opted_out: 'Opted out',
+  has_account: 'Already has a Stampfix account',
+  customer_domain: 'Same company as an existing shop',
+  consent_country: 'Email off: this country needs consent first',
+  french_required: 'Email off: Quebec needs French',
+};
+
+/** Countries where email is off (cold email to businesses needs consent first), as the database decides. */
+export const CONSENT_COUNTRIES = new Set(['DE', 'AT', 'IT', 'DK', 'PL']);
+export function emailOffReason(country: string, region: string | null): BlockReason | null {
+  if (CONSENT_COUNTRIES.has(country.toUpperCase())) return 'consent_country';
+  if (country.toUpperCase() === 'CA' && /^(qc|qu[eé]bec)$/i.test((region ?? '').trim())) return 'french_required';
+  return null;
+}
+
+export function countryName(code: string): string {
+  try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code.toUpperCase()) ?? code; } catch { return code; }
+}
+
+const rpc = async <T>(fn: string, args?: Record<string, unknown>): Promise<T> => {
+  const { data, error } = await supabase.rpc(fn, args);
+  if (error) throw new Error(error.message);
+  return data as T;
+};
+
+/** Runs an action of an outreach function; the error says what went wrong. */
+async function call<T>(fn: string, body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(fn, { body });
+  if (error) {
+    let msg = error.message;
+    const ctx = (error as { context?: Response }).context;
+    if (ctx && typeof ctx.json === 'function') {
+      try { msg = ((await ctx.json()) as { error?: string }).error ?? msg; } catch { /* keep the generic one */ }
+    }
+    throw new Error(msg);
+  }
+  return data as T;
+}
+
+export const getOutreachState = () => rpc<OutreachState>('admin_outreach_state');
+export const listLeads = (view: LeadView, search = '', limit = 300) =>
+  rpc<Lead[]>('admin_outreach_leads', { p_view: view, p_search: search || null, p_limit: limit });
+export const previewEmail = (id: string, kind: 'first' | 'followup' = 'first') =>
+  rpc<{ to: string | null; from_name: string; subject: string; body: string; blocked: BlockReason | null }>('admin_outreach_preview', { p_id: id, p_kind: kind });
+export const addLeads = (rows: NewLead[]) =>
+  rpc<{ added: number; duplicates: number; invalid: number }>('admin_outreach_add_leads', { p_leads: rows });
+export const saveScans = (results: ScanResult[]) => rpc<{ found: number }>('admin_outreach_save_scans', { p_results: results });
+export const updateLead = (id: string, patch: Partial<Pick<Lead, 'first_line' | 'email' | 'instagram' | 'notes'>> & { email_status?: EmailStatus; ig_status?: IgStatus }) =>
+  rpc<Lead>('admin_outreach_update_lead', { p_id: id, p_patch: patch });
+export const deleteLead = (id: string) => rpc<void>('admin_outreach_delete_lead', { p_id: id });
+export const queueEmails = (ids: string[], kind: 'first' | 'followup' = 'first') =>
+  rpc<{ queued: number; skipped: Array<{ id: string; business: string; reason: string }> }>('admin_outreach_queue', { p_ids: ids, p_kind: kind });
+export const cancelQueued = (ids: string[]) => rpc<{ cancelled: number }>('admin_outreach_cancel', { p_ids: ids });
+export const saveOutreachSettings = (patch: Partial<OutreachSettings>) => rpc<OutreachSettings>('admin_outreach_save_settings', { p: patch });
+
+export interface Place { label: string; lat: number; lon: number; country: string; region: string | null; city: string | null; timezone: string | null }
+export interface FoundShop {
+  osm_ref: string; business_name: string; category_key: string; category: string;
+  city: string | null; region: string | null; country: string; timezone: string | null;
+  lat: number | null; lon: number | null; address: string | null; website: string | null;
+  phone: string | null; email: string | null; email_source: string | null; instagram: string | null; chain: boolean;
+}
+export type NewLead = Partial<Omit<FoundShop, 'chain'>> & { business_name: string; country: string };
+export interface ScanResult { id: string; email: string | null; email_source: string | null; instagram: string | null; error?: string | null }
+
+export const findPlaces = (q: string) => call<{ places: Place[] }>('outreach-tools', { action: 'geocode', q }).then((r) => r.places);
+export const findShops = (place: Place, category: string, radiusKm: number, includeChains: boolean) =>
+  call<{ shops: FoundShop[]; chains_hidden: number }>('outreach-tools', { action: 'find', place, category, radius_km: radiusKm, include_chains: includeChains });
+export const scanWebsites = (sites: Array<{ id: string; website: string }>) =>
+  call<{ results: ScanResult[] }>('outreach-tools', { action: 'scan', sites }).then((r) => r.results);
+export const sendTestEmail = (leadId: string, kind: 'first' | 'followup' = 'first') =>
+  call<{ ok: boolean; to: string }>('outreach-send', { mode: 'test', lead_id: leadId, kind });
+export const sendNextNow = () =>
+  call<{ status: 'sent' | 'failed' | 'paused' | 'cap' | 'idle'; error?: string }>('outreach-send', { mode: 'tick' });
+
+/** Public: the unsubscribe link in outreach emails. */
+export async function stopOutreachEmails(token: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('outreach_unsubscribe', { p_token: token });
+  if (error) throw error;
+  return data === true;
+}
+
+// ---- Links -----------------------------------------------------------------------
+
+export const igProfileUrl = (handle: string) => `https://www.instagram.com/${encodeURIComponent(handle)}/`;
+/** Opens a direct-message chat with the account (Instagram's own short link). */
+export const igChatUrl = (handle: string) => `https://ig.me/m/${encodeURIComponent(handle)}`;
+export const IG_HOME = 'https://www.instagram.com/';
+export const IG_INBOX = 'https://www.instagram.com/direct/inbox/';
+export function mapsUrl(l: { business_name: string; address?: string | null; city?: string | null; lat?: number | null; lon?: number | null }): string {
+  const q = [l.business_name, l.address || l.city].filter(Boolean).join(', ');
+  const near = l.lat != null && l.lon != null ? `&center=${l.lat},${l.lon}` : '';
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}${near}`;
+}
+
+/**
+ * Instagram can't be shown inside other websites, so it opens in its own
+ * phone-sized window beside the admin panel. Every link reuses that window.
+ */
+export function openInstagramWindow(url: string): void {
+  const w = 440;
+  const h = Math.min(940, window.screen.availHeight || 900);
+  const left = Math.max(0, (window.screen.availWidth || 1440) - w - 10);
+  const win = window.open(url, 'stampfix-instagram', `popup=yes,width=${w},height=${h},left=${left},top=0`);
+  if (win) win.focus();
+  else window.open(url, '_blank', 'noopener');
+}
+
+// ---- Pasted lists ----------------------------------------------------------------
+
+/** Splits CSV text (commas or tabs, quotes allowed) into rows. */
+export function parseCsv(text: string): string[][] {
+  const delim = (text.split('\n')[0] ?? '').includes('\t') ? '\t' : ',';
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === delim) { row.push(cell.trim()); cell = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(cell.trim()); cell = '';
+      if (row.some((c) => c !== '')) rows.push(row);
+      row = [];
+    } else cell += ch;
+  }
+  row.push(cell.trim());
+  if (row.some((c) => c !== '')) rows.push(row);
+  return rows;
+}
+
+const HEADER_ALIASES: Record<string, keyof NewLead> = {
+  name: 'business_name', business: 'business_name', business_name: 'business_name', shop: 'business_name', company: 'business_name',
+  email: 'email', 'e-mail': 'email', mail: 'email',
+  website: 'website', url: 'website', site: 'website', web: 'website',
+  instagram: 'instagram', ig: 'instagram', insta: 'instagram',
+  city: 'city', town: 'city',
+  country: 'country',
+  region: 'region', state: 'region', province: 'region',
+  category: 'category', type: 'category',
+  phone: 'phone', telephone: 'phone',
+  address: 'address',
+  timezone: 'timezone', time_zone: 'timezone',
+};
+
+/**
+ * Turns a pasted list into shops. The first row must name the columns
+ * (name, email, website, instagram, city, country, region, category, phone,
+ * address, timezone); a row without a country gets defaultCountry, and one
+ * without a time zone gets the usual one for its country and region.
+ */
+export function leadsFromCsv(text: string, defaultCountry: string): { leads: NewLead[]; problems: string[] } {
+  const rows = parseCsv(text);
+  const problems: string[] = [];
+  if (rows.length < 2) return { leads: [], problems: ['Paste a header row and at least one shop.'] };
+  const cols = rows[0].map((h) => HEADER_ALIASES[h.toLowerCase().replace(/\s+/g, '_')] ?? null);
+  if (!cols.includes('business_name')) return { leads: [], problems: ['The first row needs a "name" column.'] };
+  const leads: NewLead[] = [];
+  rows.slice(1).forEach((r, i) => {
+    const o: Record<string, string> = {};
+    cols.forEach((c, j) => { if (c && r[j]) o[c] = r[j]; });
+    if (!o.business_name) { problems.push(`Row ${i + 2}: no name`); return; }
+    const country = (o.country || defaultCountry || '').trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(country)) { problems.push(`Row ${i + 2}: country must be a 2-letter code like CA`); return; }
+    const timezone = o.timezone || guessTimezone(country, o.region ?? null, country === 'US' ? -80 : 0);
+    leads.push({ ...o, country, timezone, email_source: o.email ? 'added from a list' : null } as NewLead);
+  });
+  return { leads, problems };
+}
