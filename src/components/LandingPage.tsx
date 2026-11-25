@@ -30,6 +30,7 @@ type AuthMode = 'LOGIN' | 'FORGOT_PASSWORD' | 'RESET_SENT';
 // Demo data for the phone mockup
 import { MobileNav } from './MobileNav';
 import { reopenCookieBanner } from '../lib/cookieConsent';
+import { useSiteInsightsPage } from '../lib/siteInsights';
 
 const INDUSTRIES = [
   { key: 'cafe', icon: '☕' }, { key: 'restaurant', icon: '🍽️' }, { key: 'bakery', icon: '🥐' },
@@ -49,6 +50,7 @@ export function LandingPage({
   autoOpenLoginChoice,
 }: LandingPageProps) {
   const { t } = useTranslation();
+  useSiteInsightsPage('/');
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('LOGIN');
   const [email, setEmail] = useState('');

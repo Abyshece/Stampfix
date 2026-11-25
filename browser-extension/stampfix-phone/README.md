@@ -22,6 +22,9 @@ to no tab, and navigations Instagram starts inside its own frame):
   `mobile.js` tells Instagram's own code the same), like Chrome's device mode, so
   the phone shows Instagram's phone layout.
 
+For the admin panel's send queue, the phone types each shop's message into the chat's message
+box (`type.js`); you check it and press Enter yourself. Nothing is ever sent by the extension.
+
 Normal Instagram tabs are not touched. Anywhere but the panel such a frame is
 logged out, so no website can use this to act as you. The extension checks only
 whether Instagram's login cookie exists (to show "Log in to Instagram"), keeps a
@@ -46,6 +49,8 @@ arrow on Stampfix Phone in `chrome://extensions`, and reload the admin panel.
 - `background.js`: the frame rules, and opening the panel when the admin panel asks.
 - `bridge.js`: runs on stampfix.app; marks the page and passes on "open this Instagram page".
 - `mobile.js`: runs in Instagram frames inside the phone only; tells Instagram's code it's on a phone.
+- `type.js`: runs in the phone's own Instagram frame only; for the send queue it waits for the
+  chat's message box and types the message in (like a paste). It never presses Send.
 - `panel.html`, `panel.js`, `panel.css`: the phone, its login screen and Details.
 
 After a change, also raise `version` in `manifest.json` and `PHONE_VERSION` in

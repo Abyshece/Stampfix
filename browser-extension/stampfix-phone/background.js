@@ -84,7 +84,8 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   // page asks you to click the toolbar icon, and the panel opens on this page.
   let opening = Promise.resolve(false);
   try { opening = chrome.sidePanel.open({ windowId: sender.tab.windowId }).then(() => true, () => false); } catch { /* older Chrome */ }
-  chrome.storage.session.set({ go: { url: msg.url, at: Date.now() } })
+  const text = typeof msg.text === 'string' && msg.text.trim() ? msg.text.slice(0, 4000) : null;
+  chrome.storage.session.set({ go: { url: msg.url, text, at: Date.now() } })
     .then(() => opening)
     .then(async (opened) => reply({ ok: true, panel: opened || await phoneShowing(sender.tab.windowId) }), () => reply({ ok: false, panel: false }));
   return true;

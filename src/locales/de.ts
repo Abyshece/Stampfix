@@ -1397,6 +1397,8 @@ const de = {
       cookiePolicy: 'Cookie-Richtlinie',
       necessaryB: 'Unbedingt erforderlich', necessaryRest: 'erforderlich für Anmeldung, Zahlungen und Sicherheit. Immer aktiv.',
       errorMonB: 'Fehlerüberwachung', errorMonRest: 'hilft uns, Fehler zu finden und zu beheben (Sentry). Keine Werbung, und Ihre IP wird entfernt.',
+      bodyB2: 'Cookies, um Stampfix zu betreiben, zum Beispiel damit Sie angemeldet bleiben, Zahlungen abgewickelt werden und die Website sicher bleibt. Mit Ihrer Einwilligung nutzen wir außerdem Fehlerüberwachung, um Probleme zu beheben, und unsere eigene Website-Statistik, um zu sehen, wie Besucher stampfix.app nutzen. Keine Werbe-Cookies, keine Tracker von Dritten. Siehe unsere',
+      analyticsB: 'Website-Statistik', analyticsRest: 'unsere eigene Statistik darüber, wie Besucher stampfix.app nutzen (Seiten, Scrollen, Klicks), um sie zu verbessern. Nur bei uns gespeichert, ohne IP-Adresse, nach 13 Monaten gelöscht.',
       customize: 'Anpassen',
       essentialOnly: 'Nur wesentliche',
       saveChoices: 'Auswahl speichern', acceptAll: 'Alle akzeptieren',

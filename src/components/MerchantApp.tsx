@@ -31,6 +31,7 @@ import { MerchantOnboarding, consumePendingCampaign } from './MerchantOnboarding
 import { MerchantDashboard } from './MerchantDashboard';
 import { BrandLoading } from './BrandLoading';
 import { OnboardingWizard } from './OnboardingWizard';
+import { markShopBrowser } from '../lib/siteInsights';
 
 interface MerchantAppProps {
   onLogout: () => void;
@@ -48,6 +49,7 @@ interface MerchantAppProps {
 export function MerchantApp({ onLogout, startOnLogin }: MerchantAppProps) {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
+  useEffect(() => { if (user) markShopBrowser(); }, [user]);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [cards, setCards] = useState<UserCard[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
