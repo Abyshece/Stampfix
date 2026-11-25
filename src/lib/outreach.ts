@@ -42,7 +42,17 @@ export interface Lead {
   blocked: BlockReason | null;
   followup_due: boolean;
   last_error: string | null;
+  // AI email finder (see the outreach_ai migration).
+  ai_status?: AiStatus | null;
+  ai_email?: string | null;
+  ai_source?: string | null;
+  ai_note?: string | null;
+  ai_search?: string | null;
+  ai_attempts?: number;
+  ai_checked_at?: string | null;
 }
+
+export type AiStatus = 'queued' | 'working' | 'found' | 'suggested' | 'not_found' | 'failed';
 
 export interface OutreachSettings {
   paused: boolean;
@@ -62,6 +72,7 @@ export interface OutreachSettings {
   ig_tpl: string;
   ig_account: string | null;
   ig_daily_limit: number;
+  ai_auto_queue?: boolean;
 }
 
 export interface OutreachState {
@@ -209,8 +220,8 @@ export async function findPlaces(q: string): Promise<Place[]> {
 
 export type ShopSource = 'geoapify' | 'overpass';
 
-/** Is the Geoapify key set on the server (reliable shop search)? */
-export const getSearchStatus = () => call<{ places_key: boolean }>('outreach-tools', { action: 'status' });
+/** Are the Geoapify key (reliable shop search) and the Gemini key (AI email finder) set on the server? */
+export const getSearchStatus = () => call<{ places_key: boolean; ai_key?: boolean }>('outreach-tools', { action: 'status' });
 
 /**
  * Shops of one kind around a place. First Geoapify, through the
@@ -251,6 +262,73 @@ export const sendTestEmail = (leadId: string, kind: 'first' | 'followup' = 'firs
   call<{ ok: boolean; to: string }>('outreach-send', { mode: 'test', lead_id: leadId, kind });
 export const sendNextNow = () =>
   call<{ status: 'sent' | 'failed' | 'paused' | 'cap' | 'idle'; error?: string }>('outreach-send', { mode: 'tick' });
+
+// ---- AI email finder ----------------------------------------------------------------
+
+export interface AiState {
+  auto_queue: boolean;
+  /** Set while searches wait (Google's free searches used up, or a problem to fix). */
+  paused_until: string | null;
+  last_error: string | null;
+  /** Shops without an address that may be emailed. */
+  no_email: number;
+  not_searched: number;
+  waiting: number;
+  working: number;
+  found: number;
+  /** Found ones that are queued or already emailed. */
+  found_queued: number;
+  suggested: number;
+  not_found: number;
+  searched_24h: number;
+  /** Shops without an address in countries where email is off (not searched). */
+  email_off: number;
+}
+export type AiView = 'not_searched' | 'waiting' | 'found' | 'suggested' | 'not_found';
+
+export const getAiState = () => rpc<AiState>('admin_outreach_ai_state');
+export const listAiLeads = (view: AiView) => rpc<Lead[]>('admin_outreach_ai_leads', { p_view: view, p_limit: 500 });
+/** Puts shops in line: every one not searched yet, or the given ones (to search again). */
+export const startAiSearch = (ids?: string[]) => rpc<{ queued: number }>('admin_outreach_ai_start', { p_ids: ids?.length ? ids : null });
+export const cancelAiSearch = () => rpc<{ cancelled: number }>('admin_outreach_ai_cancel');
+/** "Use it": saves the address (the AI's, or one typed instead) and queues the first email if asked. */
+export const acceptAiEmail = (id: string, email: string | null, queue: boolean) =>
+  rpc<{ queued: boolean; reason: string | null }>('admin_outreach_ai_accept', { p_id: id, p_email: email, p_queue: queue });
+export const rejectAiEmail = (id: string) => rpc<void>('admin_outreach_ai_reject', { p_id: id });
+export const saveAiSettings = (patch: { auto_queue?: boolean; resume?: boolean }) =>
+  rpc<AiState>('admin_outreach_ai_settings', { p_auto_queue: patch.auto_queue ?? null, p_resume: patch.resume ?? false });
+/** Starts searching straight away instead of within the minute (the database starts it anyway). */
+export const runAiNow = () => call<{ started?: boolean; searched?: number }>('outreach-tools', { action: 'ai_tick' });
+export const testAi = () => call<{ ok: boolean; model?: string; searched_google?: boolean; answer?: string; error?: string }>('outreach-tools', { action: 'ai_test' });
+export const googleSearchUrl = (l: Pick<Lead, 'business_name' | 'city' | 'ai_search'>) =>
+  `https://www.google.com/search?q=${encodeURIComponent(l.ai_search || [`"${l.business_name}"`, l.city, 'email'].filter(Boolean).join(' '))}`;
+
+// ---- Areas: where you've reached out --------------------------------------------------
+
+export interface CoverageRow {
+  country: string;
+  /** The city in lower case: rows of one city share it. */
+  city_key: string;
+  city: string | null;
+  region: string | null;
+  /** The kind of shop (landing page key like "cafe"), or the category text for imported shops, or "other". */
+  category_key: string;
+  category: string | null;
+  shops: number;
+  with_email: number;
+  queued: number;
+  emailed: number;
+  ig_messaged: number;
+  /** Emailed or messaged on Instagram, each shop once. */
+  reached: number;
+  replied: number;
+  not_interested: number;
+  ai_searched: number;
+  last_contact: string | null;
+  first_added: string;
+  last_added: string;
+}
+export const getCoverage = () => rpc<CoverageRow[]>('admin_outreach_coverage');
 
 /** Public: the unsubscribe link in outreach emails. */
 export async function stopOutreachEmails(token: string): Promise<boolean> {
