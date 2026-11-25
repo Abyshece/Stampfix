@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Search, Store, Mail, Instagram, Settings2, Send, Sparkles, MapPinned } from 'lucide-react';
-import { getOutreachState, type OutreachState } from '../../lib/outreach';
+import { getOutreachState, type OutreachState, type Place } from '../../lib/outreach';
 import { FindTab } from './FindTab';
 import { ShopsTab } from './ShopsTab';
 import { EmailTab } from './EmailTab';
@@ -23,6 +23,8 @@ export function OutreachAdmin({ readOnly }: { readOnly: boolean }) {
   const [state, setState] = useState<OutreachState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [autoScan, setAutoScan] = useState(false);
+  // A city clicked under Areas: Find shops opens with it already chosen.
+  const [findPlace, setFindPlace] = useState<Place | null>(null);
 
   const refresh = useCallback(() => {
     getOutreachState().then((s) => { setState(s); setError(null); }).catch((e) => setError(errorText(e)));
@@ -74,12 +76,14 @@ export function OutreachAdmin({ readOnly }: { readOnly: boolean }) {
         ))}
       </nav>
 
-      {tab === 'find' && <FindTab readOnly={readOnly} onAdded={(check) => { refresh(); setAutoScan(check); setTab('shops'); }} />}
+      {tab === 'find' && <FindTab key={findPlace?.label ?? 'none'} initialPlace={findPlace} readOnly={readOnly}
+        onAdded={(check) => { refresh(); setAutoScan(check); setFindPlace(null); setTab('shops'); }} />}
       {tab === 'shops' && <ShopsTab state={state} readOnly={readOnly} autoScan={autoScan} onAutoScanStarted={() => setAutoScan(false)} onChanged={refresh} />}
       {tab === 'ai' && <AiTab state={state} readOnly={readOnly} onChanged={refresh} />}
       {tab === 'email' && <EmailTab state={state} readOnly={readOnly} onChanged={refresh} />}
       {tab === 'instagram' && <InstagramTab state={state} readOnly={readOnly} onChanged={refresh} />}
-      {tab === 'areas' && <AreasTab />}
+      {tab === 'areas' && <AreasTab onFindShops={() => { setFindPlace(null); setTab('find'); }}
+        onSearchCity={(p) => { setFindPlace(p); setTab('find'); }} />}
       {tab === 'settings' && <SettingsTab key={state.settings.subject_tpl + state.settings.daily_cap} settings={state.settings} readOnly={readOnly} onSaved={refresh} />}
     </div>
   );

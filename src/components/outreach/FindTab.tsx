@@ -14,10 +14,14 @@ import { LinkIcons, errorText, flag } from './common';
  * come from OpenStreetMap (each with a Google Maps link to check reviews and
  * photos). Tick the ones to keep and add them to your list.
  */
-export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (checkWebsites: boolean) => void }) {
+export function FindTab({ readOnly, onAdded, initialPlace = null }: {
+  readOnly: boolean; onAdded: (checkWebsites: boolean) => void;
+  /** A place picked elsewhere (a city under Areas), already chosen here. */
+  initialPlace?: Place | null;
+}) {
   const { t } = useTranslation();
   const toast = useToast();
-  const [place, setPlace] = useState<Place | null>(null);
+  const [place, setPlace] = useState<Place | null>(initialPlace);
   const [category, setCategory] = useState<string | null>(null);
   const [radius, setRadius] = useState(5);
   const [chains, setChains] = useState(false);
