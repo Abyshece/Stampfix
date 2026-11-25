@@ -51,20 +51,23 @@ export function geminiRequest(prompt: string, model: string): Record<string, unk
   return {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     tools: [{ google_search: {} }],
-    generationConfig: {
-      temperature: 0,
-      // A little thinking helps tell the right shop from namesakes; 2.5 models only.
-      ...(/^gemini-2\.5-/.test(model) ? { thinkingConfig: { thinkingBudget: 1024 } } : {}),
-    },
+    // Gemini 3 and newer: Google deprecated temperature and wants the model's
+    // own defaults, so nothing is set. Older 2.5 models (only for keys that
+    // used them before) get a steady answer and a little thinking.
+    ...(/^gemini-2\.5-/.test(model) ? { generationConfig: { temperature: 0, thinkingConfig: { thinkingBudget: 1024 } } } : {}),
   };
 }
 
 export const geminiUrl = (model: string) =>
   `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
-/** The models to try, best first: GEMINI_MODEL if set, then the two with free Google Search. */
+/**
+ * The models to try, best first: GEMINI_MODEL if set, then Google's current
+ * low-cost model (the 2.5 models are closed to new keys), then a bigger one
+ * in case that one is unavailable or used up for the day.
+ */
 export function modelChain(envModel: string | null | undefined): string[] {
-  const chain = [(envModel ?? '').trim(), 'gemini-2.5-flash', 'gemini-2.5-flash-lite'].filter((m) => /^[a-z0-9.-]{3,60}$/i.test(m));
+  const chain = [(envModel ?? '').trim(), 'gemini-3.5-flash-lite', 'gemini-3.6-flash'].filter((m) => /^[a-z0-9.-]{3,60}$/i.test(m));
   return [...new Set(chain)];
 }
 
@@ -145,6 +148,7 @@ export function parseAnswer(text: string): AiAnswer | null {
 
 export type GeminiErrorKind =
   | 'bad_key'      // the key is wrong or expired: fix GEMINI_API_KEY
+  | 'billing'      // not on Google's free plan (Search needs billing on the key's project)
   | 'no_access'    // the key may not use this (blocked, region, project)
   | 'model'        // this model can't be used (or can't search Google): try the next one
   | 'daily'        // today's free requests for this model are used up
@@ -165,6 +169,10 @@ export function classifyGeminiError(status: number, body: string): { kind: Gemin
   const retrySec = delay ? Math.ceil(Number(delay[1])) : null;
   const all = `${message} ${detail}`;
   if (status === 401 || /API[_ ]key (not valid|expired|invalid)|API_KEY_INVALID|API key not found/i.test(all)) return { kind: 'bad_key', message, retrySec };
+  // "limit: 0": the free plan doesn't include this at all (not a used-up day). Or Google asks for billing.
+  if ((status === 429 && /limit:\s*0\b|"quotaValue"\s*:\s*"0"/i.test(all)) || (status !== 429 && /billing|free tier is not available|not available (on|in) the free tier/i.test(message))) {
+    return { kind: 'billing', message, retrySec };
+  }
   if (status === 403) return { kind: 'no_access', message, retrySec };
   if (status === 404 || (status === 400 && /\bmodels?\b|grounding|google_search/i.test(message))) return { kind: 'model', message, retrySec };
   if (status === 429) return { kind: /PerDay|per day|daily|quota_exceeded/i.test(all) ? 'daily' : 'minute', message, retrySec };

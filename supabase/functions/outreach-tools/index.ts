@@ -17,7 +17,7 @@
 // Without a Geoapify key, 'find' answers "no_places_key" at once and the
 // panel uses the free Overpass servers from the admin's browser instead.
 //
-// The AI email finder asks Gemini (Google's AI, free plan) with Google Search
+// The AI email finder asks Gemini (Google's AI) with Google Search
 // where each shop publishes its email address, then reads those pages itself:
 // an address is only used when a page shows it next to the shop's name (or
 // it's on the shop's own website) and its domain receives email. The rest
@@ -25,7 +25,8 @@
 //
 // Secrets: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (always set by Supabase);
 //          GEOAPIFY_API_KEY (free at geoapify.com, 3,000 searches a day);
-//          GEMINI_API_KEY (free at aistudio.google.com/apikey); GEMINI_MODEL (optional)
+//          GEMINI_API_KEY (aistudio.google.com/apikey; Google Search needs billing on its
+//          project, first 5,000 searches a month free); GEMINI_MODEL (optional)
 // Deploy:  supabase functions deploy outreach-tools --no-verify-jwt   (it checks callers itself)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
@@ -167,7 +168,7 @@ async function scanOne(site: { id: string; website: string }) {
 type Db = any;
 type GeminiError = { kind: GeminiErrorKind; message: string; retrySec: number | null };
 
-/** One grounded Gemini request, trying the next model when one can't be used or is used up today. */
+/** One Gemini request with Google Search, trying the next model when one can't be used or is used up today. */
 async function askGemini(prompt: string, skipModels: Set<string>): Promise<{ reply: GeminiReply; model: string } | { error: GeminiError }> {
   let last: GeminiError | null = null;
   let daily = false;
@@ -249,10 +250,11 @@ type LeadResult = {
 
 const STOP_TEXT: Record<GeminiErrorKind, (m: string) => { minutes: number | null; error: string }> = {
   bad_key: () => ({ minutes: 60, error: 'Google doesn\'t accept the Gemini key. Check GEMINI_API_KEY in Supabase (Edge Functions, Secrets), then press Resume.' }),
+  billing: () => ({ minutes: 60, error: 'Google Search in Gemini needs billing turned on for the key\'s Google project (aistudio.google.com, Billing). The first 5,000 searches a month are free. Then press Resume.' }),
   no_access: (m) => ({ minutes: 60, error: `Google refused the request: ${m}`.slice(0, 300) }),
   model: (m) => ({ minutes: 60, error: `No Gemini model could search Google: ${m}`.slice(0, 300) }),
   bad_request: (m) => ({ minutes: 60, error: `Google refused the request: ${m}`.slice(0, 300) }),
-  daily: () => ({ minutes: null, error: 'Today\'s free Google searches are used up. It carries on by itself after midnight Pacific time.' }),
+  daily: () => ({ minutes: null, error: 'Google\'s daily limit is reached. It carries on by itself after midnight Pacific time.' }),
   minute: () => ({ minutes: 1, error: 'Google asked to slow down. It carries on in a minute.' }),
   busy: () => ({ minutes: 3, error: 'Google\'s AI is busy right now. It tries again in a few minutes.' }),
   server: () => ({ minutes: 3, error: 'Google\'s AI had an error. It tries again in a few minutes.' }),

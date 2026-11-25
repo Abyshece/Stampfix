@@ -267,7 +267,7 @@ export const sendNextNow = () =>
 
 export interface AiState {
   auto_queue: boolean;
-  /** Set while searches wait (Google's free searches used up, or a problem to fix). */
+  /** Set while searches wait (Google's daily limit reached, or a problem to fix). */
   paused_until: string | null;
   last_error: string | null;
   /** Shops without an address that may be emailed. */

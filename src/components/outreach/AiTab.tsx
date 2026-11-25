@@ -25,7 +25,7 @@ const reasonText = (r: string | null) => (r && r in BLOCK_LABEL ? BLOCK_LABEL[r 
 
 /**
  * Admin > Outreach > AI email finder. Shops without an email address go to
- * Google's Gemini AI (free plan, with Google Search). An address is used
+ * Google's Gemini AI (with Google Search). An address is used
  * only when a page we open ourselves shows it next to the shop's name (or
  * it's on the shop's own website); those go into the email queue by
  * themselves. Anything else waits under "Check these" for a person.
@@ -171,14 +171,14 @@ export function AiTab({ state: outreach, readOnly, onChanged }: { state: Outreac
     <div className="space-y-4" data-ai-tab>
       {hasKey === false && (
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" data-ai-setup>
-          <div className="font-semibold mb-1">One-time setup: a free Gemini key</div>
-          <p className="mb-2">The AI email finder uses Google’s Gemini AI with Google Search, on Google’s free plan (no card):</p>
+          <div className="font-semibold mb-1">One-time setup: a Gemini key</div>
+          <p className="mb-2">The AI email finder uses Google’s Gemini AI with Google Search:</p>
           <ol className="list-decimal pl-5 space-y-0.5">
             <li>Open <a className="underline font-medium" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>, sign in with a Google account and click <b>Create API key</b>.</li>
-            <li>Copy the key.</li>
+            <li>Turn on billing for the key’s project in AI Studio. Google only includes Search with billing on; the first 5,000 searches a month are free, and the AI’s answers cost a fraction of a cent per shop.</li>
             <li>In Supabase: Edge Functions, Secrets, add <code className="bg-white/70 rounded px-1">GEMINI_API_KEY</code> with that key.</li>
           </ol>
-          <p className="mt-2 text-xs">On the free plan Google may use what is sent to improve its products. Only public details are sent: the shop’s name, town, address, phone and website.</p>
+          <p className="mt-2 text-xs">Only public details are sent: the shop’s name, town, address, phone and website.</p>
           <button type="button" className={`${btnLight} mt-3`} onClick={() => void checkKey()}><RotateCcw className="w-4 h-4" />Check again</button>
         </section>
       )}
@@ -227,7 +227,7 @@ export function AiTab({ state: outreach, readOnly, onChanged }: { state: Outreac
               )}
               <span className="text-xs text-gray-500">
                 Takes {duration(ai.not_searched)} and runs by itself.
-                {ai.not_searched > 150 && ' If Google’s free searches for the day run out, it pauses and carries on after midnight Pacific time.'}
+                {ai.not_searched > 150 && ' If Google’s daily limit is reached, it pauses and carries on after midnight Pacific time.'}
               </span>
             </div>
           ) : (
