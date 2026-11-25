@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Search, Store, Mail, Instagram, Settings2, Send } from 'lucide-react';
+import { Loader2, Search, Store, Mail, Instagram, Settings2, Send, Sparkles, MapPinned } from 'lucide-react';
 import { getOutreachState, type OutreachState } from '../../lib/outreach';
 import { FindTab } from './FindTab';
 import { ShopsTab } from './ShopsTab';
 import { EmailTab } from './EmailTab';
 import { InstagramTab } from './InstagramTab';
 import { SettingsTab } from './SettingsTab';
+import { AiTab } from './AiTab';
+import { AreasTab } from './AreasTab';
 import { errorText } from './common';
 
-type Tab = 'find' | 'shops' | 'email' | 'instagram' | 'settings';
+type Tab = 'find' | 'shops' | 'ai' | 'email' | 'instagram' | 'areas' | 'settings';
 
 /**
  * Admin > Outreach. Find shops anywhere (23 kinds, from map data), find the
- * email address and Instagram account on their websites, email them from
- * hello@stampfix.app within safe limits, and message them on Instagram.
+ * email address and Instagram account on their websites (or with the AI
+ * email finder), email them from hello@stampfix.app within safe limits, and
+ * message them on Instagram.
  */
 export function OutreachAdmin({ readOnly }: { readOnly: boolean }) {
   const [tab, setTab] = useState<Tab>('find');
@@ -41,8 +44,10 @@ export function OutreachAdmin({ readOnly }: { readOnly: boolean }) {
   const tabs: Array<[Tab, typeof Search, string, number | null]> = [
     ['find', Search, 'Find shops', null],
     ['shops', Store, 'Shops', state.leads],
+    ['ai', Sparkles, 'AI email finder', null],
     ['email', Mail, 'Email', state.queued || null],
     ['instagram', Instagram, 'Instagram', null],
+    ['areas', MapPinned, 'Areas', null],
     ['settings', Settings2, 'Settings', null],
   ];
 
@@ -71,8 +76,10 @@ export function OutreachAdmin({ readOnly }: { readOnly: boolean }) {
 
       {tab === 'find' && <FindTab readOnly={readOnly} onAdded={(check) => { refresh(); setAutoScan(check); setTab('shops'); }} />}
       {tab === 'shops' && <ShopsTab state={state} readOnly={readOnly} autoScan={autoScan} onAutoScanStarted={() => setAutoScan(false)} onChanged={refresh} />}
+      {tab === 'ai' && <AiTab state={state} readOnly={readOnly} onChanged={refresh} />}
       {tab === 'email' && <EmailTab state={state} readOnly={readOnly} onChanged={refresh} />}
       {tab === 'instagram' && <InstagramTab state={state} readOnly={readOnly} onChanged={refresh} />}
+      {tab === 'areas' && <AreasTab />}
       {tab === 'settings' && <SettingsTab key={state.settings.subject_tpl + state.settings.daily_cap} settings={state.settings} readOnly={readOnly} onSaved={refresh} />}
     </div>
   );

@@ -26,5 +26,10 @@ verify_jwt = false
 [functions.outreach-unsubscribe]
 verify_jwt = false
 
+# Checks callers itself: an admin's token, or the cron secret (the AI email
+# finder runs every minute from the database, which sends no JWT).
+[functions.outreach-tools]
+verify_jwt = false
+
 [functions.referral-credit]
 verify_jwt = false
