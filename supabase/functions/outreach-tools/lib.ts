@@ -168,6 +168,55 @@ export function guessTimezone(country: string, region: string | null, lon: numbe
   return h === 0 ? 'Etc/GMT' : `Etc/GMT${h > 0 ? '-' : '+'}${Math.abs(h)}`;
 }
 
+// ---- Places (city or neighbourhood search) -------------------------------------
+
+export type FoundPlace = { label: string; lat: number; lon: number; country: string; region: string | null; city: string | null; timezone: string | null };
+
+const okPlace = (p: FoundPlace) => /^[A-Z]{2}$/.test(p.country) && Number.isFinite(p.lat) && Number.isFinite(p.lon);
+const dedupe = (list: FoundPlace[]) => {
+  const seen = new Set<string>();
+  return list.filter((p) => (seen.has(p.label) ? false : (seen.add(p.label), true)));
+};
+
+/** Nominatim's search results as places. */
+export function placesFromNominatim(rows: unknown): FoundPlace[] {
+  if (!Array.isArray(rows)) return [];
+  return dedupe(rows.map((r: { display_name?: string; lat?: string; lon?: string; address?: Record<string, string> }) => {
+    const a = r.address ?? {};
+    const country = (a.country_code ?? '').toUpperCase();
+    const lat = Number(r.lat), lon = Number(r.lon);
+    const region = a.state ?? a.province ?? a.region ?? a.state_district ?? null;
+    return {
+      label: String(r.display_name ?? ''),
+      lat, lon, country, region,
+      city: a.city ?? a.town ?? a.village ?? a.municipality ?? a.suburb ?? a.county ?? null,
+      timezone: country ? guessTimezone(country, region, lon) : null,
+    };
+  }).filter((p) => p.label && okPlace(p)));
+}
+
+/** Photon's (search-as-you-type) results as places: "Kitsilano, Vancouver, British Columbia, Canada". */
+export function placesFromPhoton(json: unknown): FoundPlace[] {
+  const features = (json as { features?: unknown[] } | null)?.features;
+  if (!Array.isArray(features)) return [];
+  return dedupe(features.map((f) => {
+    const { geometry, properties: pr = {} } = f as { geometry?: { coordinates?: number[] }; properties?: Record<string, string> };
+    const [lon, lat] = geometry?.coordinates ?? [];
+    const country = String(pr.countrycode ?? '').toUpperCase();
+    const region = pr.state ?? null;
+    const name = pr.name ?? '';
+    const city = pr.city && pr.city !== name ? pr.city : null;
+    return {
+      // Each part once: "Berlin, Germany", not "Berlin, Berlin, Germany".
+      label: [...new Map([name, city, !city ? pr.county : null, region, pr.country]
+        .filter((x): x is string => !!x).map((x) => [x.toLowerCase(), x])).values()].join(', '),
+      lat: Number(lat), lon: Number(lon), country, region,
+      city: city ?? (name || null),
+      timezone: country ? guessTimezone(country, region, Number(lon)) : null,
+    };
+  }).filter((p) => p.label && okPlace(p)));
+}
+
 // ---- Reading a shop's website ----------------------------------------------------------
 
 const JUNK_DOMAINS = /(^|\.)(example\.(com|org)|domain\.com|email\.com|yourdomain\.com|mysite\.com|sentry\.io|sentry-next\.wixpress\.com|wixpress\.com|wix\.com|godaddy\.com|squarespace\.com|shopify\.com|wordpress\.com|w3\.org|schema\.org|googleusercontent\.com|cloudflare\.com)$/i;

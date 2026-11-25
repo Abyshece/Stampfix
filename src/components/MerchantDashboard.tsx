@@ -1082,8 +1082,8 @@ export function MerchantDashboard({
                   </div>
                 </div>
               </div>
-              {/* Referral pill: "invite a shop, you both get a month free". */}
-              <ReferralPill isPro={isPro} hide={isScannerOpen} onUpgrade={() => setShowUpgradeModal(true)} />
+              {/* Referral pill: "invite a shop, you both get a month free". Owner only, like the banners. */}
+              {!activeStaff && <ReferralPill isPro={isPro} hide={isScannerOpen} onUpgrade={() => setShowUpgradeModal(true)} />}
             </div>
           </div>
         )}

@@ -1,6 +1,9 @@
 // supabase/functions/outreach-tools/index.ts
 //
-// Admin tools for Outreach (platform admins only):
+// Admin tools for Outreach (platform admins only). The admin panel asks the
+// map services (geocode, find) from the admin's own browser first, because
+// OpenStreetMap's free services refuse shared cloud servers; these actions
+// are its fallback. The website scan only runs here.
 //   { action: 'geocode', q }                     -> places matching a name, anywhere in the world
 //   { action: 'find', place, category, radius_km, include_chains }
 //                                                -> shops of that kind around the place (OpenStreetMap)
@@ -13,7 +16,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import {
-  CATEGORIES, overpassQuery, parseOverpass, guessTimezone, extractContacts, pickEmail, isPublicUrl, cleanWebsite,
+  CATEGORIES, overpassQuery, parseOverpass, placesFromNominatim, extractContacts, pickEmail, isPublicUrl, cleanWebsite,
   type Place,
 } from './lib.ts';
 
@@ -44,19 +47,7 @@ async function geocode(q: string) {
   const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&q=${encodeURIComponent(q)}`;
   const res = await fetchWithTimeout(url, { headers: { 'User-Agent': UA, 'Accept-Language': 'en' } }, 15000);
   if (!res.ok) throw new Error(`geocode_${res.status}`);
-  const rows = await res.json() as Array<{ display_name: string; lat: string; lon: string; type?: string; address?: Record<string, string> }>;
-  return rows.map((r) => {
-    const a = r.address ?? {};
-    const country = (a.country_code ?? '').toUpperCase();
-    const lat = Number(r.lat), lon = Number(r.lon);
-    const region = a.state ?? a.province ?? a.region ?? a.state_district ?? null;
-    return {
-      label: r.display_name,
-      lat, lon, country, region,
-      city: a.city ?? a.town ?? a.village ?? a.municipality ?? a.suburb ?? a.county ?? null,
-      timezone: country ? guessTimezone(country, region, lon) : null,
-    };
-  }).filter((p) => /^[A-Z]{2}$/.test(p.country) && Number.isFinite(p.lat) && Number.isFinite(p.lon));
+  return placesFromNominatim(await res.json());
 }
 
 async function find(body: { place?: Place & { lat: number; lon: number }; category?: string; radius_km?: number; include_chains?: boolean }) {
