@@ -3,7 +3,7 @@
 html, body { height: 100%; margin: 0; }
 body {
   display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 10px;
-  background: #F1F1EF; font: 13px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color: #37352F;
+  background: #F1F1EF; font: 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; color: #37352F;
 }
 .bar { display: flex; align-items: center; gap: 6px; flex: none; }
 .bar button {
@@ -11,11 +11,34 @@ body {
   border: 1px solid #E3E2DF; background: #fff; color: #37352F; font: inherit; font-weight: 500; cursor: pointer;
 }
 .bar button:hover { background: #F7F7F5; }
-.bar .name { margin-left: auto; font-size: 12px; color: #9B9A97; }
+.bar .quiet { margin-left: auto; border-color: transparent; background: transparent; color: #9B9A97; font-weight: 400; }
+.log {
+  flex: none; max-height: 40%; overflow: auto; margin: 0; padding: 8px 8px 8px 28px; border-radius: 10px;
+  background: #fff; border: 1px solid #E3E2DF; font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: #555;
+}
+.log li { margin: 2px 0; word-break: break-all; }
+.log .empty { list-style: none; margin-left: -20px; color: #9B9A97; }
 .phone {
   position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column;
   padding: 34px 8px 8px; border-radius: 44px; background: #1C1C1E; box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
   max-width: 460px; width: 100%; margin: 0 auto;
 }
 .island { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 96px; height: 18px; border-radius: 9px; background: #000; }
-#ig { flex: 1; width: 100%; min-height: 0; border: 0; border-radius: 34px; background: #fff; }
+.screen { position: relative; flex: 1; min-height: 0; border-radius: 34px; overflow: hidden; background: #fff; }
+#ig { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+.login {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 28px; text-align: center; background: #fff;
+}
+.login[hidden] { display: none; }
+.login .logo {
+  width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+  background: linear-gradient(45deg, #F58529, #DD2A7B 50%, #8134AF 80%, #515BD4);
+}
+.login h1 { margin: 0; font-size: 18px; }
+.login p { margin: 8px 0 18px; color: #6B6A66; font-size: 13px; max-width: 280px; }
+.login .primary {
+  height: 38px; padding: 0 18px; border: 0; border-radius: 10px; background: #37352F; color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+}
+.login .primary:hover { background: #2F2D28; }
+.login .link { margin-top: 12px; border: 0; background: none; color: #6B6A66; font: inherit; text-decoration: underline; cursor: pointer; }
