@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Logo } from '../Logo';
 import { useTranslation } from 'react-i18next';
+import { useSiteInsightsPage } from '../../lib/siteInsights';
 
 interface LegalPageProps {
   title: string;
@@ -16,6 +17,7 @@ interface LegalPageProps {
  */
 export function LegalPage({ title, lastUpdated, children }: LegalPageProps) {
   const { t } = useTranslation();
+  useSiteInsightsPage();
   return (
     <div className="min-h-screen bg-white text-[#37352F]">
       <header className="border-b notion-border sticky top-0 bg-white/90 backdrop-blur-sm z-10">

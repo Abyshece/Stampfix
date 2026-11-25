@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
   Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell, Pencil, KeyRound,
-  Download, Eye, Megaphone, Utensils, Send, MailPlus, Gift,
+  Download, Eye, Megaphone, Utensils, Send, MailPlus, Gift, BarChart3,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
@@ -34,8 +34,10 @@ import { ReferralsAdmin } from './ReferralsAdmin';
 import { adminListMenuUploads } from '../lib/ordering';
 import { setMerchantApproval, getMerchantApproval, setRejectionReason, getMerchantRejectionReason, getMerchantActivity, type MerchantActivityRow } from '../lib/db';
 import { fetchExtendedKPIs, type ExtendedKPIs } from '../lib/db';
+import { markAdminBrowser } from '../lib/siteInsights';
+import { SiteInsightsAdmin } from './SiteInsightsAdmin';
 
-type AdminTab = 'OVERVIEW' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'MENUS' | 'OUTREACH' | 'SHOP_EMAILS' | 'REFERRALS' | 'OFFERS' | 'MERCHANT_BANNERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
+type AdminTab = 'OVERVIEW' | 'INSIGHTS' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'MENUS' | 'OUTREACH' | 'SHOP_EMAILS' | 'REFERRALS' | 'OFFERS' | 'MERCHANT_BANNERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
 
 export function AdminPanel({ onExit }: { onExit: () => void }) {
   const { user, loading: authLoading } = useAuth();
@@ -47,6 +49,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   // Menus uploaded by shops that still need adding (badge in the sidebar).
   const [newMenus, setNewMenus] = useState(0);
+  useEffect(() => { markAdminBrowser(); }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -130,6 +133,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {([
             ['OVERVIEW', LayoutDashboard, 'Overview'],
+            ['INSIGHTS', BarChart3, 'Website insights'],
             ['B2B', Users, 'B2B Clients'],
             ['B2B2C', UserCircle, 'B2B2C Clients'],
             ['B2B_REPORTS', MessageSquare, 'B2B Reports'],
@@ -187,6 +191,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
           padding on mobile so tables get more room. */}
       <main className="md:ml-60 p-4 md:p-8 max-w-7xl">
         {tab === 'OVERVIEW' && <OverviewTab />}
+        {tab === 'INSIGHTS' && <SiteInsightsAdmin />}
         {tab === 'B2B' && <B2BTab readOnly={readOnly} />}
         {tab === 'B2B2C' && <B2B2CTab readOnly={readOnly} />}
         {tab === 'B2B_REPORTS' && <ReportsTab source="merchant" title="B2B Reports" subtitle="Tickets submitted by merchants." />}

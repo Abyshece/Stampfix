@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Mail, Loader2, Check } from 'lucide-react';
 import { submitContactMessage } from '../services/admin';
 import { useTranslation } from 'react-i18next';
+import { siteInsightsForm } from '../lib/siteInsights';
 
 type Inquiry = 'merchant_inquiry' | 'customer_inquiry' | 'partnership' | 'other';
 
@@ -38,6 +39,7 @@ export function ContactFormSection() {
     if (!name.trim() || !email.trim() || !message.trim()) return;
     setError(null);
     setSending(true);
+    siteInsightsForm('contact', 'submit');
     try {
       await submitContactMessage({
         name,
@@ -47,6 +49,7 @@ export function ContactFormSection() {
         message,
       });
       setSent(true);
+      siteInsightsForm('contact', 'done');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('contact.error', { defaultValue: 'Could not send. Please try again.' }));
     } finally {
@@ -82,7 +85,7 @@ export function ContactFormSection() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="relative bg-white text-[#37352F] rounded-xl p-6 md:p-8 space-y-4 shadow-2xl border notion-border overflow-hidden">
+        <form onSubmit={handleSubmit} data-insight-form="contact" className="relative bg-white text-[#37352F] rounded-xl p-6 md:p-8 space-y-4 shadow-2xl border notion-border overflow-hidden">
           <div className="h-1.5 -mx-6 md:-mx-8 -mt-6 md:-mt-8 mb-2" style={{ background: CARD_LINEAR }} />
           <div className="grid md:grid-cols-2 gap-4">
             <Field label={t('contact.name', { defaultValue: 'Your name' })} required>

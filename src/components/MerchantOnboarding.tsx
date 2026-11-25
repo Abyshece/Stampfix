@@ -10,6 +10,7 @@ import { verifyTurnstile } from '../services/turnstile';
 import { logConsent, CONSENT_VERSIONS } from '../lib/consent';
 import { storedReferralCode, lookupReferral, forgetReferralCode } from '../lib/referrals';
 import { useTranslation } from 'react-i18next';
+import { useSiteInsightsPage, siteInsightsForm } from '../lib/siteInsights';
 
 const NOTION_COLORS = [
   { name: 'Default', hex: '#37352F' },
@@ -57,6 +58,8 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
     try { if (sessionStorage.getItem('sf_just_registered') === '1') return 'THANK_YOU'; } catch { /* ignore */ }
     return initialStep;
   });
+  // Website statistics: the signup form counts as the page "/signup" while it shows.
+  useSiteInsightsPage(step === 'FORM' ? '/signup' : null);
   const clearRegFlags = () => {
     try {
       sessionStorage.removeItem('sf_just_registered');
@@ -135,6 +138,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   const handleSignup = async () => {
     setError(null);
     if (!busName || !email || !password || !country) return;
+    siteInsightsForm('signup', 'submit');
     // Genuine email-format check: reject anything that isn't name@domain.tld
     // (missing @, missing domain/TLD, stray spaces, ...) before sign-up.
     const emailTrimmed = email.trim();
@@ -181,6 +185,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
             primaryLocationName: primaryLocationName.trim() || busName,
           }),
         );
+        siteInsightsForm('signup', 'done');
         setStep('CHECK_EMAIL');
       } else {
         // Session is live. Set the post-signup flag FIRST. The app's auth
@@ -189,6 +194,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
         // restore the thank-you screen. Setting it only after the awaits
         // below meant the remount found no flag and bounced the merchant back
         // to the empty signup form (which looked like the page reloading).
+        siteInsightsForm('signup', 'done');
         try {
           sessionStorage.setItem('sf_just_registered', '1');
           sessionStorage.setItem('sf_registered_email', emailTrimmed);
@@ -371,7 +377,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
           )}
         </div>
 
-        <div className="bg-white rounded-lg p-8 shadow-sm border notion-border space-y-8">
+        <div className="bg-white rounded-lg p-8 shadow-sm border notion-border space-y-8" data-insight-form="signup">
           {/* Account */}
           <div className="space-y-4">
             <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider border-b notion-border pb-2">{t('dash.signup.accountDetails', { defaultValue: 'Account Details' })}</h3>

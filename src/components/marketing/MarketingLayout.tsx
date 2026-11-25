@@ -4,6 +4,7 @@ import { ArrowRight, Instagram, Linkedin } from 'lucide-react';
 import { Logo } from '../Logo';
 import { MobileNav } from '../MobileNav';
 import { useTranslation } from 'react-i18next';
+import { useSiteInsightsPage } from '../../lib/siteInsights';
 
 const NAV_LINKS = [
   { href: '/features', label: 'Features', tkey: 'nav.features' },
@@ -65,6 +66,7 @@ export function Eyebrow({ children }: { children: ReactNode }) {
  */
 export function MarketingLayout({ children, active }: { children: ReactNode; active?: string }) {
   const { t } = useTranslation();
+  useSiteInsightsPage();
   return (
     <div className="min-h-screen bg-white text-[#37352F] font-sans selection:bg-[#37352F] selection:text-white">
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border">

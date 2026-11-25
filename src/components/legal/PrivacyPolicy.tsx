@@ -16,7 +16,7 @@ import { LegalPage, LegalH2, Placeholder } from './LegalPage';
  */
 export function PrivacyPolicy() {
   return (
-    <LegalPage title="Privacy Policy" lastUpdated="14 August 2026">
+    <LegalPage title="Privacy Policy" lastUpdated="25 November 2026">
       <p>
         This Privacy Policy explains how 17999658 Canada Inc. (d/b/a Stampfix) (“Stampfix”,
         “we”, “us”) collects, uses, and protects personal information when you use our digital
@@ -83,6 +83,10 @@ export function PrivacyPolicy() {
       <ul className="list-disc pl-6 space-y-1">
         <li>Basic technical data such as IP address, browser type, and timestamps, used for security and to operate the Service</li>
       </ul>
+      <p><strong>From visitors of our website, only with consent:</strong></p>
+      <ul className="list-disc pl-6 space-y-1">
+        <li>Website statistics: a random visitor number kept in your browser, the public pages you view, how long and how far you read, what you click, whether you play the feature video, whether you start or send a form (never what you type), the referring website&rsquo;s domain, campaign tags, device type and language. No IP address is stored. See section 12 and our <a href="/cookies" className="underline">Cookie Policy</a>.</li>
+      </ul>
 
       <p>
         <strong>Children.</strong> Stampfix is not directed to children. Cardholders must be at least
@@ -100,7 +104,7 @@ export function PrivacyPolicy() {
       <ul className="list-disc pl-6 space-y-1">
         <li><strong>Performance of a contract</strong> (Art. 6(1)(b)): to create accounts, issue loyalty cards, and track stamps</li>
         <li><strong>Legitimate interests</strong> (Art. 6(1)(f)): to keep the Service secure and prevent fraud</li>
-        <li><strong>Consent</strong> (Art. 6(1)(a)): for marketing messages (email and wallet-card notifications), where applicable; you can withdraw consent at any time</li>
+        <li><strong>Consent</strong> (Art. 6(1)(a)): for marketing messages (email and wallet-card notifications), where applicable, and for error monitoring and website statistics on our website; you can withdraw consent at any time</li>
         <li><strong>Legal obligation</strong> (Art. 6(1)(c)): to retain billing records as required by tax law</li>
       </ul>
 
@@ -206,6 +210,11 @@ export function PrivacyPolicy() {
               <td className="border notion-border px-3 py-2">7-30 days rolling</td>
               <td className="border notion-border px-3 py-2">Disaster recovery</td>
             </tr>
+            <tr>
+              <td className="border notion-border px-3 py-2">Website statistics (only with consent)</td>
+              <td className="border notion-border px-3 py-2">13 months, then deleted</td>
+              <td className="border notion-border px-3 py-2">Seeing how visitors use our website, to improve it</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -254,13 +263,19 @@ export function PrivacyPolicy() {
 
       <LegalH2>12. Cookies and similar technologies</LegalH2>
       <p>
-        We use only strictly necessary cookies and local storage, meaning the items required to make the
-        Service work. These keep you signed in (your authentication session) and protect the signup
-        and login forms against bots and abuse (Cloudflare Turnstile). We do <strong>not</strong> use
-        advertising, analytics, or cross-site tracking cookies, and we do not sell or share data for
-        behavioural advertising. Because we set only essential cookies, no cookie-consent banner is
-        required under the ePrivacy Directive and GDPR. You can clear cookies in your browser at any
-        time; doing so will sign you out.
+        We use cookies and local storage that are strictly necessary to make the Service work: they
+        keep you signed in (your authentication session), protect the signup and login forms against
+        bots and abuse (Cloudflare Turnstile), process payments (Stripe) and remember your cookie
+        choice. With your consent, given in our cookie banner, we also use error monitoring (Sentry)
+        to find and fix problems, and our own website statistics on the public pages of stampfix.app:
+        a random visitor number kept in your browser, the pages you view, how long and how far you
+        read, what you click, and whether you start or send a form (never what you type). The
+        statistics stay in our own database, contain no IP address, are never shared or sold, and
+        are deleted after 13 months. You can change your choice at any time under &ldquo;Cookie
+        settings&rdquo;. We do <strong>not</strong> use advertising or cross-site tracking cookies or
+        third-party analytics, and we do not sell or share data for behavioural advertising. Details
+        are in our <a href="/cookies" className="underline">Cookie Policy</a>. You can clear cookies in
+        your browser at any time; doing so will sign you out.
       </p>
 
       <LegalH2>13. Contact</LegalH2>
@@ -271,7 +286,7 @@ export function PrivacyPolicy() {
       </p>
 
       <p className="text-xs text-gray-400 pt-8 border-t notion-border mt-8">
-        Last updated: 18 July 2026
+        Last updated: 25 November 2026
       </p>
     </LegalPage>
   );

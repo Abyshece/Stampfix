@@ -3,7 +3,7 @@ import { reopenCookieBanner } from '../../lib/cookieConsent';
 
 export function CookiePolicy() {
   return (
-    <LegalPage title="Cookie Policy" lastUpdated="5 August 2026">
+    <LegalPage title="Cookie Policy" lastUpdated="25 November 2026">
       <p>
         This Cookie Policy explains how <strong>17999658 Canada Inc. (d/b/a Stampfix)</strong> uses
         cookies and similar technologies (such as <em>localStorage</em>) on{' '}
@@ -11,9 +11,10 @@ export function CookiePolicy() {
         <a href="/privacy" className="underline">Privacy Policy</a>.
       </p>
       <p>
-        In short: we use only the storage needed to make the site work, plus optional error-monitoring
-        that runs only if you consent. <strong>We do not use advertising, marketing, or cross-site
-        tracking cookies, and we do not sell your data.</strong>
+        In short: we use only the storage needed to make the site work, plus two optional things that
+        run only if you consent: error monitoring, and our own statistics on how visitors use our
+        website. <strong>We do not use advertising, marketing, or cross-site tracking cookies, we do
+        not use third-party analytics, and we do not sell your data.</strong>
       </p>
 
       <LegalH2>1. What are cookies?</LegalH2>
@@ -64,14 +65,52 @@ export function CookiePolicy() {
       </ul>
       <p className="text-sm text-gray-500">Legal basis: your consent (GDPR Art. 6(1)(a)).</p>
 
-      <LegalH2>4. What we do NOT use</LegalH2>
+      <LegalH2>4. Optional: website statistics (only with your consent)</LegalH2>
+      <p>
+        If you tick &ldquo;Website statistics&rdquo; (or choose &ldquo;Accept all&rdquo;), we keep our own
+        statistics on how visitors use the public pages of stampfix.app (the home page, features,
+        pricing, blog, legal pages and the signup form), so we can see what&rsquo;s useful and what
+        isn&rsquo;t. They are not used inside the Stampfix app, on cardholders&rsquo; cards or on
+        ordering pages.
+      </p>
+      <ul className="list-disc pl-5 space-y-2 text-gray-600">
+        <li>
+          <strong>Stored in your browser (localStorage)</strong>: <code>sf_ins_visitor</code>, a random
+          number that tells a returning visitor from a new one (kept 13 months), and{' '}
+          <code>sf_ins_session</code>, your current visit (it ends after 30 minutes without activity).
+        </li>
+        <li>
+          <strong>What we record</strong>: the pages you view; how long a page is on screen and in use;
+          how far down you scroll; which buttons and links you click and where on the page; repeated
+          or unanswered clicks (to find what doesn&rsquo;t work); whether you play the feature video and
+          how much of it; whether you start or send the signup or contact form (never what you type);
+          the website that sent you (its domain only) and campaign tags in the link; your device type
+          (phone, tablet or computer) and language.
+        </li>
+        <li>
+          <strong>What we don&rsquo;t record</strong>: your IP address, name, email or anything you type,
+          and we don&rsquo;t combine it with other data or build profiles across websites.
+        </li>
+        <li>
+          <strong>Where it goes</strong>: only to our own database (hosted by Supabase, see{' '}
+          <a href="/subprocessors" className="underline">Subprocessors</a>). No third party receives it,
+          and it is deleted after 13 months.
+        </li>
+      </ul>
+      <p className="text-sm text-gray-500">
+        Legal basis: your consent (GDPR Art. 6(1)(a); storing and reading the two items on your device
+        under &sect;25(1) TDDDG). You can withdraw it at any time in the cookie settings; we then stop
+        and remove the two items from your browser.
+      </p>
+
+      <LegalH2>5. What we do NOT use</LegalH2>
       <p>
         We do not use Google Analytics, advertising pixels (e.g. Meta/Facebook), or any cross-site
         tracking. Our fonts are self-hosted, so loading the site does not share your IP address with
         third-party font providers.
       </p>
 
-      <LegalH2>5. Managing your choices</LegalH2>
+      <LegalH2>6. Managing your choices</LegalH2>
       <p>
         When you first visit, a banner lets you accept all cookies or keep only the essential ones. You
         can change your decision at any time:
@@ -89,7 +128,7 @@ export function CookiePolicy() {
         necessary storage may prevent you from signing in or completing a payment.
       </p>
 
-      <LegalH2>6. Changes and contact</LegalH2>
+      <LegalH2>7. Changes and contact</LegalH2>
       <p>
         We may update this policy as our tools change; the date at the top shows the latest version.
         For any question about cookies or your data, contact our Privacy Officer at{' '}
