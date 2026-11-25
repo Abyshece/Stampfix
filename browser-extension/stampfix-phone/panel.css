@@ -42,3 +42,8 @@ body {
 }
 .login .primary:hover { background: #2F2D28; }
 .login .link { margin-top: 12px; border: 0; background: none; color: #6B6A66; font: inherit; text-decoration: underline; cursor: pointer; }
+.note { flex: none; border-radius: 10px; padding: 7px 10px; font-size: 12px; font-weight: 500; }
+.note[hidden] { display: none; }
+.note.ok { background: #ECFDF3; color: #166534; border: 1px solid #BBF7D0; }
+.note.warn { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
+.note.wait { background: #fff; color: #6B6A66; border: 1px solid #E3E2DF; }

@@ -6,10 +6,14 @@ const IG_URL = /^https:\/\/(www\.instagram\.com|instagram\.com|ig\.me)\//;
 const frame = document.getElementById('ig');
 const loginBox = document.getElementById('login');
 const logBox = document.getElementById('log');
+const noteBox = document.getElementById('note');
+const EXT = `chrome-extension://${chrome.runtime.id}`;
 
 let wanted = HOME;      // the page the admin panel asked for last
 let loggedOut = false;  // no Instagram login in this browser
 let loggingIn = false;  // logging in inside the phone right now
+let typeText = null;    // the message to type into the chat (the send queue)
+let typeId = 0;
 
 function show(url) { frame.src = url; }
 function setLoggedOut(out) {
@@ -18,11 +22,32 @@ function setLoggedOut(out) {
   loginBox.hidden = !out;
   if (!out) show(wanted);
 }
-function go(url) {
+function note(text, kind) {
+  noteBox.textContent = text || '';
+  noteBox.className = `note ${kind || ''}`;
+  noteBox.hidden = !text;
+}
+function go(url, text) {
   if (typeof url !== 'string' || !IG_URL.test(url)) return;
   wanted = url;
+  typeText = typeof text === 'string' && text.trim() ? text : null;
+  typeId = Date.now();
+  note(typeText ? 'Opening the chat and typing the message in…' : '', 'wait');
   if (!loggedOut && !loggingIn) show(url);
 }
+
+// The Instagram frame (type.js) says it's ready: give it the message to type.
+// It answers whether the message is in the box; it never presses Send.
+window.addEventListener('message', (e) => {
+  if (e.source !== frame.contentWindow) return;
+  const d = e.data;
+  if (d && d.type === 'stampfix-phone:ready' && typeText && Date.now() - typeId < 10 * 60e3) {
+    frame.contentWindow.postMessage({ type: 'stampfix-phone:type', text: typeText, id: typeId }, '*');
+  } else if (d && d.type === 'stampfix-phone:typed' && d.id === typeId) {
+    if (d.ok) { typeText = null; note('Message typed in. Check it, then press Enter to send.', 'ok'); }
+    else note(d.found ? 'Couldn’t type the message in. Click the message box and paste it (Cmd+V).' : 'Couldn’t find the message box. Paste the message yourself (Cmd+V).', 'warn');
+  }
+});
 
 // Logged in? Instagram keeps its login in the "sessionid" cookie (only whether
 // it exists is checked, never its value).
@@ -36,12 +61,19 @@ chrome.cookies.onChanged.addListener(({ cookie, removed, cause }) => {
 });
 
 (async () => {
-  try { const { go: g } = await chrome.storage.session.get('go'); if (g && IG_URL.test(g.url)) wanted = g.url; } catch { /* Messages */ }
+  try {
+    const { go: g } = await chrome.storage.session.get('go');
+    if (g && IG_URL.test(g.url)) {
+      wanted = g.url;
+      // Opened just now for this chat: type its message in too.
+      if (typeof g.text === 'string' && g.text.trim() && Date.now() - (g.at || 0) < 2 * 60e3) { typeText = g.text; typeId = Date.now(); note('Opening the chat and typing the message in…', 'wait'); }
+    }
+  } catch { /* Messages */ }
   if (await hasLogin()) show(wanted); else setLoggedOut(true);
 })();
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'session') return;
-  if (changes.go && changes.go.newValue) go(changes.go.newValue.url);
+  if (changes.go && changes.go.newValue) go(changes.go.newValue.url, changes.go.newValue.text);
   if (changes.log && !logBox.hidden) drawLog(changes.log.newValue || []);
 });
 

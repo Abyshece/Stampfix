@@ -424,7 +424,7 @@ export function mapsUrl(l: { business_name: string; address?: string | null; cit
 
 export const PHONE_DOWNLOAD = '/stampfix-phone.zip';
 /** The newest Stampfix Phone (browser-extension/stampfix-phone/manifest.json). */
-export const PHONE_VERSION = '1.1.0';
+export const PHONE_VERSION = '1.2.0';
 export type PhoneAnswer = { ok: boolean; panel: boolean };
 
 /** Is the Stampfix Phone extension installed (it marks the page as it loads)? */
@@ -439,8 +439,12 @@ export function phoneOutdated(): boolean {
   return false;
 }
 
-/** Shows an Instagram page on the Stampfix Phone. panel: whether the phone is showing. */
-export function openInPhone(url: string): Promise<PhoneAnswer> {
+/**
+ * Shows an Instagram page on the Stampfix Phone; with text, the phone (1.2+)
+ * types it into the chat's message box (it never sends). panel: whether the
+ * phone is showing.
+ */
+export function openInPhone(url: string, text?: string): Promise<PhoneAnswer> {
   return new Promise((resolve) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const done = (r: PhoneAnswer) => { window.removeEventListener('message', onMessage); clearTimeout(timer); resolve(r); };
@@ -450,7 +454,7 @@ export function openInPhone(url: string): Promise<PhoneAnswer> {
     };
     window.addEventListener('message', onMessage);
     const timer = setTimeout(() => done({ ok: false, panel: false }), 4000);
-    window.postMessage({ type: 'stampfix-phone:open', url, id }, window.location.origin);
+    window.postMessage({ type: 'stampfix-phone:open', url, id, ...(text ? { text } : {}) }, window.location.origin);
   });
 }
 

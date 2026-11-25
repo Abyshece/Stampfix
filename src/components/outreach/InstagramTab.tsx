@@ -8,6 +8,7 @@ import {
   type Lead, type LeadView, type OutreachState,
 } from '../../lib/outreach';
 import { ShopCell, Pill, IG_STATUS, LeadEditDialog, FilterChips, errorText } from './common';
+import { IgSendQueue } from './IgSendQueue';
 
 type View = Extract<LeadView, 'ig_ready' | 'ig_sent' | 'ig_replied' | 'ig_stopped'>;
 
@@ -32,6 +33,11 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
   const [phone] = useState(phoneInstalled);
   const [outdated] = useState(phoneOutdated);
   const [phoneClosed, setPhoneClosed] = useState(false);
+  // The shop the send queue is on (highlighted in the list).
+  const [queueId, setQueueId] = useState<string | null>(null);
+  useEffect(() => {
+    if (queueId) document.querySelector(`[data-ig-row-id="${queueId}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [queueId]);
   const open = (url: string) => {
     if (!phone) { openInstagramWindow(url); return; }
     void openInPhone(url).then((r) => {
@@ -61,12 +67,23 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
     open(igChatUrl(l.instagram!));
     setOpened((o) => new Set(o).add(l.id));
   };
-  const mark = async (l: Lead, status: 'sent' | 'replied' | 'not_interested' | 'skipped' | 'new') => {
+  const mark = async (l: Lead, status: 'sent' | 'replied' | 'not_interested' | 'skipped' | 'new'): Promise<boolean> => {
     try {
       await updateLead(l.id, { ig_status: status });
       setLeads((list) => list?.filter((x) => x.id !== l.id) ?? list);
       onChanged();
-    } catch (e) { toast.error(errorText(e)); }
+      return true;
+    } catch (e) { toast.error(errorText(e)); return false; }
+  };
+  // The send queue: the chat in the phone, the message typed in (and copied, in case).
+  const textOf = (l: Lead) => texts[l.id] ?? l.ig_message;
+  const queueOpen = async (l: Lead, text: string) => {
+    try { await navigator.clipboard.writeText(text); } catch { /* the phone types it in */ }
+    const r = await openInPhone(igChatUrl(l.instagram!), text);
+    if (!r.ok) toast.error('The Stampfix Phone didn’t answer. Reload this page and try again.');
+    setPhoneClosed(r.ok && !r.panel);
+    setOpened((o) => new Set(o).add(l.id));
+    return r;
   };
 
   const over = state.ig_24h >= s.ig_daily_limit;
@@ -114,7 +131,7 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
         <div className="hidden md:flex items-start gap-3 text-sm rounded-xl px-4 py-3 border bg-amber-50 border-amber-200 text-amber-900" data-phone-update>
           <Download className="w-4 h-4 mt-0.5 shrink-0" />
           <div className="min-w-0 flex-1">
-            <b>A newer Stampfix Phone is ready ({PHONE_VERSION}).</b> It opens Instagram’s phone layout and fixes chats showing Meta’s error page.
+            <b>A newer Stampfix Phone is ready ({PHONE_VERSION}).</b> It types each message into the chat for the send queue, shows Instagram’s phone layout and a login screen.
             Download it, unzip it over your old <b>stampfix-phone</b> folder, then click the reload arrow on Stampfix Phone in <code className="text-xs bg-white/70 px-1 py-0.5 rounded">chrome://extensions</code> and reload this page.
           </div>
           <a href={PHONE_DOWNLOAD} download className={`${btnDark} shrink-0`}><Download className="w-4 h-4" />Download</a>
@@ -153,6 +170,11 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
         </section>
       )}
 
+      {phone && !readOnly && view === 'ig_ready' && leads !== null && (
+        <IgSendQueue leads={leads} textOf={textOf} sentToday={state.ig_24h} limit={s.ig_daily_limit} typesIn={!outdated}
+          onOpen={queueOpen} onMark={mark} onCurrent={setQueueId} />
+      )}
+
       <FilterChips<View> value={view} onChange={setView} options={[
         { id: 'ig_ready', label: 'To message' },
         { id: 'ig_sent', label: 'Messaged', count: ig.sent ?? 0 },
@@ -169,7 +191,8 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
       ) : (
         <ul className="grid gap-3 lg:grid-cols-2">
           {leads.map((l) => (
-            <li key={l.id} className="rounded-xl border notion-border bg-white p-4 flex flex-col gap-3" data-ig-row={l.business_name}>
+            <li key={l.id} className={`rounded-xl border bg-white p-4 flex flex-col gap-3 ${queueId === l.id ? 'border-pink-400 ring-2 ring-pink-200' : 'notion-border'}`}
+              data-ig-row={l.business_name} data-ig-row-id={l.id} data-ig-current={queueId === l.id ? '' : undefined}>
               <div className="flex items-start justify-between gap-3">
                 <ShopCell lead={l} />
                 <a href={igProfileUrl(l.instagram!)} onClick={(e) => { e.preventDefault(); open(igProfileUrl(l.instagram!)); }}
