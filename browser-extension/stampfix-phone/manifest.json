@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Stampfix Phone",
+  "short_name": "Stampfix Phone",
+  "description": "Instagram in a phone-sized side panel next to the Stampfix admin panel, for sending outreach messages.",
+  "version": "1.0.0",
+  "minimum_chrome_version": "116",
+  "permissions": ["sidePanel", "declarativeNetRequest", "storage"],
+  "host_permissions": ["https://www.instagram.com/*", "https://instagram.com/*", "https://ig.me/*"],
+  "background": { "service_worker": "background.js" },
+  "side_panel": { "default_path": "panel.html" },
+  "action": {
+    "default_title": "Open the Stampfix phone",
+    "default_icon": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png" }
+  },
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "content_scripts": [
+    {
+      "matches": ["https://stampfix.app/*", "https://www.stampfix.app/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

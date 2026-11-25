@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, Instagram, Inbox, Copy, Check, ExternalLink, Pencil, AlertTriangle } from 'lucide-react';
+import { Loader2, Instagram, Inbox, Copy, Check, ExternalLink, Pencil, AlertTriangle, Download, CheckCircle2, Smartphone } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import { inputCls, btnDark, btnLight } from '../addonsUi';
 import {
-  listLeads, updateLead, saveOutreachSettings, openInstagramWindow,
+  listLeads, updateLead, saveOutreachSettings, openInstagramWindow, phoneInstalled, openInPhone, PHONE_DOWNLOAD,
   igChatUrl, igProfileUrl, IG_HOME, IG_INBOX,
   type Lead, type LeadView, type OutreachState,
 } from '../../lib/outreach';
@@ -11,20 +11,13 @@ import { ShopCell, Pill, IG_STATUS, LeadEditDialog, FilterChips, errorText } fro
 
 type View = Extract<LeadView, 'ig_ready' | 'ig_sent' | 'ig_replied' | 'ig_stopped'>;
 
-// The screen of an iPhone 17 Pro Max: 440 x 956 points.
-const PHONE_W = 440;
-const PHONE_H = 956;
-const BEZEL = 10;
-// Fits the browser window's height.
-const phoneScreenHeight = () => Math.max(560, Math.min(PHONE_H, (typeof window === 'undefined' ? 900 : window.innerHeight) - 32 - BEZEL * 2));
-
 /**
  * Instagram: Instagram doesn't let tools send the first message, and its
- * website can't be shown inside another site. So each chat opens in its own
- * small window, placed on an iPhone 17 Pro Max frame beside the messages (on
- * wide screens; else phone-sized at the right edge). For each shop the
- * message is written here, copied with one click and the shop's chat opens on
- * the phone. Paste, send, close it, then mark it sent here.
+ * website can't be shown inside another site. With the Stampfix Phone
+ * extension, Instagram sits in Chrome's side panel right next to this page:
+ * the message is written here, copied with one click, and the shop's chat
+ * opens in the phone, where you paste and send. Without it, each chat opens in
+ * a phone-sized window. Then mark it sent here.
  */
 export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachState; readOnly: boolean; onChanged: () => void }) {
   const toast = useRef(useToast()).current;
@@ -35,13 +28,16 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
   const [opened, setOpened] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Lead | null>(null);
   const [account, setAccount] = useState(s.ig_account ?? '');
-  const [screenH, setScreenH] = useState(phoneScreenHeight);
-  useEffect(() => {
-    const onResize = () => setScreenH(phoneScreenHeight());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  const open = (url: string) => openInstagramWindow(url);
+  // The Stampfix Phone marks the page as it loads.
+  const [phone] = useState(phoneInstalled);
+  const [phoneClosed, setPhoneClosed] = useState(false);
+  const open = (url: string) => {
+    if (!phone) { openInstagramWindow(url); return; }
+    void openInPhone(url).then((r) => {
+      if (!r.ok) toast.error('The Stampfix Phone didn’t answer. Reload this page and try again.');
+      setPhoneClosed(r.ok && !r.panel);
+    });
+  };
 
   const load = useCallback(() => {
     setLeads(null);
@@ -57,7 +53,7 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
     const text = texts[l.id] ?? l.ig_message;
     try {
       await navigator.clipboard.writeText(text);
-      toast.success('Message copied. Paste it in the chat (Cmd+V) and press Enter.');
+      toast.success(phone ? 'Message copied. Click the message box in the phone, paste (Cmd+V) and press Enter.' : 'Message copied. Paste it in the chat (Cmd+V) and press Enter.');
     } catch {
       toast.error('Couldn’t copy. Select the message and copy it by hand.');
     }
@@ -76,8 +72,7 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
   const ig = state.ig;
 
   return (
-    <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:gap-6 xl:items-start" data-ig-dock-anchor>
-    <div className="space-y-4 min-w-0">
+    <div className="space-y-4">
       {/* Our account */}
       <section className="rounded-xl border notion-border bg-white p-4 sm:p-5">
         <div className="flex items-start sm:items-center justify-between gap-4 flex-wrap">
@@ -87,8 +82,9 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
             <div className="min-w-0">
               <div className="font-semibold text-[#37352F]">{s.ig_account ? `@${s.ig_account}` : 'Your Instagram'}</div>
               <div className="text-xs text-gray-500">
-                <span className="hidden xl:inline">Opens on the phone beside the messages. Log in there once; each “Copy &amp; open chat” then opens that shop’s chat on it.</span>
-                <span className="xl:hidden">Opens in a phone-sized window next to this one. Log in there once; each “Copy &amp; open chat” then opens that shop’s chat in its own small window.</span>
+                {phone
+                  ? 'Opens in the Stampfix Phone at the right side of Chrome. Log in there once; each “Copy & open chat” opens that shop’s chat in it, so you paste and send without leaving this page.'
+                  : 'Opens in a phone-sized window next to this one. Log in there once; each “Copy & open chat” opens that shop’s chat in its own window.'}
               </div>
             </div>
           </div>
@@ -113,6 +109,39 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
         </div>
       </section>
 
+      {phone ? (
+        <div className={`flex items-start gap-2 text-sm rounded-xl px-4 py-3 border ${phoneClosed ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-green-50 border-green-200 text-green-900'}`} data-phone-status>
+          {phoneClosed ? <Smartphone className="w-4 h-4 mt-0.5 shrink-0" /> : <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />}
+          <span>{phoneClosed
+            ? 'The phone is closed. Click the Stampfix Phone icon in Chrome’s toolbar (pin it from the puzzle icon) and it opens on that chat.'
+            : 'Stampfix Phone is ready: Instagram opens in the panel at the right of this window.'}</span>
+        </div>
+      ) : (
+        <section className="hidden md:block rounded-xl border notion-border bg-white p-5" data-phone-setup>
+          <div className="flex items-start gap-4">
+            <span className="w-10 h-10 rounded-xl bg-[#37352F] text-white flex items-center justify-center shrink-0"><Smartphone className="w-5 h-5" /></span>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-[#37352F]">Put Instagram right next to these messages</div>
+              <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+                Chrome won’t show Instagram inside a website, but it will in a side panel next to this page. The Stampfix Phone extension
+                does that: Instagram in a phone-sized panel at the right of this window, logged in with your normal Instagram.
+                “Copy &amp; open chat” then opens each chat right there, so you paste and send without switching windows.
+              </p>
+              <ol className="mt-3 space-y-1.5 text-sm text-[#37352F] list-decimal pl-5">
+                <li>Download the extension and unzip it.</li>
+                <li>In Chrome, go to <code className="text-xs bg-[#F7F7F5] px-1 py-0.5 rounded">chrome://extensions</code> and switch on <b>Developer mode</b> (top right).</li>
+                <li>Click <b>Load unpacked</b> and pick the unzipped <b>stampfix-phone</b> folder.</li>
+                <li>Reload this page. The first “Copy &amp; open chat” opens the phone; pin Stampfix Phone from the puzzle icon to open it any time.</li>
+              </ol>
+              <div className="mt-4 flex items-center gap-3 flex-wrap">
+                <a href={PHONE_DOWNLOAD} download className={btnDark} data-phone-download><Download className="w-4 h-4" />Download Stampfix Phone</a>
+                <span className="text-xs text-gray-400">Until then, Instagram opens in a separate window.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       <FilterChips<View> value={view} onChange={setView} options={[
         { id: 'ig_ready', label: 'To message' },
         { id: 'ig_sent', label: 'Messaged', count: ig.sent ?? 0 },
@@ -127,7 +156,7 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
           {view === 'ig_ready' ? 'No shops with an Instagram account waiting. “Check websites” under Shops finds them, or add one by hand.' : 'Nothing here.'}
         </div>
       ) : (
-        <ul className="grid gap-3 lg:grid-cols-2 xl:grid-cols-1">
+        <ul className="grid gap-3 lg:grid-cols-2">
           {leads.map((l) => (
             <li key={l.id} className="rounded-xl border notion-border bg-white p-4 flex flex-col gap-3" data-ig-row={l.business_name}>
               <div className="flex items-start justify-between gap-3">
@@ -173,29 +202,6 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
 
       {editing && <LeadEditDialog lead={editing} defaultFirstLine={s.default_first_line} readOnly={readOnly}
         onClose={() => setEditing(null)} onSaved={() => { load(); onChanged(); }} />}
-    </div>
-
-    {/* The phone: Instagram's window sits exactly on its screen (wide screens only). */}
-    <aside className="hidden xl:block xl:sticky xl:top-4" aria-label="Instagram phone" data-ig-dock>
-      <div className="rounded-[56px] bg-[#1C1C1E] shadow-2xl ring-1 ring-black/10" style={{ padding: BEZEL }}>
-        <div className="relative rounded-[46px] bg-white overflow-hidden flex flex-col items-center justify-center text-center px-8"
-          style={{ width: PHONE_W, height: screenH }} data-ig-dock-screen>
-          <span className="absolute top-3 left-1/2 -translate-x-1/2 w-[120px] h-[34px] rounded-full bg-black" aria-hidden />
-          <span className="w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-4"
-            style={{ background: 'linear-gradient(45deg, #F58529, #DD2A7B 50%, #8134AF 80%, #515BD4)' }}><Instagram className="w-8 h-8" /></span>
-          <div className="font-semibold text-[#37352F]">Instagram opens here</div>
-          <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">Log in once. Then each “Copy &amp; open chat” opens that shop’s chat right on this phone.</p>
-          <ol className="mt-4 text-sm text-[#37352F] text-left space-y-1.5" data-ig-steps>
-            <li><span className="font-semibold">1.</span> Paste: Cmd+V (Ctrl+V on Windows)</li>
-            <li><span className="font-semibold">2.</span> Press Enter to send</li>
-            <li><span className="font-semibold">3.</span> Close it: Cmd+W (Ctrl+W)</li>
-            <li><span className="font-semibold">4.</span> Click “I sent it” here</li>
-          </ol>
-          <button type="button" className={`${btnDark} mt-5`} onClick={() => open(IG_INBOX)} data-ig-open-here><Instagram className="w-4 h-4" />Open Instagram here</button>
-          <p className="text-[11px] text-gray-400 mt-4 leading-relaxed">Instagram doesn’t allow itself inside other websites, so each chat is its own small window placed on this phone, iPhone 17 Pro Max size. Clicking this page puts it behind.</p>
-        </div>
-      </div>
-    </aside>
     </div>
   );
 }
