@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
-// The same time-zone guess the outreach-tools function uses for map results.
-import { guessTimezone } from '../../supabase/functions/outreach-tools/lib';
+// Shared with the outreach-tools function: the same map query, parsing and time-zone guess.
+import {
+  guessTimezone, overpassQuery, parseOverpass, placesFromPhoton, placesFromNominatim,
+} from '../../supabase/functions/outreach-tools/lib';
 
 // Admin > Outreach: find shops anywhere, email them through Resend (queued
 // and sent within limits by the outreach-send function) or message them on
@@ -161,9 +163,73 @@ export interface FoundShop {
 export type NewLead = Partial<Omit<FoundShop, 'chain'>> & { business_name: string; country: string };
 export interface ScanResult { id: string; email: string | null; email_source: string | null; instagram: string | null; error?: string | null }
 
-export const findPlaces = (q: string) => call<{ places: Place[] }>('outreach-tools', { action: 'geocode', q }).then((r) => r.places);
-export const findShops = (place: Place, category: string, radiusKm: number, includeChains: boolean) =>
-  call<{ shops: FoundShop[]; chains_hidden: number }>('outreach-tools', { action: 'find', place, category, radius_km: radiusKm, include_chains: includeChains });
+// The map services are asked from the admin's own browser: OpenStreetMap's
+// free services refuse shared cloud servers (Supabase got "403"), but allow
+// a person's browser. The outreach-tools function is only the fallback.
+const PHOTON = 'https://photon.komoot.io/api/';
+const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
+const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+
+async function getJson(url: string, init: RequestInit = {}, ms = 15000, signal?: AbortSignal): Promise<unknown> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), ms);
+  const stop = () => ctl.abort();
+  signal?.addEventListener('abort', stop);
+  try {
+    const res = await fetch(url, { ...init, signal: ctl.signal });
+    if (!res.ok) throw new Error(`map_${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', stop);
+  }
+}
+
+/** Place suggestions while typing (Photon: OpenStreetMap's search-as-you-type service). */
+export async function suggestPlaces(q: string, signal?: AbortSignal): Promise<Place[]> {
+  const url = `${PHOTON}?q=${encodeURIComponent(q)}&limit=8&lang=en&osm_tag=place`;
+  return placesFromPhoton(await getJson(url, {}, 10000, signal));
+}
+
+/** A full place search (the Search button): Photon, then Nominatim, then the server. */
+export async function findPlaces(q: string): Promise<Place[]> {
+  try {
+    const list = await suggestPlaces(q);
+    if (list.length) return list;
+  } catch { /* try the next one */ }
+  try {
+    return placesFromNominatim(await getJson(`${NOMINATIM}?format=jsonv2&addressdetails=1&limit=8&accept-language=en&q=${encodeURIComponent(q)}`));
+  } catch { /* try the server */ }
+  try {
+    return (await call<{ places: Place[] }>('outreach-tools', { action: 'geocode', q })).places;
+  } catch {
+    throw new Error('map_busy');
+  }
+}
+
+/** Shops of one kind around a place, from OpenStreetMap (Overpass), asked from this browser. */
+export async function findShops(place: Place, category: string, radiusKm: number, includeChains: boolean): Promise<{ shops: FoundShop[]; chains_hidden: number }> {
+  const query = overpassQuery(category, place.lat, place.lon, radiusKm);
+  for (const endpoint of OVERPASS) {
+    try {
+      const data = await getJson(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+        body: 'data=' + encodeURIComponent(query),
+      }, 60000);
+      const shops = parseOverpass(data as Parameters<typeof parseOverpass>[0], category,
+        { city: place.city, region: place.region, country: place.country, timezone: place.timezone });
+      const chains = shops.filter((s) => s.chain).length;
+      return { shops: includeChains ? shops : shops.filter((s) => !s.chain), chains_hidden: includeChains ? 0 : chains };
+    } catch { /* next map server */ }
+  }
+  try {
+    return await call<{ shops: FoundShop[]; chains_hidden: number }>('outreach-tools',
+      { action: 'find', place, category, radius_km: radiusKm, include_chains: includeChains });
+  } catch {
+    throw new Error('map_busy');
+  }
+}
 export const scanWebsites = (sites: Array<{ id: string; website: string }>) =>
   call<{ results: ScanResult[] }>('outreach-tools', { action: 'scan', sites }).then((r) => r.results);
 export const sendTestEmail = (leadId: string, kind: 'first' | 'followup' = 'first') =>

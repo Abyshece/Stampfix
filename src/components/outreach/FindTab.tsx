@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Loader2, MapPin, Check, Plus, ArrowRight, Info } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import { inputCls, btnDark, btnLight } from '../addonsUi';
 import {
-  findPlaces, findShops, addLeads, INDUSTRIES, emailOffReason, countryName, BLOCK_LABEL,
+  findPlaces, suggestPlaces, findShops, addLeads, INDUSTRIES, emailOffReason, countryName, BLOCK_LABEL,
   type Place, type FoundShop,
 } from '../../lib/outreach';
 import { LinkIcons, errorText, flag } from './common';
@@ -17,10 +17,7 @@ import { LinkIcons, errorText, flag } from './common';
 export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (checkWebsites: boolean) => void }) {
   const { t } = useTranslation();
   const toast = useToast();
-  const [q, setQ] = useState('');
-  const [places, setPlaces] = useState<Place[] | null>(null);
   const [place, setPlace] = useState<Place | null>(null);
-  const [searchingPlace, setSearchingPlace] = useState(false);
   const [category, setCategory] = useState<string | null>(null);
   const [radius, setRadius] = useState(5);
   const [chains, setChains] = useState(false);
@@ -28,21 +25,6 @@ export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (ch
   const [found, setFound] = useState<{ shops: FoundShop[]; chainsHidden: number } | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
-
-  const lookUpPlace = async () => {
-    if (q.trim().length < 2) return;
-    setSearchingPlace(true);
-    try {
-      const list = await findPlaces(q.trim());
-      setPlaces(list);
-      if (list.length === 1) { setPlace(list[0]); setPlaces(null); }
-      if (!list.length) toast.error('No place found with that name.');
-    } catch (e) {
-      toast.error(errorText(e));
-    } finally {
-      setSearchingPlace(false);
-    }
-  };
 
   const search = async () => {
     if (!place || !category) return;
@@ -100,27 +82,7 @@ export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (ch
             <button type="button" className={btnLight} onClick={() => { setPlace(null); setFound(null); }}>Change</button>
           </div>
         ) : (
-          <>
-            <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); void lookUpPlace(); }}>
-              <input value={q} onChange={(e) => setQ(e.target.value)} className={inputCls}
-                placeholder="City or neighbourhood, anywhere: e.g. Surrey BC, Kitsilano Vancouver, Brooklyn" />
-              <button className={btnDark} disabled={searchingPlace || q.trim().length < 2}>
-                {searchingPlace ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}Search
-              </button>
-            </form>
-            {places && places.length > 1 && (
-              <ul className="mt-2 divide-y divide-gray-100 border notion-border rounded-lg overflow-hidden">
-                {places.map((p, i) => (
-                  <li key={i}>
-                    <button type="button" onClick={() => { setPlace(p); setPlaces(null); }}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-[#F7F7F5] flex items-center gap-2">
-                      <span>{flag(p.country)}</span><span className="min-w-0 break-words">{p.label}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
+          <PlacePicker onPick={(p) => { setPlace(p); setFound(null); }} />
         )}
         {off && (
           <p className="mt-3 flex items-start gap-2 text-sm rounded-lg bg-amber-50 text-amber-900 px-3 py-2">
@@ -201,7 +163,7 @@ export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (ch
                         <div className="font-medium text-[#37352F] break-words">{s.business_name}{s.chain && <span className="ml-1.5 text-[11px] text-gray-400">chain</span>}</div>
                         <div className="text-xs text-gray-500 break-words">{s.address || s.city}</div>
                       </td>
-                      <td className="px-3 py-2 align-top hidden md:table-cell text-xs text-gray-600 break-all">{s.email ?? '—'}</td>
+                      <td className="px-3 py-2 align-top hidden md:table-cell text-xs text-gray-600 break-all">{s.email ?? <span className="text-gray-300">none</span>}</td>
                       <td className="px-3 py-2 align-top"><LinkIcons lead={s} /></td>
                     </tr>
                   ))}
@@ -215,6 +177,103 @@ export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (ch
       {!found && !finding && (
         <p className="text-sm text-gray-500 flex items-center gap-1.5"><Check className="w-4 h-4 text-gray-400" />Shops you add show up under <b className="font-medium">Shops</b>; then <ArrowRight className="w-3.5 h-3.5" /> Email or Instagram.</p>
       )}
+    </div>
+  );
+}
+
+/**
+ * The place box: suggestions appear as you type (arrow keys and Enter, or a
+ * click, pick one). Search looks further when nothing fits.
+ */
+function PlacePicker({ onPick }: { onPick: (p: Place) => void }) {
+  const [q, setQ] = useState('');
+  const [list, setList] = useState<Place[]>([]);
+  const [note, setNote] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [active, setActive] = useState(0);
+  const seq = useRef(0);
+
+  // Suggestions while typing, a moment after the last key.
+  useEffect(() => {
+    const text = q.trim();
+    const my = ++seq.current;
+    if (text.length < 2) { setList([]); setNote(null); setLoading(false); setOpen(false); return; }
+    const ctl = new AbortController();
+    setLoading(true);
+    const timer = setTimeout(() => {
+      suggestPlaces(text, ctl.signal)
+        .then((r) => {
+          if (seq.current !== my) return;
+          setList(r); setActive(0); setOpen(true);
+          setNote(r.length ? null : 'No match yet. Keep typing, or press Search to look further.');
+        })
+        .catch(() => {
+          if (seq.current !== my) return;
+          setList([]); setOpen(true); setNote('Suggestions aren’t loading. Press Search.');
+        })
+        .finally(() => { if (seq.current === my) setLoading(false); });
+    }, 300);
+    return () => { clearTimeout(timer); ctl.abort(); };
+  }, [q]);
+
+  const fullSearch = async () => {
+    const text = q.trim();
+    if (text.length < 2) return;
+    const my = ++seq.current;
+    setLoading(true);
+    try {
+      const r = await findPlaces(text);
+      if (seq.current !== my) return;
+      setList(r); setActive(0); setOpen(true);
+      setNote(r.length ? null : 'No place found with that name. Try adding the country, e.g. “Surrey, Canada”.');
+    } catch (e) {
+      if (seq.current !== my) return;
+      setList([]); setOpen(true); setNote(errorText(e));
+    } finally {
+      if (seq.current === my) setLoading(false);
+    }
+  };
+
+  const pick = (p: Place) => { setOpen(false); onPick(p); };
+
+  return (
+    <div>
+      <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); void fullSearch(); }}>
+        <div className="relative flex-1 min-w-0">
+          <MapPin className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} className={`${inputCls} pl-9 pr-9`}
+            role="combobox" aria-expanded={open} aria-controls="outreach-place-list" aria-autocomplete="list"
+            aria-label="City or neighbourhood" autoComplete="off" data-place-input
+            placeholder="Start typing a city or neighbourhood: Toronto, Kitsilano, Berlin Mitte…"
+            onFocus={() => { if (list.length || note) setOpen(true); }}
+            onBlur={() => setOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setActive((a) => Math.min(a + 1, Math.max(list.length - 1, 0))); }
+              else if (e.key === 'ArrowUp') { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
+              else if (e.key === 'Escape') setOpen(false);
+              else if (e.key === 'Enter' && open && list.length) { e.preventDefault(); pick(list[Math.min(active, list.length - 1)]); }
+            }} />
+          {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />}
+          {open && (list.length > 0 || note) && (
+            <ul id="outreach-place-list" role="listbox"
+              className="absolute z-30 left-0 right-0 mt-1 bg-white border notion-border rounded-lg shadow-lg max-h-80 overflow-y-auto">
+              {list.map((p, i) => (
+                <li key={`${p.label}-${i}`} role="option" aria-selected={i === active} data-place-option={p.label}
+                  onMouseDown={(e) => { e.preventDefault(); pick(p); }} onMouseEnter={() => setActive(i)}
+                  className={`px-3 py-2 text-sm cursor-pointer flex items-center gap-2 ${i === active ? 'bg-[#F1F1EF]' : ''}`}>
+                  <span aria-hidden>{flag(p.country)}</span><span className="min-w-0 break-words">{p.label}</span>
+                </li>
+              ))}
+              {note && <li className="px-3 py-2 text-sm text-gray-500" data-place-note>{note}</li>}
+            </ul>
+          )}
+        </div>
+        <button type="submit" className={btnDark} disabled={loading || q.trim().length < 2}>
+          <Search className="w-4 h-4" />Search
+        </button>
+      </form>
+      <p className="text-xs text-gray-400 mt-1.5">Pick a place from the list. Places and shops come from OpenStreetMap, the free world map.</p>
     </div>
   );
 }
