@@ -407,67 +407,50 @@ export function mapsUrl(l: { business_name: string; address?: string | null; cit
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}${near}`;
 }
 
-// ---- The Instagram window -------------------------------------------------------------
+// ---- Instagram: the Stampfix Phone, or a window ---------------------------------------
 //
-// Instagram can't be shown inside other websites (it sends "X-Frame-Options:
-// DENY"). Its pages also send "Cross-Origin-Opener-Policy: same-origin-allow-popups",
-// so the moment Instagram loads in a window, the browser cuts that window off
-// from this page: it can't be reused, focused or closed from here. So every
-// link opens its own small window, and on wide screens the Instagram tab shows
-// an iPhone 17 Pro Max frame beside the messages and each window is placed
-// exactly over the phone's screen (440 wide, like the real phone). While the
-// new window is still blank it belongs to this page, which is when it's sized
-// and placed.
+// Instagram can't be shown inside a website: it sends "X-Frame-Options: DENY",
+// and its login cookies (no SameSite, so Lax) are never sent to Instagram
+// embedded in another site. Chrome does treat a site shown in an extension's own
+// page as if you had opened it yourself. So the small "Stampfix Phone"
+// extension (browser-extension/stampfix-phone) shows Instagram, logged in, in
+// Chrome's side panel at the right edge of this same window. It marks this page
+// when installed and takes "show this Instagram page" requests through window
+// messages; the click that sends one also opens the panel.
+//
+// Without it, each link opens a phone-sized window at the right edge of the
+// screen (Instagram's opener policy cuts such a window off from this page, so
+// it can't be reused).
 
-/** Where the docked phone's screen is on the monitor, or null when it isn't showing. */
-function dockSpot(): { left: number; top: number; width: number; height: number } | null {
-  const el = document.querySelector<HTMLElement>('[data-ig-dock-screen]');
-  if (!el || !el.offsetParent) return null;
-  let r = el.getBoundingClientRect();
-  if (r.width < 200 || r.height < 300) return null;
-  // Not fully in view: scroll so the phone sits in its place at the top.
-  if (r.top < 0 || r.bottom > window.innerHeight) {
-    document.querySelector<HTMLElement>('[data-ig-dock-anchor]')?.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior });
-    r = el.getBoundingClientRect();
-  }
-  // Page coordinates to screen coordinates: the page zoom (ignoring the few
-  // pixels of window border some systems add), the window's side borders, and
-  // the browser's tabs and address bar above the page.
-  const ratio = window.innerWidth > 0 ? window.outerWidth / window.innerWidth : 1;
-  const zoom = ratio > 0.5 && ratio < 3 && Math.abs(ratio - 1) > 0.04 ? ratio : 1;
-  const side = Math.max(0, (window.outerWidth - window.innerWidth * zoom) / 2);
-  const bars = Math.max(0, window.outerHeight - window.innerHeight * zoom - side);
-  return {
-    left: Math.round(window.screenX + side + r.left * zoom),
-    top: Math.round(window.screenY + bars + r.top * zoom),
-    width: Math.round(r.width * zoom),
-    height: Math.round(r.height * zoom),
-  };
+export const PHONE_DOWNLOAD = '/stampfix-phone.zip';
+export type PhoneAnswer = { ok: boolean; panel: boolean };
+
+/** Is the Stampfix Phone extension installed (it marks the page as it loads)? */
+export const phoneInstalled = (): boolean => typeof document !== 'undefined' && !!document.documentElement.dataset.stampfixPhone;
+
+/** Shows an Instagram page on the Stampfix Phone. panel: whether the phone is showing. */
+export function openInPhone(url: string): Promise<PhoneAnswer> {
+  return new Promise((resolve) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const done = (r: PhoneAnswer) => { window.removeEventListener('message', onMessage); clearTimeout(timer); resolve(r); };
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data as { type?: string; id?: string; ok?: boolean; panel?: boolean } | null;
+      if (e.source === window && d?.type === 'stampfix-phone:opened' && d.id === id) done({ ok: !!d.ok, panel: !!d.panel });
+    };
+    window.addEventListener('message', onMessage);
+    const timer = setTimeout(() => done({ ok: false, panel: false }), 4000);
+    window.postMessage({ type: 'stampfix-phone:open', url, id }, window.location.origin);
+  });
 }
 
-/**
- * Opens a page in a new Instagram window: on the docked phone when it's
- * showing, else phone-sized at the right edge of the screen.
- */
+/** Without the phone: a phone-sized window at the right edge of the screen. */
 export function openInstagramWindow(url: string): void {
-  const spot = dockSpot();
-  const w = spot?.width ?? 440;
-  const h = spot?.height ?? Math.min(940, window.screen.availHeight || 900);
-  const left = spot?.left ?? Math.max(0, (window.screen.availWidth || 1440) - w - 10);
-  const top = spot?.top ?? 0;
-  const win = window.open('', '_blank', `popup=yes,width=${w},height=${h},left=${left},top=${top}`);
+  const w = 440;
+  const h = Math.min(940, window.screen.availHeight || 900);
+  const left = Math.max(0, (window.screen.availWidth || 1440) - w - 10);
+  const win = window.open('', '_blank', `popup=yes,width=${w},height=${h},left=${left},top=0`);
   if (!win) { window.open(url, '_blank', 'noopener'); return; }
-  try {
-    // The whole window, its own address bar included, goes onto the phone's
-    // screen, and its link back to this page is cut.
-    const extraW = Math.max(0, win.outerWidth - win.innerWidth);
-    const extraH = Math.max(0, win.outerHeight - win.innerHeight);
-    if (spot && extraH < 200 && extraW < 100) {
-      win.resizeTo(w + extraW, h);
-      win.moveTo(spot.left - Math.round(extraW / 2), spot.top);
-    }
-    win.opener = null;
-  } catch { /* the browser said no: it stays where it opened */ }
+  try { win.opener = null; } catch { /* nothing to cut */ }
   win.location.href = url;
   win.focus();
 }
