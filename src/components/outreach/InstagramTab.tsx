@@ -3,19 +3,28 @@ import { Loader2, Instagram, Inbox, Copy, Check, ExternalLink, Pencil, AlertTria
 import { useToast } from '../ToastProvider';
 import { inputCls, btnDark, btnLight } from '../addonsUi';
 import {
-  listLeads, updateLead, saveOutreachSettings, openInstagramWindow, igChatUrl, igProfileUrl, IG_HOME, IG_INBOX,
+  listLeads, updateLead, saveOutreachSettings, openInstagramWindow,
+  igChatUrl, igProfileUrl, IG_HOME, IG_INBOX,
   type Lead, type LeadView, type OutreachState,
 } from '../../lib/outreach';
 import { ShopCell, Pill, IG_STATUS, LeadEditDialog, FilterChips, errorText } from './common';
 
 type View = Extract<LeadView, 'ig_ready' | 'ig_sent' | 'ig_replied' | 'ig_stopped'>;
 
+// The screen of an iPhone 17 Pro Max: 440 x 956 points.
+const PHONE_W = 440;
+const PHONE_H = 956;
+const BEZEL = 10;
+// Fits the browser window's height.
+const phoneScreenHeight = () => Math.max(560, Math.min(PHONE_H, (typeof window === 'undefined' ? 900 : window.innerHeight) - 32 - BEZEL * 2));
+
 /**
  * Instagram: Instagram doesn't let tools send the first message, and its
- * website can't be shown inside another site. So Instagram opens in its own
- * phone-sized window next to the admin panel; for each shop the message is
- * written here, copied with one click and the shop's chat opens in that
- * window. Paste, send, then mark it sent here.
+ * website can't be shown inside another site. So each chat opens in its own
+ * small window, placed on an iPhone 17 Pro Max frame beside the messages (on
+ * wide screens; else phone-sized at the right edge). For each shop the
+ * message is written here, copied with one click and the shop's chat opens on
+ * the phone. Paste, send, close it, then mark it sent here.
  */
 export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachState; readOnly: boolean; onChanged: () => void }) {
   const toast = useRef(useToast()).current;
@@ -26,6 +35,13 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
   const [opened, setOpened] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Lead | null>(null);
   const [account, setAccount] = useState(s.ig_account ?? '');
+  const [screenH, setScreenH] = useState(phoneScreenHeight);
+  useEffect(() => {
+    const onResize = () => setScreenH(phoneScreenHeight());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const open = (url: string) => openInstagramWindow(url);
 
   const load = useCallback(() => {
     setLeads(null);
@@ -45,7 +61,7 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
     } catch {
       toast.error('Couldn’t copy. Select the message and copy it by hand.');
     }
-    openInstagramWindow(igChatUrl(l.instagram!));
+    open(igChatUrl(l.instagram!));
     setOpened((o) => new Set(o).add(l.id));
   };
   const mark = async (l: Lead, status: 'sent' | 'replied' | 'not_interested' | 'skipped' | 'new') => {
@@ -60,7 +76,8 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
   const ig = state.ig;
 
   return (
-    <div className="space-y-4">
+    <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_auto] xl:gap-6 xl:items-start" data-ig-dock-anchor>
+    <div className="space-y-4 min-w-0">
       {/* Our account */}
       <section className="rounded-xl border notion-border bg-white p-4 sm:p-5">
         <div className="flex items-start sm:items-center justify-between gap-4 flex-wrap">
@@ -69,13 +86,16 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
               style={{ background: 'linear-gradient(45deg, #F58529, #DD2A7B 50%, #8134AF 80%, #515BD4)' }}><Instagram className="w-5 h-5" /></span>
             <div className="min-w-0">
               <div className="font-semibold text-[#37352F]">{s.ig_account ? `@${s.ig_account}` : 'Your Instagram'}</div>
-              <div className="text-xs text-gray-500">Opens in its own window next to this one. Log in there once; every “Message” below opens in that window.</div>
+              <div className="text-xs text-gray-500">
+                <span className="hidden xl:inline">Opens on the phone beside the messages. Log in there once; each “Copy &amp; open chat” then opens that shop’s chat on it.</span>
+                <span className="xl:hidden">Opens in a phone-sized window next to this one. Log in there once; each “Copy &amp; open chat” then opens that shop’s chat in its own small window.</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <button type="button" className={btnDark} onClick={() => openInstagramWindow(IG_HOME)}><Instagram className="w-4 h-4" />Open Instagram</button>
-            <button type="button" className={btnLight} onClick={() => openInstagramWindow(IG_INBOX)}><Inbox className="w-4 h-4" />Messages</button>
-            {s.ig_account && <button type="button" className={btnLight} onClick={() => openInstagramWindow(igProfileUrl(s.ig_account!))}>Our profile</button>}
+            <button type="button" className={btnDark} onClick={() => open(IG_HOME)}><Instagram className="w-4 h-4" />Open Instagram</button>
+            <button type="button" className={btnLight} onClick={() => open(IG_INBOX)}><Inbox className="w-4 h-4" />Messages</button>
+            {s.ig_account && <button type="button" className={btnLight} onClick={() => open(igProfileUrl(s.ig_account!))}>Our profile</button>}
           </div>
         </div>
         {!readOnly && !s.ig_account && (
@@ -107,12 +127,12 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
           {view === 'ig_ready' ? 'No shops with an Instagram account waiting. “Check websites” under Shops finds them, or add one by hand.' : 'Nothing here.'}
         </div>
       ) : (
-        <ul className="grid gap-3 lg:grid-cols-2">
+        <ul className="grid gap-3 lg:grid-cols-2 xl:grid-cols-1">
           {leads.map((l) => (
             <li key={l.id} className="rounded-xl border notion-border bg-white p-4 flex flex-col gap-3" data-ig-row={l.business_name}>
               <div className="flex items-start justify-between gap-3">
                 <ShopCell lead={l} />
-                <a href={igProfileUrl(l.instagram!)} onClick={(e) => { e.preventDefault(); openInstagramWindow(igProfileUrl(l.instagram!)); }}
+                <a href={igProfileUrl(l.instagram!)} onClick={(e) => { e.preventDefault(); open(igProfileUrl(l.instagram!)); }}
                   className="inline-flex items-center gap-1 text-sm font-medium text-pink-700 hover:underline shrink-0">@{l.instagram}<ExternalLink className="w-3.5 h-3.5" /></a>
               </div>
               {view === 'ig_ready' ? (
@@ -138,7 +158,7 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
                   {l.ig_sent_at && <span className="text-[11px] text-gray-400">{new Date(l.ig_sent_at).toLocaleDateString()}</span>}
                   {!readOnly && (
                     <div className="ml-auto flex items-center gap-2">
-                      <button type="button" className="text-xs font-medium text-gray-600 hover:text-[#37352F]" onClick={() => openInstagramWindow(igChatUrl(l.instagram!))}>Open chat</button>
+                      <button type="button" className="text-xs font-medium text-gray-600 hover:text-[#37352F]" onClick={() => open(igChatUrl(l.instagram!))}>Open chat</button>
                       {view === 'ig_sent' && <button type="button" className="px-2.5 py-1 rounded-md text-xs font-medium bg-green-600 text-white" onClick={() => void mark(l, 'replied')}>They replied</button>}
                       {(view === 'ig_sent' || view === 'ig_replied') && <button type="button" className="px-2.5 py-1 rounded-md text-xs font-medium border notion-border text-gray-600" onClick={() => void mark(l, 'not_interested')}>Not interested</button>}
                       <button type="button" className="text-xs text-gray-400 hover:text-gray-700" onClick={() => void mark(l, 'new')}>Undo</button>
@@ -153,6 +173,29 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
 
       {editing && <LeadEditDialog lead={editing} defaultFirstLine={s.default_first_line} readOnly={readOnly}
         onClose={() => setEditing(null)} onSaved={() => { load(); onChanged(); }} />}
+    </div>
+
+    {/* The phone: Instagram's window sits exactly on its screen (wide screens only). */}
+    <aside className="hidden xl:block xl:sticky xl:top-4" aria-label="Instagram phone" data-ig-dock>
+      <div className="rounded-[56px] bg-[#1C1C1E] shadow-2xl ring-1 ring-black/10" style={{ padding: BEZEL }}>
+        <div className="relative rounded-[46px] bg-white overflow-hidden flex flex-col items-center justify-center text-center px-8"
+          style={{ width: PHONE_W, height: screenH }} data-ig-dock-screen>
+          <span className="absolute top-3 left-1/2 -translate-x-1/2 w-[120px] h-[34px] rounded-full bg-black" aria-hidden />
+          <span className="w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-4"
+            style={{ background: 'linear-gradient(45deg, #F58529, #DD2A7B 50%, #8134AF 80%, #515BD4)' }}><Instagram className="w-8 h-8" /></span>
+          <div className="font-semibold text-[#37352F]">Instagram opens here</div>
+          <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">Log in once. Then each “Copy &amp; open chat” opens that shop’s chat right on this phone.</p>
+          <ol className="mt-4 text-sm text-[#37352F] text-left space-y-1.5" data-ig-steps>
+            <li><span className="font-semibold">1.</span> Paste: Cmd+V (Ctrl+V on Windows)</li>
+            <li><span className="font-semibold">2.</span> Press Enter to send</li>
+            <li><span className="font-semibold">3.</span> Close it: Cmd+W (Ctrl+W)</li>
+            <li><span className="font-semibold">4.</span> Click “I sent it” here</li>
+          </ol>
+          <button type="button" className={`${btnDark} mt-5`} onClick={() => open(IG_INBOX)} data-ig-open-here><Instagram className="w-4 h-4" />Open Instagram here</button>
+          <p className="text-[11px] text-gray-400 mt-4 leading-relaxed">Instagram doesn’t allow itself inside other websites, so each chat is its own small window placed on this phone, iPhone 17 Pro Max size. Clicking this page puts it behind.</p>
+        </div>
+      </div>
+    </aside>
     </div>
   );
 }
