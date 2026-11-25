@@ -4,8 +4,8 @@ import { Search, Loader2, MapPin, Check, Plus, ArrowRight, Info } from 'lucide-r
 import { useToast } from '../ToastProvider';
 import { inputCls, btnDark, btnLight } from '../addonsUi';
 import {
-  findPlaces, suggestPlaces, findShops, addLeads, INDUSTRIES, emailOffReason, countryName, BLOCK_LABEL,
-  type Place, type FoundShop,
+  findPlaces, suggestPlaces, findShops, getSearchStatus, addLeads, INDUSTRIES, emailOffReason, countryName, BLOCK_LABEL,
+  type Place, type FoundShop, type ShopSource,
 } from '../../lib/outreach';
 import { LinkIcons, errorText, flag } from './common';
 
@@ -22,7 +22,14 @@ export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (ch
   const [radius, setRadius] = useState(5);
   const [chains, setChains] = useState(false);
   const [finding, setFinding] = useState(false);
-  const [found, setFound] = useState<{ shops: FoundShop[]; chainsHidden: number } | null>(null);
+  const [found, setFound] = useState<{ shops: FoundShop[]; chainsHidden: number; source: ShopSource } | null>(null);
+  // Is reliable shop search (Geoapify) set up? null while checking or unknown.
+  const [hasKey, setHasKey] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getSearchStatus().then((r) => { if (alive) setHasKey(r.places_key); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
 
@@ -32,7 +39,7 @@ export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (ch
     setFound(null);
     try {
       const r = await findShops(place, category, radius, chains);
-      setFound({ shops: r.shops, chainsHidden: r.chains_hidden });
+      setFound({ shops: r.shops, chainsHidden: r.chains_hidden, source: r.source });
       setPicked(new Set(r.shops.map((s) => s.osm_ref)));
     } catch (e) {
       toast.error(errorText(e));
@@ -67,6 +74,18 @@ export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (ch
 
   return (
     <div className="space-y-5">
+      {hasKey === false && !readOnly && (
+        <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" data-key-note>
+          <div className="font-semibold mb-1">One-time setup for reliable shop search</div>
+          <p className="mb-2">Right now the shops come from free map servers that are often overloaded, so a search can fail. A free Geoapify key fixes that (3,000 searches a day, no card):</p>
+          <ol className="list-decimal pl-5 space-y-0.5">
+            <li>Sign up at <a className="underline font-medium" href="https://myprojects.geoapify.com/" target="_blank" rel="noopener noreferrer">myprojects.geoapify.com</a> and create a project.</li>
+            <li>Copy its API key.</li>
+            <li>In Supabase: Edge Functions, Secrets, add <code className="bg-white/70 rounded px-1">GEOAPIFY_API_KEY</code> with that key.</li>
+          </ol>
+          <p className="mt-2 text-xs">Then reload this page. This note goes away by itself.</p>
+        </section>
+      )}
       {/* Where */}
       <section className="rounded-xl border notion-border bg-white p-4 sm:p-5">
         <h3 className="text-sm font-semibold text-[#37352F] mb-2">1. Where</h3>
@@ -171,7 +190,9 @@ export function FindTab({ readOnly, onAdded }: { readOnly: boolean; onAdded: (ch
               </table>
             </div>
           )}
-          <p className="px-4 py-3 text-[11px] text-gray-400 border-t notion-border">Map data © OpenStreetMap contributors.</p>
+          <p className="px-4 py-3 text-[11px] text-gray-400 border-t notion-border">
+            Map data © OpenStreetMap contributors.{found.source === 'geoapify' && <> Powered by <a className="underline" href="https://www.geoapify.com/" target="_blank" rel="noopener noreferrer">Geoapify</a>.</>}
+          </p>
         </section>
       )}
       {!found && !finding && (

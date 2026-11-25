@@ -1,30 +1,33 @@
 // supabase/functions/outreach-tools/index.ts
 //
-// Admin tools for Outreach (platform admins only). The admin panel asks the
-// map services (geocode, find) from the admin's own browser first, because
-// OpenStreetMap's free services refuse shared cloud servers; these actions
-// are its fallback. The website scan only runs here.
-//   { action: 'geocode', q }                     -> places matching a name, anywhere in the world
+// Admin tools for Outreach (platform admins only):
+//   { action: 'status' }                         -> { places_key }: is the Geoapify key set?
 //   { action: 'find', place, category, radius_km, include_chains }
-//                                                -> shops of that kind around the place (OpenStreetMap)
+//                                                -> shops of that kind around the place, from
+//                                                   Geoapify (OpenStreetMap data on reliable servers)
+//   { action: 'geocode', q }                     -> places matching a name (a fallback: the panel
+//                                                   asks Photon from the admin's browser first)
 //   { action: 'scan', sites: [{ id, website }] } -> the email address and Instagram account each
 //                                                   shop publishes on its own website
-// Nothing is saved here; the admin panel saves what the admin keeps.
+// Nothing is saved here; the admin panel saves what the admin keeps. Without
+// a Geoapify key, 'find' answers "no_places_key" at once and the panel uses
+// the free Overpass servers from the admin's browser instead.
 //
-// Secrets: SUPABASE_URL, SUPABASE_ANON_KEY (always set by Supabase)
+// Secrets: SUPABASE_URL, SUPABASE_ANON_KEY (always set by Supabase);
+//          GEOAPIFY_API_KEY (free at geoapify.com, 3,000 searches a day)
 // Deploy:  supabase functions deploy outreach-tools
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import {
-  CATEGORIES, overpassQuery, parseOverpass, placesFromNominatim, extractContacts, pickEmail, isPublicUrl, cleanWebsite,
+  CATEGORIES, geoapifyUrl, parseGeoapify, placesFromNominatim, extractContacts, pickEmail, isPublicUrl, cleanWebsite,
   type Place,
 } from './lib.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+const GEOAPIFY_KEY = (Deno.env.get('GEOAPIFY_API_KEY') ?? '').trim();
 // Identifies us to OpenStreetMap's free services, as their usage rules ask.
 const UA = 'Stampfix-Outreach/1.0 (+https://stampfix.app; hello@stampfix.app)';
-const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -54,26 +57,19 @@ async function find(body: { place?: Place & { lat: number; lon: number }; catego
   const p = body.place;
   const category = String(body.category ?? '');
   if (!p || !CATEGORIES[category] || !/^[A-Z]{2}$/.test(String(p.country ?? ''))) throw new Error('bad_request');
-  const query = overpassQuery(category, Number(p.lat), Number(p.lon), Number(body.radius_km ?? 5));
-  let lastError = 'unavailable';
-  for (const endpoint of OVERPASS) {
-    try {
-      const res = await fetchWithTimeout(endpoint, {
-        method: 'POST',
-        headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(query),
-      }, 60000);
-      if (!res.ok) { lastError = `map_${res.status}`; continue; }
-      const data = await res.json();
-      const place: Place = { city: p.city ?? null, region: p.region ?? null, country: p.country, timezone: p.timezone ?? null };
-      const shops = parseOverpass(data, category, place);
-      const chains = shops.filter((s) => s.chain).length;
-      return { shops: body.include_chains ? shops : shops.filter((s) => !s.chain), chains_hidden: body.include_chains ? 0 : chains };
-    } catch (e) {
-      lastError = e instanceof Error ? e.message : 'unavailable';
-    }
-  }
-  throw new Error(`map_busy:${lastError}`);
+  if (!GEOAPIFY_KEY) throw new Error('no_places_key');
+  const url = geoapifyUrl(category, Number(p.lat), Number(p.lon), Number(body.radius_km ?? 5), GEOAPIFY_KEY);
+  const res = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } }, 30000);
+  // 401/403: wrong key; 429: today's free searches used up.
+  if (!res.ok) throw new Error(`places_${res.status}`);
+  const place: Place = { city: p.city ?? null, region: p.region ?? null, country: p.country, timezone: p.timezone ?? null };
+  const shops = parseGeoapify(await res.json(), category, place);
+  const chains = shops.filter((s) => s.chain).length;
+  return {
+    shops: body.include_chains ? shops : shops.filter((s) => !s.chain),
+    chains_hidden: body.include_chains ? 0 : chains,
+    source: 'geoapify',
+  };
 }
 
 async function readPage(url: string): Promise<string | null> {
@@ -149,6 +145,7 @@ Deno.serve(async (req) => {
     if (isAdmin !== true) return json({ error: 'Forbidden' }, 403);
 
     const body = await req.json().catch(() => ({}));
+    if (body.action === 'status') return json({ places_key: !!GEOAPIFY_KEY });
     if (body.action === 'geocode') {
       const q = String(body.q ?? '').trim().slice(0, 200);
       if (q.length < 2) return json({ places: [] });
@@ -164,6 +161,8 @@ Deno.serve(async (req) => {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'error';
     console.error('[outreach-tools]', msg);
-    return json({ error: msg }, msg.startsWith('map_busy') ? 503 : msg === 'bad_request' || msg === 'unknown_category' || msg === 'bad_place' ? 400 : 500);
+    const status = /^(map_busy|places_)/.test(msg) ? 503
+      : ['bad_request', 'unknown_category', 'bad_place', 'no_places_key'].includes(msg) ? 400 : 500;
+    return json({ error: msg }, status);
   }
 });

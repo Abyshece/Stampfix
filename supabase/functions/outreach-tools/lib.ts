@@ -115,6 +115,121 @@ export function parseOverpass(json: { elements?: OsmElement[] }, categoryKey: st
   return out;
 }
 
+// ---- Geoapify (the main shop search) ------------------------------------------
+//
+// Geoapify serves the same OpenStreetMap shops from its own servers, which
+// answer reliably (the free Overpass servers are often "at capacity"). It
+// needs a key (GEOAPIFY_API_KEY, free: 3,000 searches a day). Kinds it doesn't
+// list separately are found in a wider category and picked out by their tags.
+
+type Raw = Record<string, unknown>;
+const tagText = (raw: Raw, name: string) =>
+  [raw.beauty, raw.sport, raw.hairdresser, raw.shop, raw.cuisine, raw.craft, raw.amenity, name]
+    .filter((x) => typeof x === 'string').join(' ').toLowerCase();
+const matching = (re: RegExp) => (raw: Raw, name: string) => re.test(tagText(raw, name));
+
+export const GEOAPIFY: Record<string, { categories: string; match?: (raw: Raw, name: string) => boolean }> = {
+  cafe: { categories: 'catering.cafe' },
+  restaurant: { categories: 'catering.restaurant' },
+  bakery: { categories: 'commercial.food_and_drink.bakery' },
+  iceCream: { categories: 'catering.ice_cream,catering.cafe.ice_cream,commercial.food_and_drink.ice_cream' },
+  snackBar: { categories: 'catering.fast_food' },
+  pizzeria: { categories: 'catering.restaurant.pizza,catering.fast_food.pizza' },
+  bar: { categories: 'catering.bar,catering.pub' },
+  florist: { categories: 'commercial.florist' },
+  nailStudio: { categories: 'service.beauty', match: matching(/nail/) },
+  hairdresser: { categories: 'service.beauty.hairdresser' },
+  barbershop: { categories: 'service.beauty.hairdresser', match: matching(/barber/) },
+  tattoo: { categories: 'service.beauty.tattoo' },
+  gym: { categories: 'sport.fitness.fitness_centre,sport.fitness.gym' },
+  retail: { categories: 'commercial.clothing,commercial.gift_and_souvenir' },
+  doner: { categories: 'catering.fast_food.kebab,catering.restaurant.kebab' },
+  bubbleTea: { categories: 'catering.cafe', match: matching(/bubble|boba|juice|smoothie/) },
+  foodTruck: {
+    categories: 'catering.fast_food',
+    match: (raw, name) => raw.street_vendor === 'yes' || raw.mobile === 'yes' || /\btrucks?\b|food ?cart|imbisswagen/.test(name.toLowerCase()),
+  },
+  lashBrow: { categories: 'service.beauty', match: matching(/lash|brow|wimper|cils/) },
+  spa: { categories: 'service.beauty.spa,service.beauty.massage' },
+  carWash: { categories: 'service.vehicle.car_wash' },
+  dogGrooming: { categories: 'pet.service,commercial.pet', match: matching(/groom|hundesalon|toilettage/) },
+  dryCleaner: { categories: 'service.cleaning.dry_cleaning,service.cleaning.laundry' },
+  yoga: { categories: 'sport.fitness', match: matching(/yoga|pilates/) },
+};
+
+export function geoapifyUrl(categoryKey: string, lat: number, lon: number, radiusKm: number, apiKey: string): string {
+  const g = GEOAPIFY[categoryKey];
+  if (!g) throw new Error('unknown_category');
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) throw new Error('bad_place');
+  const r = Math.round(Math.min(Math.max(radiusKm, 0.5), 25) * 1000);
+  const q = new URLSearchParams({
+    categories: g.categories,
+    filter: `circle:${lon.toFixed(5)},${lat.toFixed(5)},${r}`,
+    bias: `proximity:${lon.toFixed(5)},${lat.toFixed(5)}`,
+    conditions: 'named',
+    limit: '500',
+    lang: 'en',
+    apiKey,
+  });
+  return `https://api.geoapify.com/v2/places?${q}`;
+}
+
+const firstText = (v: unknown): string | null => {
+  if (typeof v === 'string') return v;
+  if (Array.isArray(v)) return v.map(firstText).find(Boolean) ?? null;
+  return null;
+};
+const OSM_TYPE: Record<string, string> = { n: 'node', w: 'way', r: 'relation', node: 'node', way: 'way', relation: 'relation' };
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/** Geoapify's answer as shops, in the same shape as the map (Overpass) results. */
+export function parseGeoapify(json: unknown, categoryKey: string, place: Place): FoundShop[] {
+  const cat = CATEGORIES[categoryKey];
+  const g = GEOAPIFY[categoryKey];
+  const features = (json as { features?: unknown[] } | null)?.features;
+  if (!cat || !g || !Array.isArray(features)) return [];
+  const seen = new Set<string>();
+  const out: FoundShop[] = [];
+  for (const f of features) {
+    const { geometry, properties } = (f ?? {}) as { geometry?: { coordinates?: number[] }; properties?: Record<string, unknown> };
+    const pr = properties ?? {};
+    const raw = ((pr.datasource as { raw?: Raw } | undefined)?.raw ?? {}) as Raw;
+    const name = String(pr.name ?? raw.name ?? '').trim();
+    if (!name) continue;
+    if (g.match && !g.match(raw, name)) continue;
+    const osmType = OSM_TYPE[String(raw.osm_type ?? '')];
+    const ref = osmType && raw.osm_id != null ? `${osmType}/${raw.osm_id}` : `geoapify/${String(pr.place_id ?? name)}`;
+    if (seen.has(ref)) continue;
+    seen.add(ref);
+    const contact = (pr.contact ?? {}) as Record<string, unknown>;
+    const email = (firstText(contact.email) ?? firstText(raw.email) ?? firstText(raw['contact:email']) ?? '').split(';')[0].trim().toLowerCase();
+    const country = String(pr.country_code ?? '').toUpperCase();
+    const street = [pr.housenumber, pr.street].filter((x) => typeof x === 'string' && x).join(' ');
+    const city = typeof pr.city === 'string' ? pr.city : place.city;
+    const [lon, lat] = geometry?.coordinates ?? [];
+    out.push({
+      osm_ref: ref,
+      business_name: name.slice(0, 200),
+      category_key: categoryKey,
+      category: cat.plural,
+      city: city?.slice(0, 80) ?? null,
+      region: typeof pr.state === 'string' ? pr.state : place.region,
+      country: /^[A-Z]{2}$/.test(country) ? country : place.country,
+      timezone: (pr.timezone as { name?: string } | undefined)?.name ?? place.timezone,
+      lat: typeof pr.lat === 'number' ? pr.lat : Number.isFinite(lat) ? lat : null,
+      lon: typeof pr.lon === 'number' ? pr.lon : Number.isFinite(lon) ? lon : null,
+      address: [street, pr.postcode, pr.city].filter((x) => typeof x === 'string' && x).join(', ').slice(0, 200) || null,
+      website: cleanWebsite(firstText(pr.website) ?? firstText(raw.website) ?? firstText(raw['contact:website']) ?? firstText(raw.url)),
+      phone: (firstText(contact.phone) ?? firstText(raw.phone) ?? firstText(raw['contact:phone']) ?? '').split(';')[0].trim().slice(0, 60) || null,
+      email: EMAIL_RE.test(email) ? email : null,
+      email_source: EMAIL_RE.test(email) ? 'map listing' : null,
+      instagram: cleanInstagram(firstText(raw['contact:instagram']) ?? firstText(raw.instagram)),
+      chain: !!(pr.brand || raw.brand || raw['brand:wikidata']),
+    });
+  }
+  return out;
+}
+
 // ---- Time zones ----------------------------------------------------------------
 
 const ONE_ZONE: Record<string, string> = {

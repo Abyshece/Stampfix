@@ -207,8 +207,25 @@ export async function findPlaces(q: string): Promise<Place[]> {
   }
 }
 
-/** Shops of one kind around a place, from OpenStreetMap (Overpass), asked from this browser. */
-export async function findShops(place: Place, category: string, radiusKm: number, includeChains: boolean): Promise<{ shops: FoundShop[]; chains_hidden: number }> {
+export type ShopSource = 'geoapify' | 'overpass';
+
+/** Is the Geoapify key set on the server (reliable shop search)? */
+export const getSearchStatus = () => call<{ places_key: boolean }>('outreach-tools', { action: 'status' });
+
+/**
+ * Shops of one kind around a place. First Geoapify, through the
+ * outreach-tools function (reliable; needs its key). Without a key, or if it
+ * fails, the free OpenStreetMap (Overpass) servers, asked from this browser.
+ */
+export async function findShops(place: Place, category: string, radiusKm: number, includeChains: boolean): Promise<{ shops: FoundShop[]; chains_hidden: number; source: ShopSource }> {
+  let serverError = '';
+  try {
+    const r = await call<{ shops: FoundShop[]; chains_hidden: number }>('outreach-tools',
+      { action: 'find', place, category, radius_km: radiusKm, include_chains: includeChains });
+    return { ...r, source: 'geoapify' };
+  } catch (e) {
+    serverError = e instanceof Error ? e.message : String(e);
+  }
   const query = overpassQuery(category, place.lat, place.lon, radiusKm);
   for (const endpoint of OVERPASS) {
     try {
@@ -216,20 +233,18 @@ export async function findShops(place: Place, category: string, radiusKm: number
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
         body: 'data=' + encodeURIComponent(query),
-      }, 60000);
+      }, 30000);
       const shops = parseOverpass(data as Parameters<typeof parseOverpass>[0], category,
         { city: place.city, region: place.region, country: place.country, timezone: place.timezone });
       const chains = shops.filter((s) => s.chain).length;
-      return { shops: includeChains ? shops : shops.filter((s) => !s.chain), chains_hidden: includeChains ? 0 : chains };
+      return { shops: includeChains ? shops : shops.filter((s) => !s.chain), chains_hidden: includeChains ? 0 : chains, source: 'overpass' };
     } catch { /* next map server */ }
   }
-  try {
-    return await call<{ shops: FoundShop[]; chains_hidden: number }>('outreach-tools',
-      { action: 'find', place, category, radius_km: radiusKm, include_chains: includeChains });
-  } catch {
-    throw new Error('map_busy');
-  }
+  // Say what to fix: a missing or wrong key, used-up searches, or just busy servers.
+  if (/no_places_key|places_40[13]|places_429/.test(serverError)) throw new Error(serverError.match(/no_places_key|places_40[13]|places_429/)![0]);
+  throw new Error('map_busy');
 }
+
 export const scanWebsites = (sites: Array<{ id: string; website: string }>) =>
   call<{ results: ScanResult[] }>('outreach-tools', { action: 'scan', sites }).then((r) => r.results);
 export const sendTestEmail = (leadId: string, kind: 'first' | 'followup' = 'first') =>

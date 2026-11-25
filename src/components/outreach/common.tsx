@@ -46,6 +46,9 @@ export function errorText(e: unknown): string {
   if (/invalid_email/.test(m)) return 'That email address doesn’t look right.';
   if (/email_in_use/.test(m)) return 'This shop was already emailed, so its address can’t change.';
   if (/already_contacted/.test(m)) return 'This shop was already contacted, so it stays in the list.';
+  if (/no_places_key/.test(m)) return 'The free map servers are overloaded right now. Add a free Geoapify key for reliable shop search (see the note above).';
+  if (/places_40[13]/.test(m)) return 'The Geoapify key isn’t accepted. Check GEOAPIFY_API_KEY in Supabase (Edge Functions, Secrets).';
+  if (/places_429/.test(m)) return 'Today’s free Geoapify searches (3,000) are used up. Try again tomorrow.';
   if (/map_busy|503/.test(m)) return 'The map service is busy right now. Try again in a minute.';
   if (/RESEND_API_KEY/.test(m)) return 'The Resend key isn’t set on the server.';
   return m || 'Something went wrong. Please try again.';
