@@ -3,7 +3,7 @@ import { Loader2, Instagram, Inbox, Copy, Check, ExternalLink, Pencil, AlertTria
 import { useToast } from '../ToastProvider';
 import { inputCls, btnDark, btnLight } from '../addonsUi';
 import {
-  listLeads, updateLead, saveOutreachSettings, openInstagramWindow, phoneInstalled, openInPhone, PHONE_DOWNLOAD,
+  listLeads, updateLead, saveOutreachSettings, openInstagramWindow, phoneInstalled, phoneOutdated, openInPhone, PHONE_DOWNLOAD, PHONE_VERSION,
   igChatUrl, igProfileUrl, IG_HOME, IG_INBOX,
   type Lead, type LeadView, type OutreachState,
 } from '../../lib/outreach';
@@ -30,6 +30,7 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
   const [account, setAccount] = useState(s.ig_account ?? '');
   // The Stampfix Phone marks the page as it loads.
   const [phone] = useState(phoneInstalled);
+  const [outdated] = useState(phoneOutdated);
   const [phoneClosed, setPhoneClosed] = useState(false);
   const open = (url: string) => {
     if (!phone) { openInstagramWindow(url); return; }
@@ -109,12 +110,22 @@ export function InstagramTab({ state, readOnly, onChanged }: { state: OutreachSt
         </div>
       </section>
 
+      {phone && outdated && (
+        <div className="hidden md:flex items-start gap-3 text-sm rounded-xl px-4 py-3 border bg-amber-50 border-amber-200 text-amber-900" data-phone-update>
+          <Download className="w-4 h-4 mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <b>A newer Stampfix Phone is ready ({PHONE_VERSION}).</b> It opens Instagram’s phone layout and fixes chats showing Meta’s error page.
+            Download it, unzip it over your old <b>stampfix-phone</b> folder, then click the reload arrow on Stampfix Phone in <code className="text-xs bg-white/70 px-1 py-0.5 rounded">chrome://extensions</code> and reload this page.
+          </div>
+          <a href={PHONE_DOWNLOAD} download className={`${btnDark} shrink-0`}><Download className="w-4 h-4" />Download</a>
+        </div>
+      )}
       {phone ? (
         <div className={`flex items-start gap-2 text-sm rounded-xl px-4 py-3 border ${phoneClosed ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-green-50 border-green-200 text-green-900'}`} data-phone-status>
           {phoneClosed ? <Smartphone className="w-4 h-4 mt-0.5 shrink-0" /> : <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />}
           <span>{phoneClosed
             ? 'The phone is closed. Click the Stampfix Phone icon in Chrome’s toolbar (pin it from the puzzle icon) and it opens on that chat.'
-            : 'Stampfix Phone is ready: Instagram opens in the panel at the right of this window.'}</span>
+            : 'Stampfix Phone is ready: Instagram opens in the panel at the right of this window. Not logged in? The phone shows a “Log in to Instagram” button.'}</span>
         </div>
       ) : (
         <section className="hidden md:block rounded-xl border notion-border bg-white p-5" data-phone-setup>

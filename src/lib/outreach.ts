@@ -423,10 +423,21 @@ export function mapsUrl(l: { business_name: string; address?: string | null; cit
 // it can't be reused).
 
 export const PHONE_DOWNLOAD = '/stampfix-phone.zip';
+/** The newest Stampfix Phone (browser-extension/stampfix-phone/manifest.json). */
+export const PHONE_VERSION = '1.1.0';
 export type PhoneAnswer = { ok: boolean; panel: boolean };
 
 /** Is the Stampfix Phone extension installed (it marks the page as it loads)? */
 export const phoneInstalled = (): boolean => typeof document !== 'undefined' && !!document.documentElement.dataset.stampfixPhone;
+
+/** Is the installed Stampfix Phone older than the newest one? */
+export function phoneOutdated(): boolean {
+  const have = (typeof document !== 'undefined' && document.documentElement.dataset.stampfixPhone) || '';
+  if (!have) return false;
+  const a = have.split('.').map((n) => parseInt(n, 10) || 0), b = PHONE_VERSION.split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) < (b[i] ?? 0);
+  return false;
+}
 
 /** Shows an Instagram page on the Stampfix Phone. panel: whether the phone is showing. */
 export function openInPhone(url: string): Promise<PhoneAnswer> {
