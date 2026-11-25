@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Search, ChevronDown, Check, Mail, Instagram, MessageCircle, Globe2, Plus, RotateCcw, ArrowRight } from 'lucide-react';
+import { Loader2, Search, ChevronDown, Check, Mail, Instagram, MessageCircle, Globe2, Plus, RotateCcw, ArrowRight, Clock } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import { Dialog, btnLight, inputCls } from '../addonsUi';
 import { getCoverage, getCountryCities, cityAsPlace, INDUSTRIES, countryName, type CoverageRow, type CountryCity, type Place } from '../../lib/outreach';
@@ -56,6 +56,9 @@ function citiesOf(rows: CoverageRow[]): City[] {
   return [...byCity.values()];
 }
 
+/** A city counts as started once emails there are queued, or anything was sent. */
+const started = (c: City) => c.reached > 0 || c.queued > 0;
+
 // "City of Langley" and "Langley" are the same place.
 const cityKey = (name: string | null) => (name ?? '').toLowerCase().replace(/^(city|town|district|village) of /, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const SHOW_STEP = 120;
@@ -82,7 +85,7 @@ export function AreasTab({ onFindShops, onSearchCity }: { onFindShops?: () => vo
     for (const c of cities) {
       const v = m.get(c.country) ?? { shops: 0, reached: 0, last: '' };
       v.shops += c.shops;
-      if (c.reached > 0) v.reached += 1;
+      if (started(c)) v.reached += 1;
       const last = c.lastContact ?? c.lastAdded;
       if (last > v.last) v.last = last;
       m.set(c.country, v);
@@ -106,12 +109,12 @@ export function AreasTab({ onFindShops, onSearchCity }: { onFindShops?: () => vo
   if (rows === null || !country) return <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>;
 
   const here = cities.filter((c) => c.country === country);
-  // Reached: latest contact first.
-  const reached = here.filter((c) => c.reached > 0).sort((a, b) => (b.lastContact ?? '').localeCompare(a.lastContact ?? ''));
+  // Reached or queued: latest contact (or, for queued only, latest added) first.
+  const reached = here.filter(started).sort((a, b) => (b.lastContact ?? b.lastAdded).localeCompare(a.lastContact ?? a.lastAdded));
   const sum = (f: (c: City) => number) => here.reduce((n, c) => n + f(c), 0);
   const name = countryName(country);
 
-  const reachedAll = cities.filter((c) => c.reached > 0).length;
+  const reachedAll = cities.filter(started).length;
   return (
     <div className="space-y-4" data-areas-tab>
       <section className="rounded-xl border notion-border bg-white p-4 sm:p-5">
@@ -157,11 +160,11 @@ export function AreasTab({ onFindShops, onSearchCity }: { onFindShops?: () => vo
         <Column title="Cities reached" count={reached.length} icon={<span className="w-4 h-4 rounded-full bg-green-600 text-white flex items-center justify-center"><Check className="w-3 h-3" strokeWidth={3} /></span>} testId="reached">
           {reached.length === 0 ? (
             <>
-              <Empty>{here.length ? `No city in ${name} reached yet. Cities show up here once you email or message a shop there.` : `No shops from ${name} in your list yet.`}</Empty>
+              <Empty>{here.length ? `No city in ${name} reached yet. Cities show up here as soon as you queue emails for, email or message a shop there.` : `No shops from ${name} in your list yet.`}</Empty>
               {onFindShops && <button type="button" className={`${btnLight} w-full`} onClick={onFindShops} data-areas-find><Plus className="w-4 h-4" />Find shops</button>}
             </>
           ) : reached.map((c) => (
-            <CityCard key={c.key} city={c} reached onOpen={() => setDetail(c)} />
+            <CityCard key={c.key} city={c} onOpen={() => setDetail(c)} />
           ))}
         </Column>
 
@@ -256,33 +259,31 @@ function Empty({ children }: { children: ReactNode }) {
   return <p className="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-center text-xs text-gray-500">{children}</p>;
 }
 
-/** One city as a card. */
-function CityCard({ city: c, reached, onOpen }: { city: City; reached: boolean; onOpen: () => void }) {
+/** One city as a card: a green tick once something was sent there, a blue clock while emails only wait in the queue. */
+function CityCard({ city: c, onOpen }: { city: City; onOpen: () => void }) {
+  const sent = c.reached > 0;
   return (
-    <button type="button" onClick={onOpen} data-city-card={c.city ?? '(no city)'}
+    <button type="button" onClick={onOpen} data-city-card={c.city ?? '(no city)'} data-city-state={sent ? 'reached' : 'queued'}
       className="w-full text-left rounded-lg bg-white border notion-border shadow-sm px-3 py-2.5 hover:shadow-md hover:border-gray-300 transition">
       <div className="flex items-start gap-2.5">
-        {reached
+        {sent
           ? <span className="mt-0.5 w-5 h-5 rounded-full bg-green-600 text-white flex items-center justify-center shrink-0" aria-label="Reached"><Check className="w-3.5 h-3.5" strokeWidth={3} /></span>
-          : <span className="mt-0.5 w-5 h-5 rounded-full border-2 border-gray-300 shrink-0" aria-label="Not reached yet" />}
+          : <span className="mt-0.5 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0" aria-label="Queued, nothing sent yet"><Clock className="w-3.5 h-3.5" strokeWidth={2.5} /></span>}
         <div className="min-w-0 flex-1">
           <div className="font-medium text-[#37352F] break-words leading-snug">{c.city ?? 'No city'}</div>
           {c.region && <div className="text-xs text-gray-500 break-words">{c.region}</div>}
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5 mt-2 pl-[30px] text-xs" data-city-counts>
-        {reached ? (<>
-          <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5"><Mail className="w-3 h-3" />{c.emailed} emailed</span>
-          <span className="rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">{c.open} open</span>
-          {c.ig > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 text-pink-700 px-2 py-0.5"><Instagram className="w-3 h-3" />{c.ig}</span>}
-          {c.replied > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 px-2 py-0.5"><MessageCircle className="w-3 h-3" />{plural(c.replied, 'reply', 'replies')}</span>}
-        </>) : (<>
-          <span className="rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">{plural(c.shops, 'shop')}</span>
-          <span className="rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">{c.withEmail} with email</span>
-          {c.queued > 0 && <span className="rounded-full bg-blue-50 text-blue-700 px-2 py-0.5">{c.queued} queued</span>}
-        </>)}
+        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5"><Mail className="w-3 h-3" />{c.emailed} emailed</span>
+        {c.queued > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 px-2 py-0.5"><Clock className="w-3 h-3" />{c.queued} queued</span>}
+        <span className="rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">{c.open} open</span>
+        {c.ig > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-pink-50 text-pink-700 px-2 py-0.5"><Instagram className="w-3 h-3" />{c.ig}</span>}
+        {c.replied > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 px-2 py-0.5"><MessageCircle className="w-3 h-3" />{plural(c.replied, 'reply', 'replies')}</span>}
       </div>
-      {reached && c.lastContact && <div className="text-[11px] text-gray-400 mt-1.5 pl-[30px]">Last contact {date(c.lastContact)}</div>}
+      <div className="text-[11px] text-gray-400 mt-1.5 pl-[30px]">
+        {sent && c.lastContact ? `Last contact ${date(c.lastContact)}` : 'Queued: the first emails go out in your sending hours'}
+      </div>
     </button>
   );
 }
