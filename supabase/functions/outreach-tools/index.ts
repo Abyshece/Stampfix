@@ -9,6 +9,7 @@
 //                                                   asks Photon from the admin's browser first)
 //   { action: 'scan', sites: [{ id, website }] } -> the email address and Instagram account each
 //                                                   shop publishes on its own website
+//   { action: 'cities', country }                -> every city and town of a country (Areas)
 //   { action: 'ai_test' }                        -> one small Gemini search, to check the key
 //   { action: 'ai_tick' }                        -> the AI email finder: searches the next few
 //                                                   shops in line (also called every minute by
@@ -32,7 +33,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import {
   CATEGORIES, geoapifyUrl, parseGeoapify, placesFromNominatim, extractContacts, pickEmail, isPublicUrl, cleanWebsite,
-  type Place,
+  geoapifyCountryUrl, countryArea, geoapifyCitiesUrl, parseGeoapifyCities, sortCities,
+  type Place, type CountryCity,
 } from './lib.ts';
 import {
   buildPrompt, geminiRequest, geminiUrl, modelChain, readGeminiReply, parseAnswer, classifyGeminiError, decide,
@@ -92,6 +94,55 @@ async function find(body: { place?: Place & { lat: number; lon: number }; catego
     chains_hidden: body.include_chains ? 0 : chains,
     source: 'geoapify',
   };
+}
+
+/**
+ * Every city and town of a country (for Areas): the country's boundary from
+ * Geoapify, then its cities and towns, 500 a page (each page costs Geoapify
+ * credits, so at most 4 pages of cities and 2 of towns).
+ */
+async function countryCities(country: string): Promise<{ cities: CountryCity[]; source: string }> {
+  if (!/^[A-Z]{2}$/.test(country)) throw new Error('bad_request');
+  if (!GEOAPIFY_KEY) throw new Error('no_places_key');
+  let name = country;
+  try { name = new Intl.DisplayNames(['en'], { type: 'region' }).of(country) ?? country; } catch { /* the code then */ }
+  const geo = await fetchWithTimeout(geoapifyCountryUrl(country, name, GEOAPIFY_KEY), { headers: { Accept: 'application/json' } }, 20000);
+  if (!geo.ok) throw new Error(`places_${geo.status}`);
+  const { placeId, bbox } = countryArea(await geo.json(), country);
+  if (!placeId && !bbox) throw new Error('places_no_country');
+
+  // The country's own boundary first; if Geoapify won't search that, its map rectangle.
+  const areas: Array<{ placeId: string } | { bbox: NonNullable<typeof bbox> }> = [];
+  if (placeId) areas.push({ placeId });
+  if (bbox) areas.push({ bbox });
+  let lastError = '';
+  for (const area of areas) {
+    const out: CountryCity[] = [];
+    const plan: Array<['populated_place.city' | 'populated_place.town', number]> = [['populated_place.city', 4], ['populated_place.town', 2]];
+    try {
+      for (const [category, pages] of plan) {
+        for (let page = 0; page < pages; page++) {
+          const res = await fetchWithTimeout(geoapifyCitiesUrl(area, category, page * 500, GEOAPIFY_KEY), { headers: { Accept: 'application/json' } }, 30000);
+          if (!res.ok) {
+            const body = await res.text().catch(() => '');
+            console.warn('[outreach-tools] cities', country, 'placeId' in area ? 'place' : 'rect', category, res.status, body.replace(/\s+/g, ' ').slice(0, 300));
+            if (out.length) break; // keep what came back
+            throw new Error(`places_${res.status}`);
+          }
+          const data = await res.json();
+          const got = parseGeoapifyCities(data, country);
+          out.push(...got.map((c) => ({ ...c, kind: category === 'populated_place.town' ? 'town' as const : 'city' as const })));
+          // A short page is the last one (counted before other countries' places are dropped).
+          if (((data as { features?: unknown[] })?.features?.length ?? 0) < 500) break;
+        }
+      }
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : 'error';
+      continue;
+    }
+    if (out.length) return { cities: sortCities(out), source: 'geoapify' };
+  }
+  throw new Error(lastError || 'places_no_cities');
 }
 
 /**
@@ -187,8 +238,10 @@ async function askGemini(prompt: string, skipModels: Set<string>): Promise<{ rep
     if (res.ok) {
       try { return { reply: readGeminiReply(await res.json()), model }; } catch { return { error: { kind: 'server', message: 'unreadable reply', retrySec: null } }; }
     }
-    const err = classifyGeminiError(res.status, await res.text().catch(() => ''));
-    console.warn('[outreach-tools] gemini', model, res.status, err.kind, err.message.slice(0, 160));
+    const bodyText = await res.text().catch(() => '');
+    const err = classifyGeminiError(res.status, bodyText);
+    // Google's whole answer (quota names, limits), to see exactly what it refused.
+    console.warn('[outreach-tools] gemini', model, res.status, err.kind, bodyText.replace(/\s+/g, ' ').slice(0, 900));
     if (err.kind === 'model' || err.kind === 'daily') {
       skipModels.add(model);
       daily = daily || err.kind === 'daily';
@@ -242,6 +295,22 @@ async function readSite(url: string, name: string, own: boolean | 'guess', deadl
   return { pages, instagram, reached: true, own: isOwn };
 }
 
+/** What this run knows: did the last run end with Google refusing, and how many requests went out. */
+type TickContext = { refusedBefore: boolean; asked: number };
+
+const QUOTA_REFUSED = 'Google keeps answering "You exceeded your current quota". On a new key this means Google Search needs billing turned on for the key\'s Google project (aistudio.google.com, Billing; the first 5,000 searches a month are free). Then press Resume.';
+const QUOTA_HINT = ' On a new key, Google Search needs billing turned on for the key\'s Google project (the first 5,000 searches a month are free).';
+
+/** The reason the last run stopped, if any (cleared by any search that goes through). */
+async function lastError(db: Db): Promise<string | null> {
+  try {
+    const { data } = await db.from('outreach_settings').select('ai_last_error').eq('id', 1).maybeSingle();
+    return typeof data?.ai_last_error === 'string' ? data.ai_last_error : null;
+  } catch {
+    return null;
+  }
+}
+
 type LeadResult = {
   save: Record<string, unknown>;
   // Stop searching (and pause for this many minutes; null = until Google's free searches come back).
@@ -261,7 +330,7 @@ const STOP_TEXT: Record<GeminiErrorKind, (m: string) => { minutes: number | null
 };
 
 /** Looks for one shop's email address. */
-async function searchLead(lead: AiLead, skipModels: Set<string>, deadline: number): Promise<LeadResult> {
+async function searchLead(lead: AiLead, skipModels: Set<string>, deadline: number, ctx: TickContext): Promise<LeadResult> {
   const pages: CheckedPage[] = [];
   const instagram: string[] = [];
   let websiteChecked = false;
@@ -294,10 +363,15 @@ async function searchLead(lead: AiLead, skipModels: Set<string>, deadline: numbe
 
   // 2. Ask Gemini, with Google Search.
   if (!GEMINI_KEY) return { save: { outcome: 'requeue' }, stop: { minutes: 60, error: 'GEMINI_API_KEY isn\'t set in Supabase (Edge Functions, Secrets).' } };
+  const first = ctx.asked === 0;
+  ctx.asked++;
   const asked = await askGemini(buildPrompt(lead), skipModels);
   if ('error' in asked) {
-    const stop = STOP_TEXT[asked.error.kind](asked.error.message);
+    let stop = STOP_TEXT[asked.error.kind](asked.error.message);
     if (asked.error.kind === 'minute' && asked.error.retrySec) stop.minutes = Math.min(10, Math.max(1, Math.ceil(asked.error.retrySec / 60)));
+    // "Too many requests" again on the very first request after waiting: that's not
+    // speed, Google gives this key no searches at all (no billing on a new key).
+    if (asked.error.kind === 'minute' && first && ctx.refusedBefore) stop = { minutes: 60, error: QUOTA_REFUSED };
     // Google's own error on this one request counts as a try; anything else isn't the shop's fault.
     return { save: asked.error.kind === 'server' ? { outcome: 'retry', note: 'Google\'s AI had an error.' } : { outcome: 'requeue' }, stop };
   }
@@ -342,6 +416,11 @@ async function aiTick(db: Db): Promise<{ searched: number; stopped: string | nul
   const end = Date.now() + 50_000;
   const skipModels = new Set<string>();
   let searched = 0;
+  const before = await lastError(db);
+  const ctx: TickContext = {
+    refusedBefore: !!before && /^(Google asked to slow down|Google keeps answering|Google Search in Gemini needs billing)/.test(before),
+    asked: 0,
+  };
   // About 4 shops a minute keeps within Gemini's free requests per minute.
   while (searched < 4 && Date.now() < end - 20_000) {
     const { data: claim, error } = await db.rpc('outreach_ai_claim');
@@ -350,7 +429,7 @@ async function aiTick(db: Db): Promise<{ searched: number; stopped: string | nul
     const lead = claim.lead as AiLead;
     let r: LeadResult;
     try {
-      r = await searchLead(lead, skipModels, Date.now() + 40_000);
+      r = await searchLead(lead, skipModels, Date.now() + 40_000, ctx);
     } catch (e) {
       console.error('[outreach-tools] ai search', lead.id, e instanceof Error ? e.message : e);
       r = { save: { outcome: 'retry', note: 'Something went wrong during the search.' } };
@@ -370,7 +449,13 @@ async function aiTick(db: Db): Promise<{ searched: number; stopped: string | nul
 async function aiTest(): Promise<Record<string, unknown>> {
   if (!GEMINI_KEY) return { ok: false, error: 'GEMINI_API_KEY isn\'t set in Supabase (Edge Functions, Secrets).' };
   const asked = await askGemini('Use Google Search: what is the official website of the Vancouver Art Gallery? Answer with only the URL.', new Set());
-  if ('error' in asked) return { ok: false, kind: asked.error.kind, error: STOP_TEXT[asked.error.kind](asked.error.message).error };
+  if ('error' in asked) {
+    const { kind, message } = asked.error;
+    // Google's own words, plus what usually fixes a quota refusal on a new key.
+    const error = kind === 'bad_key' || kind === 'billing' ? STOP_TEXT[kind](message).error
+      : `Google says: ${message}`.slice(0, 260) + (kind === 'minute' || kind === 'daily' ? QUOTA_HINT : '');
+    return { ok: false, kind, error };
+  }
   return { ok: true, model: asked.model, searched_google: asked.reply.queries.length > 0 || asked.reply.sources.length > 0, answer: asked.reply.text.slice(0, 200) };
 }
 
@@ -416,6 +501,7 @@ Deno.serve(async (req) => {
       return json({ places: await geocode(q) });
     }
     if (body.action === 'find') return json(await find(body));
+    if (body.action === 'cities') return json(await countryCities(String(body.country ?? '').toUpperCase()));
     if (body.action === 'scan') {
       const sites = (Array.isArray(body.sites) ? body.sites : []).slice(0, 6)
         .filter((s: { id?: unknown; website?: unknown }) => typeof s?.id === 'string' && typeof s?.website === 'string');

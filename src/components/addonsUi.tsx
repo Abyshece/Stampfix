@@ -32,7 +32,7 @@ export function ConfirmDialog({ title, body, confirmLabel, busy, onConfirm, onCl
 }
 
 /** Centered on desktop, a sheet from the bottom on phones. Esc or a tap outside closes it. */
-export function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Dialog({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   const { t } = useTranslation();
   const close = useRef(onClose);
   close.current = onClose;
@@ -45,7 +45,7 @@ export function Dialog({ title, onClose, children }: { title: string; onClose: (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center sm:p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-label={title}
-        className="relative w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92vh] overflow-y-auto pb-safe">
+        className={`relative w-full ${wide ? 'sm:max-w-4xl' : 'sm:max-w-md'} bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[92vh] overflow-y-auto pb-safe`}>
         <div className="flex items-center justify-between gap-3 px-5 pt-5 pb-4">
           <h3 className="text-lg font-semibold text-[#37352F] min-w-0 break-words">{title}</h3>
           <button type="button" onClick={onClose} aria-label={t('dash.addons.close', { defaultValue: 'Close' })} className={iconBtn}><X className="w-5 h-5" /></button>

@@ -2,7 +2,9 @@ import { supabase } from './supabase';
 // Shared with the outreach-tools function: the same map query, parsing and time-zone guess.
 import {
   guessTimezone, overpassQuery, parseOverpass, placesFromPhoton, placesFromNominatim,
+  overpassCitiesQuery, parseOverpassCities, type CountryCity,
 } from '../../supabase/functions/outreach-tools/lib';
+export type { CountryCity };
 
 // Admin > Outreach: find shops anywhere, email them through Resend (queued
 // and sent within limits by the outreach-send function) or message them on
@@ -254,6 +256,61 @@ export async function findShops(place: Place, category: string, radiusKm: number
   // Say what to fix: a missing or wrong key, used-up searches, or just busy servers.
   if (/no_places_key|places_40[13]|places_429/.test(serverError)) throw new Error(serverError.match(/no_places_key|places_40[13]|places_429/)![0]);
   throw new Error('map_busy');
+}
+
+// ---- All cities of a country (Areas) -----------------------------------------------
+
+const CITY_CACHE_DAYS = 7;
+const cityMemo = new Map<string, CountryCity[]>();
+
+/**
+ * Every city and town of a country, biggest first: from Geoapify through the
+ * outreach-tools function, else the free OpenStreetMap servers from this
+ * browser. Kept on this device for a week (the list hardly changes).
+ */
+export async function getCountryCities(country: string): Promise<CountryCity[]> {
+  const cc = country.toUpperCase();
+  const memo = cityMemo.get(cc);
+  if (memo) return memo;
+  const key = `stampfix_cities_${cc}`;
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) ?? 'null') as { at: number; cities: CountryCity[] } | null;
+    if (saved && Date.now() - saved.at < CITY_CACHE_DAYS * 86_400_000 && Array.isArray(saved.cities) && saved.cities.length) {
+      cityMemo.set(cc, saved.cities);
+      return saved.cities;
+    }
+  } catch { /* no storage */ }
+  let cities: CountryCity[] | null = null;
+  try {
+    cities = (await call<{ cities: CountryCity[] }>('outreach-tools', { action: 'cities', country: cc })).cities;
+  } catch { /* try the free servers */ }
+  if (!cities?.length) {
+    for (const endpoint of OVERPASS) {
+      try {
+        const data = await getJson(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body: 'data=' + encodeURIComponent(overpassCitiesQuery(cc)),
+        }, 60000);
+        cities = parseOverpassCities(data);
+        if (cities.length) break;
+      } catch { /* next map server */ }
+    }
+  }
+  if (!cities?.length) throw new Error('map_busy');
+  cityMemo.set(cc, cities);
+  try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), cities })); } catch { /* full or private: fine */ }
+  return cities;
+}
+
+/** A city from that list as a place for Find shops. */
+export function cityAsPlace(c: CountryCity, country: string): Place {
+  return {
+    // Each part once: "Osaka, Japan", not "Osaka, Osaka, Japan".
+    label: [...new Map([c.name, c.region, countryName(country)].filter((x): x is string => !!x).map((x) => [x.toLowerCase(), x])).values()].join(', '),
+    lat: c.lat, lon: c.lon, country: country.toUpperCase(), region: c.region, city: c.name,
+    timezone: guessTimezone(country, c.region, c.lon),
+  };
 }
 
 export const scanWebsites = (sites: Array<{ id: string; website: string }>) =>
