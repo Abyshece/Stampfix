@@ -762,7 +762,9 @@ export type OnboardingKey =
   | 'wizard_dismissed'
   | 'checklist_dismissed'
   | 'campaigns_opened'
-  | 'campaigns_intro_done';
+  | 'campaigns_intro_done'
+  | 'page_previewed'
+  | 'page_qr_downloaded';
 
 export interface OnboardingState {
   poster_downloaded?: boolean;
@@ -774,6 +776,10 @@ export interface OnboardingState {
   campaigns_opened?: boolean;
   /** Closed the "How campaigns work" box, or sent a first campaign. */
   campaigns_intro_done?: boolean;
+  /** Opened their Business page from the dashboard. */
+  page_previewed?: boolean;
+  /** Downloaded a poster or image with the Business page QR code. */
+  page_qr_downloaded?: boolean;
 }
 
 export async function getOnboardingState(merchantId: string): Promise<OnboardingState> {
@@ -1049,6 +1055,31 @@ export async function selfServeStamp(
     p_email: email ?? null,
     p_code: code ?? null,
     p_count: count ?? 1,
+    p_tz: deviceTimeZone(),
+  });
+  if (error) throw error;
+  return (data ?? { ok: false, error: 'network' }) as SelfServeStampResult;
+}
+
+/** One stamp from the Business page: the counter code at the till, then the
+ *  same checks as the counter stamp QR (at the shop, 45 minutes apart, the
+ *  daily limit). Extra stamps still go through selfServeStamp with the
+ *  cashier code. */
+export async function pageStamp(
+  campaignId: string,
+  locationId: string,
+  lat: number,
+  lng: number,
+  counterCode: string,
+  email?: string,
+): Promise<SelfServeStampResult> {
+  const { data, error } = await supabase.rpc('page_stamp', {
+    p_campaign: campaignId,
+    p_location: locationId,
+    p_lat: lat,
+    p_lng: lng,
+    p_email: email ?? null,
+    p_counter_code: counterCode,
     p_tz: deviceTimeZone(),
   });
   if (error) throw error;

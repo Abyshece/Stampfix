@@ -14,7 +14,7 @@ import { ownerPinIsSet, setOwnerPin } from '../services/staff';
 // Section key -> the dashboard menu's translation key, so the chips use the menu's wording.
 const NAV_KEY: Record<string, string> = {
   CUSTOMERS: 'customers', ACTIVITY: 'activity', ANALYTICS: 'insights', VALUE: 'payback', STAFF: 'staff',
-  PREVIEW: 'previewCard', SHARE: 'sharePromote', SETTINGS: 'settings', HELP: 'getHelp',
+  PREVIEW: 'previewCard', SHARE: 'businessPage', SETTINGS: 'settings', HELP: 'getHelp',
 };
 
 const SEV: Record<Flag['severity'], { label: string; cls: string }> = {

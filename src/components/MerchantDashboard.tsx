@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import QRCode from 'react-qr-code';
 import type { Campaign, UserCard, ActivityItem, Location, OnboardingState, MerchantBilling } from '../types';
 import { FREE_TIER_CARD_LIMIT, FREE_TIER_WARNING_THRESHOLD } from '../types';
 import {
-  ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Share, Menu,
+  ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone, ClipboardList, Puzzle } from 'lucide-react';
+  RotateCcw, Smile, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone, ClipboardList, Puzzle, Store } from 'lucide-react';
 import { CampaignsPanel } from './CampaignsPanel';
 import { MerchantDashboardBanner } from './MerchantBannerBar';
 import { useAuth } from '../lib/auth';
@@ -25,6 +24,8 @@ import { LocationsPanel } from './LocationsPanel';
 import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { ResultsPanel } from './ResultsPanel';
 import { AddonsPanel } from './AddonsPanel';
+import { BusinessPagePanel, type PageSection } from './BusinessPagePanel';
+import { getMyBusinessPage, businessPageUrl, type MyBusinessPage } from '../lib/businessPage';
 import { OrdersPanel } from './OrdersPanel';
 import { getOrderingSettings, countNewOrders } from '../lib/ordering';
 import { StaffPanel } from './StaffPanel';
@@ -39,9 +40,7 @@ import { UpgradeBanner } from './UpgradeBanner';
 import { UpgradeModal } from './UpgradeModal';
 import { AccountBilling } from './AccountBilling';
 import { AccountSecurity } from './AccountSecurity';
-import { LinksSettings } from './LinksSettings';
 import { ComplianceSettings } from './ComplianceSettings';
-import { PosterSettings } from './PosterSettings';
 import { CustomerPrivacyNoticePanel } from './CustomerPrivacyNoticePanel';
 import { DangerZonePanel } from './DangerZonePanel';
 import { DownloadMyDataButton } from './DownloadMyDataButton';
@@ -85,13 +84,16 @@ interface MerchantDashboardProps {
   onLogout: () => void;
 }
 
-type SettingsSection = 'stamping' | 'general' | 'wallet' | 'posters' | 'locations' | 'billing' | 'account' | 'links' | 'privacy' | 'danger';
-type Tab = 'DASHBOARD' | 'ORDERS' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'OFFERS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP' | 'ADDONS';
+// Links & socials and Posters & print moved to the Business page.
+type SettingsSection = 'stamping' | 'general' | 'wallet' | 'locations' | 'billing' | 'account' | 'privacy' | 'danger';
+// 'SHARE' (the former Share & Promote) is only an old name: it opens the Business page's QR codes.
+type Tab = 'DASHBOARD' | 'ORDERS' | 'PAGE' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'OFFERS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP' | 'ADDONS';
 
 /** Each dashboard tab has a real URL so refresh, back/forward and deep links work. */
 const TAB_PATH: Record<Tab, string> = {
   DASHBOARD: '/scan',
   ORDERS: '/orders',
+  PAGE: '/business-page',
   CUSTOMERS: '/customers',
   ACTIVITY: '/activity',
   ANALYTICS: '/insights',
@@ -100,17 +102,27 @@ const TAB_PATH: Record<Tab, string> = {
   STAFF: '/staff',
   PREVIEW: '/preview-card',
   SETTINGS: '/settings',
-  SHARE: '/promote',
+  SHARE: '/business-page/qr',
   HELP: '/help',
   ADDONS: '/addons',
 };
-const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'stamping', 'posters', 'locations', 'billing', 'account', 'links', 'privacy', 'danger'];
+const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'stamping', 'locations', 'billing', 'account', 'privacy', 'danger'];
+const PAGE_SECTIONS: PageSection[] = ['profile', 'links', 'qr'];
+/** Old addresses of what is now on the Business page. */
+const PAGE_ALIASES: Record<string, PageSection> = { '/promote': 'qr', '/settings/links': 'links', '/settings/posters': 'qr' };
 function pathToTab(path: string): Tab | null {
+  if (PAGE_ALIASES[path] || path === '/business-page' || path.startsWith('/business-page/')) return 'PAGE';
   if (path === '/settings' || path.startsWith('/settings/')) return 'SETTINGS';
   if (path === '/offers') return 'OFFERS'; // old links to the former Offers tab
   const e = (Object.entries(TAB_PATH) as [Tab, string][]).find(([, p]) => p === path);
   return e ? e[0] : null;
 }
+function pathToPageSection(path: string): PageSection {
+  if (PAGE_ALIASES[path]) return PAGE_ALIASES[path];
+  const m = path.match(/^\/business-page\/([a-z]+)$/);
+  return m && (PAGE_SECTIONS as string[]).includes(m[1]) ? (m[1] as PageSection) : 'profile';
+}
+const pagePath = (s: PageSection) => (s === 'profile' ? '/business-page' : `/business-page/${s}`);
 function pathToSection(path: string): SettingsSection | null {
   const m = path.match(/^\/settings\/([a-z]+)$/);
   return m && (SETTINGS_SECTIONS as string[]).includes(m[1]) ? (m[1] as SettingsSection) : null;
@@ -144,8 +156,16 @@ export function MerchantDashboard({
 }: MerchantDashboardProps) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>(
-    () => pathToTab(window.location.pathname) || (sessionStorage.getItem('sf_active_tab') as Tab) || 'DASHBOARD',
+    () => {
+      const t = pathToTab(window.location.pathname) || (sessionStorage.getItem('sf_active_tab') as Tab) || 'DASHBOARD';
+      return t === 'SHARE' ? 'PAGE' : t;
+    },
   );
+  const [pageSection, setPageSection] = useState<PageSection>(() => {
+    const p = window.location.pathname;
+    if (pathToTab(p) === 'PAGE') return pathToPageSection(p);
+    return sessionStorage.getItem('sf_active_tab') === 'SHARE' ? 'qr' : 'profile';
+  });
   // Keep the open tab sticky so opening a poster (or any re-render) never
   // bounces the merchant back to the dashboard.
   useEffect(() => {
@@ -160,10 +180,11 @@ export function MerchantDashboard({
   const [activeStaff, setActiveStaff] = useState(() => getStaffSession(campaign.id));
   // Sections the on-shift staff member is not allowed to see (owner-controlled).
   // Empty when the owner is using the dashboard directly (no staff session).
-  const staffHidden = useMemo(
-    () => (activeStaff ? (staffRoster.find((r) => r.id === activeStaff.id)?.hiddenSections ?? []) : []),
-    [activeStaff, staffRoster],
-  );
+  const staffHidden = useMemo(() => {
+    const list = activeStaff ? (staffRoster.find((r) => r.id === activeStaff.id)?.hiddenSections ?? []) : [];
+    // Saved as 'SHARE' (the former Share & Promote): it now hides the Business page.
+    return list.includes('SHARE') ? [...list, 'PAGE'] : list;
+  }, [activeStaff, staffRoster]);
   useEffect(() => {
     if (staffHidden.includes(activeTab)) { setActiveTab('DASHBOARD'); window.history.replaceState({}, '', TAB_PATH.DASHBOARD); }
   }, [staffHidden, activeTab]);
@@ -181,6 +202,19 @@ export function MerchantDashboard({
       .finally(() => { if (live) setOrderingKnown(true); });
     return () => { live = false; };
   }, [campaign.id]);
+  // The Business page (one page and one QR code). Made on first use. When it
+  // can't load, posters and table codes keep using the direct links.
+  const [bizPage, setBizPage] = useState<MyBusinessPage | null>(null);
+  const [bizPageError, setBizPageError] = useState(false);
+  const [bizPageTick, setBizPageTick] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setBizPageError(false);
+    getMyBusinessPage(campaign.id)
+      .then((p) => { if (live) setBizPage(p); })
+      .catch(() => { if (live) setBizPageError(true); });
+    return () => { live = false; };
+  }, [campaign.id, bizPageTick]);
   useEffect(() => {
     // The Orders page keeps the count itself; elsewhere check every 15 s.
     if (!orderingEnabled || activeTab === 'ORDERS') return;
@@ -296,8 +330,6 @@ export function MerchantDashboard({
 
   // Preview
   const [previewStamps, setPreviewStamps] = useState(3);
-  // Which share URL was just copied — shows a "Copied!" confirmation on that button.
-  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   // Whether the merchant dismissed the green "approved" banner. Persisted
   // per-campaign so it doesn't reappear after they close it.
   const [approvalSeen, setApprovalSeen] = useState(() => {
@@ -307,13 +339,35 @@ export function MerchantDashboard({
 
   // -------------------- Handlers --------------------
 
-  const handleTabChange = (tab: Tab) => {
+  const handleTabChange = (to: Tab) => {
+    // The old Share & Promote (banners, saved links) opens the Business page's QR codes.
+    const tab: Tab = to === 'SHARE' ? 'PAGE' : to;
     if (tab === 'SETTINGS') {
       setTempSettings(campaign);
       setSettingsSaved(false);
     }
+    if (to === 'SHARE') setPageSection('qr');
     setActiveTab(tab);
-    if (pathToTab(window.location.pathname) !== tab) window.history.pushState({}, '', TAB_PATH[tab]);
+    if (tab === 'PAGE') {
+      const path = pagePath(to === 'SHARE' ? 'qr' : pageSection);
+      if (window.location.pathname !== path) window.history.pushState({}, '', path);
+    } else if (pathToTab(window.location.pathname) !== tab) {
+      window.history.pushState({}, '', TAB_PATH[tab]);
+    }
+    setShowMobileMoreMenu(false);
+  };
+  const openPageSection = (s: PageSection) => {
+    setPageSection(s);
+    setActiveTab('PAGE');
+    if (window.location.pathname !== pagePath(s)) window.history.pushState({}, '', pagePath(s));
+    setShowMobileMoreMenu(false);
+  };
+  const openSettingsSection = (sec: SettingsSection) => {
+    setTempSettings(campaign);
+    setSettingsSaved(false);
+    setSettingsSection(sec);
+    setActiveTab('SETTINGS');
+    window.history.pushState({}, '', `/settings/${sec}`);
     setShowMobileMoreMenu(false);
   };
 
@@ -495,9 +549,13 @@ export function MerchantDashboard({
    *  branding color (or gradient from posterColor), icon, business name,
    *  and a per-location QR code. */
   const handleDownloadPoster = (location: Location | null, size: PosterSize = 'pamphlet', lang: 'en' | 'de' = 'en') => {
-    const html = buildPosterHtml({ campaign, location, size, lang });
+    // Join posters open the Business page; the counter stamp poster keeps its stamp link.
+    const joinUrlOverride = bizPage && size !== 'selfscan'
+      ? businessPageUrl(bizPage.slug, { locationId: activeLocations.length > 1 ? location?.id ?? null : null })
+      : undefined;
+    const html = buildPosterHtml({ campaign, location, size, lang, joinUrlOverride });
     void downloadPosterPng(html, size, `stampfix-${size}-poster.png`);
-    // Onboarding: downloading any poster from the Share tab counts as
+    // Onboarding: downloading any poster from the Business page counts as
     // the poster-downloaded milestone. Fire and forget.
     if (!onboarding.poster_downloaded) {
       onMarkOnboardingStep({ poster_downloaded: true });
@@ -515,12 +573,17 @@ export function MerchantDashboard({
   // Keep the browser URL and the active tab in sync: normalize an unknown path
   // (e.g. "/") to the current tab on mount, and follow back/forward navigation.
   useEffect(() => {
-    if (pathToTab(window.location.pathname) === null) {
-      window.history.replaceState({}, '', activeTab === 'SETTINGS' ? `/settings/${settingsSection}` : TAB_PATH[activeTab]);
+    const p = window.location.pathname;
+    if (pathToTab(p) === null) {
+      window.history.replaceState({}, '', activeTab === 'SETTINGS' ? `/settings/${settingsSection}` : activeTab === 'PAGE' ? pagePath(pageSection) : TAB_PATH[activeTab]);
+    } else if (PAGE_ALIASES[p]) {
+      // An old address (Share & Promote, Settings links or posters): show the new one.
+      window.history.replaceState({}, '', pagePath(PAGE_ALIASES[p]));
     }
     const onPop = () => {
       const t = pathToTab(window.location.pathname);
       if (t) setActiveTab(t);
+      if (t === 'PAGE') setPageSection(pathToPageSection(window.location.pathname));
       const sec = pathToSection(window.location.pathname);
       if (sec) setSettingsSection(sec);
     };
@@ -775,6 +838,7 @@ export function MerchantDashboard({
             {([
               ['DASHBOARD', ScanLine, t('dash.nav.scanner', { defaultValue: 'Scanner' })],
               ['ORDERS', ClipboardList, t('dash.nav.orders', { defaultValue: 'Orders' })],
+              ['PAGE', Store, t('dash.nav.businessPage', { defaultValue: 'Business page' })],
               ['CUSTOMERS', Users, t('dash.nav.customers', { defaultValue: 'Customers' })],
               ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
               ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
@@ -782,7 +846,6 @@ export function MerchantDashboard({
               ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Results' })],
               ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
               ['PREVIEW', Eye, t('dash.nav.previewCard', { defaultValue: 'Preview Card' })],
-              ['SHARE', Share, t('dash.nav.sharePromote', { defaultValue: 'Share & Promote' })],
               ['ADDONS', Puzzle, t('dash.nav.addons', { defaultValue: 'Add-ons' })],
               ['SETTINGS', Settings, t('dash.nav.settings', { defaultValue: 'Settings' })],
               ['HELP', LifeBuoy, t('dash.nav.getHelp', { defaultValue: 'Get help' })],
@@ -860,7 +923,7 @@ export function MerchantDashboard({
         <div className="hidden md:flex items-center text-sm text-gray-400 mb-6 gap-2">
           <span>{campaign.businessName}</span>
           <ChevronRight className="w-4 h-4" />
-          <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab === 'OFFERS' ? 'campaigns' : activeTab === 'VALUE' ? 'results' : activeTab === 'ADDONS' ? 'add-ons' : activeTab.toLowerCase() })}</span>
+          <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab === 'OFFERS' ? 'campaigns' : activeTab === 'VALUE' ? 'results' : activeTab === 'ADDONS' ? 'add-ons' : activeTab === 'PAGE' ? 'business page' : activeTab.toLowerCase() })}</span>
         </div>
 
         {/* Account approval status banner */}
@@ -987,8 +1050,8 @@ export function MerchantDashboard({
                   <ChecklistItem
                     done={!!onboarding.poster_downloaded}
                     label={t('dash.scan.cl1', { defaultValue: 'Download your QR poster' })}
-                    actionLabel={t('dash.scan.cl1a', { defaultValue: 'Go to Share & Promote' })}
-                    onClick={() => handleTabChange('SHARE')}
+                    actionLabel={t('dash.scan.cl1b', { defaultValue: 'Go to Business page' })}
+                    onClick={() => openPageSection('qr')}
                   />
                   <ChecklistItem
                     done={!!onboarding.test_signup_done}
@@ -1515,148 +1578,30 @@ export function MerchantDashboard({
           </div>
         )}
 
-        {/* --- SHARE --- */}
-        {activeTab === 'SHARE' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <header>
-              <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Share & Promote</h1>
-              <p className="text-gray-500 text-sm md:text-base">
-                {activeLocations.length > 1
-                  ? `Print a poster for each of your ${activeLocations.length} locations. Each QR records which branch a customer joined at.`
-                  : 'Print this QR code so customers can join your program.'}
-              </p>
-            </header>
-
-            <div className="grid md:grid-cols-2 gap-12 items-start">
-              {/* Left column: one QR card per location. Falls back to a single
-                  campaign-wide QR if there are no locations (defensive — every
-                  campaign should have a "Main" after the migration). */}
-              <div className="space-y-6">
-                {(activeLocations.length > 0 ? activeLocations : [null]).map((loc) => {
-                  const url = joinUrlForLocation(loc?.id ?? null);
-                  const qrId = loc ? `share-qr-${loc.id}` : 'share-qr-code';
-                  return (
-                    <div key={loc?.id ?? 'campaign-wide'} className="space-y-6">
-                    <div className="bg-white p-8 rounded-lg border notion-border shadow-sm flex flex-col items-center text-center space-y-5">
-                      <div className="space-y-1">
-                        <h3 className="text-xl font-serif-display font-semibold">Join {campaign.businessName}</h3>
-                        {loc && (
-                          <p className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-gray-500 bg-[#F7F7F5] px-2.5 py-1 rounded-full border notion-border">
-                            <MapPin className="w-3 h-3" /> {loc.name}
-                          </p>
-                        )}
-                      </div>
-                      <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl max-w-[240px]">
-                        <QRCode id={qrId} value={url} size={160} />
-                      </div>
-                      <div className="space-y-2 w-full pt-2">
-                        <div className="text-[10px] uppercase tracking-widest font-bold text-gray-400 mb-1">Download as</div>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <button onClick={() => handleDownloadPoster(loc, 'loyalty')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Pamphlet (A5 landscape)">
-                            Pamphlet · EN
-                          </button>
-                          <button onClick={() => handleDownloadPoster(loc, 'loyalty', 'de')} className="bg-[#37352F] text-white py-2 px-1 rounded-md text-xs font-medium hover:bg-opacity-90 transition" title="Flyer (A5, Deutsch)">
-                            Pamphlet · DE
-                          </button>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            try { await navigator.clipboard.writeText(url); } catch { /* clipboard may be blocked */ }
-                            setCopiedUrl(url);
-                            setTimeout(() => setCopiedUrl((c) => (c === url ? null : c)), 2000);
-                          }}
-                          className={`w-full border py-2 rounded-md font-medium text-sm transition flex items-center justify-center gap-1.5 ${
-                            copiedUrl === url
-                              ? 'bg-green-50 border-green-200 text-green-700'
-                              : 'bg-white notion-border text-[#37352F] hover:bg-gray-50'
-                          }`}
-                        >
-                          {copiedUrl === url ? (<><Check className="w-4 h-4" /> Copied!</>) : 'Copy Link'}
-                        </button>
-                      </div>
-                      <div className="text-[10px] text-gray-400 break-all">{url}</div>
-                    </div>
-                    {campaign.stampingMode === 'self_serve' && (
-                      <div className="bg-white p-8 rounded-lg border notion-border shadow-sm flex flex-col items-center text-center space-y-4">
-                        <div className="space-y-1">
-                          <h3 className="text-xl font-serif-display font-semibold">Stamp QR</h3>
-                          <p className="inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">Keep behind the counter</p>
-                        </div>
-                        <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl max-w-[240px]">
-                          <QRCode value={stampUrlForLocation(loc?.id ?? null)} size={160} />
-                        </div>
-                        {campaign.stampCode ? (
-                          <div className="text-3xl font-bold tracking-[0.3em] text-[#37352F]">{campaign.stampCode}</div>
-                        ) : (
-                          <div className="text-xs text-amber-600">Set a 4-digit stamp code in Settings &rarr; Stamping mode</div>
-                        )}
-                        <p className="text-xs text-gray-500 max-w-[240px]">Customers scan this to collect a stamp (they must be at the shop — location-checked). Show it on request rather than leaving it on public display.</p>
-                        {(() => {
-                          const stampUrl = stampUrlForLocation(loc?.id ?? null);
-                          return (
-                            <button
-                              onClick={async () => {
-                                try { await navigator.clipboard.writeText(stampUrl); } catch { /* clipboard may be blocked */ }
-                                setCopiedUrl(stampUrl);
-                                setTimeout(() => setCopiedUrl((c) => (c === stampUrl ? null : c)), 2000);
-                              }}
-                              className="w-full max-w-[240px] flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md border notion-border hover:bg-[#F7F7F5] transition"
-                            >
-                              {copiedUrl === stampUrl ? (<><Check className="w-4 h-4" /> Copied!</>) : 'Copy stamp link (for NFC tag)'}
-                            </button>
-                          );
-                        })()}
-                        <button onClick={() => handleDownloadPoster(loc, 'selfscan')} className="w-full max-w-[240px] flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md bg-[#37352F] text-white font-medium hover:bg-opacity-90 transition">
-                          Download stamp poster · EN
-                        </button>
-                        <button onClick={() => handleDownloadPoster(loc, 'selfscan', 'de')} className="w-full max-w-[240px] flex items-center justify-center gap-2 text-xs px-3 py-2 rounded-md bg-[#37352F] text-white font-medium hover:bg-opacity-90 transition">
-                          Stempel-Poster · DE
-                        </button>
-                      </div>
-                    )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="space-y-6">
-                <div className="bg-[#F7F7F5] p-6 rounded-lg border notion-border">
-                  <h3 className="font-medium mb-2">How it works</h3>
-                  <ul className="text-sm text-gray-600 space-y-3 list-disc pl-4">
-                    <li>Customers scan the QR code at your checkout.</li>
-                    <li>They enter their email; we send them a magic sign-in link.</li>
-                    <li>They land on a page with their card and a button to save it to Apple or Google Wallet.</li>
-                    <li>You scan their card here on future visits to give stamps.</li>
-                  </ul>
-                </div>
-                {activeLocations.length > 1 && (
-                  <div className="bg-amber-50 p-6 rounded-lg border border-amber-100">
-                    <h3 className="font-medium mb-2 text-amber-900">Multiple locations</h3>
-                    <p className="text-sm text-amber-800">
-                      Print a different poster for each branch. Customers' cards work everywhere — the per-location QR just records which branch they joined at, so you can see in Analytics which location is driving signups.
-                    </p>
-                  </div>
-                )}
-                <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
-                  <h3 className="font-medium mb-2 text-blue-900">Try it yourself</h3>
-                  <p className="text-sm text-blue-700 mb-4">Open the customer signup page in a new tab to preview the join flow.</p>
-                  <a
-                    href={joinUrlForLocation(activeLocations[0]?.id ?? null)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => {
-                      if (!onboarding.test_signup_done) {
-                        onMarkOnboardingStep({ test_signup_done: true });
-                      }
-                    }}
-                    className="inline-flex bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition items-center gap-2"
-                  >
-                    Open Customer View <ArrowRight className="w-4 h-4" />
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* --- BUSINESS PAGE (one page, one QR code; replaces Share & Promote) --- */}
+        {activeTab === 'PAGE' && (
+          <BusinessPagePanel
+            campaign={campaign}
+            locations={locations}
+            page={bizPage}
+            pageError={bizPageError}
+            onRetryPage={() => setBizPageTick((n) => n + 1)}
+            onPageSaved={setBizPage}
+            section={pageSection}
+            onSection={openPageSection}
+            isPro={isPro}
+            canEdit={!staffHidden.includes('SETTINGS')}
+            orderingEnabled={orderingEnabled}
+            onUpgrade={() => setShowUpgradeModal(true)}
+            onUpdateCampaign={onUpdateCampaign}
+            onboarding={onboarding}
+            onMarkOnboardingStep={onMarkOnboardingStep}
+            onDownloadPoster={handleDownloadPoster}
+            joinUrlForLocation={joinUrlForLocation}
+            stampUrlForLocation={stampUrlForLocation}
+            onOpenSettings={openSettingsSection}
+            onOpenAddons={() => handleTabChange('ADDONS')}
+          />
         )}
 
         {/* --- SETTINGS --- */}
@@ -1687,7 +1632,7 @@ export function MerchantDashboard({
 
         {activeTab === 'ADDONS' && (
           <AddonsPanel campaignId={campaign.id} businessName={campaign.businessName} country={country ?? null}
-            locations={locations}
+            locations={locations} pageSlug={bizPage?.slug ?? null}
             onOrderingChanged={setOrderingEnabled} onOpenOrders={() => handleTabChange('ORDERS')} />
         )}
 
@@ -1718,12 +1663,10 @@ export function MerchantDashboard({
                 {([
                   ['general',   t('dash.settings.general', { defaultValue: 'General' })],
                   ['wallet',    t('dash.settings.wallet', { defaultValue: 'Wallet & card' })],
-                  ['posters',   t('dash.settings.posters', { defaultValue: 'Posters & print' })],
                   ['locations', t('dash.settings.locations', { defaultValue: 'Locations' })],
                   ['stamping',  t('dash.settings.stamping', { defaultValue: 'Stamping mode' })],
                   ['billing',   t('dash.settings.billing', { defaultValue: 'Account & billing' })],
                   ['account',   t('dash.settings.account', { defaultValue: 'Login & security' })],
-                  ['links', t('dash.settings.links', { defaultValue: 'Links & socials' })],
                   ['privacy',   t('dash.settings.privacy', { defaultValue: 'Privacy & data' })],
                   ['danger',    t('dash.settings.danger', { defaultValue: 'Danger zone' })],
                 ] as const).map(([id, label]) => (
@@ -1747,12 +1690,10 @@ export function MerchantDashboard({
                 const meta: Record<SettingsSection, { title: string; hint: string }> = {
                   general:   { title: t('dash.settings.generalTitle', { defaultValue: 'General' }), hint: t('dash.settings.generalHint', { defaultValue: 'Your business name, the reward you offer, and how many stamps a customer needs. These appear on every card you issue, so changing them updates what new customers see.' }) },
                   wallet:    { title: t('dash.settings.walletTitle', { defaultValue: 'Customise your wallet' }), hint: t('dash.settings.walletHint', { defaultValue: 'Controls how the loyalty card looks inside Apple Wallet and Google Wallet — colours, text colour, and the logo at the top. The previews update live; nothing is applied until you press Save.' }) },
-                  posters:   { title: t('dash.settings.postersTitle', { defaultValue: 'Posters & print' }), hint: t('dash.settings.postersHint', { defaultValue: 'Download printable material with your QR code: business cards, A5 pamphlets, A4 posters, an Instagram square, and table stickers. Customers scan these to join.' }) },
                   locations: { title: t('dash.settings.locationsTitle', { defaultValue: 'Locations' }), hint: t('dash.settings.locationsHint', { defaultValue: 'Add each branch so stamps are recorded against the right shop. The Scan screen lets staff pick which location they are working at, and Insights breaks results down per branch.' }) },
                   stamping: { title: t('dash.settings.stampingTitle', { defaultValue: 'Stamping mode' }), hint: t('dash.settings.stampingHint', { defaultValue: 'Choose how customers collect stamps — staff scanner, or self-serve where the customer scans your counter QR (device-free, location-checked).' }) },
                   billing:   { title: t('dash.settings.billingTitle', { defaultValue: 'Account & billing' }), hint: t('dash.settings.billingHint', { defaultValue: 'Your plan, invoices, and payment method. The free plan covers your first 5 customers; Pro removes that limit and unlocks branding and multi-location features.' }) },
                   account:   { title: t('dash.settings.accountTitle', { defaultValue: 'Login & security' }), hint: t('dash.settings.accountHint', { defaultValue: 'Change the email address and password you use to sign in. Changing your email requires clicking a confirmation link we send to both your old and new address.' }) },
-                  links:     { title: t('dash.settings.linksTitle', { defaultValue: 'Links & socials' }), hint: t('dash.settings.linksHint', { defaultValue: 'Add your website, social profiles, and ordering or delivery links. Each one you fill in becomes a tappable link on the back of the Apple Wallet card and in the Google Wallet card details.' }) },
                   privacy:   { title: t('dash.settings.privacyTitle', { defaultValue: 'Privacy & data' }), hint: t('dash.settings.privacyHint', { defaultValue: 'Your business registration details (needed for GDPR and your Impressum), the privacy notice your customers see at signup, and a full export of your data.' }) },
                   danger:    { title: t('dash.settings.dangerTitle', { defaultValue: 'Danger zone' }), hint: t('dash.settings.dangerHint', { defaultValue: 'Permanent actions. Deleting your account removes your cards, customers, and history — this cannot be undone.' }) },
                 };
@@ -1827,12 +1768,6 @@ export function MerchantDashboard({
                 </div>
               </div>
             )}
-            {settingsSection === 'links' && (
-              <ProLockOverlay locked={!isPro} title="Card links are a Pro feature" onUpgrade={() => setShowUpgradeModal(true)}>
-                <LinksSettings campaign={campaign} onUpdated={(updated) => onUpdateCampaign({ socialLinks: updated.socialLinks })} />
-              </ProLockOverlay>
-            )}
-
             {settingsSection === 'account' && (
               <AccountSecurity currentEmail={user?.email ?? ''} />
             )}
@@ -1860,22 +1795,6 @@ export function MerchantDashboard({
 
             {settingsSection === 'privacy' && (
             <ComplianceSettings merchantId={campaign.merchantId} />
-            )}
-
-            {settingsSection === 'posters' && (
-            <div className="border notion-border rounded-lg p-6 space-y-4">
-              <h3 className="font-medium">{t('dash.set.postersH3', { defaultValue: 'Posters & pamphlets' })}</h3>
-              <p className="text-sm text-gray-500">{t('dash.set.postersBodyA', { defaultValue: 'Download your printable posters and pamphlets — in English or German — from the' })} <span className="font-medium">{t('dash.nav.sharePromote', { defaultValue: 'Share & Promote' })}</span> {t('dash.set.postersBodyB', { defaultValue: 'tab.' })}</p>
-            </div>
-            )}
-
-            {settingsSection === 'posters' && (
-            <PosterSettings
-              campaign={campaign}
-              onUpdated={(updated) => onUpdateCampaign({ posterColor: updated.posterColor })}
-              isPro={isPro}
-              onUpgrade={() => setShowUpgradeModal(true)}
-            />
             )}
 
             {settingsSection === 'privacy' && (
@@ -2152,7 +2071,7 @@ export function MerchantDashboard({
           ))}
           <button onClick={() => setShowMobileMoreMenu(true)}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'SHARE', 'HELP', 'VALUE', 'STAFF', 'OFFERS', 'ADDONS', ...(orderingEnabled ? ['ANALYTICS'] : [])].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
+              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'PAGE', 'HELP', 'VALUE', 'STAFF', 'OFFERS', 'ADDONS', ...(orderingEnabled ? ['ANALYTICS'] : [])].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <span className="relative">
               <Menu className="w-6 h-6" />
@@ -2175,7 +2094,7 @@ export function MerchantDashboard({
                 ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
                 ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Results' })],
                 ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
-                ['SHARE', Share, t('dash.nav.share', { defaultValue: 'Share' })],
+                ['PAGE', Store, t('dash.nav.businessPageShort', { defaultValue: 'Page' })],
                 ['ADDONS', Puzzle, t('dash.nav.addons', { defaultValue: 'Add-ons' })],
                 ['PREVIEW', Eye, t('dash.nav.preview', { defaultValue: 'Preview' })],
                 ['SETTINGS', Settings, t('dash.nav.settings', { defaultValue: 'Settings' })],

@@ -23,11 +23,12 @@ const inkFor = (bg: string) => {
   return { ink: light ? '#1A1A1A' : '#FFFFFF', halo: halo ? (light ? 'rgba(255,255,255,0.95)' : 'rgba(0,0,0,0.8)') : null };
 };
 
-function info(c: PC, bg?: string | null) {
+function info(c: PC, bg?: string | null, url?: string | null) {
   const posterBg = bg && (isHex(bg) || /gradient\(/i.test(bg)) ? bg : '#FFFFFF';
   const cardColor = isHex(c.primaryColor) ? c.primaryColor : isHex(c.posterColor) ? c.posterColor : '#75FBFD';
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://stampfix.app';
-  const joinUrl = `${origin}/?campaign=${encodeURIComponent(c.id)}`;
+  // The Business page when the shop has one, else the direct join link.
+  const joinUrl = url || `${origin}/?campaign=${encodeURIComponent(c.id)}`;
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=0&data=${encodeURIComponent(joinUrl)}`;
   const { ink, halo } = inkFor(posterBg);
   return { posterBg, ink, halo, cardColor, name: c.businessName || 'Your Business', qrUrl };
@@ -84,8 +85,8 @@ function dl(cv: HTMLCanvasElement, filename: string) {
   }, 'image/png');
 }
 
-export async function downloadInstagramPng(c: PC, bg?: string | null) {
-  const f = info(c, bg);
+export async function downloadInstagramPng(c: PC, bg?: string | null, url?: string | null) {
+  const f = info(c, bg, url);
   let qr: HTMLImageElement;
   try { qr = await loadImg(f.qrUrl); } catch { alert('Could not load the QR code. Check your connection and try again.'); return; }
   const S = 1080, cv = document.createElement('canvas'); cv.width = S; cv.height = S; const x = cv.getContext('2d')!;
@@ -110,8 +111,8 @@ export async function downloadInstagramPng(c: PC, bg?: string | null) {
   dl(cv, `${slug(f.name)}-instagram.png`);
 }
 
-export async function downloadTableQrPng(c: PC, bg?: string | null) {
-  const f = info(c, bg);
+export async function downloadTableQrPng(c: PC, bg?: string | null, url?: string | null) {
+  const f = info(c, bg, url);
   let qr: HTMLImageElement;
   try { qr = await loadImg(f.qrUrl); } catch { alert('Could not load the QR code. Check your connection and try again.'); return; }
   const S = 900, cv = document.createElement('canvas'); cv.width = S; cv.height = S; const x = cv.getContext('2d')!;
@@ -189,4 +190,26 @@ export async function downloadPosterPng(html: string, size: string, filename: st
   } finally {
     setTimeout(() => { try { document.body.removeChild(iframe); } catch { /* ignore */ } }, 200);
   }
+}
+
+/** The card at the till with the code guests type to collect a stamp from the
+ *  Business page. No QR code: the code alone, large. */
+export function downloadCounterCodePng(c: PC, code: string, lang: 'en' | 'de' = 'en') {
+  const W = 1200, H = 800, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d')!;
+  x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
+  x.strokeStyle = '#E6E3DF'; x.lineWidth = 6; rr(x, 24, 24, W - 48, H - 48, 36); x.stroke();
+  x.textAlign = 'center'; x.fillStyle = '#2F2A26';
+  x.font = '800 40px "Helvetica Neue", Arial, sans-serif'; (x as unknown as { letterSpacing: string }).letterSpacing = '3px';
+  x.fillText((c.businessName || 'Your Business').toUpperCase().slice(0, 34), W / 2, 130);
+  (x as unknown as { letterSpacing: string }).letterSpacing = '0px';
+  x.fillStyle = '#6B635B'; x.font = '600 44px "Helvetica Neue", Arial, sans-serif';
+  x.fillText(lang === 'de' ? 'Stempel-Code' : 'Stamp code', W / 2, 250);
+  x.fillStyle = '#2F2A26'; x.font = '900 230px "Helvetica Neue", Arial, sans-serif';
+  (x as unknown as { letterSpacing: string }).letterSpacing = '40px';
+  x.fillText(code, W / 2 + 20, 500);
+  (x as unknown as { letterSpacing: string }).letterSpacing = '0px';
+  x.fillStyle = '#6B635B'; x.font = '500 36px "Helvetica Neue", Arial, sans-serif';
+  x.fillText(lang === 'de' ? 'Auf unserer Seite „Stempel sammeln“ tippen' : 'Tap "Collect a stamp" on our page', W / 2, 620);
+  x.fillText(lang === 'de' ? 'und diesen Code eingeben.' : 'and type this code.', W / 2, 670);
+  dl(cv, `${slug(c.businessName || 'stampfix')}-stamp-code.png`);
 }

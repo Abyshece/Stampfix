@@ -16,6 +16,13 @@ interface PosterSettingsProps {
   /** Custom poster branding is Pro-only; free posters use a plain white background. */
   isPro: boolean;
   onUpgrade: () => void;
+  /** The shop's Business page link: every join QR on the downloads opens it
+   *  (the counter stamp card keeps its own stamp link). */
+  pageUrl?: string | null;
+  /** The counter stamp link (with its branch) for the self-scan poster. */
+  stampUrl?: string | null;
+  /** Called after any download (the Business page checklist). */
+  onDownloaded?: () => void;
 }
 
 /**
@@ -46,7 +53,7 @@ const GRAD_DEFAULTS = { from: '#1E40AF', to: '#7C3AED', angle: 135 };
  * posterGenerator.ts drops the value straight into `background:`, so
  * solids and gradients are treated identically.
  */
-export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: PosterSettingsProps) {
+export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade, pageUrl, stampUrl, onDownloaded }: PosterSettingsProps) {
   const { t } = useTranslation();
   const stored = campaign.posterColor;
 
@@ -107,7 +114,10 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
       size,
       posterBgOverride: previewBg,
       cardColorOverride: cardColor || undefined,
+      // Without a branch the stamp link is refused, so the self-scan poster gets the shop's first one.
+      joinUrlOverride: size === 'selfscan' ? (stampUrl || undefined) : (pageUrl || undefined),
     });
+    onDownloaded?.();
     await downloadPosterPng(html, size, `stampfix-${size}.png`,
       t('dash.poster.errPng', { defaultValue: 'Could not generate the PNG — please try again.' }));
   };
@@ -241,13 +251,13 @@ export function PosterSettings({ campaign, onUpdated, isPro, onUpgrade }: Poster
           {t('dash.poster.stickerSheet', { defaultValue: 'Sticker sheet (A4)' })}
         </button>
         <button
-          onClick={() => { downloadInstagramPng(campaign, previewBg); logMerchantActivity('poster_downloaded', { type: 'instagram' }); }}
+          onClick={() => { downloadInstagramPng(campaign, previewBg, pageUrl); logMerchantActivity('poster_downloaded', { type: 'instagram' }); onDownloaded?.(); }}
           className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white hover:opacity-90 transition"
         >
           {t('dash.poster.instagramPng', { defaultValue: '⬇ Instagram PNG' })}
         </button>
         <button
-          onClick={() => downloadTableQrPng(campaign, previewBg)}
+          onClick={() => { downloadTableQrPng(campaign, previewBg, pageUrl); onDownloaded?.(); }}
           className="text-xs px-3 py-1.5 rounded-md bg-[#37352F] text-white hover:opacity-90 transition"
         >
           {t('dash.poster.tableQrPng', { defaultValue: '⬇ Table QR PNG' })}

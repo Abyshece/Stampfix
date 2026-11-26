@@ -27,6 +27,7 @@ const BlogPage = lazy(() => import('./components/marketing/BlogPage').then((m) =
 const PaybackCalculatorPage = lazy(() => import('./components/marketing/PaybackCalculatorPage').then((m) => ({ default: m.PaybackCalculatorPage })));
 const CardRecovery = lazy(() => import('./components/CardRecovery').then((m) => ({ default: m.CardRecovery })));
 const OrderPage = lazy(() => import('./components/OrderPage').then((m) => ({ default: m.OrderPage })));
+const BusinessPage = lazy(() => import('./components/BusinessPage').then((m) => ({ default: m.BusinessPage })));
 import { MyCardPage } from './components/MyCardPage';
 const AdminPanel = lazy(() => import('./components/AdminPanel').then((m) => ({ default: m.AdminPanel })));
 import { BrandLoading } from './components/BrandLoading';
@@ -48,7 +49,7 @@ captureReferralFromUrl();
 type View = 'landing' | 'merchant';
 
 /** Merchant dashboard pages that open the merchant flow on a deep link / refresh. */
-const MERCHANT_PATHS = ['/scan', '/orders', '/addons', '/customers', '/activity', '/insights', '/campaigns', '/offers', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
+const MERCHANT_PATHS = ['/scan', '/orders', '/business-page', '/addons', '/customers', '/activity', '/insights', '/campaigns', '/offers', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
 
 const DEFAULT_TITLE = 'Stampfix | Digital Loyalty Cards for Apple & Google Wallet';
 const PAGE_TITLES: Record<string, string> = {
@@ -142,7 +143,7 @@ export default function App() {
     // them out.
     const meta = (user as { user_metadata?: Record<string, unknown> }).user_metadata ?? {};
     const isCustomer = meta.role === 'customer' || Boolean(campaignFromUrl)
-      || window.location.pathname === '/my-card';
+      || window.location.pathname === '/my-card' || window.location.pathname.startsWith('/v/');
     if (isCustomer) {
       setHasMerchantRow(false);
       setOrphanCheckDone(true);
@@ -239,6 +240,8 @@ export default function App() {
   if (path === '/savings') return <Suspense fallback={<BrandLoading />}><PaybackCalculatorPage /></Suspense>;
   if (path === '/find-card') return <Suspense fallback={<BrandLoading />}><CardRecovery /></Suspense>;
   if (path.startsWith('/order/')) return <Suspense fallback={<BrandLoading />}><OrderPage /></Suspense>;
+  // A shop's Business page (its one QR code): stampfix.app/v/<address>.
+  if (path.startsWith('/v/') && path.length > 3) return <Suspense fallback={<BrandLoading />}><BusinessPage /></Suspense>;
   if (path === '/admin') return <Suspense fallback={<BrandLoading />}><AdminPanel onExit={() => { window.history.pushState({}, '', '/'); setView('merchant'); setNavTick((n) => n + 1); }} /></Suspense>;
   if (path === '/my-card') {
     return (

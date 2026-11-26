@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import type { Location } from '../types';
 import { useToast } from './ToastProvider';
+import { businessPageUrl } from '../lib/businessPage';
 import { inputCls, btnDark, btnLight, iconBtn, parsePrice, ConfirmDialog, Dialog, Switch, ActionMenu } from './addonsUi';
 import { CouponsAddon, TicketPreview, couponState, shopToday } from './CouponsAddon';
 import {
@@ -26,9 +27,11 @@ type Menu = { categories: MenuCategory[]; items: MenuItem[] };
  * table (setup checklist, Menu and Tables & QR codes tabs), and coupons
  * guests use on that menu.
  */
-export function AddonsPanel({ campaignId, businessName, country, locations, onOrderingChanged, onOpenOrders }: {
+export function AddonsPanel({ campaignId, businessName, country, locations, onOrderingChanged, onOpenOrders, pageSlug }: {
   campaignId: string; businessName: string; country: string | null; locations: Location[];
   onOrderingChanged: (enabled: boolean) => void; onOpenOrders: () => void;
+  /** The shop's Business page address; table codes open it (else the order page directly). */
+  pageSlug?: string | null;
 }) {
   const { t, i18n } = useTranslation();
   const money = useMemo(() => menuMoney(country, i18n.language), [country, i18n.language]);
@@ -56,7 +59,7 @@ export function AddonsPanel({ campaignId, businessName, country, locations, onOr
   if (view === 'ordering') {
     return (
       <OrderingAddon campaignId={campaignId} businessName={businessName} country={country} locations={locations}
-        onBack={() => setView('home')} onOrderingChanged={onOrderingChanged} onOpenOrders={onOpenOrders} />
+        onBack={() => setView('home')} onOrderingChanged={onOrderingChanged} onOpenOrders={onOpenOrders} pageSlug={pageSlug} />
     );
   }
   if (view === 'coupons') {
@@ -210,9 +213,10 @@ function PhonePreview({ money }: { money: (n: number) => string }) {
 
 // ---- The add-on itself ---------------------------------------------------------------
 
-function OrderingAddon({ campaignId, businessName, country, locations, onBack, onOrderingChanged, onOpenOrders }: {
+function OrderingAddon({ campaignId, businessName, country, locations, onBack, onOrderingChanged, onOpenOrders, pageSlug }: {
   campaignId: string; businessName: string; country: string | null; locations: Location[];
   onBack: () => void; onOrderingChanged: (enabled: boolean) => void; onOpenOrders: () => void;
+  pageSlug?: string | null;
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
@@ -414,7 +418,7 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
           onEditItem={(item) => setItemDialog({ item, categoryId: item.categoryId })} />
       ) : (
         <TablesTab campaignId={campaignId} businessName={businessName} locations={active} settings={settings}
-          busy={busy} onSave={saveSettings} />
+          busy={busy} onSave={saveSettings} pageSlug={pageSlug} />
       )}
 
       {uploadOpen && (
@@ -766,9 +770,10 @@ function UploadMenuDialog({ campaignId, onClose, onSent }: { campaignId: string;
 
 // ---- Tables & QR codes tab -------------------------------------------------------------
 
-function TablesTab({ campaignId, businessName, locations, settings, busy, onSave }: {
+function TablesTab({ campaignId, businessName, locations, settings, busy, onSave, pageSlug }: {
   campaignId: string; businessName: string; locations: Location[]; settings: OrderingSettings; busy: boolean;
   onSave: (next: OrderingSettings) => Promise<boolean>;
+  pageSlug?: string | null;
 }) {
   const { t } = useTranslation();
   const [locationId, setLocationId] = useState<string>(locations[0]?.id ?? '');
@@ -778,6 +783,8 @@ function TablesTab({ campaignId, businessName, locations, settings, busy, onSave
   const gridRef = useRef<HTMLDivElement>(null);
   const loc = locations.length > 1 ? locationId || null : null;
   const tableName = (tb: string) => (isTableNumber(tb) ? t('dash.addons.printTable', { table: tb, defaultValue: 'Table {{table}}' }) : tb);
+  // Each table's code opens the Business page at that table (ordering first); the order page directly when there is no page.
+  const tableQrUrl = (tb: string) => (pageSlug ? businessPageUrl(pageSlug, { table: tb, locationId: loc }) : orderUrl(campaignId, tb, loc));
 
   const addTables = (labels: string[]) => {
     const next = [...settings.tables];
@@ -795,7 +802,8 @@ function TablesTab({ campaignId, businessName, locations, settings, busy, onSave
     const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
     const body = cards.map((c) => {
       // Drop the on-screen size so the print size below applies.
-      const el = c.querySelector('svg')?.cloneNode(true) as SVGElement | undefined;
+      // The QR code itself (the card's first svg is the remove button's icon).
+      const el = c.querySelector('svg[data-qr-value]')?.cloneNode(true) as SVGElement | undefined;
       el?.removeAttribute('style');
       const svg = el?.outerHTML ?? '';
       const table = c.getAttribute('data-table') ?? '';
@@ -870,7 +878,7 @@ function TablesTab({ campaignId, businessName, locations, settings, busy, onSave
                 <button className="absolute top-1.5 right-1.5 p-1 rounded-md text-gray-300 hover:text-red-600 hover:bg-red-50 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 transition" disabled={busy}
                   title={t('dash.addons.removeTable', { defaultValue: 'Remove table' })} aria-label={t('dash.addons.removeTable', { defaultValue: 'Remove table' })}
                   onClick={() => void onSave({ ...settings, tables: settings.tables.filter((x) => x !== tb) })}><X className="w-3.5 h-3.5" /></button>
-                <QRCode value={orderUrl(campaignId, tb, loc)} size={256} style={{ width: '100%', height: 'auto', maxWidth: 112 }} className="mx-auto" />
+                <QRCode value={tableQrUrl(tb)} data-qr-value={tableQrUrl(tb)} size={256} style={{ width: '100%', height: 'auto', maxWidth: 112 }} className="mx-auto" />
                 <div className="text-sm font-semibold text-[#37352F] mt-2 break-words">{tableName(tb)}</div>
               </div>
             ))}
