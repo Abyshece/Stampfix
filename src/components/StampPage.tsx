@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
-import { selfServeStamp } from '../lib/db';
+import { selfServeStamp, pageStamp } from '../lib/db';
 import { supabase } from '../lib/supabase';
 import { playScanSound } from '../lib/scanSounds';
 import { useTranslation } from 'react-i18next';
 
-type Phase = 'locating' | 'stamping' | 'success' | 'need_identity' | 'ask_more' | 'pick_count' | 'ask_code' | 'error';
+// counter_code: only when opened from the Business page (?via=page), before anything else.
+type Phase = 'counter_code' | 'locating' | 'stamping' | 'success' | 'need_identity' | 'ask_more' | 'pick_count' | 'ask_code' | 'error';
 
 const ERR: Record<string, string> = {
   self_serve_off: "This shop isn't using self-serve stamps right now.",
@@ -23,6 +24,8 @@ const ERR: Record<string, string> = {
   denied: "Please allow location access — it confirms you're at the shop.",
   unavailable: "We couldn't pin your location. Check that Location Services are on in your phone's settings (not just the browser), then tap Try again.",
   network: "Couldn't reach the server. Check your connection and try again.",
+  no_counter_code: "This shop hasn't set up stamps from its page yet. Please ask at the counter.",
+  too_many_attempts: 'Too many wrong codes. Please try again in 30 minutes, or ask the staff to stamp your card.',
 };
 
 const CONFETTI_COLORS = ['#EA3323', '#F7CE46', '#1132F5', '#75FBFD', '#EA33B6', '#510AF5', '#75FBE2', '#F0A479'];
@@ -77,9 +80,12 @@ function CountWheel({ max, value, onChange }: { max: number; value: number; onCh
   );
 }
 
-function StampShell({ children, shop }: { children: ReactNode; shop?: string | null }) {
+function StampShell({ children, shop, back }: { children: ReactNode; shop?: string | null; back?: { href: string; label: string } | null }) {
   return (
-    <div className="min-h-screen bg-[#FBFBFA] flex flex-col items-center justify-center px-6 py-12 text-center">
+    <div className="min-h-screen bg-[#FBFBFA] flex flex-col items-center justify-center px-6 py-12 text-center relative">
+      {back && (
+        <a href={back.href} data-stamp-back className="absolute top-4 left-4 text-sm text-gray-500 hover:text-[#37352F] px-2 py-1">&larr; {back.label}</a>
+      )}
       <div className={`flex items-center gap-2 text-[#37352F] ${shop ? 'mb-3' : 'mb-8'}`}>
         <span className="w-3 h-3 bg-[#37352F]" />
         <span className="w-3 h-3 bg-[#37352F] rounded-full" />
@@ -111,8 +117,14 @@ export function StampPage() {
   const params = new URLSearchParams(window.location.search);
   const campaignId = (params.get('campaign') ?? '').trim();
   const locationId = (params.get('location') ?? '').trim();
+  // Opened from the shop's Business page: the guest types the counter code first.
+  const viaPage = params.get('via') === 'page';
+  const backPath = (() => {
+    const b = params.get('back') ?? '';
+    return viaPage && /^\/v\/[a-z0-9-]{3,40}(\?[A-Za-z0-9=&%._+-]*)?$/.test(b) ? b : null;
+  })();
 
-  const [phase, setPhase] = useState<Phase>('locating');
+  const [phase, setPhase] = useState<Phase>(viaPage ? 'counter_code' : 'locating');
   const [errKey, setErrKey] = useState('');
   const [errExtra, setErrExtra] = useState('');
   // added = stamps this visit put on the card (0 when it only shows the card).
@@ -129,6 +141,10 @@ export function StampPage() {
   const [multiCode, setMultiCode] = useState('');
   const [codeError, setCodeError] = useState('');
   const [shopName, setShopName] = useState<string | null>(null);
+  const [counterCode, setCounterCode] = useState('');
+  const [counterError, setCounterError] = useState('');
+  // Location is only asked for once the code is in (always, outside page mode).
+  const [codeReady, setCodeReady] = useState(!viaPage);
   const [locationName, setLocationName] = useState<string | null>(null);
 
   // Name the shop (and branch) the QR points at. Both tables are publicly
@@ -155,8 +171,14 @@ export function StampPage() {
     setSubmitting(true);
     setIdentityError('');
     try {
-      const r = await selfServeStamp(campaignId, locationId, coords.lat, coords.lng, id || undefined);
-      if (r.ok) {
+      const r = viaPage
+        ? await pageStamp(campaignId, locationId, coords.lat, coords.lng, counterCode.trim(), id || undefined)
+        : await selfServeStamp(campaignId, locationId, coords.lat, coords.lng, id || undefined);
+      if (viaPage && r.error === 'bad_counter_code') {
+        setCounterError(t('cust.stamp.counterWrong', { defaultValue: "That code isn't right. Check the code at the counter and try again." }));
+        setCodeReady(false);
+        setPhase('counter_code');
+      } else if (r.ok) {
         if (id) saveEmail(campaignId, id);
         const current = r.currentStamps ?? 0, max = r.maxStamps ?? 0;
         setResult({ currentStamps: current, maxStamps: max, added: r.added ?? 1 });
@@ -186,7 +208,7 @@ export function StampPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [coords, campaignId, locationId, email, precise, t]);
+  }, [coords, campaignId, locationId, email, precise, t, viaPage, counterCode]);
 
   const attemptMulti = async () => {
     if (!coords) return;
@@ -212,6 +234,7 @@ export function StampPage() {
   // Request GPS on mount and on each retry.
   useEffect(() => {
     if (!campaignId || !locationId) { setErrKey('invalid'); setPhase('error'); return; }
+    if (!codeReady) return;
     if (!('geolocation' in navigator)) { setErrKey('no_geo'); setPhase('error'); return; }
     navigator.geolocation.getCurrentPosition(
       (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
@@ -233,7 +256,7 @@ export function StampPage() {
         ? { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
         : { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 },
     );
-  }, [campaignId, locationId, retry, precise]);
+  }, [campaignId, locationId, retry, precise, codeReady]);
 
   // Auto-attempt once we have coordinates: the signed-in customer's card, or
   // the email saved on this phone from an earlier visit.
@@ -242,10 +265,37 @@ export function StampPage() {
   }, [coords, phase, attempt]);
 
   const tryAgain = () => { setErrKey(''); setCoords(null); setPhase('locating'); setRetry((r) => r + 1); };
+  const back = backPath ? { href: backPath, label: shopName || t('cust.stamp.backToPage', { defaultValue: 'Back' }) } : null;
+  const submitCounterCode = () => {
+    if (counterCode.length !== 4) return;
+    setCounterError('');
+    setCodeReady(true);
+    setPhase('locating');
+  };
+
+  if (phase === 'counter_code') {
+    return (
+      <StampShell shop={shopLabel} back={back}>
+        <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.counterTitle', { defaultValue: 'Enter the code at the counter' })}</h1>
+        <p className="text-gray-500 mb-5 max-w-xs">{t('cust.stamp.counterHint', { defaultValue: "The 4-digit stamp code is at the till. Ask the staff if you can't see it." })}</p>
+        <form className="w-full max-w-xs space-y-3" onSubmit={(e) => { e.preventDefault(); submitCounterCode(); }}>
+          <input value={counterCode} onChange={(e) => { setCounterCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 4)); setCounterError(''); }}
+            inputMode="numeric" autoComplete="off" aria-label={t('cust.stamp.codePh', { defaultValue: '4-digit code' })} data-counter-code
+            placeholder={t('cust.stamp.codePh', { defaultValue: '4-digit code' })} className="w-full border notion-border rounded-lg px-4 py-3 text-center text-2xl tracking-[0.4em]" />
+          {counterError && <p className="text-xs text-red-600" data-counter-error>{counterError}</p>}
+          <button type="submit" disabled={counterCode.length !== 4} className="w-full bg-[#37352F] text-white py-3 rounded-lg font-medium disabled:opacity-40">
+            {t('cust.stamp.counterGo', { defaultValue: 'Collect my stamp' })}
+          </button>
+        </form>
+        <p className="text-xs text-gray-400 mt-4 max-w-xs">{t('cust.stamp.counterLocation', { defaultValue: "Next, we'll check you're at the shop." })}</p>
+      </StampShell>
+    );
+  }
+
 
   if (phase === 'locating' || phase === 'stamping') {
     return (
-      <StampShell shop={shopLabel}>
+      <StampShell shop={shopLabel} back={back}>
         <div className="animate-spin w-8 h-8 border-2 border-gray-300 border-t-[#37352F] rounded-full mb-4" />
         <p className="text-gray-500">{phase === 'locating' ? t('cust.stamp.locating', { defaultValue: "Checking you're at the shop…" }) : t('cust.stamp.stamping', { defaultValue: 'Adding your stamp…' })}</p>
       </StampShell>
@@ -257,7 +307,7 @@ export function StampPage() {
     const dots = Array.from({ length: Math.max(result.maxStamps, 1) }, (_, i) => i < result.currentStamps);
     const added = result.added > 0;
     return (
-      <StampShell shop={shopLabel}>
+      <StampShell shop={shopLabel} back={back}>
         {/* Celebrate only when this visit really added a stamp; "No, that's
             all" after an earlier stamp just shows the card. */}
         {added && <StampConfetti />}
@@ -284,7 +334,7 @@ export function StampPage() {
 
   if (phase === 'need_identity') {
     return (
-      <StampShell shop={shopLabel}>
+      <StampShell shop={shopLabel} back={back}>
         <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.quickCheck', { defaultValue: 'One quick check' })}</h1>
         <p className="text-gray-500 mb-5 max-w-xs">{t('cust.stamp.confirmEmail', { defaultValue: 'Just confirm the email you signed up with to collect your stamp.' })}</p>
         <form className="w-full max-w-xs space-y-3" onSubmit={(e) => { e.preventDefault(); if (!submitting && email.trim()) void attempt(true); }}>
@@ -307,7 +357,7 @@ export function StampPage() {
   if (phase === 'ask_more') {
     const daily = limit === 'daily_cap';
     return (
-      <StampShell shop={shopLabel}>
+      <StampShell shop={shopLabel} back={back}>
         <div className="text-5xl mb-3">🧾</div>
         <h1 className="text-xl font-serif-display font-semibold mb-1">{
           daily ? t('cust.stamp.todayCollected', { defaultValue: "Today's stamp is collected" }) : t('cust.stamp.alreadyStamped', { defaultValue: 'Already stamped' })
@@ -331,7 +381,7 @@ export function StampPage() {
 
   if (phase === 'pick_count') {
     return (
-      <StampShell shop={shopLabel}>
+      <StampShell shop={shopLabel} back={back}>
         <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.howManyMore', { defaultValue: 'How many more stamps?' })}</h1>
         <p className="text-gray-500 mb-4 max-w-xs">{t('cust.stamp.onePerItem', { defaultValue: 'One per item you bought in this order.' })}</p>
         <CountWheel max={remaining} value={count} onChange={setCount} />
@@ -342,7 +392,7 @@ export function StampPage() {
 
   if (phase === 'ask_code') {
     return (
-      <StampShell shop={shopLabel}>
+      <StampShell shop={shopLabel} back={back}>
         <h1 className="text-xl font-serif-display font-semibold mb-1">{t('cust.stamp.askCode', { defaultValue: 'Ask the cashier for the code' })}</h1>
         <p className="text-gray-500 mb-5 max-w-xs">{t(`cust.stamp.enterCode${count > 1 ? 'Other' : 'One'}`, { count, defaultValue: count > 1 ? 'Enter the 4-digit code from the counter to add {{count}} stamps.' : 'Enter the 4-digit code from the counter to add {{count}} stamp.' })}</p>
         <div className="w-full max-w-xs space-y-3">
@@ -356,7 +406,7 @@ export function StampPage() {
   }
 
   return (
-    <StampShell shop={shopLabel}>
+    <StampShell shop={shopLabel} back={back}>
       <div className="text-4xl mb-3">😕</div>
       <p className="text-gray-600 max-w-xs mb-6">{
         errKey === 'self_serve_off' && shopName

@@ -6,7 +6,7 @@ export const BANNER_TABS = [
   ['OFFERS', 'Campaigns'],
   ['CUSTOMERS', 'Customers'],
   ['ANALYTICS', 'Insights'],
-  ['SHARE', 'Share & Promote'],
+  ['SHARE', 'Business page (QR code)'],
   ['PREVIEW', 'Preview Card'],
   ['STAFF', 'Staff'],
   ['ACTIVITY', 'Activity'],

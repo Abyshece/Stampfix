@@ -16,7 +16,8 @@ export const STAFF_HIDEABLE_SECTIONS: { key: string; label: string }[] = [
   { key: 'VALUE', label: 'Results' },
   { key: 'STAFF', label: 'Staff' },
   { key: 'PREVIEW', label: 'Preview Card' },
-  { key: 'SHARE', label: 'Share & Promote' },
+  // Kept as 'SHARE' so saved choices still apply: it now hides the Business page.
+  { key: 'SHARE', label: 'Business page' },
   { key: 'ADDONS', label: 'Add-ons' },
   { key: 'SETTINGS', label: 'Settings' },
   { key: 'HELP', label: 'Get help' },
