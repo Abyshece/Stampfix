@@ -10,7 +10,7 @@ import { LegalPage, LegalH2 } from './LegalPage';
  */
 export function CardholderPrivacy() {
   return (
-    <LegalPage title="Cardholder Privacy Notice" lastUpdated="19 August 2026">
+    <LegalPage title="Cardholder Privacy Notice" lastUpdated="26 November 2026">
       <p>
         This notice explains, in plain terms, how your personal data is handled when you save a digital
         loyalty card issued through Stampfix and collect stamps at a participating business. It is written
@@ -40,6 +40,14 @@ export function CardholderPrivacy() {
         <li>Timestamp of your last activity</li>
         <li>Limited technical data (authentication and security / error logs)</li>
       </ul>
+
+      <p>
+        <strong>Feedback on a shop&rsquo;s page.</strong> If you use &ldquo;Give feedback&rdquo; on a
+        shop&rsquo;s page, the shop receives your star rating, your message (if you write one) and,
+        if you scanned a table or branch code, that table or branch. We do not ask for your name and do
+        not link it to your card. A random device ID is used only to limit how often one phone can send
+        feedback. The shop can delete feedback at any time; it is deleted with the shop&rsquo;s account.
+      </p>
 
       <LegalH2>3. Who can access your data</LegalH2>
       <ul>

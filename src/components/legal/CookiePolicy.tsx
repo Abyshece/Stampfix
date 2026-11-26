@@ -3,7 +3,7 @@ import { reopenCookieBanner } from '../../lib/cookieConsent';
 
 export function CookiePolicy() {
   return (
-    <LegalPage title="Cookie Policy" lastUpdated="25 November 2026">
+    <LegalPage title="Cookie Policy" lastUpdated="26 November 2026">
       <p>
         This Cookie Policy explains how <strong>17999658 Canada Inc. (d/b/a Stampfix)</strong> uses
         cookies and similar technologies (such as <em>localStorage</em>) on{' '}
@@ -47,6 +47,13 @@ export function CookiePolicy() {
         <li>
           <strong>Your cookie choice</strong>: we store your consent decision itself in localStorage
           so we don&rsquo;t ask again on every visit.
+        </li>
+        <li>
+          <strong>Shop pages (stampfix.app/v/&hellip;)</strong>: in localStorage, which of a
+          shop&rsquo;s stories you have already watched (<code>sf_story_seen_&hellip;</code>) and your
+          best game score (<code>sf_snake_best</code>). These never leave your device. Only when you send
+          a shop feedback, a random device ID (<code>sf_device</code>) so that one phone can&rsquo;t send
+          feedback over and over; it is not linked to you.
         </li>
       </ul>
       <p className="text-sm text-gray-500">

@@ -13,7 +13,7 @@ import { LegalPage, LegalH2, Placeholder } from './LegalPage';
  */
 export function TermsOfService() {
   return (
-    <LegalPage title="Terms of Service" lastUpdated="1 November 2026 (v2.2)">
+    <LegalPage title="Terms of Service" lastUpdated="26 November 2026 (v2.3)">
       <p>
         These Terms of Service (“Terms”) govern your use of the Stampfix loyalty-card platform (the
         “Service”) provided by 17999658 Canada Inc. (d/b/a Stampfix) (“Stampfix”, “we”, “us”).
@@ -101,6 +101,16 @@ export function TermsOfService() {
         (<em>Gesetz gegen den unlauteren Wettbewerb</em>, UWG) for German Merchants, the GDPR, and
         Canada's CASL. Where consent is required, you must obtain and record it before sending, and you
         accept full responsibility for notifications that breach these requirements.
+      </p>
+
+      <p>
+        <strong>Business page content.</strong> You are responsible for everything you put on your
+        Business page, including your description, links, Wi-Fi details, stories (photos and videos)
+        and how you use the feedback guests send you. You confirm that you own or have the rights to
+        every photo and video you upload, that it contains no music or other material you have no
+        licence for, and that every person who can be recognised in it has agreed to appear. Stories
+        are public to anyone with your page link. We may remove content that breaks these Terms or
+        the law, or that we are asked to remove by a court or authority.
       </p>
 
       <LegalH2>5. Acceptable use</LegalH2>
@@ -235,7 +245,7 @@ export function TermsOfService() {
       </p>
 
       <p className="text-xs text-gray-400 pt-8 border-t notion-border mt-8">
-        Last updated: 2 August 2026 · Version 2.1
+        Last updated: 26 November 2026 · Version 2.3
       </p>
     </LegalPage>
   );
