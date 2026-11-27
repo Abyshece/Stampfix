@@ -3,21 +3,25 @@ import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import {
   Check, Copy, ExternalLink, Loader2, QrCode, Link2, Store, RefreshCw, Download, ChevronRight, MapPin, Lock, UtensilsCrossed, Stamp,
+  CircleDot, MessageSquareHeart,
 } from 'lucide-react';
 import type { Campaign, Location } from '../types';
 import type { OnboardingState } from '../lib/db';
 import type { PosterSize } from '../services/posterGenerator';
 import {
-  businessPageUrl, saveBusinessPage, setCounterCode, validSlug, ABOUT_MAX,
-  type MyBusinessPage, type PublicBusinessPage, type SavePageError,
+  businessPageUrl, saveBusinessPage, setCounterCode, validSlug, ABOUT_MAX, getMyPageStories, DEFAULT_LOOK,
+  type MyBusinessPage, type PublicBusinessPage, type SavePageError, type MyPageStory, type PageLook, type PageExtras,
 } from '../lib/businessPage';
 import { downloadCounterCodePng } from '../services/posterImage';
-import { BusinessPageView } from './BusinessPage';
+import { BusinessPageView, pageTheme } from './BusinessPage';
+import { ExtrasCard, LookCard } from './BusinessPageLook';
+import { StoriesTab } from './BusinessPageStories';
+import { FeedbackTab } from './BusinessPageFeedback';
 import { LinksSettings } from './LinksSettings';
 import { PosterSettings } from './PosterSettings';
 import { ProLockOverlay } from './ProLockOverlay';
 
-export type PageSection = 'profile' | 'links' | 'qr';
+export type PageSection = 'profile' | 'stories' | 'links' | 'feedback' | 'qr';
 
 interface Props {
   campaign: Campaign;
@@ -42,6 +46,9 @@ interface Props {
   stampUrlForLocation: (locationId: string | null) => string;
   onOpenSettings: (section: 'general' | 'wallet' | 'stamping') => void;
   onOpenAddons: () => void;
+  /** Feedback guests sent that the owner hasn't seen (for the tab's badge). */
+  unreadFeedback: number;
+  onFeedbackRead: () => void;
 }
 
 const card = 'bg-white rounded-xl border notion-border p-5 sm:p-6';
@@ -71,6 +78,21 @@ export function BusinessPagePanel(props: Props) {
   const active = useMemo(() => locations.filter((l) => !l.archived), [locations]);
   const [aboutDraft, setAboutDraft] = useState(page?.about ?? '');
   useEffect(() => { setAboutDraft(page?.about ?? ''); }, [page?.about]);
+  // Stories and the extras need the second database update; until then their tabs stay hidden.
+  const hasStories = !!page?.look;
+  const hasExtras = !!page?.extras;
+  const [stories, setStories] = useState<MyPageStory[] | null>(null);
+  const [storiesError, setStoriesError] = useState(false);
+  const [storiesTick, setStoriesTick] = useState(0);
+  useEffect(() => {
+    if (!hasStories) return;
+    let live = true;
+    setStoriesError(false);
+    getMyPageStories(campaign.id)
+      .then((list) => { if (live) setStories(list); })
+      .catch(() => { if (live) setStoriesError(true); });
+    return () => { live = false; };
+  }, [campaign.id, hasStories, storiesTick]);
 
   const pageUrl = page ? businessPageUrl(page.slug) : null;
   const links = campaign.socialLinks ?? {};
@@ -88,6 +110,8 @@ export function BusinessPagePanel(props: Props) {
       action: t('dash.page.stepAboutBtn', { defaultValue: 'Write it' }), go: () => onSection('profile') },
     ...(isPro ? [{ key: 'links', done: hasLinks, label: t('dash.page.stepLinks', { defaultValue: 'Add your links (website, Google reviews, Instagram)' }),
       action: t('dash.page.stepLinksBtn', { defaultValue: 'Add links' }), go: () => onSection('links') }] : []),
+    ...(isPro && hasStories && stories ? [{ key: 'story', done: stories.length > 0, label: t('dash.page.stepStory', { defaultValue: 'Add your first story' }),
+      action: t('dash.page.stepStoryBtn', { defaultValue: 'Add story' }), go: () => onSection('stories') }] : []),
     { key: 'look', done: !!onboarding.page_previewed, label: t('dash.page.stepLook', { defaultValue: 'Open your page and have a look' }),
       action: t('dash.page.stepLookBtn', { defaultValue: 'Open page' }), go: openPage },
     { key: 'print', done: !!onboarding.page_qr_downloaded, label: t('dash.page.stepPrint', { defaultValue: 'Print your QR code' }),
@@ -149,19 +173,39 @@ export function BusinessPagePanel(props: Props) {
       <nav className="flex gap-1 overflow-x-auto border-b notion-border" role="tablist">
         {([
           ['profile', Store, t('dash.page.tabProfile', { defaultValue: 'Profile' })],
+          ...(hasStories ? [['stories', CircleDot, t('dash.page.tabStories', { defaultValue: 'Stories' })] as const] : []),
           ['links', Link2, t('dash.page.tabLinks', { defaultValue: 'Links' })],
+          ...(hasExtras ? [['feedback', MessageSquareHeart, t('dash.page.tabFeedback', { defaultValue: 'Feedback' })] as const] : []),
           ['qr', QrCode, t('dash.page.tabQr', { defaultValue: 'QR code & posters' })],
         ] as const).map(([id, Icon, label]) => (
           <button key={id} type="button" role="tab" aria-selected={section === id} data-page-tab={id} onClick={() => onSection(id)}
             className={`inline-flex items-center gap-1.5 px-3 py-2.5 text-sm whitespace-nowrap border-b-2 -mb-px transition ${
               section === id ? 'border-[#37352F] text-[#37352F] font-medium' : 'border-transparent text-gray-500 hover:text-[#37352F]'}`}>
             <Icon className="w-4 h-4" />{label}
+            {id === 'stories' && !isPro && <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-700 rounded px-1.5 py-0.5">Pro</span>}
+            {id === 'feedback' && props.unreadFeedback > 0 && (
+              <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full inline-flex items-center justify-center" data-feedback-badge>{props.unreadFeedback}</span>
+            )}
           </button>
         ))}
       </nav>
 
       {section === 'profile' && (
-        <ProfileTab {...props} aboutDraft={aboutDraft} setAboutDraft={setAboutDraft} active={active} />
+        <ProfileTab {...props} aboutDraft={aboutDraft} setAboutDraft={setAboutDraft} active={active} stories={stories} />
+      )}
+
+      {section === 'stories' && page && (
+        hasStories ? (
+          <StoriesTab campaign={campaign} stories={stories} loadError={storiesError} onReload={() => setStoriesTick((n) => n + 1)}
+            onChange={setStories} isPro={isPro} canEdit={canEdit} onUpgrade={onUpgrade} />
+        ) : <p className="text-sm text-gray-500">{t('dash.page.notYet', { defaultValue: 'This part of your page is being set up. Please check back soon.' })}</p>
+      )}
+
+      {section === 'feedback' && page && (
+        hasExtras ? (
+          <FeedbackTab campaign={campaign} feedbackOn={page.extras?.feedbackOn ?? null} canEdit={canEdit}
+            onRead={props.onFeedbackRead} onOpenProfile={() => onSection('profile')} />
+        ) : <p className="text-sm text-gray-500">{t('dash.page.notYet', { defaultValue: 'This part of your page is being set up. Please check back soon.' })}</p>
       )}
 
       {section === 'links' && (
@@ -202,12 +246,19 @@ const SAVE_ERRORS: Record<SavePageError, [string, string]> = {
   network: ['dash.page.errNetwork', "Couldn't save. Check your connection and try again."],
 };
 
-function ProfileTab({ campaign, page, onPageSaved, canEdit, onOpenSettings, aboutDraft, setAboutDraft, active, orderingEnabled }: Props & {
-  aboutDraft: string; setAboutDraft: (v: string) => void; active: Location[];
+function ProfileTab({ campaign, page, onPageSaved, canEdit, onOpenSettings, aboutDraft, setAboutDraft, active, orderingEnabled, isPro, onUpgrade, onSection, stories }: Props & {
+  aboutDraft: string; setAboutDraft: (v: string) => void; active: Location[]; stories: MyPageStory[] | null;
 }) {
   const { t } = useTranslation();
   const [slugDraft, setSlugDraft] = useState(page?.slug ?? '');
   useEffect(() => { setSlugDraft(page?.slug ?? ''); }, [page?.slug]);
+  // Drafts of the look and the buttons, so the preview changes as you pick.
+  const [lookDraft, setLookDraft] = useState<PageLook>(page?.look ?? DEFAULT_LOOK);
+  const lookKey = page?.look ? `${page.look.accentColor}|${page.look.background}|${page.look.headingStyle}` : '';
+  useEffect(() => { if (page?.look) setLookDraft(page.look); }, [lookKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [extrasDraft, setExtrasDraft] = useState<PageExtras | null>(page?.extras ?? null);
+  const extrasKey = page?.extras ? JSON.stringify(page.extras) : '';
+  useEffect(() => { if (page?.extras) setExtrasDraft(page.extras); }, [extrasKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -222,7 +273,7 @@ function ProfileTab({ campaign, page, onPageSaved, canEdit, onOpenSettings, abou
     const r = await saveBusinessPage(campaign.id, slug, aboutDraft.trim() || null);
     setSaving(false);
     if (!r.ok) { const [k, d] = SAVE_ERRORS[r.error]; setError(t(k, { defaultValue: d })); return; }
-    onPageSaved(r.page);
+    onPageSaved({ ...page, ...r.page });
     setSaved(true); setTimeout(() => setSaved(false), 2500);
   };
   const preview: PublicBusinessPage = {
@@ -233,7 +284,13 @@ function ProfileTab({ campaign, page, onPageSaved, canEdit, onOpenSettings, abou
     links: Object.fromEntries(Object.entries(campaign.socialLinks ?? {}).filter(([, v]) => typeof v === 'string' && v.trim() !== '')),
     approved: true, available: true, selfServe: campaign.stampingMode === 'self_serve' && !!page.counterCode,
     orderingOpen: orderingEnabled, locations: active.map((l) => ({ id: l.id, name: l.name })),
+    look: isPro && page.look ? lookDraft : null,
+    stories: isPro ? (stories ?? []).filter((s) => !s.hidden) : [],
+    wifi: extrasDraft?.wifiSsid?.trim() ? { ssid: extrasDraft.wifiSsid.trim(), password: extrasDraft.wifiPassword || null } : null,
+    feedbackOn: !!extrasDraft?.feedbackOn,
+    gameOn: !!extrasDraft?.gameOn,
   };
+  const hasReviewLink = !!(campaign.socialLinks?.googleReview ?? '').trim();
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
@@ -274,6 +331,14 @@ function ProfileTab({ campaign, page, onPageSaved, canEdit, onOpenSettings, abou
             </div>
           )}
         </section>
+        {page.extras && extrasDraft && (
+          <ExtrasCard campaign={campaign} page={{ ...page, extras: page.extras }} draft={extrasDraft} setDraft={setExtrasDraft}
+            canEdit={canEdit} hasReviewLink={hasReviewLink} onOpenLinks={() => onSection('links')} onPageSaved={onPageSaved} />
+        )}
+        {page.look && (
+          <LookCard campaign={campaign} page={{ ...page, look: page.look }} draft={lookDraft} setDraft={setLookDraft}
+            isPro={isPro} canEdit={canEdit} onUpgrade={onUpgrade} onPageSaved={onPageSaved} />
+        )}
         <section className={`${card} space-y-3`}>
           <h3 className="font-medium">{t('dash.page.fromCard', { defaultValue: 'From your card' })}</h3>
           <p className="text-sm text-gray-500">{t('dash.page.fromCardHint', { defaultValue: 'Your name, reward, logo and colours on the page come from your stamp card, so they always match.' })}</p>
@@ -288,7 +353,7 @@ function ProfileTab({ campaign, page, onPageSaved, canEdit, onOpenSettings, abou
       <div className="lg:sticky lg:top-6">
         <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 text-center">{t('dash.page.preview', { defaultValue: 'Preview' })}</div>
         <div className="mx-auto w-[300px] max-w-full h-[600px] rounded-[38px] border-[10px] border-[#1F1F1F] bg-[#1F1F1F] shadow-xl overflow-hidden" data-page-preview>
-          <div className="w-full h-full rounded-[28px] overflow-y-auto overflow-x-hidden bg-[#FAF7F2]">
+          <div className="w-full h-full rounded-[28px] overflow-y-auto overflow-x-hidden" style={{ background: pageTheme(preview.look?.background).bg }}>
             <BusinessPageView page={preview} preview />
           </div>
         </div>

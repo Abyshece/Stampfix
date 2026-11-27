@@ -25,7 +25,7 @@ import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { ResultsPanel } from './ResultsPanel';
 import { AddonsPanel } from './AddonsPanel';
 import { BusinessPagePanel, type PageSection } from './BusinessPagePanel';
-import { getMyBusinessPage, businessPageUrl, type MyBusinessPage } from '../lib/businessPage';
+import { getMyBusinessPage, businessPageUrl, countUnreadFeedback, type MyBusinessPage } from '../lib/businessPage';
 import { OrdersPanel } from './OrdersPanel';
 import { getOrderingSettings, countNewOrders } from '../lib/ordering';
 import { StaffPanel } from './StaffPanel';
@@ -107,7 +107,7 @@ const TAB_PATH: Record<Tab, string> = {
   ADDONS: '/addons',
 };
 const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'stamping', 'locations', 'billing', 'account', 'privacy', 'danger'];
-const PAGE_SECTIONS: PageSection[] = ['profile', 'links', 'qr'];
+const PAGE_SECTIONS: PageSection[] = ['profile', 'stories', 'links', 'feedback', 'qr'];
 /** Old addresses of what is now on the Business page. */
 const PAGE_ALIASES: Record<string, PageSection> = { '/promote': 'qr', '/settings/links': 'links', '/settings/posters': 'qr' };
 function pathToTab(path: string): Tab | null {
@@ -215,6 +215,17 @@ export function MerchantDashboard({
       .catch(() => { if (live) setBizPageError(true); });
     return () => { live = false; };
   }, [campaign.id, bizPageTick]);
+  // Feedback guests sent from the page that the owner hasn't read (badge on "Business page").
+  const [unreadFeedback, setUnreadFeedback] = useState(0);
+  const feedbackReady = !!bizPage?.extras;
+  useEffect(() => {
+    if (!feedbackReady) return;
+    let live = true;
+    const check = () => { countUnreadFeedback(campaign.id).then((n) => { if (live) setUnreadFeedback(n); }).catch(() => {}); };
+    check();
+    const h = setInterval(() => { if (document.visibilityState === 'visible') check(); }, 120000);
+    return () => { live = false; clearInterval(h); };
+  }, [campaign.id, feedbackReady]);
   useEffect(() => {
     // The Orders page keeps the count itself; elsewhere check every 15 s.
     if (!orderingEnabled || activeTab === 'ORDERS') return;
@@ -861,6 +872,9 @@ export function MerchantDashboard({
                 )}
                 {id === 'ORDERS' && newOrders > 0 && (
                   <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0">{newOrders}</span>
+                )}
+                {id === 'PAGE' && unreadFeedback > 0 && (
+                  <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0" data-nav-feedback>{unreadFeedback}</span>
                 )}
                 {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP' || id === 'STAFF') && (
                   <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
@@ -1601,6 +1615,8 @@ export function MerchantDashboard({
             stampUrlForLocation={stampUrlForLocation}
             onOpenSettings={openSettingsSection}
             onOpenAddons={() => handleTabChange('ADDONS')}
+            unreadFeedback={unreadFeedback}
+            onFeedbackRead={() => setUnreadFeedback(0)}
           />
         )}
 
@@ -2110,6 +2126,9 @@ export function MerchantDashboard({
                     <Icon className="w-6 h-6" />
                     {id === 'OFFERS' && campaignsNew && (
                       <span className="absolute -top-1 -right-2 text-[8px] font-bold uppercase bg-blue-600 text-white px-1 py-0.5 rounded-full">{t('dash.nav.new', { defaultValue: 'New' })}</span>
+                    )}
+                    {id === 'PAGE' && unreadFeedback > 0 && (
+                      <span className="absolute -top-1 -right-2 text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">{unreadFeedback}</span>
                     )}
                   </div>
                   <span className="text-xs font-medium">{label}</span>
