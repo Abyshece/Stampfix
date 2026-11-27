@@ -1,22 +1,35 @@
 import { useTranslation } from 'react-i18next';
 import {
-  Wallet, QrCode, BellRing, RefreshCw, UtensilsCrossed, BarChart3,
-  Star, Wifi, Gamepad2, MessageSquare, Truck, Link2, Play, CreditCard, ArrowRight,
+  Wallet, QrCode, BellRing, UtensilsCrossed, BarChart3, Store, Check, ChevronDown,
+  Star, Wifi, Gamepad2, MessageSquare, Truck, Link2, Play, CreditCard, ArrowRight, X,
 } from 'lucide-react';
 
 // Landing page: what Stampfix is now (a marketing and retention platform),
 // "Everything in one place" and the business page "One QR code" showcase.
 
-const TILES = [
-  { key: 'loyalty', icon: Wallet, color: '#16A34A', title: 'Loyalty cards in Wallet', body: 'Digital stamp cards in Apple and Google Wallet. No app to download, no paper cards to lose.' },
-  { key: 'page', icon: QrCode, color: '#7C3AED', title: 'Your business page', body: 'One QR code for your menu, Wi-Fi, Google reviews, socials, delivery apps and more.' },
-  { key: 'offers', icon: BellRing, color: '#F59E0B', title: 'Offers on the lock screen', body: 'Send offers straight to your customers’ phones, with reminders when they are nearby.' },
-  { key: 'autopilot', icon: RefreshCw, color: '#E11D48', title: 'Win-back on autopilot', body: '“We miss you” offers go out by themselves when a regular stops coming in.' },
-  { key: 'ordering', icon: UtensilsCrossed, color: '#0EA5E9', title: 'Menu and table ordering', body: 'Guests scan, browse your menu and order from the table. Coupons included.' },
-  { key: 'results', icon: BarChart3, color: '#2563EB', title: 'Results you can see', body: 'See who your regulars are, what they spend and which offers bring them back.' },
+// Every feature, in six groups (only what the product really does).
+const GROUPS = [
+  { key: 'loyalty', icon: Wallet, color: '#16A34A', title: 'Loyalty cards', items: [
+    'Stamp cards in Apple and Google Wallet', 'No app to download, no paper to lose', 'Your phone is the scanner, no hardware',
+    'Your logo, colours and stamp icons', 'Stamp limits that stop cheating', 'Lost cards found again in seconds'] },
+  { key: 'page', icon: QrCode, color: '#7C3AED', title: 'Business page', items: [
+    'One QR code for everything', 'Menu, Wi-Fi and Google reviews', 'Delivery apps, socials and links',
+    'Stories with your photos and videos', 'Private feedback and a quick game', 'Change it any time, no reprinting'] },
+  { key: 'marketing', icon: BellRing, color: '#F59E0B', title: 'Marketing and win-back', items: [
+    'Offers on the lock screen', 'Reminders when customers are nearby', '“We miss you” offers on autopilot',
+    'See who has stopped coming', 'Coupons for your menu', 'Marketing consent collected for you'] },
+  { key: 'ordering', icon: UtensilsCrossed, color: '#0EA5E9', title: 'Table ordering', items: [
+    'Guests order from the table by QR', 'New orders arrive with an alert', 'Accept, mark ready, collected',
+    'Guests follow their order live', 'Build your menu or upload it', 'Free on every plan'] },
+  { key: 'insights', icon: BarChart3, color: '#2563EB', title: 'Insights and results', items: [
+    'Know who your regulars are', 'Visits, rewards and retention', 'Average spend and campaign returns',
+    'Customer list and activity log', 'Export your data any time'] },
+  { key: 'shop', icon: Store, color: '#E11D48', title: 'Built for your shop', items: [
+    'Staff accounts you control', 'Multiple locations', 'Print-ready posters and table codes',
+    'Live in a few minutes', 'GDPR handled for you', 'English and German'] },
 ] as const;
 
-/** "Everything in one place": the six things Stampfix does, as cards. */
+/** "Everything you need to bring customers back": every feature, in six groups. */
 export function PlatformGrid() {
   const { t } = useTranslation();
   return (
@@ -27,19 +40,117 @@ export function PlatformGrid() {
           {t('landing.platform.h2', { defaultValue: 'Everything you need to bring customers back' })}
         </h2>
         <p className="text-lg text-gray-500 text-pretty">
-          {t('landing.platform.sub', { defaultValue: 'Stop juggling a loyalty app, a link-in-bio page, a menu QR and a newsletter tool. Stampfix does all of it, for one flat price.' })}
+          {t('landing.platform.sub', { defaultValue: 'More than 30 tools that usually come from five different apps. In Stampfix they share one login, one QR code and one flat price.' })}
         </p>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TILES.map(({ key, icon: Icon, color, title, body }) => (
-          <div key={key} className="rounded-2xl border notion-border bg-white p-6 hover:shadow-md hover:-translate-y-0.5 transition">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ background: `${color}14`, color }}>
-              <Icon className="w-5 h-5" />
+        {GROUPS.map(({ key, icon: Icon, color, title, items }) => (
+          <div key={key} className="rounded-2xl border notion-border bg-white p-6 hover:shadow-md transition" data-feature-group={key}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${color}14`, color }}><Icon className="w-5 h-5" /></div>
+              <h3 className="font-semibold text-lg text-[#37352F]">{t(`landing.platform.${key}.t`, { defaultValue: title })}</h3>
             </div>
-            <h3 className="font-semibold text-lg text-[#37352F] mb-1.5">{t(`landing.platform.${key}.t`, { defaultValue: title })}</h3>
-            <p className="text-gray-500 leading-relaxed">{t(`landing.platform.${key}.b`, { defaultValue: body })}</p>
+            <ul className="space-y-2">
+              {items.map((it, i) => (
+                <li key={it} className="flex items-start gap-2 text-[15px] text-gray-600">
+                  <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color }} />{t(`landing.platform.${key}.i${i}`, { defaultValue: it })}
+                </li>
+              ))}
+            </ul>
           </div>
         ))}
+      </div>
+    </section>
+  );
+}
+
+/** "One QR code replaces": the things on the counter that Stampfix takes over. */
+export function ReplacesStrip() {
+  const { t } = useTranslation();
+  const things = ['Paper stamp cards', 'Menu PDFs', 'Wi-Fi password signs', 'Review cards', 'Link-in-bio pages', 'A separate ordering app'];
+  return (
+    <section className="max-w-5xl mx-auto px-6 py-10 text-center" data-replaces>
+      <p className="text-sm font-medium text-gray-500 mb-4">{t('landing.replaces.title', { defaultValue: 'One QR code replaces' })}</p>
+      <div className="flex flex-wrap justify-center gap-2.5">
+        {things.map((th, i) => (
+          <span key={th} className="inline-flex items-center gap-1.5 rounded-full bg-[#F7F7F5] border notion-border px-3.5 py-2 text-sm text-gray-500">
+            <X className="w-3.5 h-3.5 text-rose-500" /><span className="line-through decoration-gray-300">{t(`landing.replaces.i${i}`, { defaultValue: th })}</span>
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** "Sound familiar?": three questions a shop owner recognises, each with what Stampfix does. */
+export function SoundFamiliar() {
+  const { t } = useTranslation();
+  const qs = [
+    { q: 'Who are your regulars?', a: 'Most shops could not name their top 20 customers. Stampfix shows you who they are, how often they come and what they spend.' },
+    { q: 'Do you notice when they stop coming?', a: 'When a regular goes quiet, Stampfix sends them a “we miss you” offer for you, and shows you who came back.' },
+    { q: 'How many tools are you paying for?', a: 'A loyalty app, a menu QR, a link page, an ordering tool. Stampfix is one login, one QR code and one flat price.' },
+  ];
+  return (
+    <section className="max-w-6xl mx-auto px-6 pt-20 md:pt-24" data-sound-familiar>
+      <h2 className="text-3xl md:text-5xl font-serif-display font-medium mb-10 tracking-tight text-center">{t('landing.familiar.h2', { defaultValue: 'Sound familiar?' })}</h2>
+      <div className="grid md:grid-cols-3 gap-4">
+        {qs.map((x, i) => (
+          <div key={x.q} className="rounded-2xl bg-[#F7F7F5] p-6">
+            <div className="text-sm font-semibold text-gray-400 mb-3">0{i + 1}</div>
+            <h3 className="font-serif-display text-2xl font-medium text-[#37352F] mb-2 leading-snug">{t(`landing.familiar.q${i}`, { defaultValue: x.q })}</h3>
+            <p className="text-gray-500 leading-relaxed">{t(`landing.familiar.a${i}`, { defaultValue: x.a })}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** Common questions, as an accordion. */
+export function LandingFaq() {
+  const { t } = useTranslation();
+  const faqs = [
+    { q: 'Do my customers need to download an app?', a: 'No. The loyalty card goes into Apple Wallet or Google Wallet, which is already on their phone. Your business page opens in the browser.' },
+    { q: 'Do I need any hardware?', a: 'No. Your phone or tablet is the scanner. Print your QR code on the posters we make for you, and you are ready.' },
+    { q: 'Why one platform instead of separate tools?', a: 'Because everything works together. A guest who scans your table QR can order, join your loyalty card and get your offers later, all from one scan, and you see it all in one place.' },
+    { q: 'Can I change my page without reprinting the QR code?', a: 'Yes. The QR code always points to your page, so you can change your menu, links, Wi-Fi or offers any time.' },
+    { q: 'Is table ordering extra?', a: 'No. Table ordering and your menu are free on every plan.' },
+    { q: 'Is it GDPR compliant, and can I cancel any time?', a: 'Yes to both. Marketing consent is collected for you, your data can be exported any time, and there is no contract.' },
+  ];
+  return (
+    <section className="max-w-3xl mx-auto px-6 py-20 md:py-24" data-landing-faq>
+      <h2 className="text-3xl md:text-5xl font-serif-display font-medium mb-8 tracking-tight text-center">{t('landing.faq.h2', { defaultValue: 'Common questions' })}</h2>
+      <div className="divide-y notion-border border-y notion-border">
+        {faqs.map((f, i) => (
+          <details key={f.q} className="group py-4">
+            <summary className="flex items-center justify-between gap-4 cursor-pointer list-none text-lg font-medium text-[#37352F]">
+              {t(`landing.faq.q${i}`, { defaultValue: f.q })}
+              <ChevronDown className="w-5 h-5 shrink-0 text-gray-400 transition group-open:rotate-180" />
+            </summary>
+            <p className="mt-3 text-gray-500 leading-relaxed">{t(`landing.faq.a${i}`, { defaultValue: f.a })}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** The last call to action before the contact form. */
+export function ClosingCta({ onStart }: { onStart: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <section className="px-6 pb-20" data-closing-cta>
+      <div className="max-w-5xl mx-auto rounded-3xl bg-[#37352F] text-white px-6 py-14 md:py-16 text-center">
+        <h2 className="text-3xl md:text-5xl font-serif-display font-medium mb-4 tracking-tight text-balance">{t('landing.close.h2', { defaultValue: 'One QR code. Every reason to come back.' })}</h2>
+        <p className="text-white/70 text-lg mb-8 max-w-xl mx-auto">{t('landing.close.sub', { defaultValue: 'Set up your loyalty card and business page in a few minutes. Free to start, no card needed.' })}</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button type="button" onClick={onStart} className="bg-white text-[#37352F] px-7 py-3 rounded-lg font-medium text-lg inline-flex items-center gap-2 hover:bg-gray-100 transition">
+            {t('hero.startFree')} <ArrowRight className="w-5 h-5" />
+          </button>
+          <a href="https://calendar.app.google/WCPgkaPjeoUbkQJq7" target="_blank" rel="noopener noreferrer" className="border border-white/30 px-7 py-3 rounded-lg font-medium text-lg hover:border-white transition">
+            {t('hero.bookDemo')}
+          </a>
+        </div>
       </div>
     </section>
   );

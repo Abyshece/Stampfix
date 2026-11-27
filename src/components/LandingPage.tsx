@@ -12,7 +12,7 @@ import { SiteFooter } from './SiteFooter';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import { PasswordInput } from './PasswordInput';
-import { PlatformGrid, OneQrSection } from './PlatformSections';
+import { PlatformGrid, OneQrSection, ReplacesStrip, SoundFamiliar, LandingFaq, ClosingCta } from './PlatformSections';
 import { TrustpilotWidget } from './TrustpilotWidget';
 import { FeatureVideo } from './FeatureVideo';
 import { InstaCarousel } from './InstaCarousel';
@@ -427,6 +427,7 @@ export function LandingPage({
       {/* Hero visual — live wallet cards on a straight looping rail */}
       <HeroCardLoop />
       <TrustpilotWidget />
+      <ReplacesStrip />
 
       {/* Social proof */}
       <section className="border-y notion-border bg-[#F7F7F5]/50 py-16">
@@ -446,7 +447,8 @@ export function LandingPage({
         </div>
       </section>
 
-      {/* What Stampfix does: six cards, then the business page */}
+      {/* The problem, then everything Stampfix does, then the business page */}
+      <SoundFamiliar />
       <PlatformGrid />
       <OneQrSection />
 
@@ -537,6 +539,9 @@ export function LandingPage({
           </div>
         </div>
       </section>
+
+      <LandingFaq />
+      <ClosingCta onStart={onEnterMerchantFlow} />
 
       {/* Contact form (lands in admin → Contact Inquiries) */}
       <ContactFormSection />
