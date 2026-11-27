@@ -39,6 +39,8 @@ export interface MyBusinessPage {
   /** Missing until the second Business page database update has run. */
   look?: PageLook;
   extras?: PageExtras;
+  /** Guests see the page only when it is on. Missing (older database): on. */
+  enabled?: boolean;
 }
 
 /** Wi-Fi details and the feedback and game switches (every plan). */
@@ -78,6 +80,8 @@ export interface PublicBusinessPage {
   wifi: { ssid: string; password: string | null } | null;
   feedbackOn: boolean;
   gameOn: boolean;
+  /** Off: guests go straight to sign-up (or ordering at a table) instead. */
+  enabled: boolean;
 }
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
@@ -110,7 +114,21 @@ export async function getMyBusinessPage(campaignId: string): Promise<MyBusinessP
     slug: String(d.slug), about: (d.about as string | null) ?? null, counterCode: (d.counter_code as string | null) ?? null,
     look: 'background' in d ? parseLook(d) ?? undefined : undefined,
     extras: 'feedback_enabled' in d ? parseExtras(d) : undefined,
+    enabled: 'enabled' in d ? d.enabled === true : undefined,
   };
+}
+
+/** True when guests see the page (an older database without the switch: always). */
+export function pageIsOn(p: MyBusinessPage | null | undefined): boolean {
+  return !!p && p.enabled !== false;
+}
+
+/** Turn the page on or off (the owner only). */
+export async function setBusinessPageEnabled(campaignId: string, on: boolean): Promise<boolean | null> {
+  const { data, error } = await supabase.rpc('set_business_page_enabled', { p_campaign: campaignId, p_on: on });
+  if (error) return null;
+  const d = data as { ok?: boolean; enabled?: boolean } | null;
+  return d?.ok ? d.enabled === true : null;
 }
 
 function parseExtras(d: Record<string, unknown>): PageExtras {
@@ -206,6 +224,7 @@ export async function getPublicBusinessPage(slug: string): Promise<PublicBusines
     // Both stay off until the database knows about them.
     feedbackOn: d.feedback_on === true,
     gameOn: d.game_on === true,
+    enabled: d.enabled !== false,
   };
 }
 

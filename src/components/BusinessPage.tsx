@@ -343,6 +343,14 @@ function Centered({ children }: { children: ReactNode }) {
   );
 }
 
+/** The page is off: go on to where the code led before the Business page. */
+function PageOffRedirect({ page, locationId, table }: { page: PublicBusinessPage; locationId: string | null; table: string | null }) {
+  const { join, order } = pageTargets(page, { locationId, table });
+  const target = table && order ? order : join;
+  useEffect(() => { window.location.replace(target); }, [target]);
+  return <Centered><Loader2 className="w-6 h-6 animate-spin text-[#8A8178]" /></Centered>;
+}
+
 /** Route component for /v/<address>. */
 export function BusinessPage() {
   const { t } = useTranslation();
@@ -408,6 +416,11 @@ export function BusinessPage() {
     );
   }
   const isOwner = !!user && user.id === page.merchantId;
+  if (!page.enabled && !isOwner) {
+    // The shop hasn't turned its page on: straight on to sign-up, or to
+    // ordering from a table code, as before the Business page existed.
+    return <PageOffRedirect page={page} locationId={locationId} table={table} />;
+  }
   if (!page.available && !isOwner) {
     return (
       <Centered>
@@ -426,11 +439,15 @@ export function BusinessPage() {
   }
   return (
     <div className="min-h-screen" style={{ background: pageTheme(page.look?.background).bg }}>
-      {isOwner && (!page.approved || !page.available) && (
+      {isOwner && (!page.approved || !page.available) ? (
         <div className="bg-amber-50 border-b border-amber-200 text-amber-900 text-xs text-center px-4 py-2">
           {t('cust.page.ownerOnly', { defaultValue: 'Only you can see this page until your shop is approved.' })}
         </div>
-      )}
+      ) : isOwner && !page.enabled ? (
+        <div className="bg-amber-50 border-b border-amber-200 text-amber-900 text-xs text-center px-4 py-2" data-page-off-banner>
+          {t('cust.page.ownerOff', { defaultValue: 'Your page is off, so only you see it. Guests who scan go straight to sign-up. Turn it on in your dashboard.' })}
+        </div>
+      ) : null}
       <BusinessPageView page={page} locationId={locationId} table={table} hasCard={hasCard}
         here={`/v/${page.slug}${window.location.search}`} />
     </div>

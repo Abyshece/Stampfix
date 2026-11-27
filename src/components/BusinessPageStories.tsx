@@ -16,7 +16,6 @@ import { StoryViewer } from './PageStories';
 // photos, name, hide, reorder and delete them. Videos are made small in the
 // browser before they upload (see lib/storyMedia).
 
-const card = 'bg-white rounded-xl border notion-border p-5 sm:p-6';
 const btnDark = 'inline-flex items-center justify-center gap-1.5 bg-[#37352F] text-white px-3.5 py-2 rounded-md text-sm font-medium hover:bg-opacity-90 transition disabled:opacity-50';
 const btnLight = 'inline-flex items-center justify-center gap-1.5 bg-white border notion-border text-[#37352F] px-3.5 py-2 rounded-md text-sm font-medium hover:bg-[#F7F7F5] transition disabled:opacity-50';
 const iconBtn = 'w-8 h-8 rounded-md flex items-center justify-center text-gray-500 hover:bg-[#F1F1EF] hover:text-[#37352F] disabled:opacity-30 disabled:hover:bg-transparent';
@@ -125,13 +124,13 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
   };
 
   const uploader = (
-    <div className={`${card} space-y-4`} data-stories-add>
+    <div className="rounded-xl border-2 border-dashed border-[#E2E1DE] bg-[#FBFBFA] p-4 sm:p-5 space-y-4" data-stories-add>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold">{t('dash.stories.addTitle', { defaultValue: 'Add a story' })}</h2>
+          <h3 className="font-semibold">{t('dash.stories.addTitle', { defaultValue: 'Add a story' })}</h3>
           <p className="text-sm text-gray-500 max-w-xl">{t('dash.stories.addHint', { defaultValue: 'A video (we keep the first 10 seconds) or a photo. Upright works best, like on Instagram. We make videos small so they load fast.' })}</p>
         </div>
-        <span className="text-sm font-medium text-gray-500" data-stories-count>{t('dash.stories.count', { n: list.length, max: STORIES_MAX, defaultValue: '{{n}} of {{max}}' })}</span>
+        <span className="text-xs font-semibold text-gray-500 bg-white border notion-border rounded-full px-2.5 py-1" data-stories-count>{t('dash.stories.count', { n: list.length, max: STORIES_MAX, defaultValue: '{{n}} of {{max}}' })}</span>
       </div>
       <label className="flex items-start gap-2.5 text-sm cursor-pointer select-none">
         <input type="checkbox" checked={rights} disabled={!canEdit || !isPro} onChange={(e) => setRights(e.target.checked)} data-stories-rights
@@ -170,7 +169,6 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
 
   return (
     <div className="space-y-5" data-stories-tab>
-      <p className="text-sm text-gray-500 max-w-2xl">{t('dash.stories.sub', { defaultValue: 'Round bubbles at the top of your page, like Instagram stories. Show your coffee, your cakes, your team. They stay until you delete them.' })}</p>
       {canEdit ? (
         <ProLockOverlay locked={!isPro} title={t('dash.stories.pro', { defaultValue: 'Stories are a Pro feature' })} onUpgrade={onUpgrade}>
           {uploader}
