@@ -44,6 +44,10 @@ export interface Lead {
   blocked: BlockReason | null;
   followup_due: boolean;
   last_error: string | null;
+  // The Queued list only: when it was queued, and whether its shop is inside
+  // its sending hours right now (the list comes in sending order).
+  queued_at?: string | null;
+  in_hours?: boolean;
   // AI email finder (see the outreach_ai migration).
   ai_status?: AiStatus | null;
   ai_email?: string | null;

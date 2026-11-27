@@ -82,6 +82,8 @@ export function EmailTab({ state, readOnly, onChanged }: { state: OutreachState;
   const pickable = (leads ?? []).filter(canPick);
   const allPicked = pickable.length > 0 && pickable.every((l) => picked.has(l.id));
   const hours = `${String(s.window_start).padStart(2, '0')}:00 to ${String(s.window_end).padStart(2, '0')}:00`;
+  // The email that goes out next: the oldest queued one whose shop is inside its sending hours.
+  const nextUp = view === 'email_queued' && !s.paused ? (leads ?? []).find((l) => l.in_hours)?.id ?? null : null;
 
   return (
     <div className="space-y-4">
@@ -143,6 +145,12 @@ export function EmailTab({ state, readOnly, onChanged }: { state: OutreachState;
         </div>
       )}
 
+      {view === 'email_queued' && (leads?.length ?? 0) > 0 && (
+        <p className="text-xs text-gray-500" data-queue-order>
+          In sending order: oldest first. A shop outside its sending hours right now (in its own time zone) waits, and the next one in line goes instead.
+        </p>
+      )}
+
       {leads === null ? (
         <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-gray-300" /></div>
       ) : leads.length === 0 ? (
@@ -151,8 +159,11 @@ export function EmailTab({ state, readOnly, onChanged }: { state: OutreachState;
         </div>
       ) : (
         <ul className="rounded-xl border notion-border bg-white divide-y divide-gray-100">
-          {leads.map((l) => (
+          {leads.map((l, i) => (
             <li key={l.id} className="flex items-start gap-3 px-3 sm:px-4 py-3" data-email-row={l.business_name}>
+              {view === 'email_queued' && (
+                <span className="mt-0.5 w-8 shrink-0 text-right text-xs font-semibold tabular-nums text-gray-400" data-queue-pos>#{i + 1}</span>
+              )}
               {selectable && !readOnly && (
                 <input type="checkbox" className="mt-1" aria-label={`Select ${l.business_name}`} disabled={!canPick(l)} checked={picked.has(l.id)}
                   onChange={() => setPicked((p) => { const n = new Set(p); if (n.has(l.id)) n.delete(l.id); else n.add(l.id); return n; })} />
@@ -161,6 +172,7 @@ export function EmailTab({ state, readOnly, onChanged }: { state: OutreachState;
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <ShopCell lead={l} />
                   <div className="flex items-center gap-1.5 flex-wrap">
+                    {view === 'email_queued' && l.id === nextUp && <span className="text-[11px] font-semibold bg-green-600 text-white rounded-full px-2 py-0.5" data-up-next>Up next</span>}
                     {view !== 'email_ready' && <Pill cls={EMAIL_STATUS[l.email_status][1]}>{EMAIL_STATUS[l.email_status][0]}</Pill>}
                     {view === 'email_ready' && <BlockPill reason={l.blocked} />}
                   </div>
@@ -168,6 +180,12 @@ export function EmailTab({ state, readOnly, onChanged }: { state: OutreachState;
                 <div className="text-xs text-gray-600 mt-1 break-all">{l.email}</div>
                 {view === 'email_ready' && (
                   <div className="text-xs text-gray-500 mt-1 italic break-words">“{l.first_line || 'Default first line'}”</div>
+                )}
+                {view === 'email_queued' && l.queued_at && (
+                  <div className="text-[11px] text-gray-400 mt-1" data-queued-at>
+                    Queued {new Date(l.queued_at).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {l.in_hours === false && <span className="text-amber-700"> · Waits for {String(s.window_start).padStart(2, '0')}:00 in its time zone</span>}
+                  </div>
                 )}
                 {l.email_sent_at && <div className="text-[11px] text-gray-400 mt-1">Emailed {new Date(l.email_sent_at).toLocaleDateString()}</div>}
                 {l.last_error && view === 'email_ready' && <div className="text-xs text-red-600 mt-1 break-words">Last try failed: {l.last_error}</div>}
