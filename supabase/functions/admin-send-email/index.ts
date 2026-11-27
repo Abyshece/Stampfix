@@ -50,7 +50,10 @@ Deno.serve(async (req) => {
   const missing = unfilledFields(subject + '\n' + body);
   if (missing.length) return json({ error: `unfilled:${missing.join(',')}` }, 400);
 
-  const full = withShopFooter(body, lang);
+  // The footer saved in Admin > Email shops; the built-in one if none is saved or it can't be read.
+  const { data: saved } = await userClient.rpc('admin_shop_email_footer');
+  const savedFooter = saved && typeof saved === 'object' ? (saved as Record<string, unknown>)[lang] : null;
+  const full = withShopFooter(body, lang, typeof savedFooter === 'string' ? savedFooter : null);
   const { data: start, error: startErr } = await userClient.rpc('admin_email_start', {
     p_merchant: merchantId, p_template: String(b.template ?? '').slice(0, 40), p_subject: subject, p_body: full,
   });

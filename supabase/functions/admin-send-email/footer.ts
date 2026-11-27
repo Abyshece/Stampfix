@@ -12,8 +12,14 @@ export const SHOP_EMAIL_FOOTER: Record<EmailLang, string> = {
     + 'Sie erhalten diese E-Mail als Stampfix-Kunde. Keine solchen E-Mails mehr? Antworten Sie mit „Stopp“.',
 };
 
-export function withShopFooter(body: string, lang: EmailLang): string {
-  return `${body.replace(/\s+$/, '')}\n\n${SHOP_EMAIL_FOOTER[lang]}`;
+/** The footer saved in Admin > Email shops, or the built-in one when none is saved. */
+export function shopFooter(lang: EmailLang, saved?: string | null): string {
+  const f = (saved ?? '').trim();
+  return f || SHOP_EMAIL_FOOTER[lang];
+}
+
+export function withShopFooter(body: string, lang: EmailLang, saved?: string | null): string {
+  return `${body.replace(/\s+$/, '')}\n\n${shopFooter(lang, saved)}`;
 }
 
 /** Placeholders like {code} still in the text: the email isn't finished. */

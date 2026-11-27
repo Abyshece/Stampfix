@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Mail, Search, Loader2, Send, AlertTriangle, ChevronDown, ChevronRight, RotateCcw, Eye } from 'lucide-react';
+import { Mail, Search, Loader2, Send, AlertTriangle, ChevronDown, ChevronRight, RotateCcw, Eye, Settings2 } from 'lucide-react';
 import { listMerchants, type MerchantRow } from '../services/admin';
 import { useToast } from './ToastProvider';
 import { Dialog, Switch, inputCls, btnDark, btnLight } from './addonsUi';
 import { Pill, flag } from './outreach/common';
 import {
-  SHOP_EMAIL_TEMPLATES, autoFields, fillFields, unfilledFields, withShopFooter, langForCountry, fieldLabel, templateWarning,
-  getShopInfo, listSentEmails, setShopOptOut, sendShopEmail, shopEmailError, SendError,
-  type EmailLang, type ShopInfo, type SentEmail,
+  SHOP_EMAIL_TEMPLATES, SHOP_EMAIL_FOOTER, autoFields, fillFields, unfilledFields, shopFooter, withShopFooter, langForCountry, fieldLabel, templateWarning,
+  getShopInfo, listSentEmails, setShopOptOut, sendShopEmail, shopEmailError, SendError, getShopEmailFooter, saveShopEmailFooter,
+  type EmailLang, type ShopInfo, type SentEmail, type SavedFooters,
 } from '../lib/shopEmails';
 
 const FROM = 'Abhishek from Stampfix <hello@stampfix.app>';
@@ -60,6 +60,9 @@ export function ShopEmailsAdmin({ readOnly }: { readOnly: boolean }) {
   const [sending, setSending] = useState(false);
   const [sendErr, setSendErr] = useState<string | null>(null);
   const [historyTick, setHistoryTick] = useState(0);
+  // The footer saved under "Email footer" (null = the built-in one). The send function reads the same saved footer.
+  const [footers, setFooters] = useState<SavedFooters | null>(null);
+  useEffect(() => { getShopEmailFooter().then(setFooters).catch(() => setFooters({ en: null, de: null })); }, []);
   // The last send whose outcome we don't know: a retry of the same text reuses its key.
   const lastAttempt = useRef<{ key: string; sig: string } | null>(null);
 
@@ -214,7 +217,7 @@ export function ShopEmailsAdmin({ readOnly }: { readOnly: boolean }) {
               onChange={(e) => { setBody(e.target.value); setDirty(true); }} placeholder="Pick a template above, or write your own." />
             <p className="text-xs text-gray-500 mt-1.5">
               <code className="bg-gray-100 rounded px-1">{'{business}'}</code> and <code className="bg-gray-100 rounded px-1">{'{customers}'}</code> fill in by themselves.
-              Our address and the “reply stop” line are added at the bottom.
+              The email footer (our address and the “reply stop” line, set under Email footer) is added at the bottom.
             </p>
             {askFields.length > 0 && (
               <div className="mt-4 space-y-3 bg-amber-50/60 border border-amber-200 rounded-lg p-3">
@@ -234,6 +237,8 @@ export function ShopEmailsAdmin({ readOnly }: { readOnly: boolean }) {
               </div>
             )}
           </Section>
+
+          <FooterSettings saved={footers} readOnly={readOnly} onSaved={setFooters} />
         </div>
 
         <div className="lg:col-span-2 lg:sticky lg:top-6 space-y-3 min-w-0">
@@ -245,7 +250,7 @@ export function ShopEmailsAdmin({ readOnly }: { readOnly: boolean }) {
               <div className="flex gap-2"><dt className="w-14 shrink-0 text-gray-500">Subject</dt><dd className="min-w-0 break-words font-medium" data-preview-subject>{outSubject || <span className="text-gray-400 font-normal">No subject yet</span>}</dd></div>
             </dl>
             <div className="px-4 py-3 text-sm text-[#37352F] whitespace-pre-wrap break-words max-h-[50vh] overflow-y-auto" data-preview-body>
-              {outBody ? withShopFooter(outBody, lang) : <span className="text-gray-400">The email shows here.</span>}
+              {outBody ? withShopFooter(outBody, lang, footers?.[lang]) : <span className="text-gray-400">The email shows here.</span>}
             </div>
           </section>
 
@@ -299,6 +304,67 @@ export function ShopEmailsAdmin({ readOnly }: { readOnly: boolean }) {
         </Dialog>
       )}
     </div>
+  );
+}
+
+// ---- Email footer ----------------------------------------------------------------
+
+/** Edit the lines added under every email, in English and German. Empty = the built-in footer. */
+function FooterSettings({ saved, readOnly, onSaved }: { saved: SavedFooters | null; readOnly: boolean; onSaved: (f: SavedFooters) => void }) {
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<Record<EmailLang, string>>({ en: '', de: '' });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { if (saved) setDraft({ en: shopFooter('en', saved.en), de: shopFooter('de', saved.de) }); }, [saved]);
+  const current = (l: EmailLang) => shopFooter(l, saved?.[l]);
+  const changed = !!saved && (['en', 'de'] as const).some((l) => draft[l].trim() !== current(l));
+  const custom = !!saved && (!!saved.en || !!saved.de);
+
+  const save = async () => {
+    setSaving(true); setErr(null);
+    // The built-in text is saved as "none", so later fixes to the built-in footer still apply.
+    const out = (l: EmailLang) => (draft[l].trim() === SHOP_EMAIL_FOOTER[l] ? '' : draft[l]);
+    try { onSaved(await saveShopEmailFooter(out('en'), out('de'))); toast.success('Email footer saved.'); }
+    catch (e) { setErr(/too_long/.test(String((e as { message?: string } | null)?.message ?? '')) ? 'Each footer can be up to 1000 characters.' : 'Could not save the footer. Try again.'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <section className="bg-white border notion-border rounded-xl" data-footer-settings>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
+        className="w-full flex items-center gap-2 px-4 sm:px-5 py-3.5 text-sm font-semibold text-[#37352F] text-left">
+        <Settings2 className="w-4 h-4" /> Email footer
+        <span className="text-xs font-normal text-gray-500">{custom ? 'Your own' : 'Built-in'} · English and German</span>
+        {open ? <ChevronDown className="w-4 h-4 ml-auto text-gray-400" /> : <ChevronRight className="w-4 h-4 ml-auto text-gray-400" />}
+      </button>
+      {open && (
+        <div className="px-4 sm:px-5 pb-4 space-y-3">
+          <p className="text-xs text-gray-500">Added under every email you send here. Keep our postal address and a way to say no to these emails (Canada’s anti-spam law, and § 7 UWG for German shops).</p>
+          {saved === null ? <Loader2 className="w-4 h-4 animate-spin text-gray-300" /> : (['en', 'de'] as const).map((l) => (
+            <div key={l}>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <label className="text-xs font-medium text-gray-600" htmlFor={`se-footer-${l}`}>{l === 'en' ? 'English' : 'Deutsch'}</label>
+                {!readOnly && draft[l].trim() !== SHOP_EMAIL_FOOTER[l] && (
+                  <button type="button" className="inline-flex items-center gap-1 text-[11px] text-gray-500 underline hover:text-[#37352F]"
+                    onClick={() => setDraft((d) => ({ ...d, [l]: SHOP_EMAIL_FOOTER[l] }))}><RotateCcw className="w-3 h-3" /> Use the built-in footer</button>
+                )}
+              </div>
+              <textarea id={`se-footer-${l}`} className={`${inputCls} font-[inherit] leading-relaxed`} rows={3} maxLength={1000} disabled={readOnly}
+                value={draft[l]} onChange={(e) => setDraft((d) => ({ ...d, [l]: e.target.value }))} />
+            </div>
+          ))}
+          {err && <p role="alert" className="text-xs text-red-600">{err}</p>}
+          {!readOnly && saved !== null && (
+            <div className="flex justify-end">
+              <button type="button" className={btnDark} disabled={!changed || saving} onClick={save} data-footer-save>
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />} Save footer
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

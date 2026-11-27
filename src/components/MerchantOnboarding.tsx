@@ -88,11 +88,10 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   // location merchants don't have to think about it; multi-location ones
   // can give the first location a meaningful name (e.g. "Mitte branch").
   const [primaryLocationName, setPrimaryLocationName] = useState('');
-  // Consent state. termsAccepted blocks signup; marketingOptIn is purely
-  // optional (default false per GDPR Article 7 — explicit opt-in only).
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [privacyAccepted, setPrivacyAccepted] = useState(false);
-  const [dpaAccepted, setDpaAccepted] = useState(false);
+  // Consent state. One required box covers the Terms, the Data Processing
+  // Agreement and the Privacy Policy; marketingOptIn is purely optional
+  // (default false per GDPR Article 7 — explicit opt-in only).
+  const [legalAccepted, setLegalAccepted] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   // Turnstile (anti-bot) token. null until the widget verifies; the
   // submit button is gated on this so bots can't bypass the check by
@@ -147,7 +146,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
       return;
     }
     if (emailTrimmed !== email) setEmail(emailTrimmed);
-    if (!termsAccepted || !privacyAccepted || !dpaAccepted) {
+    if (!legalAccepted) {
       setError(t('dash.signup.errAcceptAll', { defaultValue: 'Please accept the Terms, Privacy Policy, and Data Processing Agreement to continue.' }));
       return;
     }
@@ -481,46 +480,17 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
               (explicit opt-in for marketing). Terms acceptance is required;
               marketing is genuinely optional. */}
           <div className="space-y-2.5 pt-2">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] uppercase tracking-widest font-bold text-gray-400">{t('dash.signup.legal', { defaultValue: 'Legal' })}</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const allOn = termsAccepted && privacyAccepted && dpaAccepted;
-                  setTermsAccepted(!allOn);
-                  setPrivacyAccepted(!allOn);
-                  setDpaAccepted(!allOn);
-                }}
-                className="text-[11px] text-gray-500 underline hover:text-[#37352F]"
-              >
-                {termsAccepted && privacyAccepted && dpaAccepted ? t('dash.signup.uncheckAll', { defaultValue: 'Uncheck all' }) : t('dash.signup.acceptAllRequired', { defaultValue: 'Accept all required' })}
-              </button>
-            </div>
+            <span className="block text-[10px] uppercase tracking-widest font-bold text-gray-400">{t('dash.signup.legal', { defaultValue: 'Legal' })}</span>
             <ConsentCheckbox
-              checked={termsAccepted}
-              onChange={setTermsAccepted}
+              checked={legalAccepted}
+              onChange={setLegalAccepted}
               required
-              label={<>{t('dash.signup.termsA', { defaultValue: 'I agree to the' })} <a href="/terms" target="_blank" className="underline">{t('dash.signup.termsLink', { defaultValue: 'Terms of Service' })}</a>{t('dash.signup.termsEnd', { defaultValue: '.' })}</>}
-            />
-            <ConsentCheckbox
-              checked={privacyAccepted}
-              onChange={setPrivacyAccepted}
-              required
-              label={<>{t('dash.signup.privacyA', { defaultValue: "I've read the" })} <a href="/privacy" target="_blank" className="underline">{t('dash.signup.privacyLink', { defaultValue: 'Privacy Policy' })}</a>{t('dash.signup.privacyEnd', { defaultValue: '.' })}</>}
-            />
-            <ConsentCheckbox
-              checked={dpaAccepted}
-              onChange={setDpaAccepted}
-              required
-              label={
-                <>{t('dash.signup.dpaA', { defaultValue: 'I accept the' })} <a href="/dpa" target="_blank" className="underline">{t('dash.signup.dpaLink', { defaultValue: 'Data Processing Agreement' })}</a>
-                {country === 'DE' && <span className="text-gray-500">{t('dash.signup.gdprNote', { defaultValue: ' (required for GDPR compliance)' })}</span>}{t('dash.signup.dpaEnd', { defaultValue: '.' })}</>
-              }
+              label={<>{t('dash.signup.legalA', { defaultValue: 'I agree to the' })} <a href="/terms" target="_blank" className="underline">{t('dash.signup.termsLink', { defaultValue: 'Terms of Service' })}</a>{t('dash.signup.legalAnd', { defaultValue: ' and the ' })}<a href="/dpa" target="_blank" className="underline">{t('dash.signup.dpaLink', { defaultValue: 'Data Processing Agreement' })}</a>{t('dash.signup.legalRead', { defaultValue: ', and I have read the ' })}<a href="/privacy" target="_blank" className="underline">{t('dash.signup.privacyLink', { defaultValue: 'Privacy Policy' })}</a>{t('dash.signup.legalEnd', { defaultValue: '.' })}</>}
             />
             <ConsentCheckbox
               checked={marketingOptIn}
               onChange={setMarketingOptIn}
-              label={<span className="text-gray-500">{t('dash.signup.marketing', { defaultValue: 'Send me product updates and tips by email (optional).' })}</span>}
+              label={<span className="text-black">{t('dash.signup.marketing', { defaultValue: 'Send me product updates and tips by email (optional).' })}</span>}
             />
           </div>
 
@@ -534,7 +504,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
 
           <button
             onClick={handleSignup}
-            disabled={!busName || !email || !password || !country || !termsAccepted || !turnstileToken || loading}
+            disabled={!busName || !email || !password || !country || !legalAccepted || !turnstileToken || loading}
             className="w-full bg-[#37352F] text-white py-3 rounded hover:bg-opacity-90 transition font-medium disabled:opacity-50 shadow-sm flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
