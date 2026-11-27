@@ -1,7 +1,24 @@
 import { supabase } from './supabase';
-import { SHOP_EMAIL_FOOTER, withShopFooter, unfilledFields, type EmailLang } from '../../supabase/functions/admin-send-email/footer';
+import { SHOP_EMAIL_FOOTER, shopFooter, withShopFooter, unfilledFields, type EmailLang } from '../../supabase/functions/admin-send-email/footer';
 
-export { SHOP_EMAIL_FOOTER, withShopFooter, unfilledFields, type EmailLang };
+export { SHOP_EMAIL_FOOTER, shopFooter, withShopFooter, unfilledFields, type EmailLang };
+
+/** The footers saved in Admin > Email shops (null = the built-in one). */
+export type SavedFooters = { en: string | null; de: string | null };
+
+export async function getShopEmailFooter(): Promise<SavedFooters> {
+  const { data, error } = await supabase.rpc('admin_shop_email_footer');
+  if (error) throw error;
+  const d = (data ?? {}) as Partial<SavedFooters>;
+  return { en: d.en ?? null, de: d.de ?? null };
+}
+
+export async function saveShopEmailFooter(en: string, de: string): Promise<SavedFooters> {
+  const { data, error } = await supabase.rpc('admin_set_shop_email_footer', { p_en: en, p_de: de });
+  if (error) throw error;
+  const d = (data ?? {}) as Partial<SavedFooters>;
+  return { en: d.en ?? null, de: d.de ?? null };
+}
 
 // Admin > Email shops: write to a shop owner from the admin panel. Templates
 // for the usual cases, in English and German (German shops get German).
