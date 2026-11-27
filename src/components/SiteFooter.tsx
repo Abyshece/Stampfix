@@ -24,7 +24,7 @@ export function SiteFooter({ onCookieSettings }: { onCookieSettings?: () => void
   return (
     <footer className="border-t notion-border bg-[#FBFBFA] mt-24">
       <div className="max-w-6xl mx-auto px-6 pt-12">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">{t('footer.everyBusiness', { defaultValue: 'Loyalty for every kind of business' })}</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">{t('footer.everyBusiness', { defaultValue: 'Marketing and loyalty for every kind of business' })}</h3>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           {['cafe', 'restaurant', 'bakery', 'iceCream', 'snackBar', 'pizzeria', 'bar', 'florist', 'nailStudio', 'hairdresser', 'barbershop', 'tattoo', 'gym', 'retail', 'doner', 'bubbleTea', 'foodTruck', 'lashBrow', 'spa', 'carWash', 'dogGrooming', 'dryCleaner', 'yoga'].map((k) => (
             <a key={k} href="/use-cases" className="text-sm text-gray-500 hover:text-[#37352F] transition">{t(`industries.${k}`, { defaultValue: k })}</a>
@@ -38,7 +38,7 @@ export function SiteFooter({ onCookieSettings }: { onCookieSettings?: () => void
             <span className="font-semibold">Stampfix</span>
           </div>
           <p className="text-sm text-gray-500 leading-relaxed max-w-xs">
-            {t('footer.tagline', { defaultValue: 'No apps to download. No paper to lose. Just loyalty, right next to their Apple\u00a0Pay and Google\u00a0Pay.' })}
+            {t('footer.tagline', { defaultValue: 'The all-in-one marketing and retention platform for local businesses. Turn first-time customers into regulars.' })}
           </p>
         </div>
         <FooterCol title={t('footer.product', { defaultValue: 'Product' })} links={[

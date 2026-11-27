@@ -3,10 +3,10 @@ import { Coffee, Scissors, Truck, ShoppingBag } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const CASES = [
-  { icon: Coffee, tag: 'Cafés & bakeries', focus: 'Speed', title: 'Keep the morning line moving.', body: 'Three-second stamping keeps the line moving, no waiting while someone fumbles with an app. Scan, stamp, next.' },
-  { icon: Scissors, tag: 'Salons & spas', focus: 'High-value retention', title: 'Reward your most loyal clients.', body: 'When each visit is worth a lot, keeping a regular matters more than chasing a new booking. Give your best clients a reason to always come back to you.' },
-  { icon: Truck, tag: 'Food trucks', focus: 'Portability', title: 'No clunky POS integrations.', body: 'Your loyalty program runs from your phone. Park anywhere, stamp anywhere. The card follows the customer, not the register.' },
-  { icon: ShoppingBag, tag: 'Local retail', focus: 'Repeat visits', title: 'Turn browsers into regulars.', body: 'A card sitting in their wallet next to Apple Pay is a standing invitation to come back, and a nudge when they walk past your door.' },
+  { icon: Coffee, tag: 'Cafés & bakeries', focus: 'Speed', title: 'Keep the morning line moving.', body: 'Three-second stamping keeps the line moving. Guests can order from the table, connect to your Wi-Fi and join your card, all from one QR code.' },
+  { icon: Scissors, tag: 'Salons & spas', focus: 'High-value retention', title: 'Reward your most loyal clients.', body: 'When each visit is worth a lot, keeping a regular matters more than chasing a new booking. Stampfix notices when a client goes quiet and prepares a “we miss you” offer you can send in one tap.' },
+  { icon: Truck, tag: 'Food trucks', focus: 'Portability', title: 'No clunky POS integrations.', body: 'Your loyalty program runs from your phone. Park anywhere, stamp anywhere. Your business page shows your menu and links, and the card follows the customer, not the register.' },
+  { icon: ShoppingBag, tag: 'Local retail', focus: 'Repeat visits', title: 'Turn browsers into regulars.', body: 'A card in their wallet next to Apple Pay is a standing invitation to come back, with a nudge when they walk past your door and offers you send in seconds.' },
 ];
 
 export function UseCasesPage() {
@@ -19,7 +19,7 @@ export function UseCasesPage() {
           {t('usecases.h1', { defaultValue: 'Built for the businesses that make a neighbourhood.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          {t('usecases.sub', { defaultValue: 'Whatever you sell, loyalty works the same way: make it effortless, and people come back.' })}
+          {t('usecases.sub', { defaultValue: 'Cafés, salons, food trucks and shops use Stampfix for loyalty, their business page, offers and table ordering. Make coming back effortless, and people do.' })}
         </p>
       </section>
 
@@ -62,7 +62,7 @@ export function UseCasesPage() {
         <p className="text-center text-gray-400 mt-8 font-serif-display text-xl">{t('usecases.realTag', { defaultValue: 'No paper. No apps. No friction.' })}</p>
       </section>
 
-      <GradientBanner title={t('usecases.bannerTitle', { defaultValue: 'Stop punching paper. Start building relationships.' })} buttonLabel={t('usecases.bannerCta', { defaultValue: 'Start your free trial' })} />
+      <GradientBanner title={t('usecases.bannerTitle', { defaultValue: 'Stop punching paper. Start bringing customers back.' })} buttonLabel={t('usecases.bannerCta', { defaultValue: 'Start your free trial' })} />
     </MarketingLayout>
   );
 }

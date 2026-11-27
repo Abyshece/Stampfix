@@ -8,14 +8,14 @@ import { useTranslation } from 'react-i18next';
 export function Faq() {
   const { t } = useTranslation();
   return (
-    <LegalPage title={t('faq.title', { defaultValue: 'Frequently asked questions' })} lastUpdated={t('faq.updated', { defaultValue: '19 August 2026' })}>
+    <LegalPage title={t('faq.title', { defaultValue: 'Frequently asked questions' })} lastUpdated={t('faq.updated', { defaultValue: '27 November 2026' })}>
       <p>
-        {t('faq.introA', { defaultValue: "Quick answers about Stampfix, the digital loyalty-card platform. If you don't find what you need, email us at" })}{' '}
+        {t('faq.introA', { defaultValue: "Quick answers about Stampfix, the all-in-one marketing and retention platform for local businesses. If you don't find what you need, email us at" })}{' '}
         <a href="mailto:hello@stampfix.app" className="underline">hello@stampfix.app</a>.
       </p>
 
       <LegalH2>{t('faq.q0', { defaultValue: 'What is Stampfix?' })}</LegalH2>
-      <p>{t('faq.a0', { defaultValue: "Stampfix replaces paper stamp cards with a digital loyalty card that lives in your customers' phone wallet. Customers collect stamps on each visit and redeem a reward once the card is full. No app to download, no plastic cards." })}</p>
+      <p>{t('faq.a0', { defaultValue: "Stampfix is an all-in-one marketing and retention platform for local businesses. It gives you a digital loyalty card in your customers' Apple or Google Wallet, a business page behind one QR code (menu, Wi-Fi, reviews, links and more), offers that bring people back, table ordering and clear results. No app to download, no paper cards." })}</p>
 
       <LegalH2>{t('faq.q1', { defaultValue: 'Do my customers need to install an app?' })}</LegalH2>
       <p>{t('faq.a1', { defaultValue: 'No. Customers add their card to Apple Wallet or Google Wallet straight from a link or QR code. It sits alongside their boarding passes and payment cards.' })}</p>
@@ -70,6 +70,21 @@ export function Faq() {
         {t('faq.a16pre', { defaultValue: "Yes. We only collect what's needed to run your loyalty program and handle it in line with PIPEDA and GDPR. See our" })}{' '}
         <a href="/privacy" className="underline">{t('faq.a16link', { defaultValue: 'Privacy Policy' })}</a>{t('faq.a16post', { defaultValue: ' for details.' })}
       </p>
+
+      <LegalH2>{t('faq.q18', { defaultValue: 'What is the business page?' })}</LegalH2>
+      <p>{t('faq.a18', { defaultValue: 'Your own page that opens when guests scan your QR code. It can show your loyalty card, menu, Wi-Fi, a Google review button, delivery apps, socials, stories, private feedback and a small game. You can switch it on or off and change it any time without reprinting the QR code.' })}</p>
+
+      <LegalH2>{t('faq.q19', { defaultValue: 'Can guests order from the table?' })}</LegalH2>
+      <p>{t('faq.a19', { defaultValue: 'Yes. Add your menu (or upload it), print your table codes, and guests order from their phone. New orders appear in your dashboard with an alert, and guests follow their order live. Table ordering is free on every plan.' })}</p>
+
+      <LegalH2>{t('faq.q20', { defaultValue: 'Can Stampfix bring back customers who stopped coming?' })}</LegalH2>
+      <p>{t('faq.a20', { defaultValue: 'Yes. Stampfix shows you which customers have not been back for a while and prepares a “we miss you” offer for them that you can send in one tap. Your results show how many came back and what they spent.' })}</p>
+
+      <LegalH2>{t('faq.q21', { defaultValue: 'Can I collect Google reviews and feedback?' })}</LegalH2>
+      <p>{t('faq.a21', { defaultValue: 'Yes. Your business page can show a button that takes guests to your Google review page (Pro), and guests can send you private feedback, which you read in your dashboard.' })}</p>
+
+      <LegalH2>{t('faq.q22', { defaultValue: 'Can I create coupons?' })}</LegalH2>
+      <p>{t('faq.a22', { defaultValue: 'Yes. Create discount codes for your menu, and guests enter them when they order.' })}</p>
 
       <LegalH2>{t('faq.q17', { defaultValue: 'How do I get help?' })}</LegalH2>
       <p>

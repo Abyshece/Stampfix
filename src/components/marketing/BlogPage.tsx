@@ -212,7 +212,7 @@ export function BlogPage() {
           <h1 className="text-4xl md:text-5xl font-serif-display font-medium leading-[1.1] tracking-tight mb-8">{post.title}</h1>
           <div className="text-[16px] text-gray-700">{post.body}</div>
         </article>
-        <GradientBanner title={t('blog.bannerTitle', { defaultValue: 'Ready to retire the paper card?' })} buttonLabel={t('blog.bannerCta', { defaultValue: 'Start your free trial' })} />
+        <GradientBanner title={t('blog.bannerTitle', { defaultValue: 'Ready to bring more customers back?' })} buttonLabel={t('blog.bannerCta', { defaultValue: 'Start your free trial' })} />
       </MarketingLayout>
     );
   }
@@ -223,7 +223,7 @@ export function BlogPage() {
       <section className="max-w-3xl mx-auto px-6 pt-20 pb-10 text-center">
         <Eyebrow>{t('blog.eyebrow', { defaultValue: 'The Merchant Academy' })}</Eyebrow>
         <h1 className="text-4xl md:text-6xl font-serif-display font-medium mt-6 mb-5 leading-[1.1] tracking-tight">
-          {t('blog.h1', { defaultValue: 'Notes on loyalty, retention, and running a modern local shop.' })}
+          {t('blog.h1', { defaultValue: 'Notes on loyalty, marketing and running a modern local shop.' })}
         </h1>
         <p className="text-lg text-gray-500">{t('blog.sub', { defaultValue: 'Short, practical reads for independent merchants.' })}</p>
       </section>

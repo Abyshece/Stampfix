@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MarketingLayout, Eyebrow, StartButton } from './MarketingLayout';
 import { MerchantValueCalculator } from '../MerchantValueCalculator';
 import type { MerchantCountry } from '../../lib/pricing';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Public "Payback" page (replaces the old /savings ROI calculator). Reuses the
@@ -11,18 +12,17 @@ import type { MerchantCountry } from '../../lib/pricing';
  */
 export function PaybackCalculatorPage() {
   const [country, setCountry] = useState<MerchantCountry>('CA');
+  const { t } = useTranslation();
 
   return (
     <MarketingLayout active="/savings">
       <section className="max-w-4xl mx-auto px-6 py-16">
-        <Eyebrow>Payback</Eyebrow>
+        <Eyebrow>{t('savings.eyebrow', { defaultValue: 'Payback' })}</Eyebrow>
         <h1 className="text-4xl md:text-5xl font-serif-display font-semibold mt-3 leading-tight">
-          See what loyalty is worth to your shop
+          {t('savings.h1', { defaultValue: 'See what bringing customers back is worth' })}
         </h1>
         <p className="text-gray-500 mt-3 max-w-2xl leading-relaxed">
-          This is the same payback calculator you get in your dashboard after signing up. Slide in
-          your own numbers and see, week by week or across a whole year, how much extra revenue
-          returning customers bring in, and how quickly Stampfix pays for itself.
+          {t('savings.sub', { defaultValue: 'This is the same payback calculator you get in your dashboard after signing up. Slide in your own numbers and see, week by week or across a whole year, how much extra revenue returning customers bring in, and how quickly Stampfix pays for itself.' })}
         </p>
 
         {/* Currency toggle */}
@@ -35,7 +35,7 @@ export function PaybackCalculatorPage() {
                 country === c ? 'bg-[#37352F] text-white font-medium' : 'text-gray-600 hover:text-[#37352F]'
               }`}
             >
-              {c === 'CA' ? 'CA$ · Canada' : '€ · Germany'}
+              {c === 'CA' ? t('pricing.planCA', { defaultValue: 'CA$ · Canada' }) : t('pricing.planDE', { defaultValue: '€ · Germany' })}
             </button>
           ))}
         </div>
@@ -45,8 +45,8 @@ export function PaybackCalculatorPage() {
         </div>
 
         <div className="mt-14 text-center">
-          <StartButton label="Start your free trial" className="px-6 py-3" />
-          <p className="text-xs text-gray-400 mt-3">Free up to 5 customers. No card, no app to install.</p>
+          <StartButton label={t('savings.cta', { defaultValue: 'Start your free trial' })} className="px-6 py-3" />
+          <p className="text-xs text-gray-400 mt-3">{t('savings.note', { defaultValue: 'Free to start, with your loyalty card, business page and table ordering. No card details, no app to install.' })}</p>
         </div>
       </section>
     </MarketingLayout>

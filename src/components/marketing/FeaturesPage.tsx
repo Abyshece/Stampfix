@@ -3,6 +3,7 @@ import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './Market
 import { Wallet, BellRing, BarChart3, ShieldCheck, Smartphone, RefreshCw, ChevronDown } from 'lucide-react';
 import { BENEFITS } from './PricingPage';
 import { useTranslation } from 'react-i18next';
+import { PlatformGrid, OneQrSection } from '../PlatformSections';
 
 /** Fire once when the element scrolls into view. */
 function useInView<T extends HTMLElement>(threshold = 0.2) {
@@ -23,9 +24,9 @@ function useInView<T extends HTMLElement>(threshold = 0.2) {
 
 // Colours pulled from the wallet-card palette.
 const STEPS = [
-  { n: '1', c: '#75FBFD', title: 'Customer scans', body: 'They point their phone camera at your Stampfix QR code. A branded page opens instantly in the browser, with nothing to install.' },
-  { n: '2', c: '#510AF5', title: 'You stamp', body: 'One tap from you (or a scan) adds a digital stamp. Every stamp is signed and server-verified, so it can\u2019t be faked.' },
-  { n: '3', c: '#EA3323', title: 'Saved to Wallet', body: 'They tap Add to Apple Wallet or Google Wallet. The card now lives next to their Apple Pay, impossible to lose.' },
+  { n: '1', c: '#75FBFD', title: 'Guests scan one QR code', body: 'Your business page opens in the browser with your loyalty card, menu, Wi-Fi, reviews and more. Nothing to install.' },
+  { n: '2', c: '#510AF5', title: 'They join and collect', body: 'One tap saves your loyalty card to Apple or Google Wallet. You stamp with your phone, and every stamp is checked, so it can\u2019t be faked.' },
+  { n: '3', c: '#EA3323', title: 'You bring them back', body: 'Offers, nearby reminders and \u201cwe miss you\u201d messages land on their lock screen, and you see who came back.' },
 ];
 
 const FEATURES = [
@@ -108,11 +109,11 @@ export function FeaturesPage() {
     <MarketingLayout active="/features">
       <section className="max-w-3xl mx-auto px-6 pt-20 pb-10 text-center">
         <Eyebrow>{t('features.eyebrow', { defaultValue: 'Features' })}</Eyebrow>
-        <h1 className="text-4xl md:text-6xl font-serif-display font-medium mt-6 mb-5 leading-[1.1] tracking-tight">
-          {t('features.h1', { defaultValue: 'The loyalty program your customers will actually use.' })}
+        <h1 className="text-4xl md:text-6xl font-serif-display font-medium mt-6 mb-5 leading-[1.1] tracking-tight text-balance">
+          {t('features.h1', { defaultValue: 'One platform to turn first-time customers into regulars.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          {t('features.sub', { defaultValue: 'Enterprise-grade retention on a local-business budget, with your brand right next to their Apple\u00a0Pay.' })}
+          {t('features.sub', { defaultValue: 'Loyalty cards in Apple and Google Wallet, your business page behind one QR code, ready-made offers that bring people back, table ordering and clear results. Everything in one place, for one flat price.' })}
         </p>
       </section>
 
@@ -123,6 +124,10 @@ export function FeaturesPage() {
           {STEPS.map((s, i) => <StepBox key={s.n} s={{ ...s, title: t(`features.steps.${i}.title`, { defaultValue: s.title }), body: t(`features.steps.${i}.body`, { defaultValue: s.body }) }} i={i} />)}
         </div>
       </section>
+
+      {/* Everything Stampfix does, then the business page */}
+      <PlatformGrid />
+      <OneQrSection />
 
       {/* The wallet advantage callout */}
       <section className="max-w-4xl mx-auto px-6 py-8">
@@ -149,7 +154,7 @@ export function FeaturesPage() {
       {/* We handle the tech — animated rainbow gradient border */}
       <GradientBanner
         title={t('features.bannerTitle', { defaultValue: 'We handle the tech. You handle the counter.' })}
-        subtitle={t('features.bannerSub', { defaultValue: 'Premium customer retention, minimal monthly cost. No setup fees, no app development.' })}
+        subtitle={t('features.bannerSub', { defaultValue: 'Loyalty, marketing and ordering in one place, for one flat monthly price. No setup fees, no app development.' })}
         buttonLabel={t('features.bannerCta', { defaultValue: 'Start your free trial' })}
       />
     </MarketingLayout>

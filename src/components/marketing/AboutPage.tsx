@@ -36,7 +36,7 @@ export function AboutPage() {
           {t('about.h1', { defaultValue: 'Because your best customers deserve better than a crumpled piece of paper.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed text-pretty">
-          {t('about.sub', { defaultValue: 'Stampfix is a lightning-fast web tool that gives independent merchants the power of a custom loyalty app, entirely through the mobile browser and native digital wallets. No App Store, no paper.' })}
+          {t('about.sub', { defaultValue: 'Stampfix is the all-in-one marketing and retention platform for independent shops: loyalty cards in Apple and Google Wallet, a business page behind one QR code, offers that bring people back, and table ordering. No App Store, no paper.' })}
         </p>
       </section>
 
@@ -61,7 +61,7 @@ export function AboutPage() {
           <div className="bg-[#F7F7F5] border notion-border rounded-2xl p-8">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3">{t('about.visionLabel', { defaultValue: 'Our vision' })}</h3>
             <p className="text-xl font-serif-display text-[#37352F] leading-snug">
-              {t('about.visionText', { defaultValue: 'To become the global standard for frictionless customer loyalty.' })}
+              {t('about.visionText', { defaultValue: 'To give every local business the tools to keep its customers coming back.' })}
             </p>
             <p className="text-sm text-gray-500 mt-4 leading-relaxed">
               {t('about.visionSub', { defaultValue: 'Building relationships with your regulars shouldn’t need a massive tech budget. And it certainly shouldn’t need paper.' })}
@@ -73,7 +73,7 @@ export function AboutPage() {
               {t('about.missionText', { defaultValue: 'Level the playing field for independent business.' })}
             </p>
             <p className="text-sm text-gray-500 mt-4 leading-relaxed">
-              {t('about.missionSub', { defaultValue: 'Give local shops the exact same digital-wallet technology the big chains use, for the price of a few lunches a month.' })}
+              {t('about.missionSub', { defaultValue: 'Give local shops the same loyalty, marketing and ordering tools the big chains use, for the price of a few lunches a month.' })}
             </p>
           </div>
         </div>
@@ -87,6 +87,9 @@ export function AboutPage() {
         </p>
         <p>
           {t('about.whyP2', { defaultValue: 'Loyalty is about making customers feel valued, not giving them homework. Stampfix exists to remove the friction on both sides of the counter: nothing to download for the customer, nothing to engineer for the merchant.' })}
+        </p>
+        <p>
+          {t('about.whyP3', { defaultValue: 'It started with the loyalty card. Today Stampfix also gives you a business page behind one QR code, ready-made offers that bring people back, table ordering and clear results, because bringing customers back takes more than a stamp.' })}
         </p>
       </section>
 
@@ -112,7 +115,7 @@ export function AboutPage() {
       {/* CTA */}
       <GradientBanner
         title={t('about.bannerTitle', { defaultValue: 'Turn casual walk-ins into lifelong regulars.' })}
-        subtitle={t('about.bannerSub', { defaultValue: 'Ditch the paper, skip the App Store, and give your customers a loyalty card they’ll actually use.' })}
+        subtitle={t('about.bannerSub', { defaultValue: 'One QR code, a loyalty card they will actually use, and offers that bring them back.' })}
         buttonLabel={t('about.bannerCta', { defaultValue: 'Start your free trial' })}
       />
     </MarketingLayout>

@@ -363,7 +363,7 @@ export function LandingPage({
         </h1>
 
         <p className="text-xl text-gray-500 mb-10 max-w-xl mx-auto md:mx-0 leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-          {t('hero.sub2', { defaultValue: 'Loyalty cards in Apple and Google Wallet, one QR code for your menu, Wi-Fi and reviews, and offers that bring people back on their own. Everything a local business needs, in one place.' })}
+          {t('hero.sub2', { defaultValue: 'Loyalty cards in Apple and Google Wallet, one QR code for your menu, Wi-Fi and reviews, and offers that bring people back. Everything a local business needs, in one place.' })}
         </p>
 
         <div className="flex flex-col items-center md:items-start gap-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
@@ -411,7 +411,7 @@ export function LandingPage({
               </div>
               <div className="flex absolute bottom-24 left-1 md:bottom-28 md:-left-8 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 5.5s ease-in-out infinite', animationDelay: '0.6s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
-                <RefreshCw className="w-4 h-4 text-rose-500" /> {t('hero.pill2Auto', { defaultValue: 'Win-back on autopilot' })}
+                <RefreshCw className="w-4 h-4 text-rose-500" /> {t('hero.pill2Auto', { defaultValue: 'Win-back offers' })}
               </div>
               <div className="flex absolute bottom-8 right-1 md:bottom-12 md:-right-4 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 6.5s ease-in-out infinite', animationDelay: '1.8s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
