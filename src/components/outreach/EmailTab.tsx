@@ -115,9 +115,9 @@ export function EmailTab({ state, readOnly, onChanged }: { state: OutreachState;
         {setupOpen && (
           <ol className="mt-2 text-xs text-gray-600 list-decimal pl-5 space-y-1">
             <li>Add the DMARC record for stampfix.app in Vercel: TXT <code>_dmarc</code> = <code>v=DMARC1; p=none</code>.</li>
-            <li>In Resend, add a webhook to <code>…/functions/v1/outreach-webhook</code> for “email.bounced” and “email.complained”, and save its signing secret as <code>RESEND_WEBHOOK_SECRET</code> in Supabase. Bounces and spam reports then block addresses and pause sending.</li>
+            <li>In Resend, add a webhook to <code>…/functions/v1/outreach-webhook</code> for “email.bounced” and “email.complained”, and save its signing secret as <code>RESEND_WEBHOOK_SECRET</code> in Supabase. Bounced and spam-reporting addresses are then blocked for good. A spam report also pauses sending.</li>
             <li>Open a shop, click <b>Preview</b>, then <b>Send test</b>, and check it in your Gmail.</li>
-            <li>Resend’s free plan allows 100 emails a day in total, including the app’s own emails. Keep the daily limit low.</li>
+            <li>Resend’s free plan allows 100 emails a day in total, including the app’s own emails. Leave a little room in the daily limit for them.</li>
           </ol>
         )}
       </section>
