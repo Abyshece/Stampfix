@@ -201,13 +201,14 @@ export function OneQrSection() {
 
 /** A drawn phone showing a sample business page (illustration only). */
 function PagePhone() {
-  const tiles: { icon: typeof Star; label: string; tint: string }[] = [
-    { icon: UtensilsCrossed, label: 'Menu & order', tint: '#0EA5E9' },
-    { icon: Star, label: 'Google review', tint: '#F59E0B' },
-    { icon: Wifi, label: 'Wi-Fi', tint: '#16A34A' },
-    { icon: Truck, label: 'Delivery', tint: '#E11D48' },
-    { icon: Gamepad2, label: 'Play a game', tint: '#7C3AED' },
-    { icon: MessageSquare, label: 'Feedback', tint: '#2563EB' },
+  const { t } = useTranslation();
+  const tiles: { key: string; icon: typeof Star; label: string; tint: string }[] = [
+    { key: 'menu', icon: UtensilsCrossed, label: 'Menu & order', tint: '#0EA5E9' },
+    { key: 'review', icon: Star, label: 'Google review', tint: '#F59E0B' },
+    { key: 'wifi', icon: Wifi, label: 'Wi-Fi', tint: '#16A34A' },
+    { key: 'delivery', icon: Truck, label: 'Delivery', tint: '#E11D48' },
+    { key: 'game', icon: Gamepad2, label: 'Play a game', tint: '#7C3AED' },
+    { key: 'feedback', icon: MessageSquare, label: 'Feedback', tint: '#2563EB' },
   ];
   const stories = ['#F59E0B', '#E11D48', '#7C3AED', '#0EA5E9', '#16A34A'];
   return (
@@ -217,7 +218,7 @@ function PagePhone() {
       <div className="px-4 -mt-8">
         <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center text-2xl">☕</div>
         <div className="mt-2 font-semibold text-[#37352F]">Bean &amp; Brew</div>
-        <div className="text-[11px] text-gray-500">Café · Open until 6 pm</div>
+        <div className="text-[11px] text-gray-500">{t('landing.qr.phone.sub', { defaultValue: 'Café · Open until 6 pm' })}</div>
         <div className="flex gap-2 mt-3">
           {stories.map((c, i) => (
             <div key={c} className="w-10 h-10 rounded-full p-[2px]" style={{ background: `linear-gradient(135deg, ${c}, #F472B6)` }}>
@@ -226,13 +227,13 @@ function PagePhone() {
           ))}
         </div>
         <div className="mt-3 rounded-xl bg-[#37352F] text-white text-[13px] font-medium py-2.5 flex items-center justify-center gap-1.5">
-          <CreditCard className="w-4 h-4" /> Get your loyalty card <ArrowRight className="w-3.5 h-3.5" />
+          <CreditCard className="w-4 h-4" /> {t('landing.qr.phone.join', { defaultValue: 'Get your loyalty card' })} <ArrowRight className="w-3.5 h-3.5" />
         </div>
         <div className="grid grid-cols-2 gap-2 mt-2.5">
-          {tiles.map(({ icon: Icon, label, tint }) => (
-            <div key={label} className="rounded-xl border notion-border px-2.5 py-2.5 flex items-center gap-2 text-[12px] font-medium text-[#37352F]">
+          {tiles.map(({ key, icon: Icon, label, tint }) => (
+            <div key={key} className="rounded-xl border notion-border px-2.5 py-2.5 flex items-center gap-2 text-[12px] font-medium text-[#37352F]">
               <span className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${tint}18`, color: tint }}><Icon className="w-3.5 h-3.5" /></span>
-              {label}
+              {t(`landing.qr.phone.${key}`, { defaultValue: label })}
             </div>
           ))}
         </div>

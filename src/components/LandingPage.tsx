@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowRight, ScanLine, X, Loader2, ArrowLeft, Mail, CheckCircle,
-  BarChart3, Users, Zap, Smartphone, QrCode, Wallet, RefreshCw, UtensilsCrossed} from 'lucide-react';
+  Users, Zap, QrCode, Wallet, RefreshCw, UtensilsCrossed} from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
 import { christmasOn, Snowfall, StringLights, SantaHat, Holly, SnowGround } from './ChristmasDecor';
 import { LaunchSteps } from './LaunchSteps';
-import { WalletFanVisual, InsightsVisual, StepCard, StatCard } from './FeatureVisuals';
+import { StepCard, StatCard } from './FeatureVisuals';
 import { signInMerchant, resetPassword } from '../lib/auth';
 import { ContactFormSection } from './ContactFormSection';
 import { SiteFooter } from './SiteFooter';
@@ -467,49 +467,6 @@ export function LandingPage({
               {t(`industries.${ind.key}`)}
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-24 max-w-5xl mx-auto px-6 space-y-32">
-        <div className="grid md:grid-cols-2 gap-16 items-center">
-          <div className="order-2 md:order-1">
-            <InsightsVisual />
-          </div>
-          <div className="order-1 md:order-2 space-y-6">
-            <div className="w-12 h-12 bg-[#37352F] rounded-lg flex items-center justify-center text-white mb-4 shadow-md">
-              <BarChart3 className="w-6 h-6" />
-            </div>
-            <h2 className="text-4xl font-serif-display font-semibold">{t('feat1.t1')}<br /> {t('feat1.t2')}</h2>
-            <p className="text-lg text-gray-500 leading-relaxed">
-              {t('feat1.body')}
-            </p>
-            <ul className="space-y-3 text-sm text-gray-600">
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> {t('feat1.li1')}</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> {t('feat1.li2')}</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> {t('feat1.li3')}</li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-16 items-center">
-          <div className="space-y-6">
-            <div className="w-12 h-12 bg-[#37352F] rounded-lg flex items-center justify-center text-white mb-4 shadow-md">
-              <Smartphone className="w-6 h-6" />
-            </div>
-            <h2 className="text-4xl font-serif-display font-semibold">{t('feat2.t1')}<br /> {t('feat2.t2')}</h2>
-            <p className="text-lg text-gray-500 leading-relaxed">
-              {t('feat2.body')}
-            </p>
-            <ul className="space-y-3 text-sm text-gray-600">
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> {t('feat2.li1')}</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> {t('feat2.li2')}</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-500" /> {t('feat2.li3')}</li>
-            </ul>
-          </div>
-          <div>
-            <WalletFanVisual />
-          </div>
         </div>
       </section>
 

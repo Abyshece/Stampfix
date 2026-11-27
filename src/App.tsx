@@ -51,7 +51,7 @@ type View = 'landing' | 'merchant';
 /** Merchant dashboard pages that open the merchant flow on a deep link / refresh. */
 const MERCHANT_PATHS = ['/scan', '/orders', '/business-page', '/addons', '/customers', '/activity', '/insights', '/campaigns', '/offers', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
 
-const DEFAULT_TITLE = 'Stampfix | Digital Loyalty Cards for Apple & Google Wallet';
+const DEFAULT_TITLE = 'Stampfix | All-in-one Marketing and Retention for Local Businesses';
 const PAGE_TITLES: Record<string, string> = {
   '/pricing': 'Pricing | Stampfix',
   '/features': 'Features | Stampfix',
