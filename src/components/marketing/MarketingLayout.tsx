@@ -5,6 +5,10 @@ import { Logo } from '../Logo';
 import { MobileNav } from '../MobileNav';
 import { useTranslation } from 'react-i18next';
 import { useSiteInsightsPage } from '../../lib/siteInsights';
+import { christmasOn, Snowfall } from '../ChristmasDecor';
+
+// Pages that get the Christmas snow (20 Nov to 6 Jan, like the landing page).
+const SNOW_PAGES = new Set(['/pricing', '/features']);
 
 const NAV_LINKS = [
   { href: '/features', label: 'Features', tkey: 'nav.features' },
@@ -67,8 +71,10 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 export function MarketingLayout({ children, active }: { children: ReactNode; active?: string }) {
   const { t } = useTranslation();
   useSiteInsightsPage();
+  const snow = !!active && SNOW_PAGES.has(active) && christmasOn();
   return (
     <div className="min-h-screen bg-white text-[#37352F] font-sans selection:bg-[#37352F] selection:text-white">
+      {snow && <Snowfall />}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Stampfix home">
