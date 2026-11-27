@@ -3,6 +3,7 @@ import {
   ArrowRight, ScanLine, X, Loader2, ArrowLeft, Mail, CheckCircle,
   BarChart3, Users, Zap, Smartphone, QrCode, Bell, MapPin, ShieldCheck, Tag} from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
+import { christmasOn, Snowfall, StringLights, SantaHat, Holly, SnowGround } from './ChristmasDecor';
 import { LaunchSteps } from './LaunchSteps';
 import { WalletFanVisual, InsightsVisual, StepCard, StatCard } from './FeatureVisuals';
 import { signInMerchant, resetPassword } from '../lib/auth';
@@ -105,8 +106,12 @@ export function LandingPage({
     setIsLoginOpen(true);
   };
 
+  // Christmas decorations (20 Nov to 6 Jan); see ChristmasDecor.
+  const xmas = christmasOn();
+
   return (
     <div className="min-h-screen bg-white text-[#37352F] font-sans selection:bg-[#37352F] selection:text-white">
+      {xmas && <Snowfall />}
       {/* Login type chooser */}
       {showLoginChoice && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowLoginChoice(false)}>
@@ -298,7 +303,9 @@ export function LandingPage({
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border px-6 py-4 flex justify-between items-center">
-        <a href="/" aria-label="Stampfix home" className="flex items-center gap-2 font-semibold text-lg text-[#37352F] hover:opacity-80 transition">
+        {xmas && <StringLights />}
+        <a href="/" aria-label="Stampfix home" className="relative flex items-center gap-2 font-semibold text-lg text-[#37352F] hover:opacity-80 transition">
+          {xmas && <SantaHat className="absolute -top-[13px] -left-[7px] w-[26px] h-[23px] -rotate-[18deg]" />}
           <svg viewBox="0 0 282 90" className="h-6 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
           Stampfix
         </a>
@@ -385,6 +392,8 @@ export function LandingPage({
           <div className="flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
             <style>{`@keyframes hero-float{0%,100%{transform:translate(0,0)}25%{transform:translate(7px,-6px)}50%{transform:translate(0,-11px)}75%{transform:translate(-7px,-4px)}}`}</style>
             <div className="relative">
+              {xmas && <SantaHat className="absolute -top-9 -right-4 md:-right-6 w-20 h-[70px] md:w-24 md:h-[84px] rotate-[20deg] z-10" />}
+              {xmas && <Holly className="absolute -top-4 left-6 w-14 h-10 z-10 -rotate-6" />}
               <img
                 src="/cafe-hero.jpg"
                 alt="A customer showing their Stampfix loyalty card in Apple Wallet at a café"
@@ -411,6 +420,8 @@ export function LandingPage({
           </div>
         </div>
       </section>
+
+      {xmas && <SnowGround />}
 
       {/* Hero visual — live wallet cards on a straight looping rail */}
       <HeroCardLoop />
