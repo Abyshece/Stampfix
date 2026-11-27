@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '../ToastProvider';
 import { Switch, inputCls, btnDark } from '../addonsUi';
-import { saveOutreachSettings, type OutreachSettings } from '../../lib/outreach';
+import { saveOutreachSettings, sendGapMinutes, type OutreachSettings } from '../../lib/outreach';
 import { errorText } from './common';
 
 /** Limits, sending hours and the wording of emails and Instagram messages. */
@@ -39,6 +39,7 @@ export function SettingsTab({ settings, readOnly, onSaved }: { settings: Outreac
           <div>
             <label className={label} htmlFor="os-cap">Emails per day (at most)</label>
             <input id="os-cap" type="number" min={1} max={100} value={f.daily_cap} disabled={readOnly} onChange={(e) => set('daily_cap', Number(e.target.value))} className={inputCls} />
+            <p className="text-[11px] text-gray-600 mt-1 font-medium" data-pace-hint>Spread evenly: about one every {sendGapMinutes(f.daily_cap, f.window_start, f.window_end)} minutes during sending hours.</p>
             <p className="text-[11px] text-gray-500 mt-1">Up to 100. Resend’s free plan allows 100 a day in total, the app’s own emails included (sign-ups, card recovery), so leave a little room.</p>
           </div>
           <div>

@@ -3,7 +3,7 @@ import { Loader2, Send, Eye, Pencil, X, AlertTriangle, ChevronDown, Play } from 
 import { useToast } from '../ToastProvider';
 import { Switch, btnDark, btnLight } from '../addonsUi';
 import {
-  listLeads, queueEmails, cancelQueued, updateLead, saveOutreachSettings, sendNextNow,
+  listLeads, queueEmails, cancelQueued, updateLead, saveOutreachSettings, sendNextNow, sendGapMinutes,
   type Lead, type LeadView, type OutreachState,
 } from '../../lib/outreach';
 import { ShopCell, Pill, EMAIL_STATUS, BlockPill, LeadEditDialog, PreviewDialog, FilterChips, errorText } from './common';
@@ -92,7 +92,7 @@ export function EmailTab({ state, readOnly, onChanged }: { state: OutreachState;
             <Switch on={!s.paused} onChange={() => void toggleSending()} disabled={readOnly || busy} label="Sending" />
             <div>
               <div className="font-semibold text-[#37352F]">{s.paused ? 'Sending is paused' : 'Sending is on'}</div>
-              <div className="text-xs text-gray-500">At most {s.daily_cap} a day, {hours} {s.weekdays_only ? 'on weekdays ' : ''}in each shop’s own time zone, a few minutes apart.</div>
+              <div className="text-xs text-gray-500" data-send-pace>Up to {s.daily_cap} a day, about one every {sendGapMinutes(s.daily_cap, s.window_start, s.window_end)} minutes, {hours} {s.weekdays_only ? 'on weekdays ' : ''}in each shop’s own time zone.</div>
             </div>
           </div>
           <div className="flex items-center gap-4 text-sm flex-wrap">

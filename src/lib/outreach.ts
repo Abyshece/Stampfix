@@ -120,6 +120,13 @@ export const BLOCK_LABEL: Record<BlockReason, string> = {
 
 /** Countries where email is off (cold email to businesses needs consent first), as the database decides. */
 export const CONSENT_COUNTRIES = new Set(['DE', 'AT', 'IT', 'DK', 'PL']);
+
+/** Minutes between two emails: the sending hours shared out over the daily
+ *  limit (same rule as outreach_send_gap_minutes in the database). */
+export function sendGapMinutes(cap: number, start: number, end: number): number {
+  const minutes = Math.max(1, (end ?? 24) - (start ?? 0)) * 60;
+  return Math.max(1, Math.floor(minutes / Math.max(1, cap || 1)));
+}
 export function emailOffReason(country: string, region: string | null): BlockReason | null {
   if (CONSENT_COUNTRIES.has(country.toUpperCase())) return 'consent_country';
   if (country.toUpperCase() === 'CA' && /^(qc|qu[eé]bec)$/i.test((region ?? '').trim())) return 'french_required';
