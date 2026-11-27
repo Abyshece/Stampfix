@@ -2,6 +2,7 @@ import { MarketingLayout, Eyebrow, StartButton, GradientBanner } from './Marketi
 import {
   Check, Smartphone, Zap, Globe, BarChart3, Palette, Building2, Users, Wallet,
   FileDown, Gauge, Link2, MapPin, BellRing, ShieldCheck, Printer, LifeBuoy, Sparkles, TrendingUp,
+  QrCode, RefreshCw, UtensilsCrossed, Ticket, Star, MessageSquare, Play, Coins,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +14,8 @@ const FREE = [
   'Apple Wallet & Google Wallet passes',
   'Your phone or tablet as the scanner',
   'Stamps, rewards & a QR signup poster',
+  'Your business page with one QR code',
+  'Table ordering and your menu',
 ];
 
 const PRO = [
@@ -26,6 +29,7 @@ const PRO = [
   'Per-customer stamp limits',
   'Custom-branded posters (3 sizes)',
   'Customer segments & animated stamps',
+  'Your own page colours, stories and Google review button',
 ];
 
 /**
@@ -52,6 +56,14 @@ export const BENEFITS = [
   { icon: LifeBuoy,    c: '#1132F5', fg: '#FFFFFF', anim: 'pf-sp', title: 'Help in your dashboard', body: 'Reach us straight from the app, so a question never slows down your service.' },
   { icon: Sparkles,    c: '#F0A479', fg: '#1A1A1A', anim: 'pf-pu', title: 'Delightful stamps', body: 'Sound and animation make earning a stamp feel like a win. It’s the little moment that brings people back for the next one.' },
   { icon: TrendingUp,  c: '#75FBE2', fg: '#1A1A1A', anim: 'pf-fl', title: 'Find who to reach', body: 'Instantly surface lapsed customers to win back and your top spenders to reward. Targeted marketing, one tap away.' },
+  { icon: QrCode,      c: '#510AF5', fg: '#FFFFFF', anim: 'pf-pu', title: 'One QR code for everything', body: 'Your business page puts your loyalty card, menu, Wi-Fi, socials and delivery apps behind one QR code. Change it any time without reprinting.' },
+  { icon: RefreshCw,   c: '#EA3323', fg: '#FFFFFF', anim: 'pf-sp', title: 'Ready-made win-back offers', body: 'Stampfix spots regulars who have gone quiet and prepares a “we miss you” offer. Check it, send it in one tap, and see who came back.' },
+  { icon: UtensilsCrossed, c: '#75FBFD', fg: '#1A1A1A', anim: 'pf-wg', title: 'Table ordering, free', body: 'Guests scan, order from the table and follow their order live. You accept it, mark it ready and hand it over. Free on every plan.' },
+  { icon: Ticket,      c: '#F7CE46', fg: '#1A1A1A', anim: 'pf-fl', title: 'Coupons for your menu', body: 'Create discount codes for slow days or first orders. Guests enter them when they order.' },
+  { icon: Star,        c: '#F0A479', fg: '#1A1A1A', anim: 'pf-pu', title: 'More Google reviews', body: 'A review button on your page takes happy guests straight to your Google profile.' },
+  { icon: MessageSquare, c: '#1132F5', fg: '#FFFFFF', anim: 'pf-bo', title: 'Private feedback', body: 'Guests can tell you privately what to improve, and you read it in your dashboard before it ends up in a public review.' },
+  { icon: Play,        c: '#EA33B6', fg: '#FFFFFF', anim: 'pf-fl', title: 'Stories on your page', body: 'Show new dishes, events and offers with photos and short videos at the top of your page.' },
+  { icon: Coins,       c: '#111318', fg: '#FCFF54', anim: 'pf-bo', title: 'See what it earns', body: 'Average spend and the visits each offer brought back, so you can see Stampfix paying for itself.' },
 ];
 
 export function PricingPage() {
@@ -66,7 +78,7 @@ export function PricingPage() {
           {t('pricing.h1', { defaultValue: 'Start free. Upgrade when it pays for itself.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          {t('pricing.sub', { defaultValue: 'One simple plan when you’re ready. No per-customer fees, no contracts, cancel anytime.' })}
+          {t('pricing.sub', { defaultValue: 'Loyalty, marketing and table ordering in one platform. No per-customer fees, no contracts, cancel anytime.' })}
         </p>
       </section>
 
@@ -93,7 +105,7 @@ export function PricingPage() {
               <span className="text-5xl font-serif-display font-semibold">{symbol}0</span>
               <span className="text-gray-500 text-sm">{t('pricing.month', { defaultValue: '/month' })}</span>
             </div>
-            <p className="text-gray-500 mt-2 text-sm">{t('pricing.freeDesc', { defaultValue: 'Everything you need to launch a loyalty card and start stamping.' })}</p>
+            <p className="text-gray-500 mt-2 text-sm">{t('pricing.freeDesc', { defaultValue: 'Everything you need to launch your loyalty card, your business page and table ordering.' })}</p>
             <ul className="mt-6 space-y-3 flex-1">
               {FREE.map((f, i) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#37352F]">
@@ -150,15 +162,15 @@ export function PricingPage() {
         </div>
       </section>
 
-      {/* 18 benefits explained */}
+      {/* Every benefit explained */}
       <section className="max-w-6xl mx-auto px-6 py-14">
         <div className="text-center mb-10 md:mb-14">
-          <span className="text-xs uppercase tracking-widest font-bold text-gray-400">{t('pricing.benEyebrow', { defaultValue: 'What Pro gives you' })}</span>
+          <span className="text-xs uppercase tracking-widest font-bold text-gray-400">{t('pricing.benEyebrow', { defaultValue: 'What you get' })}</span>
           <h2 className="text-3xl md:text-4xl font-serif-display font-semibold mt-2 mb-4">
             {t('pricing.benH2', { defaultValue: 'Every feature, and what it does for your business' })}
           </h2>
           <p className="text-gray-500 max-w-xl mx-auto">
-            {t('pricing.benSub', { defaultValue: 'Pro isn’t a longer feature list for its own sake. Each of these is built to bring customers back and take work off your plate.' })}
+            {t('pricing.benSub', { defaultValue: 'Each of these is built to bring customers back and take work off your plate.' })}
           </p>
         </div>
 
@@ -177,7 +189,7 @@ export function PricingPage() {
 
       <GradientBanner
         title={t('pricing.bannerTitle', { defaultValue: 'Try it free. See the repeat visits.' })}
-        subtitle={t('pricing.bannerSub', { defaultValue: 'Set up your first loyalty card in minutes. No card details, no commitment.' })}
+        subtitle={t('pricing.bannerSub', { defaultValue: 'Set up your loyalty card and business page in minutes. No card details, no commitment.' })}
         buttonLabel={t('pricing.bannerCta', { defaultValue: 'Start your free trial' })}
       />
 

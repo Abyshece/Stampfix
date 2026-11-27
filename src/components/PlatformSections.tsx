@@ -16,7 +16,7 @@ const GROUPS = [
     'One QR code for everything', 'Menu, Wi-Fi and Google reviews', 'Delivery apps, socials and links',
     'Stories with your photos and videos', 'Private feedback and a quick game', 'Change it any time, no reprinting'] },
   { key: 'marketing', icon: BellRing, color: '#F59E0B', title: 'Marketing and win-back', items: [
-    'Offers on the lock screen', 'Reminders when customers are nearby', '“We miss you” offers on autopilot',
+    'Offers on the lock screen', 'Reminders when customers are nearby', 'Ready-made “we miss you” offers',
     'See who has stopped coming', 'Coupons for your menu', 'Marketing consent collected for you'] },
   { key: 'ordering', icon: UtensilsCrossed, color: '#0EA5E9', title: 'Table ordering', items: [
     'Guests order from the table by QR', 'New orders arrive with an alert', 'Accept, mark ready, collected',
@@ -87,7 +87,7 @@ export function SoundFamiliar() {
   const { t } = useTranslation();
   const qs = [
     { q: 'Who are your regulars?', a: 'Most shops could not name their top 20 customers. Stampfix shows you who they are, how often they come and what they spend.' },
-    { q: 'Do you notice when they stop coming?', a: 'When a regular goes quiet, Stampfix sends them a “we miss you” offer for you, and shows you who came back.' },
+    { q: 'Do you notice when they stop coming?', a: 'When a regular goes quiet, Stampfix spots it and prepares a “we miss you” offer you can send in one tap, then shows you who came back.' },
     { q: 'How many tools are you paying for?', a: 'A loyalty app, a menu QR, a link page, an ordering tool. Stampfix is one login, one QR code and one flat price.' },
   ];
   return (
