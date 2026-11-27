@@ -15,7 +15,7 @@ const FREE = [
   'Your phone or tablet as the scanner',
   'Stamps, rewards & a QR signup poster',
   'Your business page with one QR code',
-  'Table ordering and your menu',
+  'QR ordering with your menu or price list',
 ];
 
 const PRO = [
@@ -56,13 +56,13 @@ export const BENEFITS = [
   { icon: LifeBuoy,    c: '#1132F5', fg: '#FFFFFF', anim: 'pf-sp', title: 'Help in your dashboard', body: 'Reach us straight from the app, so a question never slows down your service.' },
   { icon: Sparkles,    c: '#F0A479', fg: '#1A1A1A', anim: 'pf-pu', title: 'Delightful stamps', body: 'Sound and animation make earning a stamp feel like a win. It’s the little moment that brings people back for the next one.' },
   { icon: TrendingUp,  c: '#75FBE2', fg: '#1A1A1A', anim: 'pf-fl', title: 'Find who to reach', body: 'Instantly surface lapsed customers to win back and your top spenders to reward. Targeted marketing, one tap away.' },
-  { icon: QrCode,      c: '#510AF5', fg: '#FFFFFF', anim: 'pf-pu', title: 'One QR code for everything', body: 'Your business page puts your loyalty card, menu, Wi-Fi, socials and delivery apps behind one QR code. Change it any time without reprinting.' },
+  { icon: QrCode,      c: '#510AF5', fg: '#FFFFFF', anim: 'pf-pu', title: 'One QR code for everything', body: 'Your business page puts your loyalty card, services, prices, Wi-Fi, socials and links behind one QR code. Change it any time without reprinting.' },
   { icon: RefreshCw,   c: '#EA3323', fg: '#FFFFFF', anim: 'pf-sp', title: 'Ready-made win-back offers', body: 'Stampfix spots regulars who have gone quiet and prepares a “we miss you” offer. Check it, send it in one tap, and see who came back.' },
-  { icon: UtensilsCrossed, c: '#75FBFD', fg: '#1A1A1A', anim: 'pf-wg', title: 'Table ordering, free', body: 'Guests scan, order from the table and follow their order live. You accept it, mark it ready and hand it over. Free on every plan.' },
-  { icon: Ticket,      c: '#F7CE46', fg: '#1A1A1A', anim: 'pf-fl', title: 'Coupons for your menu', body: 'Create discount codes for slow days or first orders. Guests enter them when they order.' },
-  { icon: Star,        c: '#F0A479', fg: '#1A1A1A', anim: 'pf-pu', title: 'More Google reviews', body: 'A review button on your page takes happy guests straight to your Google profile.' },
-  { icon: MessageSquare, c: '#1132F5', fg: '#FFFFFF', anim: 'pf-bo', title: 'Private feedback', body: 'Guests can tell you privately what to improve, and you read it in your dashboard before it ends up in a public review.' },
-  { icon: Play,        c: '#EA33B6', fg: '#FFFFFF', anim: 'pf-fl', title: 'Stories on your page', body: 'Show new dishes, events and offers with photos and short videos at the top of your page.' },
+  { icon: UtensilsCrossed, c: '#75FBFD', fg: '#1A1A1A', anim: 'pf-wg', title: 'QR ordering, free', body: 'Customers scan, order from their phone and follow their order live. You accept it, mark it ready and hand it over. Free on every plan.' },
+  { icon: Ticket,      c: '#F7CE46', fg: '#1A1A1A', anim: 'pf-fl', title: 'Coupons for orders', body: 'Create discount codes for slow days or first orders. Customers enter them when they order.' },
+  { icon: Star,        c: '#F0A479', fg: '#1A1A1A', anim: 'pf-pu', title: 'More Google reviews', body: 'A review button on your page takes happy customers straight to your Google profile.' },
+  { icon: MessageSquare, c: '#1132F5', fg: '#FFFFFF', anim: 'pf-bo', title: 'Private feedback', body: 'Customers can tell you privately what to improve, and you read it in your dashboard before it ends up in a public review.' },
+  { icon: Play,        c: '#EA33B6', fg: '#FFFFFF', anim: 'pf-fl', title: 'Stories on your page', body: 'Show new products, services, events and offers with photos and short videos at the top of your page.' },
   { icon: Coins,       c: '#111318', fg: '#FCFF54', anim: 'pf-bo', title: 'See what it earns', body: 'Average spend and the visits each offer brought back, so you can see Stampfix paying for itself.' },
 ];
 
@@ -78,7 +78,7 @@ export function PricingPage() {
           {t('pricing.h1', { defaultValue: 'Start free. Upgrade when it pays for itself.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          {t('pricing.sub', { defaultValue: 'Loyalty, marketing and table ordering in one platform. No per-customer fees, no contracts, cancel anytime.' })}
+          {t('pricing.sub', { defaultValue: 'Loyalty, marketing and QR ordering in one platform. No per-customer fees, no contracts, cancel anytime.' })}
         </p>
       </section>
 
@@ -105,7 +105,7 @@ export function PricingPage() {
               <span className="text-5xl font-serif-display font-semibold">{symbol}0</span>
               <span className="text-gray-500 text-sm">{t('pricing.month', { defaultValue: '/month' })}</span>
             </div>
-            <p className="text-gray-500 mt-2 text-sm">{t('pricing.freeDesc', { defaultValue: 'Everything you need to launch your loyalty card, your business page and table ordering.' })}</p>
+            <p className="text-gray-500 mt-2 text-sm">{t('pricing.freeDesc', { defaultValue: 'Everything you need to launch your loyalty card, your business page and QR ordering.' })}</p>
             <ul className="mt-6 space-y-3 flex-1">
               {FREE.map((f, i) => (
                 <li key={f} className="flex items-start gap-2.5 text-sm text-[#37352F]">

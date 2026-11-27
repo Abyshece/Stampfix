@@ -15,7 +15,7 @@ export function Faq() {
       </p>
 
       <LegalH2>{t('faq.q0', { defaultValue: 'What is Stampfix?' })}</LegalH2>
-      <p>{t('faq.a0', { defaultValue: "Stampfix is an all-in-one marketing and retention platform for local businesses. It gives you a digital loyalty card in your customers' Apple or Google Wallet, a business page behind one QR code (menu, Wi-Fi, reviews, links and more), offers that bring people back, table ordering and clear results. No app to download, no paper cards." })}</p>
+      <p>{t('faq.a0', { defaultValue: "Stampfix is an all-in-one marketing and retention platform for local businesses. It gives you a digital loyalty card in your customers' Apple or Google Wallet, a business page behind one QR code (services, prices, Wi-Fi, reviews, links and more), offers that bring people back, QR ordering and clear results. No app to download, no paper cards." })}</p>
 
       <LegalH2>{t('faq.q1', { defaultValue: 'Do my customers need to install an app?' })}</LegalH2>
       <p>{t('faq.a1', { defaultValue: 'No. Customers add their card to Apple Wallet or Google Wallet straight from a link or QR code. It sits alongside their boarding passes and payment cards.' })}</p>
@@ -72,19 +72,19 @@ export function Faq() {
       </p>
 
       <LegalH2>{t('faq.q18', { defaultValue: 'What is the business page?' })}</LegalH2>
-      <p>{t('faq.a18', { defaultValue: 'Your own page that opens when guests scan your QR code. It can show your loyalty card, menu, Wi-Fi, a Google review button, delivery apps, socials, stories, private feedback and a small game. You can switch it on or off and change it any time without reprinting the QR code.' })}</p>
+      <p>{t('faq.a18', { defaultValue: 'Your own page that opens when customers scan your QR code. It can show your loyalty card, services and prices, Wi-Fi, a Google review button, your website and delivery links, socials, stories, private feedback and a small game. You can switch it on or off and change it any time without reprinting the QR code.' })}</p>
 
-      <LegalH2>{t('faq.q19', { defaultValue: 'Can guests order from the table?' })}</LegalH2>
-      <p>{t('faq.a19', { defaultValue: 'Yes. Add your menu (or upload it), print your table codes, and guests order from their phone. New orders appear in your dashboard with an alert, and guests follow their order live. Table ordering is free on every plan.' })}</p>
+      <LegalH2>{t('faq.q19', { defaultValue: 'Can customers order by QR code?' })}</LegalH2>
+      <p>{t('faq.a19', { defaultValue: 'Yes. Add your menu or price list (or upload it), print your QR codes for tables or the counter, and customers order from their phone. New orders appear in your dashboard with an alert, and customers follow their order live. Ordering is free on every plan.' })}</p>
 
       <LegalH2>{t('faq.q20', { defaultValue: 'Can Stampfix bring back customers who stopped coming?' })}</LegalH2>
       <p>{t('faq.a20', { defaultValue: 'Yes. Stampfix shows you which customers have not been back for a while and prepares a “we miss you” offer for them that you can send in one tap. Your results show how many came back and what they spent.' })}</p>
 
       <LegalH2>{t('faq.q21', { defaultValue: 'Can I collect Google reviews and feedback?' })}</LegalH2>
-      <p>{t('faq.a21', { defaultValue: 'Yes. Your business page can show a button that takes guests to your Google review page (Pro), and guests can send you private feedback, which you read in your dashboard.' })}</p>
+      <p>{t('faq.a21', { defaultValue: 'Yes. Your business page can show a button that takes customers to your Google review page (Pro), and customers can send you private feedback, which you read in your dashboard.' })}</p>
 
       <LegalH2>{t('faq.q22', { defaultValue: 'Can I create coupons?' })}</LegalH2>
-      <p>{t('faq.a22', { defaultValue: 'Yes. Create discount codes for your menu, and guests enter them when they order.' })}</p>
+      <p>{t('faq.a22', { defaultValue: 'Yes. Create discount codes, and customers enter them when they order.' })}</p>
 
       <LegalH2>{t('faq.q17', { defaultValue: 'How do I get help?' })}</LegalH2>
       <p>

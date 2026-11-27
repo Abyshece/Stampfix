@@ -46,7 +46,7 @@ export function PaybackCalculatorPage() {
 
         <div className="mt-14 text-center">
           <StartButton label={t('savings.cta', { defaultValue: 'Start your free trial' })} className="px-6 py-3" />
-          <p className="text-xs text-gray-400 mt-3">{t('savings.note', { defaultValue: 'Free to start, with your loyalty card, business page and table ordering. No card details, no app to install.' })}</p>
+          <p className="text-xs text-gray-400 mt-3">{t('savings.note', { defaultValue: 'Free to start, with your loyalty card, business page and QR ordering. No card details, no app to install.' })}</p>
         </div>
       </section>
     </MarketingLayout>

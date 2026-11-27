@@ -1,5 +1,5 @@
 import { MarketingLayout, Eyebrow, StartButton , GradientBanner } from './MarketingLayout';
-import { Coffee, Scissors, Truck, ShoppingBag } from 'lucide-react';
+import { Coffee, Scissors, Truck, ShoppingBag, Dumbbell, Car } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const CASES = [
@@ -7,6 +7,8 @@ const CASES = [
   { icon: Scissors, tag: 'Salons & spas', focus: 'High-value retention', title: 'Reward your most loyal clients.', body: 'When each visit is worth a lot, keeping a regular matters more than chasing a new booking. Stampfix notices when a client goes quiet and prepares a “we miss you” offer you can send in one tap.' },
   { icon: Truck, tag: 'Food trucks', focus: 'Portability', title: 'No clunky POS integrations.', body: 'Your loyalty program runs from your phone. Park anywhere, stamp anywhere. Your business page shows your menu and links, and the card follows the customer, not the register.' },
   { icon: ShoppingBag, tag: 'Local retail', focus: 'Repeat visits', title: 'Turn browsers into regulars.', body: 'A card in their wallet next to Apple Pay is a standing invitation to come back, with a nudge when they walk past your door and offers you send in seconds.' },
+  { icon: Dumbbell, tag: 'Gyms & studios', focus: 'Habits', title: 'Turn sign-ups into habits.', body: 'Reward every class or visit, see who has stopped coming, and send a “we miss you” offer before a member drifts away.' },
+  { icon: Car, tag: 'Car washes, cleaners & groomers', focus: 'Return visits', title: 'Be the one they come back to.', body: 'Your services, prices, reviews and loyalty card behind one QR code at the counter. Every visit earns a stamp, and your offers bring them back next time.' },
 ];
 
 export function UseCasesPage() {
@@ -19,7 +21,7 @@ export function UseCasesPage() {
           {t('usecases.h1', { defaultValue: 'Built for the businesses that make a neighbourhood.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          {t('usecases.sub', { defaultValue: 'Cafés, salons, food trucks and shops use Stampfix for loyalty, their business page, offers and table ordering. Make coming back effortless, and people do.' })}
+          {t('usecases.sub', { defaultValue: 'Cafés, salons, gyms, food trucks, shops and service businesses use Stampfix for loyalty, their business page, offers and QR ordering. Make coming back effortless, and people do.' })}
         </p>
       </section>
 

@@ -36,7 +36,7 @@ export function AboutPage() {
           {t('about.h1', { defaultValue: 'Because your best customers deserve better than a crumpled piece of paper.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed text-pretty">
-          {t('about.sub', { defaultValue: 'Stampfix is the all-in-one marketing and retention platform for independent shops: loyalty cards in Apple and Google Wallet, a business page behind one QR code, offers that bring people back, and table ordering. No App Store, no paper.' })}
+          {t('about.sub', { defaultValue: 'Stampfix is the all-in-one marketing and retention platform for independent shops: loyalty cards in Apple and Google Wallet, a business page behind one QR code, offers that bring people back, and QR ordering. No App Store, no paper.' })}
         </p>
       </section>
 
@@ -89,7 +89,7 @@ export function AboutPage() {
           {t('about.whyP2', { defaultValue: 'Loyalty is about making customers feel valued, not giving them homework. Stampfix exists to remove the friction on both sides of the counter: nothing to download for the customer, nothing to engineer for the merchant.' })}
         </p>
         <p>
-          {t('about.whyP3', { defaultValue: 'It started with the loyalty card. Today Stampfix also gives you a business page behind one QR code, ready-made offers that bring people back, table ordering and clear results, because bringing customers back takes more than a stamp.' })}
+          {t('about.whyP3', { defaultValue: 'It started with the loyalty card. Today Stampfix also gives you a business page behind one QR code, ready-made offers that bring people back, QR ordering and clear results, because bringing customers back takes more than a stamp.' })}
         </p>
       </section>
 
