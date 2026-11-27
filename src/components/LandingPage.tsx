@@ -16,6 +16,7 @@ import { TrustpilotWidget } from './TrustpilotWidget';
 import { FeatureVideo } from './FeatureVideo';
 import { InstaCarousel } from './InstaCarousel';
 import { PromoBannerBar } from './PromoBannerBar';
+import { isChristmasSeason, Snowfall, SantaHat, StringLights, HeroChristmasProps } from './ChristmasDecor';
 
 interface LandingPageProps {
   onEnterMerchantFlow: () => void;
@@ -95,6 +96,9 @@ export function LandingPage({
     if (autoOpenLoginChoice) setShowLoginChoice(true);
   }, [autoOpenLoginChoice]);
 
+  // Seasonal decorations (15 Nov – 6 Jan). See ChristmasDecor.tsx.
+  const [xmas] = useState(() => isChristmasSeason());
+
   const openLoginModal = () => {
     setAuthMode('LOGIN');
     setEmail('');
@@ -105,6 +109,7 @@ export function LandingPage({
 
   return (
     <div className="min-h-screen bg-white text-[#37352F] font-sans selection:bg-[#37352F] selection:text-white">
+      {xmas && <Snowfall />}
       {/* Login type chooser */}
       {showLoginChoice && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowLoginChoice(false)}>
@@ -296,7 +301,8 @@ export function LandingPage({
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b notion-border px-6 py-4 flex justify-between items-center">
-        <a href="/" aria-label="Stampfix home" className="flex items-center gap-2 font-semibold text-lg text-[#37352F] hover:opacity-80 transition">
+        <a href="/" aria-label="Stampfix home" className="relative flex items-center gap-2 font-semibold text-lg text-[#37352F] hover:opacity-80 transition">
+          {xmas && <SantaHat className="absolute -top-3.5 -left-2.5 w-6 -rotate-12" />}
           <svg viewBox="0 0 282 90" className="h-6 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
           Stampfix
         </a>
@@ -341,10 +347,17 @@ export function LandingPage({
         </div>
       </nav>
 
+      {xmas && <StringLights />}
+
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-6 pt-6 pb-2">
         <div className="grid md:grid-cols-[1.9fr_1fr] gap-10 items-center">
           <div className="text-center md:text-left">
+        {xmas && (
+          <div className="inline-flex items-center gap-2 mb-4 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-sm font-medium text-[#B91C1C]">
+            <span aria-hidden="true">🎄</span> {t('hero.xmas')} <span aria-hidden="true">🎁</span>
+          </div>
+        )}
         <h1 className="text-4xl md:text-6xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight md:whitespace-nowrap animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           {t('hero.l1')} <br />
           {t('hero.l2')} <br />
@@ -389,6 +402,7 @@ export function LandingPage({
                 className="rounded-3xl shadow-xl w-full max-w-[260px] md:max-w-[300px] object-cover"
                 loading="eager"
               />
+              {xmas && <HeroChristmasProps />}
               <div className="flex absolute top-6 left-1 md:top-10 md:-left-6 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 5s ease-in-out infinite', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
                 <Bell className="w-4 h-4 text-amber-500" /> {t('hero.pillNotif')}

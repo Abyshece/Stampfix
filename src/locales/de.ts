@@ -15,6 +15,7 @@ const de = {
     l1: 'Keine Apps.', l2: 'Keine Papier-Stempelkarten.', l3: 'Keine zusätzliche Hardware.', l4: 'Einfach Treue.',
     subtitle: 'Erstellen Sie in 30 Sekunden eine digitale Stempelkarte. Keine App zum Herunterladen. Nur ein einfacher Link, der im Apple oder Google Wallet Ihrer Kunden lebt.',
     startFree: 'Jetzt kostenlos testen', noCard: 'Keine Kreditkarte, Debitkarte oder PayPal erforderlich.', bookDemo: 'Demo buchen', demoNote: 'Dauert nur 10–12 Minuten über Google Meet.',
+    xmas: 'Frohe Weihnachten von Stampfix',
     pillNotif: 'Push-Benachrichtigungen', pillLoc: 'Mehrere Standorte', pillGdpr: 'DSGVO-konform', pillCheap: 'Günstigste am Markt',
   },
   social: { retention: 'Mehr Kundenbindung', apps: 'Apps zum Herunterladen', custom: 'Anpassbar' },
