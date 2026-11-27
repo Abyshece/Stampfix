@@ -38,8 +38,8 @@ export function SettingsTab({ settings, readOnly, onSaved }: { settings: Outreac
         <div className="grid sm:grid-cols-3 gap-4">
           <div>
             <label className={label} htmlFor="os-cap">Emails per day (at most)</label>
-            <input id="os-cap" type="number" min={1} max={30} value={f.daily_cap} disabled={readOnly} onChange={(e) => set('daily_cap', Number(e.target.value))} className={inputCls} />
-            <p className="text-[11px] text-gray-500 mt-1">Resend’s free plan: 100 a day in total, the app’s own emails included.</p>
+            <input id="os-cap" type="number" min={1} max={100} value={f.daily_cap} disabled={readOnly} onChange={(e) => set('daily_cap', Number(e.target.value))} className={inputCls} />
+            <p className="text-[11px] text-gray-500 mt-1">Up to 100. Resend’s free plan allows 100 a day in total, the app’s own emails included (sign-ups, card recovery), so leave a little room.</p>
           </div>
           <div>
             <label className={label}>Sending hours (shop’s local time)</label>
