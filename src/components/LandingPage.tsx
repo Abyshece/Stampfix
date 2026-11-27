@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowRight, ScanLine, X, Loader2, ArrowLeft, Mail, CheckCircle,
-  BarChart3, Users, Zap, Smartphone, QrCode, Bell, MapPin, ShieldCheck, Tag} from 'lucide-react';
+  BarChart3, Users, Zap, Smartphone, QrCode, Wallet, RefreshCw, UtensilsCrossed} from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
 import { christmasOn, Snowfall, StringLights, SantaHat, Holly, SnowGround } from './ChristmasDecor';
 import { LaunchSteps } from './LaunchSteps';
@@ -12,7 +12,7 @@ import { SiteFooter } from './SiteFooter';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import { PasswordInput } from './PasswordInput';
-import { FeaturesSection } from './FeaturesSection';
+import { PlatformGrid, OneQrSection } from './PlatformSections';
 import { TrustpilotWidget } from './TrustpilotWidget';
 import { FeatureVideo } from './FeatureVideo';
 import { InstaCarousel } from './InstaCarousel';
@@ -354,15 +354,16 @@ export function LandingPage({
       <section className="max-w-6xl mx-auto px-6 pt-6 pb-2">
         <div className="grid md:grid-cols-[1.9fr_1fr] gap-10 items-center">
           <div className="text-center md:text-left">
-        <h1 className="text-4xl md:text-6xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight md:whitespace-nowrap animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-          {t('hero.l1')} <br />
-          {t('hero.l2')} <br />
-          {t('hero.l3')} <br />
-          <span className="text-gray-400">{t('hero.l4')}</span>
+        <span className="inline-flex items-center gap-1.5 bg-[#F7F7F5] border notion-border rounded-full px-3 py-1 text-xs font-medium text-gray-600 mb-5 animate-in fade-in duration-700" data-hero-kicker>
+          {t('hero.kicker', { defaultValue: 'The all-in-one marketing and retention platform' })}
+        </span>
+        <h1 className="text-4xl md:text-6xl font-serif-display font-medium mb-6 leading-[1.1] tracking-tight text-balance animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+          {t('hero.h1a', { defaultValue: 'Turn first-time customers' })}{' '}
+          <span className="text-gray-400">{t('hero.h1b', { defaultValue: 'into regulars.' })}</span>
         </h1>
 
         <p className="text-xl text-gray-500 mb-10 max-w-xl mx-auto md:mx-0 leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-          {t('hero.subtitle')}
+          {t('hero.sub2', { defaultValue: 'Loyalty cards in Apple and Google Wallet, one QR code for your menu, Wi-Fi and reviews, and offers that bring people back on their own. Everything a local business needs, in one place.' })}
         </p>
 
         <div className="flex flex-col items-center md:items-start gap-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
@@ -402,19 +403,19 @@ export function LandingPage({
               />
               <div className="flex absolute top-6 left-1 md:top-10 md:-left-6 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 5s ease-in-out infinite', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
-                <Bell className="w-4 h-4 text-amber-500" /> {t('hero.pillNotif')}
+                <Wallet className="w-4 h-4 text-green-600" /> {t('hero.pill2Wallet', { defaultValue: 'Wallet loyalty card' })}
               </div>
               <div className="flex absolute top-16 right-1 md:top-24 md:-right-6 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 6s ease-in-out infinite', animationDelay: '1.2s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
-                <MapPin className="w-4 h-4 text-blue-500" /> {t('hero.pillLoc')}
+                <QrCode className="w-4 h-4 text-violet-600" /> {t('hero.pill2Qr', { defaultValue: 'One QR code' })}
               </div>
               <div className="flex absolute bottom-24 left-1 md:bottom-28 md:-left-8 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 5.5s ease-in-out infinite', animationDelay: '0.6s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
-                <ShieldCheck className="w-4 h-4 text-green-600" /> {t('hero.pillGdpr')}
+                <RefreshCw className="w-4 h-4 text-rose-500" /> {t('hero.pill2Auto', { defaultValue: 'Win-back on autopilot' })}
               </div>
               <div className="flex absolute bottom-8 right-1 md:bottom-12 md:-right-4 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 6.5s ease-in-out infinite', animationDelay: '1.8s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
-                <Tag className="w-4 h-4 text-pink-500" /> {t('hero.pillCheap')}
+                <UtensilsCrossed className="w-4 h-4 text-sky-500" /> {t('hero.pill2Order', { defaultValue: 'Table ordering' })}
               </div>
             </div>
           </div>
@@ -439,11 +440,15 @@ export function LandingPage({
             <div className="text-sm text-gray-500 uppercase tracking-widest font-medium">{t('social.apps')}</div>
           </div>
           <div className="p-4">
-            <div className="text-4xl font-serif-display font-semibold mb-1">100%</div>
-            <div className="text-sm text-gray-500 uppercase tracking-widest font-medium">{t('social.custom')}</div>
+            <div className="text-4xl font-serif-display font-semibold mb-1">1</div>
+            <div className="text-sm text-gray-500 uppercase tracking-widest font-medium">{t('social.oneQr', { defaultValue: 'QR code for everything' })}</div>
           </div>
         </div>
       </section>
+
+      {/* What Stampfix does: six cards, then the business page */}
+      <PlatformGrid />
+      <OneQrSection />
 
       {/* 2-minute feature tour (video) */}
       <FeatureVideo />
@@ -517,10 +522,10 @@ export function LandingPage({
             {t('budget.badge')}
           </div>
           <h2 className="text-3xl md:text-5xl font-serif-display font-medium mb-5 leading-tight">
-            {t('budget.t1')}<br />{t('budget.t2')}
+            {t('budget.t1b', { defaultValue: 'Big-brand marketing,' })}<br />{t('budget.t2')}
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8 leading-relaxed">
-            {t('budget.body')}
+            {t('budget.body2', { defaultValue: 'Loyalty cards, offers, your business page and table ordering for one flat monthly price. No setup fees, no app development, no hardware, and unlimited customers.' })}
           </p>
           <a href="/savings" className="inline-flex items-center gap-2 bg-white border notion-border text-[#37352F] px-5 py-2.5 rounded-lg font-medium hover:border-[#37352F] transition">
             {t('budget.cta')} <ArrowRight className="w-4 h-4" />
@@ -532,9 +537,6 @@ export function LandingPage({
           </div>
         </div>
       </section>
-
-      {/* Features section — 2-column with iPhone mockup */}
-      <FeaturesSection />
 
       {/* Contact form (lands in admin → Contact Inquiries) */}
       <ContactFormSection />
