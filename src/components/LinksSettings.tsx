@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, type MutableRefObject } from 'react';
 import { updateCampaign } from '../lib/db';
 import type { Campaign } from '../types';
 import { Loader2, Check, Link as LinkIcon } from 'lucide-react';
@@ -18,6 +18,7 @@ const LINK_FIELDS: { key: string; label: string; placeholder: string }[] = [
 ];
 
 /** Adds https:// to a bare domain so the link is tappable in the wallet. */
+export function normalizeLink(v: string): string { return normalize(v); }
 function normalize(v: string): string {
   const t = v.trim();
   if (!t) return '';
@@ -28,9 +29,17 @@ function normalize(v: string): string {
 export function LinksSettings({
   campaign,
   onUpdated,
+  exclude = [],
+  saveRef,
+  onDirty,
 }: {
   campaign: Campaign;
   onUpdated: (c: Campaign) => void;
+  /** Fields shown elsewhere (kept as they are when saving here). */
+  exclude?: string[];
+  /** Inside a step: the step's own button saves (no Save button here). */
+  saveRef?: MutableRefObject<(() => Promise<boolean>) | null>;
+  onDirty?: (dirty: boolean) => void;
 }) {
   const { t } = useTranslation();
   const [links, setLinks] = useState<Record<string, string>>(campaign.socialLinks ?? {});
@@ -38,13 +47,14 @@ export function LinksSettings({
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     setErr(null);
     setSaving(true);
     try {
       const cleaned: Record<string, string> = {};
       for (const f of LINK_FIELDS) {
-        const v = normalize(links[f.key] ?? '');
+        // A field shown elsewhere keeps the value saved there.
+        const v = exclude.includes(f.key) ? normalize(campaign.socialLinks?.[f.key] ?? '') : normalize(links[f.key] ?? '');
         if (v) cleaned[f.key] = v;
       }
       const updated = await updateCampaign(campaign.id, { socialLinks: cleaned });
@@ -52,12 +62,18 @@ export function LinksSettings({
       setLinks(cleaned);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+      return true;
     } catch (e) {
       setErr(e instanceof Error ? e.message : t('dash.links.errSave', { defaultValue: 'Could not save your links' }));
+      return false;
     } finally {
       setSaving(false);
     }
   };
+  const dirty = LINK_FIELDS.some((f) => !exclude.includes(f.key)
+    && normalize(links[f.key] ?? '') !== normalize(campaign.socialLinks?.[f.key] ?? ''));
+  useEffect(() => { onDirty?.(dirty); }, [dirty, onDirty]);
+  if (saveRef) saveRef.current = save;
 
   return (
     <div className="space-y-5 max-w-xl">
@@ -66,7 +82,7 @@ export function LinksSettings({
       </p>
 
       <div className="space-y-3">
-        {LINK_FIELDS.map((f) => (
+        {LINK_FIELDS.filter((f) => !exclude.includes(f.key)).map((f) => (
           <div key={f.key} className="space-y-1">
             <label className="text-xs font-bold uppercase text-gray-400 tracking-wider">{t(`dash.links.${f.key}`, { defaultValue: f.label })}</label>
             <input
@@ -83,14 +99,14 @@ export function LinksSettings({
 
       {err && <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{err}</div>}
 
-      <button
-        onClick={save}
+      {!saveRef && <button
+        onClick={() => void save()}
         disabled={saving}
         className="bg-[#37352F] text-white text-sm px-4 py-2 rounded-md hover:bg-opacity-90 transition disabled:opacity-50 flex items-center gap-2"
       >
         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <LinkIcon className="w-4 h-4" />}
         {saved ? t('dash.links.saved', { defaultValue: 'Saved' }) : t('dash.links.save', { defaultValue: 'Save links' })}
-      </button>
+      </button>}
 
       <p className="text-[11px] text-gray-400">
         {t('dash.links.footer', { defaultValue: 'Existing cardholders get the new links automatically the next time their pass refreshes.' })}

@@ -107,7 +107,7 @@ const TAB_PATH: Record<Tab, string> = {
   ADDONS: '/addons',
 };
 const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'stamping', 'locations', 'billing', 'account', 'privacy', 'danger'];
-const PAGE_SECTIONS: PageSection[] = ['profile', 'stories', 'links', 'feedback', 'qr'];
+const PAGE_SECTIONS: PageSection[] = ['profile', 'look', 'stories', 'buttons', 'links', 'qr', 'feedback'];
 /** Old addresses of what is now on the Business page. */
 const PAGE_ALIASES: Record<string, PageSection> = { '/promote': 'qr', '/settings/links': 'links', '/settings/posters': 'qr' };
 function pathToTab(path: string): Tab | null {
