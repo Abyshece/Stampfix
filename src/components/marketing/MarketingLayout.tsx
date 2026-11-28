@@ -96,7 +96,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
           <div className="flex items-center gap-2">
             <a href="/?login=1" className="text-gray-600 hover:text-[#37352F] px-2 py-2 text-sm transition whitespace-nowrap hidden sm:inline">{t('nav.login', { defaultValue: 'Log in' })}</a>
             <StartButton label={t('nav.startFree', { defaultValue: 'Start your free trial' })} className="px-3 sm:px-4 py-2 text-sm" />
-            <LanguageSwitcher className="hidden sm:block" />
+            <LanguageSwitcher compact />
             <MobileNav
               links={[
                 { href: '/find-card', label: t('nav.myCard', { defaultValue: 'My loyalty card' }) },
