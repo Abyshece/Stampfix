@@ -470,3 +470,61 @@ export async function adminListPageStories(): Promise<AdminPageStory[]> {
     }];
   });
 }
+
+// ---- Table sticker ------------------------------------------------------------------
+// The owner's design for the small printed sticker with the page's QR code.
+
+export const STICKER_ITEMS = ['menu', 'rewards', 'wifi', 'reviews', 'feedback', 'delivery', 'order', 'website', 'instagram', 'game'] as const;
+export type StickerItem = typeof STICKER_ITEMS[number];
+export type StickerBg = 'white' | 'cream' | 'brand';
+export type StickerLogo = 'auto' | 'name' | 'logo_name' | 'logo';
+export interface StickerDesign {
+  /** '#RRGGBB', or null for the card's colour. */
+  color: string | null;
+  bg: StickerBg;
+  logo: StickerLogo;
+  /** The name on the sticker; null: the business name. */
+  name: string | null;
+  /** Show the "tap" (NFC) mark. */
+  nfc: boolean;
+  /** Up to 4; empty: picked from what the page offers. */
+  items: StickerItem[];
+}
+export const STICKER_NAME_MAX = 40;
+export const DEFAULT_STICKER: StickerDesign = { color: null, bg: 'white', logo: 'auto', name: null, nfc: true, items: [] };
+
+/** A saved design, made safe: anything unexpected falls back to the default. */
+export function parseSticker(raw: unknown): StickerDesign {
+  const d = (raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}) as Record<string, unknown>;
+  const items = Array.isArray(d.items)
+    ? [...new Set(d.items.filter((x): x is StickerItem => typeof x === 'string' && (STICKER_ITEMS as readonly string[]).includes(x)))].slice(0, 4)
+    : [];
+  return {
+    color: typeof d.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.color) ? d.color : null,
+    bg: d.bg === 'cream' || d.bg === 'brand' ? d.bg : 'white',
+    logo: d.logo === 'name' || d.logo === 'logo_name' || d.logo === 'logo' ? d.logo : 'auto',
+    name: typeof d.name === 'string' && d.name.trim() ? d.name.trim().slice(0, STICKER_NAME_MAX) : null,
+    nfc: d.nfc !== false,
+    items,
+  };
+}
+
+/** The saved design, or the default (also when it can't be loaded, or before the update). */
+export async function getMyPageSticker(campaignId: string): Promise<StickerDesign> {
+  const { data, error } = await supabase.rpc('my_page_sticker', { p_campaign: campaignId });
+  if (error || !data) return DEFAULT_STICKER;
+  return parseSticker(data);
+}
+
+export type SaveStickerError = 'bad_sticker' | 'bad_color' | 'bad_bg' | 'bad_logo' | 'bad_name' | 'bad_nfc' | 'bad_items' | 'no_page' | 'network';
+export async function savePageSticker(campaignId: string, d: StickerDesign):
+  Promise<{ ok: true; sticker: StickerDesign } | { ok: false; error: SaveStickerError }> {
+  const { data, error } = await supabase.rpc('save_page_sticker', {
+    p_campaign: campaignId,
+    p_sticker: { color: d.color, bg: d.bg, logo: d.logo, name: d.name?.trim() || null, nfc: d.nfc, items: d.items.slice(0, 4) },
+  });
+  if (error) return { ok: false, error: 'network' };
+  const r = data as { ok: boolean; error?: SaveStickerError; sticker?: unknown };
+  if (!r?.ok) return { ok: false, error: r?.error ?? 'network' };
+  return { ok: true, sticker: parseSticker(r.sticker) };
+}

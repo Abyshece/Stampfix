@@ -139,7 +139,7 @@ export async function downloadTableQrPng(c: PC, bg?: string | null, url?: string
  * Uses a hidden iframe so the poster's own stylesheet applies, strips the
  * preview drop-shadow, and captures just the poster element.
  */
-export async function downloadPosterPng(html: string, size: string, filename: string, errorMessage?: string): Promise<void> {
+export async function downloadPosterPng(html: string, size: string, filename: string, errorMessage?: string, pixelRatio = 2, fontEmbedCSS?: string): Promise<void> {
   const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent)
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   // iOS Safari ignores <a download> (nothing saves). Open a tab NOW — while we
@@ -163,6 +163,8 @@ export async function downloadPosterPng(html: string, size: string, filename: st
       ? Promise.resolve()
       : new Promise<void>((res) => { img.onload = () => res(); img.onerror = () => res(); })));
     try { await doc.fonts.ready; } catch { /* ignore */ }
+    // Web fonts declared in the page (the table sticker): make sure they are loaded before the picture.
+    try { await Promise.all(Array.from(doc.fonts as unknown as Iterable<FontFace>).map((f) => f.load().catch(() => null))); } catch { /* ignore */ }
     await new Promise((r) => setTimeout(r, 100));
     const el = (doc.querySelector('.size-' + size) as HTMLElement | null) ?? doc.body;
     el.style.boxShadow = 'none';
@@ -172,7 +174,7 @@ export async function downloadPosterPng(html: string, size: string, filename: st
     // its text stayed white for that colour. Put the poster's own colour back on
     // the element; white stays behind it (rounded corners, gradients).
     const ownBg = doc.defaultView?.getComputedStyle(el).backgroundColor || 'transparent';
-    const dataUrl = await toPng(el, { pixelRatio: 2, cacheBust: true, backgroundColor: '#ffffff', style: { backgroundColor: ownBg } });
+    const dataUrl = await toPng(el, { pixelRatio, cacheBust: true, backgroundColor: '#ffffff', style: { backgroundColor: ownBg }, ...(fontEmbedCSS ? { fontEmbedCSS } : {}) });
     if (iosWin) {
       iosWin.document.open();
       iosWin.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + filename + '</title><body style="margin:0;background:#faf9f7;font:15px -apple-system,system-ui;color:#444;text-align:center"><p style="margin:0;padding:12px 16px">Press and hold the image, then tap <b>Save to Photos</b> or <b>Add to Files</b>.</p><img src="' + dataUrl + '" style="display:block;max-width:100%;height:auto;margin:0 auto"></body>');

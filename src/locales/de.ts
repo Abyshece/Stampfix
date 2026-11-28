@@ -338,6 +338,23 @@ const de = {
   },
   legal: { backHome: 'Zurück zur Startseite', updated: 'Zuletzt aktualisiert:' },
   dash: {
+    sticker: {
+      title: 'Tisch-Sticker',
+      sub: 'Ein kleiner Sticker für Tische und Theke, 12,5 × 5 cm. Gäste scannen ihn, oder tippen mit dem Handy darauf, wenn ein NFC-Tag dahinter klebt, und sehen Ihre Seite.',
+      preview: 'Vorschau des Stickers', language: 'Sprache',
+      colour: 'Farbe', cardColour: 'Meine Kartenfarbe', custom: 'Beliebige Farbe',
+      background: 'Hintergrund', bgWhite: 'Weiß', bgCream: 'Creme', bgBrand: 'Meine Farbe',
+      logo: 'Logo', logoName: 'Nur Name', logoAndName: 'Logo und Name', logoOnly: 'Nur Logo',
+      logoFrom: 'Nutzt Ihr Profilfoto (oder das Karten-Logo).', noLogo: 'Fügen Sie ein Profilfoto hinzu, um Ihr Logo zu nutzen.',
+      changeLogo: 'Ändern', addLogo: 'Hinzufügen', nameLabel: 'Name auf dem Sticker',
+      items: 'Auf dem Sticker (bis zu 4)',
+      itemsHint: 'Nur was Ihre Seite anbietet. Fügen Sie WLAN, einen Bewertungslink oder Bestellungen hinzu, um mehr zu sehen.',
+      nfc: 'Tipp-Zeichen (NFC) zeigen', nfcHint: 'Lassen Sie es an, wenn ein NFC-Tag hinter dem Sticker klebt, damit Gäste ihr Handy auflegen können.',
+      save: 'Design speichern', saved: 'Gespeichert', saveError: 'Ihr Sticker konnte nicht gespeichert werden. Versuchen Sie es erneut.',
+      downloadOne: 'Sticker herunterladen', downloadSheet: 'A4-Bogen (5 Sticker)', pngError: 'Das Bild konnte nicht erstellt werden. Bitte versuchen Sie es erneut.',
+      printHint: 'PNG in Druckqualität. Schicken Sie den Sticker an eine Druckerei, oder drucken Sie den A4-Bogen auf Stickerpapier mit 100 % und schneiden Sie entlang der Linien.',
+      offNote: 'Schalten Sie Ihre Seite ein, um den Tisch-Sticker mit Speisekarte, WLAN und mehr zu drucken. Bis dahin führt das Poster Gäste zur Anmeldung.',
+    },
     nav: {
       workspace: 'Arbeitsbereich',
       groupDaily: 'Jeden Tag', groupGrow: 'Wachsen', groupManage: 'Verwalten', groupMore: 'Einstellungen und Hilfe',
