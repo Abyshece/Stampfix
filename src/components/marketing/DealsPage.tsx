@@ -4,6 +4,7 @@ import { Search, Loader2, X, Ticket, LocateFixed, RotateCcw } from 'lucide-react
 import { MarketingLayout, Eyebrow, StartButton, GradientBanner } from './MarketingLayout';
 import { DealCard } from '../DealCard';
 import { DealDetails } from '../DealDetails';
+import { DealCategoryTiles } from './DealCategoryTiles';
 import { listPublicDeals, getDealFilters, sampleDeals, DEAL_CATEGORIES, DEAL_TYPES, type Deal, type DealFilters, type DealSort, type DealWhen } from '../../lib/deals';
 
 const PAGE = 24;
@@ -168,7 +169,12 @@ export function DealsPage() {
         </p>
       </section>
 
-      <section className="max-w-6xl mx-auto px-6 pb-6" data-deal-filters>
+      <DealCategoryTiles counts={catCount} active={query.category} onPick={(key) => {
+        set({ category: key });
+        requestAnimationFrame(() => document.querySelector('[data-deal-filters]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      }} />
+
+      <section className="max-w-6xl mx-auto px-6 pb-6 scroll-mt-20" data-deal-filters>
         <div className="rounded-2xl border notion-border bg-white p-3 sm:p-4 space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
             <label className="relative flex-1 min-w-0">

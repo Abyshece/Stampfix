@@ -166,6 +166,7 @@ const de = {
       sub: 'Cafés, Salons, Studios, Geschäfte und mehr. Finden Sie einen Deal nach Stadt und Branche und zeigen Sie ihn oder seinen Code an der Theke.',
       search: 'Deals suchen', searchPh: 'Deal, Geschäft oder Stadt suchen', country: 'Land', allCountries: 'Alle Länder',
       city: 'Stadt', allCities: 'Alle Städte', sort: 'Sortieren', whenLabel: 'Wann', category: 'Branche', allTypes: 'Alle Geschäfte',
+      browseTitle: 'Nach Branche stöbern', browseSub: 'Wählen Sie eine Branche, um ihre Deals zu sehen.', browseAll: 'Alle Branchen', browseLess: 'Weniger zeigen',
       popular: 'Beliebte Branchen', dealType: 'Art des Deals', allDealTypes: 'Alle Arten von Deals', clearSearch: 'Suche löschen', retry: 'Erneut versuchen',
       noneNear: 'Bis {{n}} km noch nichts. Versuchen Sie eine größere Entfernung oder eine andere Branche.',
       linkGone: 'Dieser Deal ist abgelaufen oder nicht mehr eingestellt. Hier sind die aktuellen Deals.',
