@@ -208,7 +208,9 @@ export function BusinessPageView({ page, locationId, table, hasCard, preview, he
   if (page.feedbackOn) tiles.push({ key: 'feedback', icon: MessageSquareHeart, label: t('cust.page.tileFeedback', { defaultValue: 'Give feedback' }), sub: t('cust.page.tileFeedbackSub', { defaultValue: 'Anonymous' }), onClick: () => setSheet('feedback') });
   if (page.gameOn) tiles.push({ key: 'game', icon: Gamepad2, label: t('cust.page.tileGame', { defaultValue: 'Play a game' }), sub: t('cust.page.tileGameSub', { defaultValue: 'While you wait' }), onClick: () => setSheet('game') });
 
-  const logoNode = page.logoImage
+  const logoNode = page.avatarImage
+    ? <img src={page.avatarImage} alt="" className="w-full h-full object-cover" />
+    : page.logoImage
     ? <img src={page.logoImage} alt="" className="w-full h-full object-contain p-1" />
     : page.customIcon ? <span aria-hidden="true">{page.customIcon}</span> : null;
 
@@ -224,19 +226,30 @@ export function BusinessPageView({ page, locationId, table, hasCard, preview, he
     <div className="min-h-full w-full" style={{ background: theme.bg, color: theme.ink, ...vars }} data-business-page={page.slug}
       data-page-theme={page.look?.background ?? 'cream'}>
       <div className="mx-auto w-full max-w-md pb-10">
-        {/* Banner in the shop's colour */}
-        <div className="relative h-32 sm:h-36 sm:rounded-b-[28px] overflow-hidden" style={{ background: banner }} data-page-banner aria-hidden="true">
-          <span className="absolute -left-10 -bottom-16 w-48 h-48 rounded-full bg-white/10" />
-          <span className="absolute right-8 -top-10 w-28 h-28 rounded-full bg-white/10" />
+        {/* The shop's header photo, or a banner in its colour */}
+        <div className={`relative ${page.coverImage ? 'h-40 sm:h-44' : 'h-32 sm:h-36'} sm:rounded-b-[28px] overflow-hidden`} style={{ background: banner }} data-page-banner aria-hidden="true">
+          {page.coverImage ? (
+            <>
+              <img src={page.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover" data-page-cover />
+              <span className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/20 to-transparent" />
+            </>
+          ) : (
+            <>
+              <span className="absolute -left-10 -bottom-16 w-48 h-48 rounded-full bg-white/10" />
+              <span className="absolute right-8 -top-10 w-28 h-28 rounded-full bg-white/10" />
+            </>
+          )}
         </div>
 
         <div className="px-5">
           <header className="relative -mt-11" data-page-header>
             <div className="flex items-end justify-between gap-3">
               <div className="w-[84px] h-[84px] rounded-[24px] overflow-hidden flex items-center justify-center text-4xl shadow-lg"
-                style={{ background: page.logoImage || page.customIcon ? (theme.dark ? theme.card : '#FFFFFF') : accent.bg, color: accent.ink, boxShadow: `0 0 0 4px ${theme.bg}, 0 10px 24px -8px rgba(0,0,0,0.25)` }}
+                style={{ background: page.avatarImage || page.logoImage || page.customIcon ? (theme.dark ? theme.card : '#FFFFFF') : accent.bg, color: accent.ink, boxShadow: `0 0 0 4px ${theme.bg}, 0 10px 24px -8px rgba(0,0,0,0.25)` }}
                 data-page-logo>
-                {page.logoImage
+                {page.avatarImage
+                  ? <img src={page.avatarImage} alt="" className="w-full h-full object-cover" data-page-avatar />
+                  : page.logoImage
                   ? <img src={page.logoImage} alt="" className="w-full h-full object-contain p-2.5" />
                   : page.customIcon
                     ? <span aria-hidden="true">{page.customIcon}</span>

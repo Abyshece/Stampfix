@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Loader2, Play, RefreshCw, Trash2, Volume2, Film, Image as ImageIcon,
+  ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Loader2, Play, RefreshCw, Trash2, Volume2, Film, Image as ImageIcon, Camera,
 } from 'lucide-react';
 import type { Campaign } from '../types';
 import {
@@ -11,6 +11,7 @@ import {
 import { prepareStoryMedia, StoryMediaError, type StoryMediaErrorCode } from '../lib/storyMedia';
 import { ProLockOverlay } from './ProLockOverlay';
 import { StoryViewer } from './PageStories';
+import { StoryCamera } from './StoryCamera';
 
 // The Stories tab of the Business page (Pro): add up to 10 short videos or
 // photos, name, hide, reorder and delete them. Videos are made small in the
@@ -58,6 +59,7 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
   const [busyId, setBusyId] = useState<string | null>(null);
   const [labels, setLabels] = useState<Record<string, string>>({});
   const [viewing, setViewing] = useState<number | null>(null);
+  const [camera, setCamera] = useState(false);
   const list = stories ?? [];
   const full = list.length >= STORIES_MAX;
   const canAdd = canEdit && isPro && !full && !job;
@@ -159,11 +161,15 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
           <button type="button" className={btnDark} disabled={!canAdd || !rights} onClick={() => fileRef.current?.click()} data-stories-pick>
             <ImagePlus className="w-4 h-4" />{t('dash.stories.pick', { defaultValue: 'Choose a video or photo' })}
           </button>
+          <button type="button" className={btnLight} disabled={!canAdd || !rights} onClick={() => { setError(null); setCamera(true); }} data-stories-camera>
+            <Camera className="w-4 h-4" />{t('dash.stories.useCamera', { defaultValue: 'Use camera' })}
+          </button>
           {!rights && canAdd && <span className="text-xs text-gray-500">{t('dash.stories.tickFirst', { defaultValue: 'Tick the box first.' })}</span>}
           {full && <span className="text-xs text-gray-500">{t('dash.stories.errMany', { defaultValue: 'You have 10 stories. Delete one to add another.' })}</span>}
         </div>
       )}
       {error && <p className="text-sm text-red-600" data-stories-error>{error}</p>}
+      {camera && <StoryCamera onClose={() => setCamera(false)} onUse={(file) => { setCamera(false); void onFile(file); }} />}
     </div>
   );
 
