@@ -169,9 +169,7 @@ export default function App() {
       // No merchant row (or soft-deleted). Brand-new merchant signup whose
       // trigger silently failed → heal from auth metadata. (Customers were
       // already handled and returned above.)
-      let googleMerchant = false;
-      try { googleMerchant = localStorage.getItem('sf_google_merchant') === '1'; } catch { /* ignore */ }
-      const isMerchantSignup = meta.role === 'merchant' || googleMerchant;
+      const isMerchantSignup = meta.role === 'merchant';
 
       if (isMerchantSignup && (!data || data.status !== 'deleted')) {
         const businessName = (typeof meta.business_name === 'string' && meta.business_name)
@@ -188,7 +186,6 @@ export default function App() {
             country,
           });
         if (!insertErr) {
-          try { localStorage.removeItem('sf_google_merchant'); } catch { /* ignore */ }
           setHasMerchantRow(true);
           setOrphanCheckDone(true);
           return;

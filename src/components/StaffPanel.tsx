@@ -24,7 +24,8 @@ const SEV: Record<Flag['severity'], { label: string; cls: string }> = {
 };
 
 /** Merchant-facing staff management, sign-in log, and fraud alerts. */
-export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; onSwitchStaff: () => void }) {
+/** embedded: shown inside Settings, which already gives the section its title. */
+export function StaffPanel({ campaignId, onSwitchStaff, embedded = false }: { campaignId: string; onSwitchStaff: () => void; embedded?: boolean }) {
   const { t } = useTranslation();
   const [staff, setStaff] = useState<StaffMember[] | null>(null);
   const [logins, setLogins] = useState<StaffLogin[]>([]);
@@ -71,9 +72,9 @@ export function StaffPanel({ campaignId, onSwitchStaff }: { campaignId: string; 
 
   return (
     <div className="space-y-8">
-      <header>
-        <h2 className="text-3xl font-serif-display font-semibold">{t('dash.staff.title', { defaultValue: 'Staff' })}</h2> <InfoHint text={t('dash.staff.info', { defaultValue: "Staff share the shop's login, then identify themselves with a personal PIN. Every stamp, redemption and sign-in is recorded against the person who did it, so problems can be traced to a name." })} label="staff" />
-        <p className="text-gray-500 mt-1">
+      <header className={embedded ? '-mt-5' : undefined}>
+        {!embedded && <><h2 className="text-3xl font-serif-display font-semibold">{t('dash.staff.title', { defaultValue: 'Staff' })}</h2> <InfoHint text={t('dash.staff.info', { defaultValue: "Staff share the shop's login, then identify themselves with a personal PIN. Every stamp, redemption and sign-in is recorded against the person who did it, so problems can be traced to a name." })} label="staff" /></>}
+        <p className={embedded ? 'text-gray-500' : 'text-gray-500 mt-1'}>
           {t('dash.staff.sub', { defaultValue: 'Give each team member their own PIN. Every stamp and redemption is recorded against the person who did it.' })}
         </p>
       </header>

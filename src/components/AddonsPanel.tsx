@@ -27,11 +27,15 @@ type Menu = { categories: MenuCategory[]; items: MenuItem[] };
  * table (setup checklist, Menu and Tables & QR codes tabs), and coupons
  * guests use on that menu.
  */
-export function AddonsPanel({ campaignId, businessName, country, locations, onOrderingChanged, onOpenOrders, pageSlug }: {
+export function AddonsPanel({ campaignId, businessName, country, locations, onOrderingChanged, onOpenOrders, pageSlug, pageOn = true, onOpenPageQr }: {
   campaignId: string; businessName: string; country: string | null; locations: Location[];
   onOrderingChanged: (enabled: boolean) => void; onOpenOrders: () => void;
   /** The shop's Business page address; table codes open it (else the order page directly). */
   pageSlug?: string | null;
+  /** Whether the Business page is on (its one QR code then leads guests to the menu). */
+  pageOn?: boolean;
+  /** Opens the Business page's QR code step. */
+  onOpenPageQr?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const money = useMemo(() => menuMoney(country, i18n.language), [country, i18n.language]);
@@ -59,7 +63,8 @@ export function AddonsPanel({ campaignId, businessName, country, locations, onOr
   if (view === 'ordering') {
     return (
       <OrderingAddon campaignId={campaignId} businessName={businessName} country={country} locations={locations}
-        onBack={() => setView('home')} onOrderingChanged={onOrderingChanged} onOpenOrders={onOpenOrders} pageSlug={pageSlug} />
+        onBack={() => setView('home')} onOrderingChanged={onOrderingChanged} onOpenOrders={onOpenOrders} pageSlug={pageSlug}
+        pageOn={pageOn} onOpenPageQr={onOpenPageQr} />
     );
   }
   if (view === 'coupons') {
@@ -213,10 +218,10 @@ function PhonePreview({ money }: { money: (n: number) => string }) {
 
 // ---- The add-on itself ---------------------------------------------------------------
 
-function OrderingAddon({ campaignId, businessName, country, locations, onBack, onOrderingChanged, onOpenOrders, pageSlug }: {
+function OrderingAddon({ campaignId, businessName, country, locations, onBack, onOrderingChanged, onOpenOrders, pageSlug, pageOn, onOpenPageQr }: {
   campaignId: string; businessName: string; country: string | null; locations: Location[];
   onBack: () => void; onOrderingChanged: (enabled: boolean) => void; onOpenOrders: () => void;
-  pageSlug?: string | null;
+  pageSlug?: string | null; pageOn: boolean; onOpenPageQr?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const toast = useToast();
@@ -305,13 +310,6 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
       warn: needsInfo,
     },
     {
-      done: settings.tables.length > 0,
-      title: t('dash.addons.step2', { defaultValue: 'Put QR codes on your tables' }),
-      hint: t('dash.addons.step2Hint', { defaultValue: 'Add your tables and print a code for each one.' }),
-      cta: t('dash.addons.step2Btn', { defaultValue: 'Add tables' }),
-      action: () => setTab('tables'),
-    },
-    {
       done: settings.enabled,
       title: t('dash.addons.step3', { defaultValue: 'Turn on ordering' }),
       hint: t('dash.addons.step3Hint', { defaultValue: 'Guests can order as soon as this is on.' }),
@@ -334,7 +332,7 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
           </div>
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-semibold text-[#37352F]">{t('dash.addons.menuTitle', { defaultValue: 'Digital menu & table ordering' })}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{t('dash.addons.detailSub', { defaultValue: 'Guests scan the code on their table, order from their phone and pay at the counter.' })}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{t('dash.addons.detailSub2', { defaultValue: 'Guests scan your QR code, order from their phone and pay at the counter.' })}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap shrink-0">
@@ -353,8 +351,8 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
       {/* Guided setup until everything is done, then a short "live" line */}
       {doneCount < steps.length ? (
         <section className="rounded-2xl border notion-border bg-[#FBFBFA] p-4 sm:p-6 mb-6">
-          <h2 className="font-semibold text-[#37352F]">{t('dash.addons.stepsTitle', { defaultValue: 'Get set up in 3 steps' })}</h2>
-          <p className="text-sm text-gray-500 mt-0.5">{t('dash.addons.stepsDone', { done: doneCount, defaultValue: 'Done: {{done}} of 3' })}</p>
+          <h2 className="font-semibold text-[#37352F]">{t('dash.addons.stepsTitleN', { n: steps.length, defaultValue: 'Get set up in {{n}} steps' })}</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{t('dash.addons.stepsDoneN', { done: doneCount, n: steps.length, defaultValue: 'Done: {{done}} of {{n}}' })}</p>
           <div className="h-1.5 rounded-full bg-[#EFEFEE] mt-3 overflow-hidden">
             <div className="h-full bg-green-600 rounded-full transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
           </div>
@@ -395,11 +393,29 @@ function OrderingAddon({ campaignId, businessName, country, locations, onBack, o
         </div>
       )}
 
+      {/* One QR code for everything: the Business page's code leads to the menu. */}
+      <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 mb-6 ${pageOn ? 'border-blue-100 bg-blue-50/60' : 'border-amber-200 bg-amber-50'}`} data-one-qr={pageOn ? 'on' : 'off'}>
+        <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${pageOn ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}><QrCode className="w-4 h-4" /></span>
+        <div className="min-w-0 flex-1 text-sm">
+          <div className={`font-semibold ${pageOn ? 'text-blue-900' : 'text-amber-900'}`}>{t('dash.addons.oneQrTitle', { defaultValue: 'One QR code is enough' })}</div>
+          <p className={`mt-0.5 ${pageOn ? 'text-blue-900/80' : 'text-amber-900/90'}`}>
+            {pageOn
+              ? t('dash.addons.oneQrOn', { defaultValue: 'Guests scan your Business page code and tap “See the menu and order”. At checkout they add their table number. Codes for each table are optional.' })
+              : t('dash.addons.oneQrOff', { defaultValue: 'Your Business page is off, so its code takes guests to sign-up, not the menu. Switch the page on, or print a code for each table below.' })}
+          </p>
+          {onOpenPageQr && (
+            <button type="button" onClick={onOpenPageQr} className={`${btnLight} mt-2.5`} data-open-page-qr>
+              {pageOn ? t('dash.addons.getQr', { defaultValue: 'Get the QR code' }) : t('dash.addons.openPage', { defaultValue: 'Open Business page' })}
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Tabs */}
       <div role="tablist" className="flex gap-1 border-b notion-border mb-5 overflow-x-auto no-scrollbar">
         {([
           ['menu', BookOpen, t('dash.addons.tabMenu', { defaultValue: 'Menu' }), menu.items.length],
-          ['tables', QrCode, t('dash.addons.tabTables', { defaultValue: 'Tables & QR codes' }), settings.tables.length],
+          ['tables', QrCode, t('dash.addons.tabTablesOpt', { defaultValue: 'Table codes (optional)' }), settings.tables.length],
         ] as const).map(([id, Icon, label, n]) => (
           <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
             className={`inline-flex items-center gap-2 px-3 py-2.5 -mb-px border-b-2 text-sm font-medium whitespace-nowrap transition ${
@@ -822,7 +838,7 @@ function TablesTab({ campaignId, businessName, locations, settings, busy, onSave
     <div className="space-y-4">
       {/* Add tables */}
       <section className="rounded-xl border notion-border bg-white p-4 sm:p-5 space-y-4">
-        <p className="text-sm text-gray-500">{t('dash.addons.tablesHint', { defaultValue: 'Print one QR code per table. Orders show which table they came from.' })}</p>
+        <p className="text-sm text-gray-500">{t('dash.addons.tablesHintOpt', { defaultValue: 'Optional. A code for each table means guests don’t type their table number: the order shows it by itself. Codes you already printed keep working.' })}</p>
         {locations.length > 1 && (
           <div>
             <label htmlFor="tables-loc" className="block text-xs font-medium text-gray-500 mb-1">{t('dash.addons.location', { defaultValue: 'Location' })}</label>
