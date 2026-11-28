@@ -2,7 +2,7 @@ import { MarketingLayout, Eyebrow, StartButton, GradientBanner } from './Marketi
 import {
   Check, Smartphone, Zap, Globe, BarChart3, Palette, Building2, Users, Wallet,
   FileDown, Gauge, Link2, MapPin, BellRing, ShieldCheck, Printer, LifeBuoy, Sparkles, TrendingUp,
-  QrCode, RefreshCw, UtensilsCrossed, Ticket, Star, MessageSquare, Play, Coins,
+  QrCode, RefreshCw, UtensilsCrossed, Ticket, Star, MessageSquare, Play, Coins, BadgePercent,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,7 @@ const FREE = [
   'Stamps, rewards & a QR signup poster',
   'Your business page with one QR code',
   'QR ordering with your menu or price list',
+  'Your deals on the Stampfix deals page',
 ];
 
 const PRO = [
@@ -64,6 +65,7 @@ export const BENEFITS = [
   { icon: MessageSquare, c: '#1132F5', fg: '#FFFFFF', anim: 'pf-bo', title: 'Private feedback', body: 'Customers can tell you privately what to improve, and you read it in your dashboard before it ends up in a public review.' },
   { icon: Play,        c: '#EA33B6', fg: '#FFFFFF', anim: 'pf-fl', title: 'Stories on your page', body: 'Show new products, services, events and offers with photos and short videos at the top of your page.' },
   { icon: Coins,       c: '#111318', fg: '#FCFF54', anim: 'pf-bo', title: 'See what it earns', body: 'Average spend and the visits each offer brought back, so you can see Stampfix paying for itself.' },
+  { icon: BadgePercent, c: '#0EA5E9', fg: '#FFFFFF', anim: 'pf-pu', title: 'Deals that bring in new customers', body: 'List your deals on the Stampfix deals page, where people nearby find offers by city and business type. Free on every plan.' },
 ];
 
 export function PricingPage() {

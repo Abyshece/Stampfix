@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, UserCircle, MessageSquare, Mail, Search, Tag, Activity,
   LogOut, Loader2, Shield, ChevronRight, Menu, X,
   Ban, Snowflake, Trash2, RotateCcw, ArrowUpCircle, ArrowDownCircle, AlertCircle, CheckCircle2, Filter, FileText, Bell, Pencil, KeyRound,
-  Download, Eye, Megaphone, Utensils, Send, MailPlus, Gift, BarChart3, CircleDot,
+  Download, Eye, Megaphone, Utensils, Send, MailPlus, Gift, BarChart3, CircleDot, BadgePercent,
 } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 import { BlogAdmin } from './BlogAdmin';
@@ -29,6 +29,7 @@ import { OffersTab } from './OffersTab';
 import { MerchantBannersTab } from './MerchantBannersTab';
 import { MenuUploadsAdmin } from './MenuUploadsAdmin';
 import { PageStoriesAdmin } from './PageStoriesAdmin';
+import { DealsAdmin } from './DealsAdmin';
 import { OutreachAdmin } from './outreach/OutreachAdmin';
 import { ShopEmailsAdmin } from './ShopEmailsAdmin';
 import { ReferralsAdmin } from './ReferralsAdmin';
@@ -38,7 +39,7 @@ import { fetchExtendedKPIs, type ExtendedKPIs } from '../lib/db';
 import { markAdminBrowser } from '../lib/siteInsights';
 import { SiteInsightsAdmin } from './SiteInsightsAdmin';
 
-type AdminTab = 'OVERVIEW' | 'INSIGHTS' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'MENUS' | 'STORIES' | 'OUTREACH' | 'SHOP_EMAILS' | 'REFERRALS' | 'OFFERS' | 'MERCHANT_BANNERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
+type AdminTab = 'OVERVIEW' | 'INSIGHTS' | 'B2B' | 'B2B2C' | 'B2B_REPORTS' | 'B2B2C_REPORTS' | 'CONTACT' | 'MENUS' | 'STORIES' | 'DEALS' | 'OUTREACH' | 'SHOP_EMAILS' | 'REFERRALS' | 'OFFERS' | 'MERCHANT_BANNERS' | 'LOGS' | 'FUNNEL' | 'BLOG' | 'NOTIFY';
 
 export function AdminPanel({ onExit }: { onExit: () => void }) {
   const { user, loading: authLoading } = useAuth();
@@ -142,6 +143,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
             ['CONTACT', Mail, 'Contact Inquiries'],
             ['MENUS', Utensils, 'Menus'],
             ['STORIES', CircleDot, 'Stories'],
+            ['DEALS', BadgePercent, 'Deals'],
             ['OUTREACH', Send, 'Outreach'],
             ['SHOP_EMAILS', MailPlus, 'Email shops'],
             ['REFERRALS', Gift, 'Referrals'],
@@ -201,6 +203,7 @@ export function AdminPanel({ onExit }: { onExit: () => void }) {
         {tab === 'CONTACT' && <ContactTab />}
         {tab === 'MENUS' && <MenuUploadsAdmin readOnly={readOnly} onNewCount={setNewMenus} />}
         {tab === 'STORIES' && <PageStoriesAdmin readOnly={readOnly} />}
+        {tab === 'DEALS' && <DealsAdmin readOnly={readOnly} />}
         {tab === 'OUTREACH' && <OutreachAdmin readOnly={readOnly} />}
         {tab === 'SHOP_EMAILS' && <ShopEmailsAdmin readOnly={readOnly} />}
         {tab === 'REFERRALS' && <ReferralsAdmin readOnly={readOnly} />}

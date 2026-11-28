@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   ArrowRight, ScanLine, X, Loader2, ArrowLeft, Mail, CheckCircle,
-  Users, Zap, QrCode, Wallet, RefreshCw, UtensilsCrossed} from 'lucide-react';
+  Users, Zap, QrCode, Wallet, RefreshCw, BadgePercent} from 'lucide-react';
 import { HeroCardLoop } from './HeroCardLoop';
 import { christmasOn, Snowfall, StringLights, SantaHat, Holly, SnowGround } from './ChristmasDecor';
 import { LaunchSteps } from './LaunchSteps';
@@ -311,6 +311,7 @@ export function LandingPage({
         </a>
         <div className="flex items-center gap-2 md:gap-3 text-sm font-medium">
           <a href="/features" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">{t('nav.features')}</a>
+          <a href="/deals" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">{t('nav.deals', { defaultValue: 'Deals' })}</a>
           <a href="/pricing" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">{t('nav.pricing')}</a>
           <a href="/about" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">{t('nav.about')}</a>
           {/* Customer-facing entry to /my-card. A returning customer who
@@ -343,6 +344,7 @@ export function LandingPage({
             links={[
               { href: '/find-card', label: t('nav.lostCardMobile') },
               { href: '/features', label: t('nav.features') },
+              { href: '/deals', label: t('nav.deals', { defaultValue: 'Deals' }) },
               { href: '/pricing', label: t('nav.pricing') },
               { href: '/about', label: t('nav.about') },
             ]}
@@ -415,7 +417,7 @@ export function LandingPage({
               </div>
               <div className="flex absolute bottom-8 right-1 md:bottom-12 md:-right-4 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 6.5s ease-in-out infinite', animationDelay: '1.8s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
-                <UtensilsCrossed className="w-4 h-4 text-sky-500" /> {t('hero.pill2Order', { defaultValue: 'QR ordering' })}
+                <BadgePercent className="w-4 h-4 text-sky-500" /> {t('hero.pill2Deals', { defaultValue: 'Deals marketplace' })}
               </div>
             </div>
           </div>
@@ -484,7 +486,7 @@ export function LandingPage({
             {t('budget.t1b', { defaultValue: 'Big-brand marketing,' })}<br />{t('budget.t2')}
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8 leading-relaxed">
-            {t('budget.body2', { defaultValue: 'Loyalty cards, offers, your business page and QR ordering for one flat monthly price. No setup fees, no app development, no hardware, and unlimited customers.' })}
+            {t('budget.body2', { defaultValue: 'Loyalty cards, offers, your business page and deals on the Stampfix deals page for one flat monthly price. No setup fees, no app development, no hardware, and unlimited customers.' })}
           </p>
           <a href="/savings" className="inline-flex items-center gap-2 bg-white border notion-border text-[#37352F] px-5 py-2.5 rounded-lg font-medium hover:border-[#37352F] transition">
             {t('budget.cta')} <ArrowRight className="w-4 h-4" />

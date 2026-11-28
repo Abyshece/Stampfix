@@ -13,6 +13,7 @@ export const STAFF_HIDEABLE_SECTIONS: { key: string; label: string }[] = [
   { key: 'CUSTOMERS', label: 'Customers' },
   { key: 'ACTIVITY', label: 'Activity' },
   { key: 'ANALYTICS', label: 'Insights' },
+  { key: 'DEALS', label: 'Deals' },
   { key: 'VALUE', label: 'Results' },
   { key: 'STAFF', label: 'Staff' },
   { key: 'PREVIEW', label: 'Preview Card' },

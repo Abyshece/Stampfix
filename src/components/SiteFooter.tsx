@@ -43,6 +43,7 @@ export function SiteFooter({ onCookieSettings }: { onCookieSettings?: () => void
         </div>
         <FooterCol title={t('footer.product', { defaultValue: 'Product' })} links={[
           { href: '/features', label: t('nav.features', { defaultValue: 'Features' }) },
+          { href: '/deals', label: t('nav.deals', { defaultValue: 'Deals' }) },
           { href: '/pricing', label: t('nav.pricing', { defaultValue: 'Pricing' }) },
           { href: '/use-cases', label: t('footer.useCases', { defaultValue: 'Use cases' }) },
           { href: '/savings', label: t('footer.payback', { defaultValue: 'Payback' }) },

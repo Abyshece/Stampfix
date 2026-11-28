@@ -86,6 +86,9 @@ export function Faq() {
       <LegalH2>{t('faq.q22', { defaultValue: 'Can I create coupons?' })}</LegalH2>
       <p>{t('faq.a22', { defaultValue: 'Yes. Create discount codes, and customers enter them when they order.' })}</p>
 
+      <LegalH2>{t('faq.q23', { defaultValue: 'What is the deals page?' })}</LegalH2>
+      <p>{t('faq.a23', { defaultValue: 'stampfix.app/deals shows deals from Stampfix businesses, and people filter them by city, business type and kind of deal. Create a deal in your dashboard under Deals, with its dates, days, hours and an optional promo code. Listing deals is free on every plan.' })}</p>
+
       <LegalH2>{t('faq.q17', { defaultValue: 'How do I get help?' })}</LegalH2>
       <p>
         {t('faq.a17pre', { defaultValue: 'Email' })}{' '}
