@@ -4,8 +4,9 @@ import { FREE_TIER_CARD_LIMIT, FREE_TIER_WARNING_THRESHOLD } from '../types';
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone, ClipboardList, Puzzle, Store } from 'lucide-react';
+  RotateCcw, Smile, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone, ClipboardList, Puzzle, Store, BadgePercent } from 'lucide-react';
 import { CampaignsPanel } from './CampaignsPanel';
+import { DealsPanel } from './DealsPanel';
 import { MerchantDashboardBanner } from './MerchantBannerBar';
 import { useAuth } from '../lib/auth';
 import { NotificationBell } from './NotificationBell';
@@ -87,7 +88,7 @@ interface MerchantDashboardProps {
 // Links & socials and Posters & print moved to the Business page.
 type SettingsSection = 'stamping' | 'general' | 'wallet' | 'locations' | 'billing' | 'account' | 'privacy' | 'danger';
 // 'SHARE' (the former Share & Promote) is only an old name: it opens the Business page's QR codes.
-type Tab = 'DASHBOARD' | 'ORDERS' | 'PAGE' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'OFFERS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP' | 'ADDONS';
+type Tab = 'DASHBOARD' | 'ORDERS' | 'PAGE' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'OFFERS' | 'DEALS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP' | 'ADDONS';
 
 /** Each dashboard tab has a real URL so refresh, back/forward and deep links work. */
 const TAB_PATH: Record<Tab, string> = {
@@ -98,6 +99,7 @@ const TAB_PATH: Record<Tab, string> = {
   ACTIVITY: '/activity',
   ANALYTICS: '/insights',
   OFFERS: '/campaigns',
+  DEALS: '/my-deals',
   VALUE: '/payback',
   STAFF: '/staff',
   PREVIEW: '/preview-card',
@@ -854,6 +856,7 @@ export function MerchantDashboard({
               ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
               ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
               ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Campaigns' })],
+              ['DEALS', BadgePercent, t('dash.nav.deals', { defaultValue: 'Deals' })],
               ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Results' })],
               ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
               ['PREVIEW', Eye, t('dash.nav.previewCard', { defaultValue: 'Preview Card' })],
@@ -1628,6 +1631,9 @@ export function MerchantDashboard({
             onIntroDone={() => void onMarkOnboardingStep({ campaigns_intro_done: true })}
           />
         )}
+        {activeTab === 'DEALS' && (
+          <DealsPanel campaign={campaign} country={country ?? null} locations={locations} />
+        )}
         {activeTab === 'STAFF' && (
           !isPro ? (
             <ProFeatureLock
@@ -2087,7 +2093,7 @@ export function MerchantDashboard({
           ))}
           <button onClick={() => setShowMobileMoreMenu(true)}
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'PAGE', 'HELP', 'VALUE', 'STAFF', 'OFFERS', 'ADDONS', ...(orderingEnabled ? ['ANALYTICS'] : [])].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
+              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'PAGE', 'HELP', 'VALUE', 'STAFF', 'OFFERS', 'DEALS', 'ADDONS', ...(orderingEnabled ? ['ANALYTICS'] : [])].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <span className="relative">
               <Menu className="w-6 h-6" />
@@ -2106,6 +2112,7 @@ export function MerchantDashboard({
             <div className="grid grid-cols-4 gap-4 mb-4">
               {([
                 ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Campaigns' })],
+                ['DEALS', BadgePercent, t('dash.nav.deals', { defaultValue: 'Deals' })],
                 ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
                 ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
                 ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Results' })],

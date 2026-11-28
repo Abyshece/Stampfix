@@ -12,6 +12,7 @@ const SNOW_PAGES = new Set(['/pricing', '/features']);
 
 const NAV_LINKS = [
   { href: '/features', label: 'Features', tkey: 'nav.features' },
+  { href: '/deals', label: 'Deals', tkey: 'nav.deals' },
   { href: '/pricing', label: 'Pricing', tkey: 'nav.pricing' },
   { href: '/about', label: 'About', tkey: 'nav.about' },
 ];
@@ -100,6 +101,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
               links={[
                 { href: '/find-card', label: t('nav.myCard', { defaultValue: 'My loyalty card' }) },
                 { href: '/features', label: t('nav.features', { defaultValue: 'Features' }) },
+                { href: '/deals', label: t('nav.deals', { defaultValue: 'Deals' }) },
                 { href: '/pricing', label: t('nav.pricing', { defaultValue: 'Pricing' }) },
                 { href: '/about', label: t('nav.about', { defaultValue: 'About' }) },
                 { href: '/?login=1', label: t('nav.login', { defaultValue: 'Log in' }) },
@@ -124,6 +126,7 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
           </div>
           <FooterCol title={t('footer.product', { defaultValue: 'Product' })} links={[
             { href: '/features', label: t('nav.features', { defaultValue: 'Features' }) },
+            { href: '/deals', label: t('nav.deals', { defaultValue: 'Deals' }) },
             { href: '/pricing', label: t('nav.pricing', { defaultValue: 'Pricing' }) },
             { href: '/use-cases', label: t('footer.useCases', { defaultValue: 'Use cases' }) },
             { href: '/savings', label: t('footer.payback', { defaultValue: 'Payback' }) },

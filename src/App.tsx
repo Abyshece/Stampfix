@@ -21,6 +21,7 @@ import { AppleWalletGuide } from './components/AppleWalletGuide';
 const AboutPage = lazy(() => import('./components/marketing/AboutPage').then((m) => ({ default: m.AboutPage })));
 const FeaturesPage = lazy(() => import('./components/marketing/FeaturesPage').then((m) => ({ default: m.FeaturesPage })));
 const PricingPage = lazy(() => import('./components/marketing/PricingPage').then((m) => ({ default: m.PricingPage })));
+const DealsPage = lazy(() => import('./components/marketing/DealsPage').then((m) => ({ default: m.DealsPage })));
 const StampPage = lazy(() => import('./components/StampPage').then((m) => ({ default: m.StampPage })));
 const UseCasesPage = lazy(() => import('./components/marketing/UseCasesPage').then((m) => ({ default: m.UseCasesPage })));
 const BlogPage = lazy(() => import('./components/marketing/BlogPage').then((m) => ({ default: m.BlogPage })));
@@ -49,12 +50,13 @@ captureReferralFromUrl();
 type View = 'landing' | 'merchant';
 
 /** Merchant dashboard pages that open the merchant flow on a deep link / refresh. */
-const MERCHANT_PATHS = ['/scan', '/orders', '/business-page', '/addons', '/customers', '/activity', '/insights', '/campaigns', '/offers', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
+const MERCHANT_PATHS = ['/scan', '/orders', '/business-page', '/addons', '/customers', '/activity', '/insights', '/campaigns', '/offers', '/my-deals', '/payback', '/staff', '/preview-card', '/settings', '/promote', '/help'];
 
 const DEFAULT_TITLE = 'Stampfix | All-in-one Marketing and Retention for Local Businesses';
 const PAGE_TITLES: Record<string, string> = {
   '/pricing': 'Pricing | Stampfix',
   '/features': 'Features | Stampfix',
+  '/deals': 'Deals from local businesses | Stampfix',
   '/about': 'About | Stampfix',
   '/use-cases': 'Use cases | Stampfix',
   '/faq': 'FAQ | Stampfix',
@@ -234,6 +236,7 @@ export default function App() {
   if (path === '/about') return <Suspense fallback={<BrandLoading />}><AboutPage /></Suspense>;
   if (path === '/features') return <Suspense fallback={<BrandLoading />}><FeaturesPage /></Suspense>;
   if (path === '/pricing') return <Suspense fallback={<BrandLoading />}><PricingPage /></Suspense>;
+  if (path === '/deals') return <Suspense fallback={<BrandLoading />}><DealsPage /></Suspense>;
   if (path === '/stamp') return <Suspense fallback={<BrandLoading />}><StampPage /></Suspense>;
   if (path === '/use-cases') return <Suspense fallback={<BrandLoading />}><UseCasesPage /></Suspense>;
   if (path === '/blog' || path.startsWith('/blog/')) return <Suspense fallback={<BrandLoading />}><BlogPage /></Suspense>;

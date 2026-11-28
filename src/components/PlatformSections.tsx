@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import {
-  Wallet, QrCode, BellRing, UtensilsCrossed, BarChart3, Store, Check, ChevronDown,
+  Wallet, QrCode, BellRing, UtensilsCrossed, BarChart3, Store, Check, ChevronDown, BadgePercent,
   Star, Wifi, Gamepad2, MessageSquare, Link2, Play, CreditCard, ArrowRight, X,
 } from 'lucide-react';
 
@@ -18,9 +18,9 @@ const GROUPS = [
   { key: 'marketing', icon: BellRing, color: '#F59E0B', title: 'Marketing and win-back', items: [
     'Offers on the lock screen', 'Reminders when customers are nearby', 'Ready-made “we miss you” offers',
     'See who has stopped coming', 'Coupons for orders', 'Marketing consent collected for you'] },
-  { key: 'ordering', icon: UtensilsCrossed, color: '#0EA5E9', title: 'QR ordering', items: [
-    'Customers order from their phone by QR', 'New orders arrive with an alert', 'Accept, mark ready, collected',
-    'Customers follow their order live', 'Build your menu or price list, or upload it', 'Free on every plan'] },
+  { key: 'deals', icon: BadgePercent, color: '#0EA5E9', title: 'Deals marketplace', items: [
+    'List a deal in a minute', 'Percent off, amount off, free item or 2 for 1', 'Set the dates, days and hours',
+    'Shown on the Stampfix deals page', 'Found by city and business type', 'Free on every plan'] },
   { key: 'insights', icon: BarChart3, color: '#2563EB', title: 'Insights and results', items: [
     'Know who your regulars are', 'Visits, rewards and retention', 'Average spend and campaign returns',
     'Customer list and activity log', 'Export your data any time'] },
@@ -114,7 +114,7 @@ export function LandingFaq() {
     { q: 'Do I need any hardware?', a: 'No. Your phone or tablet is the scanner. Print your QR code on the posters we make for you, and you are ready.' },
     { q: 'Why one platform instead of separate tools?', a: 'Because everything works together. A customer who scans your QR code can order, join your loyalty card and get your offers later, all from one scan, and you see it all in one place.' },
     { q: 'Can I change my page without reprinting the QR code?', a: 'Yes. The QR code always points to your page, so you can change your services, prices, links, Wi-Fi or offers any time.' },
-    { q: 'Is ordering extra?', a: 'No. QR ordering and your menu or price list are free on every plan.' },
+    { q: 'How do deals work?', a: 'Create a deal in your dashboard with its dates, days and hours. It shows on stampfix.app/deals, where people find deals by city and business type. Listing deals is free on every plan.' },
     { q: 'Is it GDPR compliant, and can I cancel any time?', a: 'Yes to both. Marketing consent is collected for you, your data can be exported any time, and there is no contract.' },
   ];
   return (
