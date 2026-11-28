@@ -160,6 +160,37 @@ function StepFooter({ onBack, primary, onPrimary, busy, disabled, note, error }:
   );
 }
 
+/** Width of a real phone screen. The preview draws the page at this width and shrinks it to fit. */
+const PHONE_W = 390;
+
+/**
+ * The preview's screen: the page at a real phone's width, scaled down to the
+ * frame, so it looks exactly like it does on a guest's phone. Pop-ups from the
+ * page (Wi-Fi, feedback, stories) stay inside the screen.
+ */
+function PhoneScreen({ bg, children }: { bg: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ w: 280, h: 608 });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => { if (el.clientWidth > 0 && el.clientHeight > 0) setBox({ w: el.clientWidth, h: el.clientHeight }); };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const scale = box.w / PHONE_W;
+  return (
+    <div ref={ref} className="relative w-full h-full rounded-[30px] overflow-hidden" style={{ background: bg }}>
+      <div className="absolute left-0 top-0" style={{ width: PHONE_W, height: box.h / scale, transform: `scale(${scale})`, transformOrigin: 'top left' }} data-page-preview-screen>
+        <div className="w-full h-full overflow-y-auto overflow-x-hidden" style={{ background: bg }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export function BusinessPagePanel(props: Props) {
   const {
     campaign, locations, page, pageError, onRetryPage, onPageSaved, section, onSection, isPro, canEdit, orderingEnabled,
@@ -408,10 +439,10 @@ export function BusinessPagePanel(props: Props) {
   }
 
   const previewPhone = preview && (
-    <div className="mx-auto w-[290px] max-w-full h-[580px] rounded-[38px] border-[10px] border-[#1F1F1F] bg-[#1F1F1F] shadow-xl overflow-hidden" data-page-preview>
-      <div className="w-full h-full rounded-[28px] overflow-y-auto overflow-x-hidden" style={{ background: pageTheme(preview.look?.background).bg }}>
+    <div className="mx-auto w-[300px] max-w-full h-[628px] max-h-[calc(100vh-7rem)] rounded-[40px] border-[10px] border-[#1F1F1F] bg-[#1F1F1F] shadow-xl overflow-hidden" data-page-preview>
+      <PhoneScreen bg={pageTheme(preview.look?.background).bg}>
         <BusinessPageView page={preview} preview />
-      </div>
+      </PhoneScreen>
     </div>
   );
 
