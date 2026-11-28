@@ -1419,7 +1419,7 @@ const de = {
     },
     page: {
       ownerOff: 'Ihre Seite ist aus, nur Sie sehen sie. Gäste, die scannen, kommen direkt zur Anmeldung. Schalten Sie sie im Dashboard ein.',
-      tileReview: 'Auf Google bewerten', tileWifi: 'WLAN', tileFeedback: 'Feedback geben', tileFeedbackSub: 'Anonym',
+      tileReview: 'Auf Google bewerten', tileReviewShort: 'Google-Bewertung', tileWifi: 'WLAN', tileFeedback: 'Feedback geben', tileFeedbackSub: 'Anonym',
       tileGame: 'Ein Spiel spielen', tileGameSub: 'Für die Wartezeit',
       stories: 'Storys', storyN: 'Story {{n}}', prevStory: 'Vorherige Story', nextStory: 'Nächste Story',
       storyFailed: 'Diese Story kann gerade nicht abgespielt werden.', soundOn: 'Ton einschalten', soundOff: 'Ton ausschalten',
