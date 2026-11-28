@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays, Clock, MapPin, Copy, Check, ArrowRight, Ticket } from 'lucide-react';
-import { dealBadge, dateRange, daysLabel, minutesToTime, type Deal } from '../lib/deals';
+import { dealBadge, dateRange, daysLabel, minutesToTime, distanceLabel, type Deal } from '../lib/deals';
 
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('') || 'S';
 
@@ -9,8 +9,9 @@ const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2)
  * One deal, as it looks on stampfix.app/deals. Also used as the live preview
  * in the dashboard form (preview: no links, the code shows straight away),
  * and for the examples on an empty deals page (sample: labelled, no links).
+ * onOpen (deals page only) opens the full details.
  */
-export function DealCard({ deal, preview = false, sample = false }: { deal: Deal; preview?: boolean; sample?: boolean }) {
+export function DealCard({ deal, preview = false, sample = false, onOpen }: { deal: Deal; preview?: boolean; sample?: boolean; onOpen?: () => void }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith('de') ? 'de-DE' : 'en-GB';
   const [showCode, setShowCode] = useState(preview);
@@ -23,6 +24,9 @@ export function DealCard({ deal, preview = false, sample = false }: { deal: Deal
     ? t('deals.card.hours', { defaultValue: '{{from}} to {{to}}', from: minutesToTime(deal.start_minute), to: minutesToTime(deal.end_minute) })
     : null;
   const days = deal.days.length > 0 ? daysLabel(deal.days, lang) : null;
+  const place = deal.place ?? (deal.location ? { name: deal.location.name, address: deal.location.address } : null);
+  const where = deal.location ? (deal.location.address || deal.location.name) : place ? (place.address || place.name) : null;
+  const dist = distanceLabel(deal.distance_km, lang);
 
   const copy = async () => {
     if (!deal.code) return;
@@ -50,7 +54,9 @@ export function DealCard({ deal, preview = false, sample = false }: { deal: Deal
         </div>
 
         <div>
-          <h3 className="font-serif-display text-xl font-medium text-[#37352F] leading-snug break-words">{deal.title}</h3>
+          <h3 className="font-serif-display text-xl font-medium text-[#37352F] leading-snug break-words">
+            {onOpen ? <button type="button" onClick={onOpen} className="text-left hover:underline decoration-1 underline-offset-4" data-deal-open>{deal.title}</button> : deal.title}
+          </h3>
           {deal.description && <p className="text-sm text-gray-600 mt-1 leading-relaxed line-clamp-3 break-words">{deal.description}</p>}
         </div>
 
@@ -65,8 +71,12 @@ export function DealCard({ deal, preview = false, sample = false }: { deal: Deal
           {(days || hours) && (
             <li className="flex items-center gap-2"><Clock className="w-4 h-4 text-gray-400 shrink-0" /><span>{[days, hours].filter(Boolean).join(' · ')}</span></li>
           )}
-          {deal.location && (
-            <li className="flex items-start gap-2"><MapPin className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" /><span className="min-w-0 break-words">{deal.location.address || deal.location.name}</span></li>
+          {(where || dist) && (
+            <li className="flex items-start gap-2" data-deal-where>
+              <MapPin className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+              <span className="min-w-0 break-words">{where}</span>
+              {dist && <span className="ml-auto shrink-0 text-[11px] font-semibold text-[#37352F] bg-[#F7F7F5] rounded px-1.5 py-0.5" data-deal-distance>{dist}</span>}
+            </li>
           )}
         </ul>
 
@@ -85,11 +95,15 @@ export function DealCard({ deal, preview = false, sample = false }: { deal: Deal
               <Ticket className="w-4 h-4" /> {t('deals.card.showCode', { defaultValue: 'Show code' })}
             </button>
           ))}
-          {!preview && !sample && (
+          {!preview && !sample && (onOpen ? (
+            <button type="button" onClick={onOpen} className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-[#37352F] hover:underline" data-deal-details-btn>
+              {t('deals.card.details', { defaultValue: 'Details' })} <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          ) : (
             <a href={deal.business.link} className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-[#37352F] hover:underline" data-deal-link>
               {t('deals.card.visit', { defaultValue: 'Visit' })} <ArrowRight className="w-3.5 h-3.5" />
             </a>
-          )}
+          ))}
         </div>
       </div>
     </article>
