@@ -46,6 +46,10 @@ export interface Deal {
   live_now: boolean;
   location: { id: string; name: string; address: string | null } | null;
   business: DealBusiness;
+  // Public list only: where the deal is (its branch, or the shop's branch
+  // nearest the visitor) and, when the visitor shared their location, how far.
+  place?: { name: string; address: string | null; lat: number | null; lng: number | null } | null;
+  distance_km?: number | null;
   // Owner and admin only
   status?: 'active' | 'paused';
   state?: DealState;
@@ -80,7 +84,7 @@ export interface DealDraft {
 }
 
 export type DealWhen = 'all' | 'now' | 'week' | 'upcoming';
-export type DealSort = 'ending' | 'newest' | 'starting';
+export type DealSort = 'ending' | 'newest' | 'starting' | 'nearest';
 
 export interface DealFilters {
   total: number;
@@ -167,12 +171,18 @@ export function dealErrorCode(e: unknown): string | null {
 export async function listPublicDeals(f: {
   country?: string | null; city?: string | null; category?: string | null; type?: string | null;
   when?: DealWhen; search?: string; sort?: DealSort; limit?: number; offset?: number;
+  /** The visitor's location, only when they tapped "Near me". Used for this answer only. */
+  near?: { lat: number; lng: number } | null; radiusKm?: number | null; id?: string | null;
 }): Promise<{ total: number; deals: Deal[] }> {
-  const { data, error } = await supabase.rpc('public_deals', {
+  const args: Record<string, unknown> = {
     p_country: f.country || null, p_city: f.city || null, p_category: f.category || null, p_type: f.type || null,
     p_when: f.when ?? 'all', p_search: f.search?.trim() || null, p_sort: f.sort ?? 'ending',
     p_limit: f.limit ?? 24, p_offset: f.offset ?? 0,
-  });
+  };
+  // Only sent when used, so the call also works before the "near me" SQL is run.
+  if (f.near) { args.p_lat = f.near.lat; args.p_lng = f.near.lng; if (f.radiusKm) args.p_radius_km = f.radiusKm; }
+  if (f.id) args.p_id = f.id;
+  const { data, error } = await supabase.rpc('public_deals', args);
   if (error) throw error;
   const r = (data ?? {}) as { total?: number; deals?: Deal[] };
   return { total: r.total ?? 0, deals: r.deals ?? [] };
@@ -248,6 +258,25 @@ export function toLocalInput(d: Date): string {
 }
 
 /** A best guess at the city in a free-text address ("1 Main St, Vancouver, BC V5K 0A1" gives "Vancouver"). */
+/** Google Maps directions to the deal's place (address, else coordinates, else business and city). */
+export function directionsUrl(d: Pick<Deal, 'place' | 'location' | 'business' | 'city'>): string {
+  const p = d.place;
+  const dest = p?.address ? `${d.business.name}, ${p.address}`
+    : p?.lat != null && p?.lng != null ? `${p.lat},${p.lng}`
+    : d.location?.address ? `${d.business.name}, ${d.location.address}`
+    : `${d.business.name}, ${d.city}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
+}
+
+/** "350 m", "4.2 km", "12 km". */
+export function distanceLabel(km: number | null | undefined, lang: string): string | null {
+  if (km == null || !Number.isFinite(Number(km))) return null;
+  const n = Number(km);
+  const fmt = (v: number, max: number) => v.toLocaleString(lang, { maximumFractionDigits: max });
+  if (n < 1) return `${fmt(Math.max(50, Math.round((n * 1000) / 50) * 50), 0)} m`;
+  return `${fmt(n, n < 10 ? 1 : 0)} km`;
+}
+
 export function cityFromAddress(address: string | null | undefined): string {
   if (!address) return '';
   const parts = address.split(',').map((p) => p.trim()).filter(Boolean);
