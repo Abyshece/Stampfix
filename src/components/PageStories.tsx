@@ -53,7 +53,7 @@ export function StoryRail({ stories, seen, ring, seenRing, bg, text, onOpen, sta
             <li key={s.id} className="shrink-0">
               <button type="button" onClick={() => onOpen(i)} data-story-bubble={s.id} data-seen={isSeen ? '1' : '0'}
                 aria-label={s.label ?? t('cust.page.storyN', { n: i + 1, defaultValue: 'Story {{n}}' })}
-                className="flex flex-col items-center gap-1 w-[72px] focus:outline-none group">
+                className="flex flex-col items-center gap-1 w-[76px] focus:outline-none group">
                 <span className="block rounded-full p-[2.5px] transition group-focus-visible:ring-2 group-focus-visible:ring-offset-2"
                   style={{ background: isSeen ? seenRing : ring }}>
                   <span className="block rounded-full p-[2.5px]" style={{ background: bg }}>
@@ -62,7 +62,7 @@ export function StoryRail({ stories, seen, ring, seenRing, bg, text, onOpen, sta
                   </span>
                 </span>
                 {anyLabel && (
-                  <span className="block w-full truncate text-center text-[11px] leading-tight" style={{ color: text }}>{s.label ?? ' '}</span>
+                  <span className="block w-full text-center text-[11px] font-medium leading-tight line-clamp-2 break-words" style={{ color: text }} data-story-bubble-label>{s.label ?? ' '}</span>
                 )}
               </button>
             </li>
@@ -334,7 +334,7 @@ export function StoryViewer({ stories, start, title, logo, onClose, onSeen }: Vi
             <div className="w-8 h-8 rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0 text-base">{logo ?? <Store className="w-4 h-4 text-black/60" />}</div>
             <div className="min-w-0 flex-1 text-white leading-tight">
               <div className="text-sm font-semibold truncate">{title}</div>
-              {story.label && <div className="text-xs text-white/75 truncate" data-story-label>{story.label}</div>}
+              {story.label && <div className="text-[13px] font-medium text-white/90 truncate" data-story-label>{story.label}</div>}
             </div>
             {story.kind === 'video' && story.hasSound && !isFailed && (
               <button type="button" onClick={toggleSound} data-story-sound={muted ? 'off' : 'on'}

@@ -370,6 +370,8 @@ const de = {
       uploading: 'Wird hochgeladen …', preparingVideo: 'Ihr Video wird vorbereitet … {{pct}} %', preparingPhoto: 'Ihr Foto wird vorbereitet …',
       keepOpen: 'Lassen Sie diese Seite geöffnet. Es dauert ein paar Sekunden.',
       pick: 'Video oder Foto auswählen', tickFirst: 'Setzen Sie zuerst das Häkchen.',
+      nameLabel: 'Name der Story', namePh: 'z. B. Neue Karte, Unser Team, Kuchen von heute', nameHint: 'Steht unter der Blase, damit Gäste wissen, worum es geht. Optional, bis zu {{n}} Zeichen. Erst eintippen, dann die Story hinzufügen.',
+      nameShown: 'Name für Gäste', labelPh2: 'z. B. Unser Team', saved: 'Gespeichert',
       useCamera: 'Kamera nutzen', camTitle: 'Story aufnehmen', camClose: 'Schließen', camFlip: 'Kamera wechseln',
       camPhoto: 'Foto', camVideo: 'Video', camTake: 'Foto aufnehmen', camRecord: 'Aufnehmen', camStop: 'Stopp',
       camRetake: 'Nochmal', camUsePhoto: 'Dieses Foto nehmen', camUseVideo: 'Dieses Video nehmen',

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Loader2, Play, RefreshCw, Trash2, Volume2, Film, Image as ImageIcon, Camera,
+  ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Loader2, Play, RefreshCw, Trash2, Volume2, Film, Image as ImageIcon, Camera, Tag, Check,
 } from 'lucide-react';
 import type { Campaign } from '../types';
 import {
@@ -60,6 +60,9 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
   const [labels, setLabels] = useState<Record<string, string>>({});
   const [viewing, setViewing] = useState<number | null>(null);
   const [camera, setCamera] = useState(false);
+  // The name for the next story (shown to guests under its bubble).
+  const [nextName, setNextName] = useState('');
+  const [savedId, setSavedId] = useState<string | null>(null);
   const list = stories ?? [];
   const full = list.length >= STORIES_MAX;
   const canAdd = canEdit && isPro && !full && !job;
@@ -78,15 +81,17 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
       return;
     }
     setJob({ stage: 'uploading', progress: 1, video });
+    const label = nextName.trim().slice(0, STORY_LABEL_MAX) || null;
     const r = await addPageStory(campaign.id, {
       kind: prepared.kind, media: prepared.media, mediaType: prepared.mediaType, poster: prepared.poster,
-      label: null, durationMs: prepared.durationMs, hasSound: prepared.hasSound,
+      label, durationMs: prepared.durationMs, hasSound: prepared.hasSound,
     });
     if (!r.ok) {
       setJob(null);
       setError(t(ADD_ERRORS[r.error][0], { defaultValue: ADD_ERRORS[r.error][1] }));
       return;
     }
+    setNextName('');
     try { onChange(await getMyPageStories(campaign.id)); } catch { onReload(); }
     setJob(null);
   };
@@ -97,8 +102,11 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
     setBusyId(s.id);
     const ok = await updatePageStory(s.id, v || null, s.hidden);
     setBusyId(null);
-    if (ok) onChange(list.map((x) => (x.id === s.id ? { ...x, label: v || null } : x)));
-    else setError(t('dash.page.errNetwork', { defaultValue: "Couldn't save. Check your connection and try again." }));
+    if (ok) {
+      onChange(list.map((x) => (x.id === s.id ? { ...x, label: v || null } : x)));
+      setSavedId(s.id);
+      window.setTimeout(() => setSavedId((cur) => (cur === s.id ? null : cur)), 1800);
+    } else setError(t('dash.page.errNetwork', { defaultValue: "Couldn't save. Check your connection and try again." }));
   };
   const toggleHidden = async (s: MyPageStory) => {
     setBusyId(s.id);
@@ -157,6 +165,14 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
           {job.video && job.stage === 'preparing' && <p className="text-xs text-gray-500">{t('dash.stories.keepOpen', { defaultValue: 'Keep this page open. It takes a few seconds.' })}</p>}
         </div>
       ) : (
+        <div className="space-y-3">
+        <div className="max-w-md">
+          <label htmlFor="story-next-name" className="text-sm font-medium inline-flex items-center gap-1.5"><Tag className="w-3.5 h-3.5 text-gray-500" />{t('dash.stories.nameLabel', { defaultValue: 'Story name' })}</label>
+          <input id="story-next-name" value={nextName} maxLength={STORY_LABEL_MAX} disabled={!canAdd} onChange={(e) => setNextName(e.target.value)} data-stories-name
+            placeholder={t('dash.stories.namePh', { defaultValue: 'e.g. New menu, Our team, Today\'s cakes' })}
+            className="mt-1 w-full border notion-border rounded-lg bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#37352F]/10 disabled:bg-[#FBFBFA]" />
+          <p className="text-xs text-gray-500 mt-1">{t('dash.stories.nameHint', { n: STORY_LABEL_MAX, defaultValue: 'Shown under the bubble so guests know what it is about. Optional, up to {{n}} characters. Type it, then add the story.' })}</p>
+        </div>
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" className={btnDark} disabled={!canAdd || !rights} onClick={() => fileRef.current?.click()} data-stories-pick>
             <ImagePlus className="w-4 h-4" />{t('dash.stories.pick', { defaultValue: 'Choose a video or photo' })}
@@ -166,6 +182,7 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
           </button>
           {!rights && canAdd && <span className="text-xs text-gray-500">{t('dash.stories.tickFirst', { defaultValue: 'Tick the box first.' })}</span>}
           {full && <span className="text-xs text-gray-500">{t('dash.stories.errMany', { defaultValue: 'You have 10 stories. Delete one to add another.' })}</span>}
+        </div>
         </div>
       )}
       {error && <p className="text-sm text-red-600" data-stories-error>{error}</p>}
@@ -215,11 +232,17 @@ export function StoriesTab({ campaign, stories, loadError, onReload, onChange, i
                 {s.hidden && <span className="absolute right-2 top-2 rounded-full bg-white/90 text-[11px] font-medium px-2 py-0.5">{t('dash.stories.hiddenTag', { defaultValue: 'Hidden' })}</span>}
               </button>
               <div className="p-2.5 space-y-2">
-                <input value={labels[s.id] ?? s.label ?? ''} maxLength={STORY_LABEL_MAX} disabled={!canEdit} data-story-label-input
-                  onChange={(e) => setLabels((l) => ({ ...l, [s.id]: e.target.value }))}
-                  onBlur={() => void saveLabel(s)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                  placeholder={t('dash.stories.labelPh', { defaultValue: 'Name (optional)' })}
-                  className="w-full border notion-border rounded-md px-2 py-1.5 text-xs disabled:bg-white" />
+                <label className="block">
+                  <span className="flex items-center justify-between text-[11px] font-medium text-gray-500 mb-1">
+                    <span className="inline-flex items-center gap-1"><Tag className="w-3 h-3" />{t('dash.stories.nameShown', { defaultValue: 'Name shown to guests' })}</span>
+                    {savedId === s.id && <span className="inline-flex items-center gap-0.5 text-green-700" data-story-label-saved><Check className="w-3 h-3" />{t('dash.stories.saved', { defaultValue: 'Saved' })}</span>}
+                  </span>
+                  <input value={labels[s.id] ?? s.label ?? ''} maxLength={STORY_LABEL_MAX} disabled={!canEdit} data-story-label-input
+                    onChange={(e) => setLabels((l) => ({ ...l, [s.id]: e.target.value }))}
+                    onBlur={() => void saveLabel(s)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    placeholder={t('dash.stories.labelPh2', { defaultValue: 'e.g. Our team' })}
+                    className="w-full border notion-border rounded-md px-2 py-1.5 text-xs disabled:bg-white" />
+                </label>
                 {canEdit && (
                   <div className="flex items-center justify-between">
                     <div className="flex">
