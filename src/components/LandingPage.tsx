@@ -363,7 +363,7 @@ export function LandingPage({
         </h1>
 
         <p className="text-xl text-gray-500 mb-10 max-w-xl mx-auto md:mx-0 leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-          {t('hero.sub2', { defaultValue: 'Loyalty cards in Apple and Google Wallet, one QR code for your menu, Wi-Fi and reviews, and offers that bring people back. Everything a local business needs, in one place.' })}
+          {t('hero.sub2', { defaultValue: 'Loyalty cards in Apple and Google Wallet, one QR code for your services, Wi-Fi and reviews, and offers that bring people back. Everything a local business needs, in one place.' })}
         </p>
 
         <div className="flex flex-col items-center md:items-start gap-2 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
@@ -415,7 +415,7 @@ export function LandingPage({
               </div>
               <div className="flex absolute bottom-8 right-1 md:bottom-12 md:-right-4 items-center gap-1.5 md:gap-2 bg-white rounded-full px-2.5 py-1.5 md:px-3.5 md:py-2 text-xs md:text-sm font-medium text-[#37352F] whitespace-nowrap"
                    style={{ animation: 'hero-float 6.5s ease-in-out infinite', animationDelay: '1.8s', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' }}>
-                <UtensilsCrossed className="w-4 h-4 text-sky-500" /> {t('hero.pill2Order', { defaultValue: 'Table ordering' })}
+                <UtensilsCrossed className="w-4 h-4 text-sky-500" /> {t('hero.pill2Order', { defaultValue: 'QR ordering' })}
               </div>
             </div>
           </div>
@@ -484,7 +484,7 @@ export function LandingPage({
             {t('budget.t1b', { defaultValue: 'Big-brand marketing,' })}<br />{t('budget.t2')}
           </h2>
           <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-8 leading-relaxed">
-            {t('budget.body2', { defaultValue: 'Loyalty cards, offers, your business page and table ordering for one flat monthly price. No setup fees, no app development, no hardware, and unlimited customers.' })}
+            {t('budget.body2', { defaultValue: 'Loyalty cards, offers, your business page and QR ordering for one flat monthly price. No setup fees, no app development, no hardware, and unlimited customers.' })}
           </p>
           <a href="/savings" className="inline-flex items-center gap-2 bg-white border notion-border text-[#37352F] px-5 py-2.5 rounded-lg font-medium hover:border-[#37352F] transition">
             {t('budget.cta')} <ArrowRight className="w-4 h-4" />

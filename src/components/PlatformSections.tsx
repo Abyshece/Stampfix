@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import {
   Wallet, QrCode, BellRing, UtensilsCrossed, BarChart3, Store, Check, ChevronDown,
-  Star, Wifi, Gamepad2, MessageSquare, Truck, Link2, Play, CreditCard, ArrowRight, X,
+  Star, Wifi, Gamepad2, MessageSquare, Link2, Play, CreditCard, ArrowRight, X,
 } from 'lucide-react';
 
 // Landing page: what Stampfix is now (a marketing and retention platform),
@@ -13,19 +13,19 @@ const GROUPS = [
     'Stamp cards in Apple and Google Wallet', 'No app to download, no paper to lose', 'Your phone is the scanner, no hardware',
     'Your logo, colours and stamp icons', 'Stamp limits that stop cheating', 'Lost cards found again in seconds'] },
   { key: 'page', icon: QrCode, color: '#7C3AED', title: 'Business page', items: [
-    'One QR code for everything', 'Menu, Wi-Fi and Google reviews', 'Delivery apps, socials and links',
+    'One QR code for everything', 'Services, prices, Wi-Fi and Google reviews', 'Website, online shop, delivery apps and socials',
     'Stories with your photos and videos', 'Private feedback and a quick game', 'Change it any time, no reprinting'] },
   { key: 'marketing', icon: BellRing, color: '#F59E0B', title: 'Marketing and win-back', items: [
     'Offers on the lock screen', 'Reminders when customers are nearby', 'Ready-made “we miss you” offers',
-    'See who has stopped coming', 'Coupons for your menu', 'Marketing consent collected for you'] },
-  { key: 'ordering', icon: UtensilsCrossed, color: '#0EA5E9', title: 'Table ordering', items: [
-    'Guests order from the table by QR', 'New orders arrive with an alert', 'Accept, mark ready, collected',
-    'Guests follow their order live', 'Build your menu or upload it', 'Free on every plan'] },
+    'See who has stopped coming', 'Coupons for orders', 'Marketing consent collected for you'] },
+  { key: 'ordering', icon: UtensilsCrossed, color: '#0EA5E9', title: 'QR ordering', items: [
+    'Customers order from their phone by QR', 'New orders arrive with an alert', 'Accept, mark ready, collected',
+    'Customers follow their order live', 'Build your menu or price list, or upload it', 'Free on every plan'] },
   { key: 'insights', icon: BarChart3, color: '#2563EB', title: 'Insights and results', items: [
     'Know who your regulars are', 'Visits, rewards and retention', 'Average spend and campaign returns',
     'Customer list and activity log', 'Export your data any time'] },
   { key: 'shop', icon: Store, color: '#E11D48', title: 'Built for your shop', items: [
-    'Staff accounts you control', 'Multiple locations', 'Print-ready posters and table codes',
+    'Staff accounts you control', 'Multiple locations', 'Print-ready posters and QR codes',
     'Live in a few minutes', 'GDPR handled for you', 'English and German'] },
 ] as const;
 
@@ -67,7 +67,7 @@ export function PlatformGrid() {
 /** "One QR code replaces": the things on the counter that Stampfix takes over. */
 export function ReplacesStrip() {
   const { t } = useTranslation();
-  const things = ['Paper stamp cards', 'Menu PDFs', 'Wi-Fi password signs', 'Review cards', 'Link-in-bio pages', 'A separate ordering app'];
+  const things = ['Paper stamp cards', 'Price lists and menu PDFs', 'Wi-Fi password signs', 'Review cards', 'Link-in-bio pages', 'A separate ordering app'];
   return (
     <section className="max-w-5xl mx-auto px-6 py-10 text-center" data-replaces>
       <p className="text-sm font-medium text-gray-500 mb-4">{t('landing.replaces.title', { defaultValue: 'One QR code replaces' })}</p>
@@ -88,7 +88,7 @@ export function SoundFamiliar() {
   const qs = [
     { q: 'Who are your regulars?', a: 'Most shops could not name their top 20 customers. Stampfix shows you who they are, how often they come and what they spend.' },
     { q: 'Do you notice when they stop coming?', a: 'When a regular goes quiet, Stampfix spots it and prepares a “we miss you” offer you can send in one tap, then shows you who came back.' },
-    { q: 'How many tools are you paying for?', a: 'A loyalty app, a menu QR, a link page, an ordering tool. Stampfix is one login, one QR code and one flat price.' },
+    { q: 'How many tools are you paying for?', a: 'A loyalty app, a QR code for your price list, a link page, an ordering tool. Stampfix is one login, one QR code and one flat price.' },
   ];
   return (
     <section className="max-w-6xl mx-auto px-6 pt-20 md:pt-24" data-sound-familiar>
@@ -112,9 +112,9 @@ export function LandingFaq() {
   const faqs = [
     { q: 'Do my customers need to download an app?', a: 'No. The loyalty card goes into Apple Wallet or Google Wallet, which is already on their phone. Your business page opens in the browser.' },
     { q: 'Do I need any hardware?', a: 'No. Your phone or tablet is the scanner. Print your QR code on the posters we make for you, and you are ready.' },
-    { q: 'Why one platform instead of separate tools?', a: 'Because everything works together. A guest who scans your table QR can order, join your loyalty card and get your offers later, all from one scan, and you see it all in one place.' },
-    { q: 'Can I change my page without reprinting the QR code?', a: 'Yes. The QR code always points to your page, so you can change your menu, links, Wi-Fi or offers any time.' },
-    { q: 'Is table ordering extra?', a: 'No. Table ordering and your menu are free on every plan.' },
+    { q: 'Why one platform instead of separate tools?', a: 'Because everything works together. A customer who scans your QR code can order, join your loyalty card and get your offers later, all from one scan, and you see it all in one place.' },
+    { q: 'Can I change my page without reprinting the QR code?', a: 'Yes. The QR code always points to your page, so you can change your services, prices, links, Wi-Fi or offers any time.' },
+    { q: 'Is ordering extra?', a: 'No. QR ordering and your menu or price list are free on every plan.' },
     { q: 'Is it GDPR compliant, and can I cancel any time?', a: 'Yes to both. Marketing consent is collected for you, your data can be exported any time, and there is no contract.' },
   ];
   return (
@@ -158,17 +158,16 @@ export function ClosingCta({ onStart }: { onStart: () => void }) {
 
 const QR_ITEMS = [
   { key: 'join', icon: CreditCard, label: 'Join your loyalty card' },
-  { key: 'menu', icon: UtensilsCrossed, label: 'See the menu and order' },
+  { key: 'menu', icon: UtensilsCrossed, label: 'See your services and prices, and order' },
   { key: 'review', icon: Star, label: 'Leave a Google review' },
   { key: 'wifi', icon: Wifi, label: 'Connect to your Wi-Fi' },
-  { key: 'delivery', icon: Truck, label: 'Order on Uber Eats, DoorDash or Lieferando' },
-  { key: 'links', icon: Link2, label: 'Find your Instagram, TikTok and website' },
+  { key: 'links', icon: Link2, label: 'Find your website, online shop, delivery apps and socials' },
   { key: 'stories', icon: Play, label: 'Watch your latest photos and videos' },
   { key: 'feedback', icon: MessageSquare, label: 'Send you private feedback' },
   { key: 'game', icon: Gamepad2, label: 'Play a quick game while they wait' },
 ] as const;
 
-/** "One QR code. Everything your guests need." The business page, with a phone mock-up. */
+/** "One QR code. Everything your customers need." The business page, with a phone mock-up. */
 export function OneQrSection() {
   const { t } = useTranslation();
   return (
@@ -179,10 +178,10 @@ export function OneQrSection() {
             <QrCode className="w-3.5 h-3.5" /> {t('landing.qr.kicker', { defaultValue: 'Your business page' })}
           </span>
           <h2 className="text-3xl md:text-5xl font-serif-display font-medium mt-4 mb-4 tracking-tight text-balance">
-            {t('landing.qr.h2', { defaultValue: 'One QR code. Everything your guests need.' })}
+            {t('landing.qr.h2', { defaultValue: 'One QR code. Everything your customers need.' })}
           </h2>
           <p className="text-lg text-gray-500 mb-8 leading-relaxed text-pretty">
-            {t('landing.qr.sub', { defaultValue: 'Put one QR code on your counter, tables and window. Guests land on your own page, and you can change what is on it any time, without reprinting.' })}
+            {t('landing.qr.sub', { defaultValue: 'Put one QR code on your counter, in your window or wherever customers wait. They land on your own page, and you can change what is on it any time, without reprinting.' })}
           </p>
           <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
             {QR_ITEMS.map(({ key, icon: Icon, label }) => (
@@ -203,10 +202,10 @@ export function OneQrSection() {
 function PagePhone() {
   const { t } = useTranslation();
   const tiles: { key: string; icon: typeof Star; label: string; tint: string }[] = [
-    { key: 'menu', icon: UtensilsCrossed, label: 'Menu & order', tint: '#0EA5E9' },
+    { key: 'services', icon: CreditCard, label: 'Services', tint: '#0EA5E9' },
     { key: 'review', icon: Star, label: 'Google review', tint: '#F59E0B' },
     { key: 'wifi', icon: Wifi, label: 'Wi-Fi', tint: '#16A34A' },
-    { key: 'delivery', icon: Truck, label: 'Delivery', tint: '#E11D48' },
+    { key: 'links', icon: Link2, label: 'Links', tint: '#E11D48' },
     { key: 'game', icon: Gamepad2, label: 'Play a game', tint: '#7C3AED' },
     { key: 'feedback', icon: MessageSquare, label: 'Feedback', tint: '#2563EB' },
   ];
@@ -214,11 +213,11 @@ function PagePhone() {
   return (
     <div aria-hidden className="relative w-[270px] h-[560px] rounded-[44px] border-[10px] border-[#1F1F1F] bg-white shadow-2xl overflow-hidden">
       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-5 rounded-full bg-[#1F1F1F] z-10" />
-      <div className="h-28 bg-gradient-to-br from-[#7C2D12] via-[#B45309] to-[#F59E0B]" />
+      <div className="h-28 bg-gradient-to-br from-[#831843] via-[#BE185D] to-[#F472B6]" />
       <div className="px-4 -mt-8">
-        <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center text-2xl">☕</div>
-        <div className="mt-2 font-semibold text-[#37352F]">Bean &amp; Brew</div>
-        <div className="text-[11px] text-gray-500">{t('landing.qr.phone.sub', { defaultValue: 'Café · Open until 6 pm' })}</div>
+        <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center text-2xl">💇</div>
+        <div className="mt-2 font-semibold text-[#37352F]">Glow Studio</div>
+        <div className="text-[11px] text-gray-500">{t('landing.qr.phone.sub', { defaultValue: 'Hair & beauty · Open until 7 pm' })}</div>
         <div className="flex gap-2 mt-3">
           {stories.map((c, i) => (
             <div key={c} className="w-10 h-10 rounded-full p-[2px]" style={{ background: `linear-gradient(135deg, ${c}, #F472B6)` }}>

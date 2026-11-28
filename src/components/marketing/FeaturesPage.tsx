@@ -24,7 +24,7 @@ function useInView<T extends HTMLElement>(threshold = 0.2) {
 
 // Colours pulled from the wallet-card palette.
 const STEPS = [
-  { n: '1', c: '#75FBFD', title: 'Guests scan one QR code', body: 'Your business page opens in the browser with your loyalty card, menu, Wi-Fi, reviews and more. Nothing to install.' },
+  { n: '1', c: '#75FBFD', title: 'Customers scan one QR code', body: 'Your business page opens in the browser with your loyalty card, services, Wi-Fi, reviews and more. Nothing to install.' },
   { n: '2', c: '#510AF5', title: 'They join and collect', body: 'One tap saves your loyalty card to Apple or Google Wallet. You stamp with your phone, and every stamp is checked, so it can\u2019t be faked.' },
   { n: '3', c: '#EA3323', title: 'You bring them back', body: 'Offers, nearby reminders and \u201cwe miss you\u201d messages land on their lock screen, and you see who came back.' },
 ];
@@ -113,7 +113,7 @@ export function FeaturesPage() {
           {t('features.h1', { defaultValue: 'One platform to turn first-time customers into regulars.' })}
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed">
-          {t('features.sub', { defaultValue: 'Loyalty cards in Apple and Google Wallet, your business page behind one QR code, ready-made offers that bring people back, table ordering and clear results. Everything in one place, for one flat price.' })}
+          {t('features.sub', { defaultValue: 'Loyalty cards in Apple and Google Wallet, your business page behind one QR code, ready-made offers that bring people back, QR ordering and clear results. Everything in one place, for one flat price.' })}
         </p>
       </section>
 
