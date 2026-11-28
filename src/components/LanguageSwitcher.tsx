@@ -5,7 +5,7 @@ import { Globe, ChevronDown } from 'lucide-react';
 const LABELS: Record<'en' | 'de', string> = { en: 'English', de: 'Deutsch' };
 
 /** 🌐 Language dropdown (EN/DE). Changes the active language and remembers it.
- *  compact: a tighter button on phones (no arrow), for crowded headers. */
+ *  compact: just the globe on phones (no "EN", no arrow), for crowded headers. */
 export function LanguageSwitcher({ className = '', compact = false }: { className?: string; compact?: boolean }) {
   const { i18n } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -42,11 +42,11 @@ export function LanguageSwitcher({ className = '', compact = false }: { classNam
     <div ref={ref} className={`relative ${className}`}>
       <button
         onClick={toggle}
-        className={`inline-flex items-center gap-1 text-sm text-gray-600 hover:text-[#37352F] py-2 transition ${compact ? 'px-1.5 sm:px-2' : 'px-2'}`}
+        className={`inline-flex items-center gap-1 text-sm text-gray-600 hover:text-[#37352F] py-2 transition px-2`}
         aria-haspopup="true" aria-expanded={open} aria-label="Change language" data-lang-switch
       >
-        <Globe className="w-4 h-4" />
-        <span className={`uppercase font-medium ${compact ? 'max-[359px]:hidden' : ''}`}>{lang}</span>
+        <Globe className={compact ? 'w-[18px] h-[18px] sm:w-4 sm:h-4' : 'w-4 h-4'} />
+        <span className={`uppercase font-medium ${compact ? 'hidden sm:inline' : ''}`}>{lang}</span>
         <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''} ${compact ? 'hidden sm:block' : ''}`} />
       </button>
       {open && (

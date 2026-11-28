@@ -18,13 +18,15 @@ const NAV_LINKS = [
 ];
 
 /** Primary charcoal CTA used across marketing pages. Links home, where signup lives. */
-export function StartButton({ label = 'Start your free trial', className = '' }: { label?: string; className?: string }) {
+/** shortLabel: shown on phones instead of label, on one line and without the arrow (the header). */
+export function StartButton({ label = 'Start your free trial', shortLabel, className = '' }: { label?: string; shortLabel?: string; className?: string }) {
   return (
     <a
       href="/?signup=1"
-      className={`inline-flex items-center justify-center gap-2 bg-[#37352F] text-white rounded-lg font-medium hover:bg-[#2F2D28] transition shadow-sm ${className}`}
+      className={`inline-flex items-center justify-center gap-2 bg-[#37352F] text-white rounded-lg font-medium hover:bg-[#2F2D28] transition shadow-sm ${shortLabel ? 'whitespace-nowrap' : ''} ${className}`}
     >
-      {label} <ArrowRight className="w-4 h-4" />
+      {shortLabel ? <><span className="sm:hidden">{shortLabel}</span><span className="hidden sm:inline">{label}</span></> : label}
+      <ArrowRight className={`w-4 h-4 ${shortLabel ? 'hidden sm:block' : ''}`} />
     </a>
   );
 }
@@ -94,9 +96,9 @@ export function MarketingLayout({ children, active }: { children: ReactNode; act
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <a href="/?login=1" className="text-gray-600 hover:text-[#37352F] px-2 py-2 text-sm transition whitespace-nowrap hidden sm:inline">{t('nav.login', { defaultValue: 'Log in' })}</a>
-            <StartButton label={t('nav.startFree', { defaultValue: 'Start your free trial' })} className="px-3 sm:px-4 py-2 text-sm" />
             <LanguageSwitcher compact />
+            <a href="/?login=1" className="text-gray-600 hover:text-[#37352F] px-2 py-2 text-sm transition whitespace-nowrap hidden sm:inline">{t('nav.login', { defaultValue: 'Log in' })}</a>
+            <StartButton label={t('nav.startFree', { defaultValue: 'Start your free trial' })} shortLabel={t('nav.startFreeShort', { defaultValue: 'Free trial' })} className="px-3 sm:px-4 py-2 text-sm" />
             <MobileNav
               links={[
                 { href: '/find-card', label: t('nav.myCard', { defaultValue: 'My loyalty card' }) },

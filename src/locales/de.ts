@@ -1,5 +1,5 @@
 const de = {
-  nav: { features: 'Funktionen', pricing: 'Preise', about: 'Über uns', lostCard: 'Stempelkarte verloren?', lostCardMobile: 'Stempelkarte verloren? Hier herunterladen', dashboard: 'Zum Dashboard', login: 'Anmelden', myCard: 'Meine Treuekarte', startFree: 'Kostenlos testen', deals: 'Deals' },
+  nav: { features: 'Funktionen', pricing: 'Preise', about: 'Über uns', lostCard: 'Stempelkarte verloren?', lostCardMobile: 'Stempelkarte verloren? Hier herunterladen', dashboard: 'Zum Dashboard', login: 'Anmelden', myCard: 'Meine Treuekarte', startFree: 'Kostenlos testen', startFreeShort: 'Gratis testen', deals: 'Deals' },
   login: {
     title: 'Anmelden', which: 'Welche Art von Konto?',
     merchant: 'Händler-Login', merchantDesc: 'Verwalten Sie Ihr Treueprogramm und Ihr Dashboard.',
