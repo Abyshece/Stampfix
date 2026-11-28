@@ -342,6 +342,7 @@ const de = {
       title: 'Stempel-Sticker',
       sub: 'Für Stempel per Selbstbedienung. Legen Sie ihn an die Kasse: Zahlende Gäste scannen ihn, oder legen ihr Handy auf, wenn ein NFC-Tag dahinter klebt, und bekommen ihren Stempel. Gleiche Größe und Farben wie Ihr Tisch-Sticker.',
       preview: 'Vorschau des Stempel-Stickers',
+      shared: 'Geteilt mit Ihrem Tisch-Sticker, damit beide immer zusammenpassen.',
     },
     sticker: {
       title: 'Tisch-Sticker',

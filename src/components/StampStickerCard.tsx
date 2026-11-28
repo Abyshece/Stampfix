@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download, Loader2, MapPin, Stamp } from 'lucide-react';
 import type { Campaign, Location } from '../types';
-import { DEFAULT_STICKER, getMyPageSticker, type StickerDesign } from '../lib/businessPage';
 import { STICKER_W, STICKER_H, buildStampStickerHtml, downloadStampStickerPng, prefetchStickerFonts } from '../services/tableSticker';
+import { StickerColourField, StickerBgField, StickerNameField, StickerNfcField, StickerSaveButton, stickerLabel, type StickerState } from './stickerShared';
 
 const btnDark = 'inline-flex items-center justify-center gap-1.5 bg-[#37352F] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-opacity-90 transition disabled:opacity-50';
 const btnLight = 'inline-flex items-center justify-center gap-1.5 bg-white border notion-border text-[#37352F] px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-[#F7F7F5] transition disabled:opacity-50';
@@ -11,26 +11,26 @@ const btnLight = 'inline-flex items-center justify-center gap-1.5 bg-white borde
 /**
  * The self-serve stamp sticker (Business page > QR code, self-serve shops):
  * the counter stamp QR code with "Scan or tap to get your stamp", in the same
- * small sticker format and colours as the table sticker. One per branch.
+ * small sticker format and colours as the table sticker. One per branch. Its
+ * colour, background, name and NFC mark are the shop's sticker design, shared
+ * with the table sticker; owners can change them here too.
  */
-export function StampStickerCard({ campaign, locations, stampUrlFor }: {
+export function StampStickerCard({ sticker, canEdit, campaign, locations, stampUrlFor }: {
+  sticker: StickerState;
+  /** False for staff who may not open Settings: preview and downloads only. */
+  canEdit: boolean;
   campaign: Campaign;
   /** Active branches; with several, the owner picks which one. */
   locations: Location[];
   stampUrlFor: (loc: Location | null) => string;
 }) {
   const { t, i18n } = useTranslation();
-  const [design, setDesign] = useState<StickerDesign>(DEFAULT_STICKER);
+  const { design } = sticker;
   const [lang, setLang] = useState<'en' | 'de'>(i18n.language?.startsWith('de') ? 'de' : 'en');
   const [locId, setLocId] = useState<string | null>(locations[0]?.id ?? null);
   const [busy, setBusy] = useState<'one' | 'sheet' | null>(null);
 
   useEffect(() => { prefetchStickerFonts(); }, []);
-  useEffect(() => {
-    let live = true;
-    void getMyPageSticker(campaign.id).then((d) => { if (live) setDesign(d); });
-    return () => { live = false; };
-  }, [campaign.id]);
 
   const loc = locations.find((l) => l.id === locId) ?? locations[0] ?? null;
   const input = { url: stampUrlFor(loc), design, cardColor: campaign.primaryColor, businessName: campaign.businessName, lang };
@@ -75,7 +75,21 @@ export function StampStickerCard({ campaign, locations, stampUrlFor }: {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      {canEdit && sticker.loaded && (
+        <div className="grid gap-5 md:grid-cols-2" data-stamp-sticker-controls>
+          <StickerColourField state={sticker} cardColor={campaign.primaryColor} scope="stamp-sticker" />
+          <StickerBgField state={sticker} scope="stamp-sticker" />
+          <div className="space-y-2">
+            <div className={stickerLabel}>{t('dash.sticker.nameLabel', { defaultValue: 'Name on the sticker' })}</div>
+            <StickerNameField state={sticker} placeholder={campaign.businessName} scope="stamp-sticker" />
+          </div>
+          <StickerNfcField state={sticker} scope="stamp-sticker" />
+          <p className="md:col-span-2 text-xs text-gray-400 -mt-2">{t('dash.stampSticker.shared', { defaultValue: 'Shared with your table sticker, so both always match.' })}</p>
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2 pt-1 border-t notion-border">
+        {canEdit && sticker.loaded && <StickerSaveButton state={sticker} scope="stamp-sticker" />}
         <div className="inline-flex bg-[#F1F1EF] rounded-lg p-1" role="group" aria-label={t('dash.sticker.language', { defaultValue: 'Language' })}>
           {(['en', 'de'] as const).map((l) => (
             <button key={l} type="button" className={seg(lang === l)} onClick={() => setLang(l)} aria-pressed={lang === l} data-stamp-sticker-lang={l}>
@@ -99,6 +113,7 @@ export function StampStickerCard({ campaign, locations, stampUrlFor }: {
           {busy === 'sheet' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}{t('dash.sticker.downloadSheet', { defaultValue: 'A4 sheet (5 stickers)' })}
         </button>
       </div>
+      {sticker.error && <p className="text-sm text-red-600" role="alert">{sticker.error}</p>}
     </div>
   );
 }

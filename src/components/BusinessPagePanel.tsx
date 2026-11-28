@@ -23,6 +23,7 @@ import { LinksSettings, normalizeLink } from './LinksSettings';
 import { PosterSettings } from './PosterSettings';
 import { TableStickerDesigner } from './TableStickerDesigner';
 import { StampStickerCard } from './StampStickerCard';
+import { useStickerDesign } from './stickerShared';
 import { ProLockOverlay } from './ProLockOverlay';
 
 // Business page in the dashboard. One card at the top says whether the page
@@ -763,6 +764,8 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
   // With the page on, its QR code opens the page: the table sticker is the print
   // for it. The loyalty posters (stamp card only) are for shops without the page.
   const stickerOn = !!page && !!pageUrl && on;
+  // One sticker design for the table and stamp stickers (loaded when either shows).
+  const sticker = useStickerDesign(campaign.id, stickerOn || selfServe);
   const newCode = async () => {
     setCodeBusy(true); setCodeError(null);
     const r = await setCounterCode(campaign.id, null);
@@ -834,7 +837,7 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
 
       {/* The table sticker (page on). Off: a pointer to it; the posters below stay. */}
       {stickerOn && page && (
-        <TableStickerDesigner campaign={campaign} page={page} orderingEnabled={orderingEnabled} canEdit={canEdit}
+        <TableStickerDesigner sticker={sticker} campaign={campaign} page={page} orderingEnabled={orderingEnabled} canEdit={canEdit}
           locations={multi ? active : []}
           urlFor={(loc) => businessPageUrl(page.slug, { locationId: multi ? loc?.id : null })}
           onDownloaded={markPrinted} onEditLogo={() => onSection('profile')} />
@@ -880,7 +883,7 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
 
       {/* Self-serve: the stamp sticker for the till (the counter stamp QR code). */}
       {selfServe && (
-        <StampStickerCard campaign={campaign} locations={active} stampUrlFor={(loc) => stampUrlForLocation(loc?.id ?? null)} />
+        <StampStickerCard sticker={sticker} canEdit={canEdit} campaign={campaign} locations={active} stampUrlFor={(loc) => stampUrlForLocation(loc?.id ?? null)} />
       )}
 
       {orderingEnabled && (
