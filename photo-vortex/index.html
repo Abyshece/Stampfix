@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Photo Vortex</title>
+<meta name="description" content="Sign in with Google, pick your photos and fall through them in 3D: a spinning tornado of memories, or a time tunnel through your years.">
+<meta name="theme-color" content="#0c1513">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c1513'/%3E%3Cpath d='M14 16h36M19 26h26M24 36h16M28 46h8' stroke='%23f4f1ea' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" } }</script>
+</head>
+<body>
+<!--APP-->
+<canvas id="stage" aria-label="3D world made of your photos"></canvas>
+<div id="flash" aria-hidden="true"></div>
+<div id="fade" aria-hidden="true"></div>
+<div id="progress" aria-hidden="true"><i></i></div>
+
+<header class="hud-top" id="hudTop" hidden>
+  <div class="brand">Photo Vortex</div>
+  <nav class="worlds" role="tablist" aria-label="World">
+    <button role="tab" data-world="tornado" aria-selected="true">Tornado</button>
+    <button role="tab" data-world="tunnel" aria-selected="false">Time Tunnel</button>
+  </nav>
+  <div class="tools">
+    <button class="chip" id="btnEye" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      <span>Step inside</span>
+    </button>
+    <button class="icon" id="btnPlay" type="button" aria-label="Pause the movie" aria-pressed="true">
+      <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+      <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>
+    </button>
+    <button class="icon" id="btnSound" type="button" aria-label="Turn sound on" aria-pressed="false">
+      <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zM17 9l4 6M21 9l-4 6"/></svg>
+      <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zM17 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12"/></svg>
+    </button>
+    <button class="chip source" id="btnSource" type="button">
+      <svg id="sourceIcon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5L6 19"/></svg>
+      <img id="avatar" alt="" hidden referrerpolicy="no-referrer">
+      <span id="sourceLabel">Sample photos</span>
+    </button>
+  </div>
+</header>
+
+<aside class="rail" id="rail" hidden aria-label="Years"></aside>
+<div class="hint" id="hint" hidden></div>
+<div class="focus-bar" id="focusBar" hidden>
+  <div class="fb-text"><div class="fb-date"></div><div class="fb-meta"></div></div>
+  <div class="fb-actions">
+    <button class="v-btn" id="fbPrev" type="button" aria-label="Photo to the left"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="v-btn" id="fbNext" type="button" aria-label="Photo to the right"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    <button class="btn small primary" id="fbOpen" type="button">Open</button>
+    <button class="btn small ghost" id="fbBack" type="button">Back to wall</button>
+  </div>
+</div>
+<div class="year-badge" id="yearBadge" aria-live="polite"></div>
+
+<section class="intro" id="intro">
+  <div class="intro-inner">
+    <h1>Fall into your photos</h1>
+    <p class="lede">Sign in with Google, pick the photos you love, and Photo Vortex spins them into a 3D world you can drift through, year by year.</p>
+    <div class="intro-worlds" role="radiogroup" aria-label="Choose a world">
+      <button class="world-card is-on" data-world="tornado" role="radio" aria-checked="true">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="32" cy="12" rx="22" ry="5" opacity=".5"/><ellipse cx="32" cy="25" rx="15.5" ry="3.8" opacity=".6"/><ellipse cx="32" cy="37" rx="10.5" ry="2.8" opacity=".7"/><ellipse cx="32" cy="48" rx="6.5" ry="1.9" opacity=".8"/><path d="M32 5v54"/></g><g fill="currentColor"><rect x="47" y="10" width="9" height="7" rx="1" transform="rotate(-12 51 13)"/><rect x="9" y="19" width="8" height="6" rx="1" transform="rotate(8 13 22)"/><rect x="41" y="27" width="6.5" height="5" rx="1" transform="rotate(10 44 29)"/><rect x="20" y="36" width="5.5" height="4.5" rx="1"/><rect x="36" y="45.5" width="4.5" height="3.5" rx=".8"/><circle cx="32" cy="18" r="1.6"/><circle cx="32" cy="31" r="1.6"/><circle cx="32" cy="43" r="1.6"/></g></svg>
+        <b>Tornado</b>
+        <span>One endless, spinning wall of your photos around a pole of years. Fly up to any photo, or step inside.</span>
+      </button>
+      <button class="world-card" data-world="tunnel" role="radio" aria-checked="false">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="32" cy="32" r="27" opacity=".35"/><circle cx="32" cy="32" r="17.5" opacity=".55"/><circle cx="32" cy="32" r="9.5" opacity=".75"/><circle cx="32" cy="32" r="3.6"/></g><g fill="currentColor"><rect x="5" y="26" width="8" height="11" rx="1" transform="rotate(-8 9 31)"/><rect x="51" y="26" width="8" height="11" rx="1" transform="rotate(8 55 31)"/><rect x="26" y="4.5" width="12" height="8" rx="1"/><rect x="26" y="51.5" width="12" height="8" rx="1"/><rect x="18" y="20" width="5" height="6" rx=".8"/><rect x="41" y="38" width="5" height="6" rx=".8"/></g></svg>
+        <b>Time Tunnel</b>
+        <span>Fly through a tunnel lined with your photos, from your first picture to today. Each year is a glowing gate.</span>
+      </button>
+    </div>
+    <div class="intro-actions">
+      <button class="btn primary" id="btnGoogle" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5L6 19"/></svg>
+        Connect Google Photos
+      </button>
+      <button class="btn ghost" id="btnDemo" type="button">Try it with sample photos</button>
+    </div>
+    <p class="fine">Google only shares the photos you choose, up to 2,000 at a time. They stay in your browser and are never stored.</p>
+  </div>
+</section>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-card" id="sheetCard"></div>
+</div>
+
+<div class="viewer" id="viewer" hidden>
+  <div class="v-backdrop"></div>
+  <div class="v-frame"><img class="v-img" alt="" draggable="false" crossorigin="anonymous"></div>
+  <button class="v-close" type="button" aria-label="Back to the vortex">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <div class="v-bar">
+    <div class="v-text">
+      <div class="v-date"></div>
+      <div class="v-meta"></div>
+    </div>
+    <div class="v-actions">
+      <button class="v-btn" data-act="prev" type="button" aria-label="Earlier photo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="v-btn" data-act="zoomout" type="button" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+      <button class="v-btn" data-act="zoomin" type="button" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12"/></svg></button>
+      <button class="v-btn" data-act="next" type="button" aria-label="Later photo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+  </div>
+  <p class="v-tip">Scroll or pinch to zoom. Zoom all the way out to fly back.</p>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<!--/APP-->
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

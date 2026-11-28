@@ -1,0 +1,13 @@
+{
+  "name": "photo-vortex",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fall through your Google Photos in 3D: a photo tornado or a time tunnel.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
