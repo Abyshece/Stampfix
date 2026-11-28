@@ -338,6 +338,11 @@ const de = {
   },
   legal: { backHome: 'Zurück zur Startseite', updated: 'Zuletzt aktualisiert:' },
   dash: {
+    stampSticker: {
+      title: 'Stempel-Sticker',
+      sub: 'Für Stempel per Selbstbedienung. Legen Sie ihn an die Kasse: Zahlende Gäste scannen ihn, oder legen ihr Handy auf, wenn ein NFC-Tag dahinter klebt, und bekommen ihren Stempel. Gleiche Größe und Farben wie Ihr Tisch-Sticker.',
+      preview: 'Vorschau des Stempel-Stickers',
+    },
     sticker: {
       title: 'Tisch-Sticker',
       sub: 'Ein kleiner Sticker für Tische und Theke, 12,5 × 5 cm. Gäste scannen ihn, oder tippen mit dem Handy darauf, wenn ein NFC-Tag dahinter klebt, und sehen Ihre Seite.',
@@ -544,7 +549,7 @@ const de = {
       olderHint: 'Diese öffnen das Anmeldeformular oder den Stempel-Bildschirm direkt, ohne Ihre Seite. Mit ihnen gedruckte Codes funktionieren weiter.',
       joinLink: 'Anmeldelink', stampQr: 'Stempel-QR für die Theke',
       stampQrHint: 'Hinter der Theke aufbewahren und auf Nachfrage zeigen.',
-      copyStampLink: 'Stempel-Link kopieren', stampPosterEn: 'Stempel-Poster · EN', stampPosterDe: 'Stempel-Poster · DE',
+      copyStampLink: 'Stempel-Link kopieren', stampPosterEn: 'Stempel-Poster · EN', stampPosterDe: 'Stempel-Poster · DE', stampStickerAbove: 'Zum Drucken nutzen Sie den Stempel-Sticker oben.',
     },
     scan: {
       errFull: 'Diese Karte ist bereits voll – lösen Sie zuerst die Belohnung ein.', errNotFull: 'Diese Karte ist noch nicht voll, es gibt noch keine Belohnung.', errFrozen: 'Stempeln ist für dieses Konto vorübergehend deaktiviert. Bitte wenden Sie sich an den Support.', errInactive: 'Dieses Konto ist nicht aktiv.', errSignedOut: 'Sie wurden abgemeldet. Bitte melden Sie sich erneut an.',

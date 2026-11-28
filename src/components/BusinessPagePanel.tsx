@@ -22,6 +22,7 @@ import { FeedbackTab } from './BusinessPageFeedback';
 import { LinksSettings, normalizeLink } from './LinksSettings';
 import { PosterSettings } from './PosterSettings';
 import { TableStickerDesigner } from './TableStickerDesigner';
+import { StampStickerCard } from './StampStickerCard';
 import { ProLockOverlay } from './ProLockOverlay';
 
 // Business page in the dashboard. One card at the top says whether the page
@@ -877,6 +878,11 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
         )}
       </div>
 
+      {/* Self-serve: the stamp sticker for the till (the counter stamp QR code). */}
+      {selfServe && (
+        <StampStickerCard campaign={campaign} locations={active} stampUrlFor={(loc) => stampUrlForLocation(loc?.id ?? null)} />
+      )}
+
       {orderingEnabled && (
         <div className={`${box} flex flex-wrap items-center gap-3`} data-table-codes>
           <UtensilsCrossed className="w-5 h-5 shrink-0" />
@@ -931,9 +937,8 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
                         <p className="text-xs text-gray-500">{t('dash.page.stampQrHint', { defaultValue: 'Keep behind the counter and show it on request.' })}</p>
                         <div className="flex flex-wrap gap-1.5">
                           <CopyButton text={stampUrl} label={t('dash.page.copyStampLink', { defaultValue: 'Copy stamp link' })} testId={`stamp-${loc?.id ?? 'shop'}`} small />
-                          <button type="button" className={`${btnDark} !px-2.5 !py-1.5 text-xs`} onClick={() => onDownloadPoster(loc, 'selfscan', 'en')}>{t('dash.page.stampPosterEn', { defaultValue: 'Stamp poster · EN' })}</button>
-                          <button type="button" className={`${btnDark} !px-2.5 !py-1.5 text-xs`} onClick={() => onDownloadPoster(loc, 'selfscan', 'de')}>{t('dash.page.stampPosterDe', { defaultValue: 'Stamp poster · DE' })}</button>
                         </div>
+                        <p className="text-xs text-gray-400">{t('dash.page.stampStickerAbove', { defaultValue: 'To print it, use the Stamp sticker above.' })}</p>
                       </div>
                     </div>
                   )}
