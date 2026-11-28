@@ -1,6 +1,6 @@
 import { PhoneField } from './PhoneField';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Loader2, LogOut, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, LogOut } from 'lucide-react';
 import type { Campaign, UserCard } from '../types';
 import { useAuth, signUpOrInCustomer, signOut } from '../lib/auth';
 import { supabase } from '../lib/supabase';
@@ -44,7 +44,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   const [error, setError] = useState<string | null>(null);
 
   // Magic-link form state
-  const [formData, setFormData] = useState({ firstName: '', surname: '', email: '', phone: '', code: '' });
+  const [formData, setFormData] = useState({ firstName: '', surname: '', email: '', phone: '' });
   const [isSendingLink, setIsSendingLink] = useState(false);
   // Turnstile token gating the signup submit.
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -186,7 +186,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
   }, [authLoading, campaign, user]);
 
   const handleSendLink = async () => {
-    if (!formData.firstName || !formData.email || !/^\d{6}$/.test(formData.code)) return;
+    if (!formData.firstName || !formData.email) return;
     if (!turnstileToken) {
       setError(t('cust.app.errSecurity', { defaultValue: 'Please complete the security check.' }));
       return;
@@ -211,10 +211,8 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
         marketingOptIn,
       }));
 
-      // The database hashes the recovery code (and saves the phone) onto the
-      // customer's new card from this row, so it must be saved before the
-      // account is created. (It used to be a direct upsert that the table's
-      // permissions rejected, so no card got a recovery code.)
+      // The database saves the phone onto the customer's new card from this
+      // row, so it must be saved before the account is created.
       try {
         await stashPendingSignup({
           email: formData.email.trim().toLowerCase(),
@@ -222,7 +220,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
           firstName: formData.firstName,
           surname: formData.surname || null,
           phone: formData.phone.trim() || null,
-          code: formData.code,
+          code: null,
           locationId: joinedLocationId ?? null,
           termsAccepted,
           marketingOptIn,
@@ -361,25 +359,9 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
               <label htmlFor="sf-phone" className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">{t('cust.app.phoneNumber', { defaultValue: 'Phone Number' })} <span className="font-normal normal-case text-gray-400">{t('cust.app.optional', { defaultValue: '(optional)' })}</span></label>
               <PhoneField id="sf-phone" onChange={(v) => setFormData({ ...formData, phone: v })} />
               <p className="text-[11px] text-gray-500 leading-relaxed">
-                {t('cust.app.phoneHint', { name: campaign.businessName, defaultValue: 'Recommended so {{name}} can reach you about your rewards and reach your card if you lose access to your email.' })}
+                {t('cust.app.phoneHint2', { name: campaign.businessName, defaultValue: 'Recommended so {{name}} can reach you about your rewards.' })}
               </p>
             </div>
-            <div className="space-y-1">
-              <label htmlFor="sf-code" className="text-[11px] font-bold uppercase text-gray-500 tracking-wider">{t('cust.app.recoveryCode', { defaultValue: 'Card recovery code (6 digits)' })}</label>
-              <input
-                id="sf-code"
-                type="text" inputMode="numeric" maxLength={6}
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                className="w-full bg-[#F7F7F5] border notion-border rounded-md px-3 py-2.5 font-mono tracking-[0.3em] focus:outline-none focus:ring-1 focus:ring-gray-400 placeholder-gray-400"
-                placeholder="••••••"
-              />
-              <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-md px-3 py-2 text-[11px] text-blue-700 leading-relaxed">
-                <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                <span>{t('cust.app.codeInfo', { defaultValue: 'Keep this recovery code safe. If you added a phone number, the two together let you recover your card — either way you can always sign back in with your email.' })}</span>
-              </div>
-            </div>
-
             {error && (
               <div className="text-xs text-red-600 bg-red-50 border border-red-100 p-2 rounded">{error}</div>
             )}
@@ -429,7 +411,7 @@ export function CustomerApp({ campaignId, joinedLocationId, onExit }: CustomerAp
 
             <button
               onClick={handleSendLink}
-              disabled={!formData.firstName || !formData.email || !/^\d{6}$/.test(formData.code) || !turnstileToken || !termsAccepted || isSendingLink}
+              disabled={!formData.firstName || !formData.email || !turnstileToken || !termsAccepted || isSendingLink}
               className="w-full bg-[#37352F] text-white py-3 rounded-md font-medium hover:bg-opacity-90 transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-2 mt-2"
             >
               {isSendingLink ? <Loader2 className="w-4 h-4 animate-spin" /> : (

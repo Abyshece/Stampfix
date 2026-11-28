@@ -4,7 +4,7 @@ import { FREE_TIER_CARD_LIMIT, FREE_TIER_WARNING_THRESHOLD } from '../types';
 import {
   ScanLine, Settings, Users, ChevronRight, Plus, Palette, Camera, X, Eye, Menu,
   BarChart3, TrendingUp, Award, Upload, History, LogOut, Trash2, Ban, Search, CheckCircle2,
-  RotateCcw, Smile, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone, ClipboardList, Puzzle, Store, BadgePercent } from 'lucide-react';
+  RotateCcw, Smile, ArrowRight, MapPin, Archive, Sparkles, Check, LifeBuoy, Info, AlertTriangle, Shield, Lock, Download, Megaphone, ClipboardList, Puzzle, Store, BadgePercent, Wallet, Stamp, CreditCard, KeyRound } from 'lucide-react';
 import { CampaignsPanel } from './CampaignsPanel';
 import { DealsPanel } from './DealsPanel';
 import { MerchantDashboardBanner } from './MerchantBannerBar';
@@ -26,7 +26,7 @@ import { MerchantValueCalculator } from './MerchantValueCalculator';
 import { ResultsPanel } from './ResultsPanel';
 import { AddonsPanel } from './AddonsPanel';
 import { BusinessPagePanel, type PageSection } from './BusinessPagePanel';
-import { getMyBusinessPage, businessPageUrl, countUnreadFeedback, type MyBusinessPage } from '../lib/businessPage';
+import { getMyBusinessPage, businessPageUrl, countUnreadFeedback, pageIsOn, type MyBusinessPage } from '../lib/businessPage';
 import { OrdersPanel } from './OrdersPanel';
 import { getOrderingSettings, countNewOrders } from '../lib/ordering';
 import { StaffPanel } from './StaffPanel';
@@ -86,7 +86,7 @@ interface MerchantDashboardProps {
 }
 
 // Links & socials and Posters & print moved to the Business page.
-type SettingsSection = 'stamping' | 'general' | 'wallet' | 'locations' | 'billing' | 'account' | 'privacy' | 'danger';
+type SettingsSection = 'stamping' | 'general' | 'wallet' | 'locations' | 'staff' | 'billing' | 'account' | 'privacy' | 'danger';
 // 'SHARE' (the former Share & Promote) is only an old name: it opens the Business page's QR codes.
 type Tab = 'DASHBOARD' | 'ORDERS' | 'PAGE' | 'CUSTOMERS' | 'ACTIVITY' | 'ANALYTICS' | 'OFFERS' | 'DEALS' | 'VALUE' | 'STAFF' | 'PREVIEW' | 'SETTINGS' | 'SHARE' | 'HELP' | 'ADDONS';
 
@@ -108,13 +108,23 @@ const TAB_PATH: Record<Tab, string> = {
   HELP: '/help',
   ADDONS: '/addons',
 };
-const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'stamping', 'locations', 'billing', 'account', 'privacy', 'danger'];
+const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'stamping', 'locations', 'staff', 'billing', 'account', 'privacy', 'danger'];
+/** Former tabs that now live in Settings: Staff, and Preview Card (the card preview is in Wallet & card). */
+const SETTINGS_ALIASES: Record<string, SettingsSection> = { '/staff': 'staff', '/preview-card': 'wallet' };
+/** Insights, Results and Activity share one sidebar item, with pills to switch. */
+const INSIGHT_TABS: Tab[] = ['ANALYTICS', 'VALUE', 'ACTIVITY'];
+// Pages added recently get a blue "New" pill until the shop opens them once
+// (saved on the account, like Campaigns). These pills stop on 1 Feb 2027.
+const NEW_PILLS_UNTIL = Date.UTC(2027, 1, 1);
+const NEW_PAGE_FLAGS: Partial<Record<Tab, 'page_opened' | 'deals_opened' | 'addons_opened' | 'results_opened'>> = {
+  PAGE: 'page_opened', DEALS: 'deals_opened', ADDONS: 'addons_opened', VALUE: 'results_opened',
+};
 const PAGE_SECTIONS: PageSection[] = ['profile', 'look', 'stories', 'buttons', 'links', 'qr', 'feedback'];
 /** Old addresses of what is now on the Business page. */
 const PAGE_ALIASES: Record<string, PageSection> = { '/promote': 'qr', '/settings/links': 'links', '/settings/posters': 'qr' };
 function pathToTab(path: string): Tab | null {
   if (PAGE_ALIASES[path] || path === '/business-page' || path.startsWith('/business-page/')) return 'PAGE';
-  if (path === '/settings' || path.startsWith('/settings/')) return 'SETTINGS';
+  if (path === '/settings' || path.startsWith('/settings/') || SETTINGS_ALIASES[path]) return 'SETTINGS';
   if (path === '/offers') return 'OFFERS'; // old links to the former Offers tab
   const e = (Object.entries(TAB_PATH) as [Tab, string][]).find(([, p]) => p === path);
   return e ? e[0] : null;
@@ -126,6 +136,7 @@ function pathToPageSection(path: string): PageSection {
 }
 const pagePath = (s: PageSection) => (s === 'profile' ? '/business-page' : `/business-page/${s}`);
 function pathToSection(path: string): SettingsSection | null {
+  if (SETTINGS_ALIASES[path]) return SETTINGS_ALIASES[path];
   const m = path.match(/^\/settings\/([a-z]+)$/);
   return m && (SETTINGS_SECTIONS as string[]).includes(m[1]) ? (m[1] as SettingsSection) : null;
 }
@@ -160,6 +171,7 @@ export function MerchantDashboard({
   const [activeTab, setActiveTab] = useState<Tab>(
     () => {
       const t = pathToTab(window.location.pathname) || (sessionStorage.getItem('sf_active_tab') as Tab) || 'DASHBOARD';
+      if (t === 'STAFF' || t === 'PREVIEW') return 'SETTINGS';
       return t === 'SHARE' ? 'PAGE' : t;
     },
   );
@@ -190,6 +202,8 @@ export function MerchantDashboard({
   useEffect(() => {
     if (staffHidden.includes(activeTab)) { setActiveTab('DASHBOARD'); window.history.replaceState({}, '', TAB_PATH.DASHBOARD); }
   }, [staffHidden, activeTab]);
+  // The Insights pages this person may open (Overview, Results, Activity).
+  const insightTabs = INSIGHT_TABS.filter((x) => !staffHidden.includes(x));
   // "NEW" badge on Campaigns until it has been opened once (saved to the account).
   const campaignsNew = !onboarding.campaigns_opened;
   // Table ordering add-on (free on every plan): whether it's on, and how many orders wait.
@@ -240,6 +254,21 @@ export function MerchantDashboard({
   useEffect(() => {
     if (activeTab === 'OFFERS' && !onboarding.campaigns_opened) void onMarkOnboardingStep({ campaigns_opened: true });
   }, [activeTab, onboarding.campaigns_opened, onMarkOnboardingStep]);
+  // "New" pill on a newer page: shown until it is opened once. Not for a shop
+  // that clearly used it already (page previewed or QR downloaded, ordering on).
+  const isNewTab = (id: Tab): boolean => {
+    if (id === 'OFFERS') return campaignsNew;
+    const flag = NEW_PAGE_FLAGS[id];
+    if (!flag || onboarding[flag] || Date.now() >= NEW_PILLS_UNTIL) return false;
+    if (id === 'PAGE' && (onboarding.page_previewed || onboarding.page_qr_downloaded)) return false;
+    if (id === 'ADDONS' && (!orderingKnown || orderingEnabled)) return false;
+    return true;
+  };
+  const activeIsNew = activeTab !== 'OFFERS' && isNewTab(activeTab);
+  useEffect(() => {
+    const flag = NEW_PAGE_FLAGS[activeTab];
+    if (activeIsNew && flag) void onMarkOnboardingStep({ [flag]: true });
+  }, [activeTab, activeIsNew, onMarkOnboardingStep]);
   useEffect(() => {
     let cancelled = false;
     listStaff(campaign.id)
@@ -342,7 +371,6 @@ export function MerchantDashboard({
   } | null>(null);
 
   // Preview
-  const [previewStamps, setPreviewStamps] = useState(3);
   // Whether the merchant dismissed the green "approved" banner. Persisted
   // per-campaign so it doesn't reappear after they close it.
   const [approvalSeen, setApprovalSeen] = useState(() => {
@@ -353,6 +381,9 @@ export function MerchantDashboard({
   // -------------------- Handlers --------------------
 
   const handleTabChange = (to: Tab) => {
+    // Staff and Preview Card now live in Settings.
+    if (to === 'STAFF') { openSettingsSection('staff'); return; }
+    if (to === 'PREVIEW') { openSettingsSection('wallet'); return; }
     // The old Share & Promote (banners, saved links) opens the Business page's QR codes.
     const tab: Tab = to === 'SHARE' ? 'PAGE' : to;
     if (tab === 'SETTINGS') {
@@ -582,7 +613,19 @@ export function MerchantDashboard({
    *    'pending_deletion' = BLOCKED + deletion_requested_at set
    *  No 'deleted' bucket because the cleanup job actually removes those rows.
    */
-  const [settingsSection, setSettingsSection] = useState<SettingsSection>(() => pathToSection(window.location.pathname) || 'general');
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>(() => {
+    const fromPath = pathToSection(window.location.pathname);
+    if (fromPath) return fromPath;
+    const saved = sessionStorage.getItem('sf_active_tab');
+    return saved === 'STAFF' ? 'staff' : saved === 'PREVIEW' ? 'wallet' : 'general';
+  });
+  // Someone on shift who may not see Staff does not get the staff section either.
+  useEffect(() => {
+    if (settingsSection === 'staff' && staffHidden.includes('STAFF')) {
+      setSettingsSection('general');
+      if (window.location.pathname === '/settings/staff') window.history.replaceState({}, '', '/settings/general');
+    }
+  }, [settingsSection, staffHidden]);
   // Keep the browser URL and the active tab in sync: normalize an unknown path
   // (e.g. "/") to the current tab on mount, and follow back/forward navigation.
   useEffect(() => {
@@ -592,6 +635,9 @@ export function MerchantDashboard({
     } else if (PAGE_ALIASES[p]) {
       // An old address (Share & Promote, Settings links or posters): show the new one.
       window.history.replaceState({}, '', pagePath(PAGE_ALIASES[p]));
+    } else if (SETTINGS_ALIASES[p]) {
+      // Staff and Preview Card moved into Settings.
+      window.history.replaceState({}, '', `/settings/${SETTINGS_ALIASES[p]}`);
     }
     const onPop = () => {
       const t = pathToTab(window.location.pathname);
@@ -768,6 +814,59 @@ export function MerchantDashboard({
 
   // -------------------- Render --------------------
 
+  // ---- Sidebar: the everyday things first, grouped; Settings and Help at the bottom ----
+  type NavItem = { id: Tab; icon: typeof ScanLine; label: string; active?: boolean; go?: () => void; isNew?: boolean };
+  const canSee = (id: Tab) => !staffHidden.includes(id);
+  const sidebarGroups: { key: string; label: string; items: NavItem[] }[] = [
+    { key: 'daily', label: t('dash.nav.groupDaily', { defaultValue: 'Every day' }), items: ([
+      { id: 'DASHBOARD', icon: ScanLine, label: t('dash.nav.scanner', { defaultValue: 'Scanner' }) },
+      ...(orderingEnabled ? [{ id: 'ORDERS' as Tab, icon: ClipboardList, label: t('dash.nav.orders', { defaultValue: 'Orders' }) }] : []),
+      { id: 'CUSTOMERS', icon: Users, label: t('dash.nav.customers', { defaultValue: 'Customers' }) },
+    ] as NavItem[]).filter((x) => canSee(x.id)) },
+    { key: 'grow', label: t('dash.nav.groupGrow', { defaultValue: 'Grow' }), items: ([
+      { id: 'PAGE', icon: Store, label: t('dash.nav.businessPage', { defaultValue: 'Business page' }) },
+      { id: 'OFFERS', icon: Megaphone, label: t('dash.nav.offers', { defaultValue: 'Campaigns' }) },
+      { id: 'DEALS', icon: BadgePercent, label: t('dash.nav.deals', { defaultValue: 'Deals' }) },
+    ] as NavItem[]).filter((x) => canSee(x.id)) },
+    { key: 'manage', label: t('dash.nav.groupManage', { defaultValue: 'Manage' }), items: [
+      ...(insightTabs.length ? [
+        { id: insightTabs[0], icon: BarChart3, label: t('dash.nav.insights', { defaultValue: 'Insights' }),
+          active: INSIGHT_TABS.includes(activeTab), go: () => handleTabChange(INSIGHT_TABS.includes(activeTab) ? activeTab : insightTabs[0]),
+          // Results is the new part of Insights.
+          isNew: insightTabs.includes('VALUE') && isNewTab('VALUE') },
+      ] : []),
+      ...([{ id: 'ADDONS', icon: Puzzle, label: t('dash.nav.addons', { defaultValue: 'Add-ons' }) }] as NavItem[]).filter((x) => canSee(x.id)),
+    ] as NavItem[] },
+  ].filter((g) => g.items.length > 0);
+  const bottomItems: NavItem[] = ([
+    { id: 'SETTINGS', icon: Settings, label: t('dash.nav.settings', { defaultValue: 'Settings' }) },
+    { id: 'HELP', icon: LifeBuoy, label: t('dash.nav.getHelp', { defaultValue: 'Get help' }) },
+  ] as NavItem[]).filter((x) => canSee(x.id));
+  const itemIsNew = (it: NavItem) => it.isNew ?? isNewTab(it.id);
+  // Phone: the tabs in the bottom bar; everything else is under More.
+  const barTabs: Tab[] = ['DASHBOARD', 'CUSTOMERS', ...(orderingEnabled ? ['ORDERS' as Tab] : INSIGHT_TABS)];
+  const moreHasNew = sidebarGroups.some((g) => g.items.some((it) => !barTabs.includes(it.id) && itemIsNew(it)));
+  const newPill = <span className="text-[9px] font-bold uppercase tracking-wider bg-blue-600 text-white px-1.5 py-0.5 rounded-full flex-shrink-0" data-nav-new>{t('dash.nav.new', { defaultValue: 'New' })}</span>;
+  const navButton = (it: NavItem) => {
+    const on = it.active ?? activeTab === it.id;
+    return (
+      <button key={it.id + it.label} onClick={it.go ?? (() => handleTabChange(it.id))} aria-current={on ? 'page' : undefined} data-nav={it.id}
+        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition ${on ? 'bg-[#EFEFEE] font-medium text-[#37352F]' : 'hover:bg-[#EFEFEE] text-gray-600'}`}>
+        <it.icon className="w-4 h-4" />
+        <span className="flex-1 text-left truncate">{it.label}</span>
+        {itemIsNew(it) && newPill}
+        {it.id === 'ORDERS' && newOrders > 0 && (
+          <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0">{newOrders}</span>
+        )}
+        {it.id === 'PAGE' && unreadFeedback > 0 && (
+          <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0" data-nav-feedback>{unreadFeedback}</span>
+        )}
+        {billing.plan === 'free' && it.id === 'HELP' && <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />}
+      </button>
+    );
+  };
+
+
   return (
     <div className="flex min-h-screen bg-white text-[#37352F] font-sans">
       {/* Confirmation Modal */}
@@ -845,55 +944,22 @@ export function MerchantDashboard({
           <svg viewBox="0 0 282 90" className="h-4 w-auto min-w-[20px] text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
           <button type="button" onClick={() => handleTabChange('DASHBOARD')} className="truncate text-left hover:underline focus:outline-none focus-visible:underline" title="Go to scanner">{campaign.businessName}</button>
         </div>
-        <div className="flex-1 overflow-y-auto py-2">
-          <div className="px-3 mb-2">
-            <div className="text-xs font-semibold text-gray-400 mb-1 px-2">{t('dash.nav.workspace', { defaultValue: 'Workspace' })}</div>
-            {([
-              ['DASHBOARD', ScanLine, t('dash.nav.scanner', { defaultValue: 'Scanner' })],
-              ['ORDERS', ClipboardList, t('dash.nav.orders', { defaultValue: 'Orders' })],
-              ['PAGE', Store, t('dash.nav.businessPage', { defaultValue: 'Business page' })],
-              ['CUSTOMERS', Users, t('dash.nav.customers', { defaultValue: 'Customers' })],
-              ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
-              ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
-              ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Campaigns' })],
-              ['DEALS', BadgePercent, t('dash.nav.deals', { defaultValue: 'Deals' })],
-              ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Results' })],
-              ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
-              ['PREVIEW', Eye, t('dash.nav.previewCard', { defaultValue: 'Preview Card' })],
-              ['ADDONS', Puzzle, t('dash.nav.addons', { defaultValue: 'Add-ons' })],
-              ['SETTINGS', Settings, t('dash.nav.settings', { defaultValue: 'Settings' })],
-              ['HELP', LifeBuoy, t('dash.nav.getHelp', { defaultValue: 'Get help' })],
-            ] as const).filter(([id]) => !staffHidden.includes(id) && (id !== 'ORDERS' || orderingEnabled)).map(([id, Icon, label]) => (
-              <button key={id} onClick={() => handleTabChange(id)}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition ${
-                  activeTab === id ? 'bg-[#EFEFEE] font-medium' : 'hover:bg-[#EFEFEE] text-gray-600'
-                }`}>
-                <Icon className="w-4 h-4" />
-                <span className="flex-1 text-left truncate">{label}</span>
-                {id === 'OFFERS' && campaignsNew && (
-                  <span className="text-[9px] font-bold uppercase tracking-wider bg-blue-600 text-white px-1.5 py-0.5 rounded-full flex-shrink-0">{t('dash.nav.new', { defaultValue: 'New' })}</span>
-                )}
-                {id === 'ORDERS' && newOrders > 0 && (
-                  <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0">{newOrders}</span>
-                )}
-                {id === 'PAGE' && unreadFeedback > 0 && (
-                  <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0" data-nav-feedback>{unreadFeedback}</span>
-                )}
-                {billing.plan === 'free' && (id === 'ANALYTICS' || id === 'HELP' || id === 'STAFF') && (
-                  <Lock className="w-3 h-3 text-gray-300 flex-shrink-0" />
-                )}
-              </button>
-            ))}
-            {isStampfixAdmin && (
-              <button
-                onClick={() => { window.location.href = '/admin'; }}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition hover:bg-[#EFEFEE] text-gray-600"
-              >
-                <Shield className="w-4 h-4" /> {t('dash.nav.admin', { defaultValue: 'Admin' })}
-              </button>
-            )}
-          </div>
-        </div>
+        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-4" data-sidebar>
+          {sidebarGroups.map((g) => (
+            <div key={g.key} data-nav-group={g.key}>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1 px-2">{g.label}</div>
+              {g.items.map((it) => navButton(it))}
+            </div>
+          ))}
+          {isStampfixAdmin && (
+            <button
+              onClick={() => { window.location.href = '/admin'; }}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition hover:bg-[#EFEFEE] text-gray-600"
+            >
+              <Shield className="w-4 h-4" /> {t('dash.nav.admin', { defaultValue: 'Admin' })}
+            </button>
+          )}
+        </nav>
 
         {/* Pro upgrade CTA — free plan only. Sits above logout so it's
          *  always visible without being intrusive. Single click opens
@@ -920,7 +986,8 @@ export function MerchantDashboard({
           </div>
         )}
 
-        <div className="p-3 border-t notion-border">
+        <div className="p-3 border-t notion-border space-y-0.5" data-nav-bottom>
+          {bottomItems.map((it) => navButton(it))}
           <button onClick={onLogout} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-red-50 text-gray-600 hover:text-red-600">
             <LogOut className="w-4 h-4" /> {t('dash.nav.logout', { defaultValue: 'Log out' })}
           </button>
@@ -942,6 +1009,31 @@ export function MerchantDashboard({
           <ChevronRight className="w-4 h-4" />
           <span className="text-[#37352F] font-medium capitalize">{t(`dash.tab.${activeTab}`, { defaultValue: activeTab === 'OFFERS' ? 'campaigns' : activeTab === 'VALUE' ? 'results' : activeTab === 'ADDONS' ? 'add-ons' : activeTab === 'PAGE' ? 'business page' : activeTab.toLowerCase() })}</span>
         </div>
+
+        {/* Insights, Results and Activity: one place, three views. */}
+        {INSIGHT_TABS.includes(activeTab) && insightTabs.length > 1 && (
+          <div className="mb-6 flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1" role="tablist" aria-label={t('dash.nav.insights', { defaultValue: 'Insights' })} data-insights-tabs>
+            {insightTabs.map((id) => {
+              const meta = {
+                ANALYTICS: { icon: BarChart3, label: t('dash.insights.tabOverview', { defaultValue: 'Overview' }), tint: '#2563EB' },
+                VALUE: { icon: TrendingUp, label: t('dash.insights.tabResults', { defaultValue: 'Results' }), tint: '#16A34A' },
+                ACTIVITY: { icon: History, label: t('dash.insights.tabActivity', { defaultValue: 'Activity' }), tint: '#7C3AED' },
+              }[id as 'ANALYTICS' | 'VALUE' | 'ACTIVITY'];
+              const on = activeTab === id;
+              return (
+                <button key={id} type="button" role="tab" aria-selected={on} onClick={() => handleTabChange(id)} data-insights-tab={id}
+                  className={`shrink-0 inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition ${on ? 'border-[#37352F] bg-[#37352F] text-white' : 'notion-border bg-white text-gray-600 hover:bg-[#F7F7F5]'}`}>
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center" style={on ? { background: 'rgba(255,255,255,0.18)' } : { background: `${meta.tint}1A`, color: meta.tint }}>
+                    <meta.icon className="w-3 h-3" />
+                  </span>
+                  {meta.label}
+                  {id === 'ANALYTICS' && !isPro && <Lock className="w-3 h-3 opacity-60" />}
+                  {!on && isNewTab(id) && newPill}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Account approval status banner */}
         {campaign.approvalStatus === 'pending' && (
@@ -1551,50 +1643,6 @@ export function MerchantDashboard({
         )}
 
         {/* --- PREVIEW --- */}
-        {activeTab === 'PREVIEW' && (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <header>
-              <h1 className="text-3xl md:text-4xl font-serif-display font-semibold mb-2">Card Preview</h1>
-              <p className="text-gray-500 text-sm md:text-base">See what your customers see in their digital wallet.</p>
-            </header>
-            <div className="grid md:grid-cols-2 gap-12 items-start">
-              <div className="bg-white p-6 rounded-lg border notion-border shadow-sm">
-                <h3 className="font-medium mb-4 text-sm uppercase tracking-wider text-gray-400">Preview Options</h3>
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Stamps Collected: {previewStamps}</label>
-                    <input type="range" min={0} max={campaign.maxStamps} value={previewStamps}
-                      onChange={(e) => setPreviewStamps(parseInt(e.target.value))}
-                      className="w-full accent-[#37352F] cursor-pointer" />
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded text-xs text-gray-500 leading-relaxed border notion-border">
-                    Customers see this card in Apple Wallet (iPhone) and Google Wallet (Android). Adjust the slider to preview different stamp counts.
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-center bg-[#F7F7F5] p-8 rounded-xl border notion-border">
-                <div className="w-full max-w-[320px]">
-                  <WalletCard
-                    campaign={campaign}
-                    card={{
-                      id: 'preview-id',
-                      campaignId: campaign.id,
-                      currentStamps: previewStamps,
-                      customerName: 'Customer Preview',
-                      email: 'preview@example.com',
-                      rewardsRedeemed: 0,
-                      joinedAt: new Date(),
-                      status: 'ACTIVE',
-                    }}
-                    disableSave
-                    staticQR
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* --- BUSINESS PAGE (one page, one QR code; replaces Share & Promote) --- */}
         {activeTab === 'PAGE' && (
           <BusinessPagePanel
@@ -1634,19 +1682,6 @@ export function MerchantDashboard({
         {activeTab === 'DEALS' && (
           <DealsPanel campaign={campaign} country={country ?? null} locations={locations} />
         )}
-        {activeTab === 'STAFF' && (
-          !isPro ? (
-            <ProFeatureLock
-              title="Staff management is a Pro feature"
-              description="Give your team their own PINs, see who stamped what, and control what each person can access."
-              bullets={['Individual staff PINs', 'Activity tracked per staff member', 'Hide sections from staff', 'Owner-PIN protected settings']}
-              onUpgrade={() => setShowUpgradeModal(true)}
-            />
-          ) : (
-            <StaffPanel campaignId={campaign.id} onSwitchStaff={() => setShowStaffGate(true)} />
-          )
-        )}
-
         {activeTab === 'ORDERS' && (
           <OrdersPanel campaignId={campaign.id} country={country ?? null} locations={locations}
             orderingEnabled={orderingEnabled || !orderingKnown} onOpenAddons={() => handleTabChange('ADDONS')} onNewCount={setNewOrders} />
@@ -1655,6 +1690,7 @@ export function MerchantDashboard({
         {activeTab === 'ADDONS' && (
           <AddonsPanel campaignId={campaign.id} businessName={campaign.businessName} country={country ?? null}
             locations={locations} pageSlug={bizPage?.slug ?? null}
+            pageOn={bizPage ? pageIsOn(bizPage) : true} onOpenPageQr={staffHidden.includes('PAGE') ? undefined : () => openPageSection('qr')}
             onOrderingChanged={setOrderingEnabled} onOpenOrders={() => handleTabChange('ORDERS')} />
         )}
 
@@ -1687,13 +1723,20 @@ export function MerchantDashboard({
                   ['wallet',    t('dash.settings.wallet', { defaultValue: 'Wallet & card' })],
                   ['locations', t('dash.settings.locations', { defaultValue: 'Locations' })],
                   ['stamping',  t('dash.settings.stamping', { defaultValue: 'Stamping mode' })],
+                  ['staff',     t('dash.settings.staff', { defaultValue: 'Staff' })],
                   ['billing',   t('dash.settings.billing', { defaultValue: 'Account & billing' })],
                   ['account',   t('dash.settings.account', { defaultValue: 'Login & security' })],
                   ['privacy',   t('dash.settings.privacy', { defaultValue: 'Privacy & data' })],
                   ['danger',    t('dash.settings.danger', { defaultValue: 'Danger zone' })],
-                ] as const).map(([id, label]) => (
+                ] as const).filter(([id]) => id !== 'staff' || !staffHidden.includes('STAFF')).map(([id, label]) => {
+                  const look = ({
+                    general: [Settings, '#64748B'], wallet: [Wallet, '#2563EB'], locations: [MapPin, '#16A34A'], stamping: [Stamp, '#0EA5E9'],
+                    staff: [Users, '#7C3AED'], billing: [CreditCard, '#EA580C'], account: [KeyRound, '#CA8A04'], privacy: [Shield, '#0F766E'], danger: [AlertTriangle, '#DC2626'],
+                  } as const)[id];
+                  const SIcon = look[0];
+                  return (
                   <button
-                    key={id}
+                    key={id} data-settings-nav={id}
                     onClick={() => { setSettingsSection(id); window.history.pushState({}, '', `/settings/${id}`); }}
                     className={`text-left text-sm px-3 py-2 rounded-md whitespace-nowrap transition ${
                       settingsSection === id
@@ -1703,9 +1746,16 @@ export function MerchantDashboard({
                           : 'text-gray-600 hover:bg-[#F7F7F5]'
                     }`}
                   >
-                    {label}
+                    <span className="inline-flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                        style={settingsSection === id ? { background: 'rgba(255,255,255,0.18)', color: '#fff' } : { background: `${look[1]}1A`, color: look[1] }}>
+                        <SIcon className="w-3 h-3" />
+                      </span>
+                      {label}{id === 'staff' && !isPro && <Lock className="inline w-3 h-3 -mt-0.5 opacity-50" />}
+                    </span>
                   </button>
-                ))}
+                  );
+                })}
               </nav>
               <div className="flex-1 min-w-0 w-full space-y-8">
               {(() => {
@@ -1713,6 +1763,7 @@ export function MerchantDashboard({
                   general:   { title: t('dash.settings.generalTitle', { defaultValue: 'General' }), hint: t('dash.settings.generalHint', { defaultValue: 'Your business name, the reward you offer, and how many stamps a customer needs. These appear on every card you issue, so changing them updates what new customers see.' }) },
                   wallet:    { title: t('dash.settings.walletTitle', { defaultValue: 'Customise your wallet' }), hint: t('dash.settings.walletHint', { defaultValue: 'Controls how the loyalty card looks inside Apple Wallet and Google Wallet — colours, text colour, and the logo at the top. The previews update live; nothing is applied until you press Save.' }) },
                   locations: { title: t('dash.settings.locationsTitle', { defaultValue: 'Locations' }), hint: t('dash.settings.locationsHint', { defaultValue: 'Add each branch so stamps are recorded against the right shop. The Scan screen lets staff pick which location they are working at, and Insights breaks results down per branch.' }) },
+                  staff:     { title: t('dash.settings.staffTitle', { defaultValue: 'Staff' }), hint: t('dash.settings.staffHint', { defaultValue: 'Give your team their own PINs, see who stamped what, and choose what each person can see.' }) },
                   stamping: { title: t('dash.settings.stampingTitle', { defaultValue: 'Stamping mode' }), hint: t('dash.settings.stampingHint', { defaultValue: 'Choose how customers collect stamps — staff scanner, or self-serve where the customer scans your counter QR (device-free, location-checked).' }) },
                   billing:   { title: t('dash.settings.billingTitle', { defaultValue: 'Account & billing' }), hint: t('dash.settings.billingHint', { defaultValue: 'Your plan, invoices, and payment method. The free plan covers your first 5 customers; Pro removes that limit and unlocks branding and multi-location features.' }) },
                   account:   { title: t('dash.settings.accountTitle', { defaultValue: 'Login & security' }), hint: t('dash.settings.accountHint', { defaultValue: 'Change the email address and password you use to sign in. Changing your email requires clicking a confirmation link we send to both your old and new address.' }) },
@@ -1838,6 +1889,19 @@ export function MerchantDashboard({
               <DownloadMyDataButton variant="merchant" />
             </div>
             )}
+
+            {settingsSection === 'staff' && !staffHidden.includes('STAFF') && (
+          !isPro ? (
+            <ProFeatureLock
+              title="Staff management is a Pro feature"
+              description="Give your team their own PINs, see who stamped what, and control what each person can access."
+              bullets={['Individual staff PINs', 'Activity tracked per staff member', 'Hide sections from staff', 'Owner-PIN protected settings']}
+              onUpgrade={() => setShowUpgradeModal(true)}
+            />
+          ) : (
+            <StaffPanel embedded campaignId={campaign.id} onSwitchStaff={() => setShowStaffGate(true)} />
+          )
+        )}
 
             {settingsSection === 'danger' && (
             <DangerZonePanel
@@ -2077,27 +2141,30 @@ export function MerchantDashboard({
                 ['CUSTOMERS', Users, t('dash.nav.people', { defaultValue: 'People' })],
                 ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
               ]) as Array<[Tab, typeof ScanLine, string]>
-          ).filter(([id]) => !staffHidden.includes(id)).map(([id, Icon, label]) => (
-            <button key={id} onClick={() => handleTabChange(id)}
+          ).filter(([id]) => (id === 'ANALYTICS' ? insightTabs.length > 0 : !staffHidden.includes(id))).map(([id, Icon, label]) => (
+            <button key={id} onClick={() => handleTabChange(id === 'ANALYTICS' ? (insightTabs[0] ?? id) : id)}
               className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-                activeTab === id ? 'text-[#37352F]' : 'text-gray-400'
+                activeTab === id || (id === 'ANALYTICS' && INSIGHT_TABS.includes(activeTab)) ? 'text-[#37352F]' : 'text-gray-400'
               }`}>
               <span className="relative">
                 <Icon className="w-6 h-6" />
                 {id === 'ORDERS' && newOrders > 0 && (
                   <span className="absolute -top-1.5 -right-2.5 text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">{newOrders}</span>
                 )}
+                {id === 'ANALYTICS' && insightTabs.includes('VALUE') && isNewTab('VALUE') && (
+                  <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-600" aria-hidden="true" data-bar-new />
+                )}
               </span>
               <span className="text-[10px] font-medium">{label}</span>
             </button>
           ))}
-          <button onClick={() => setShowMobileMoreMenu(true)}
+          <button onClick={() => setShowMobileMoreMenu(true)} data-nav-more
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              ['ACTIVITY', 'PREVIEW', 'SETTINGS', 'PAGE', 'HELP', 'VALUE', 'STAFF', 'OFFERS', 'DEALS', 'ADDONS', ...(orderingEnabled ? ['ANALYTICS'] : [])].includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
+              !barTabs.includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <span className="relative">
               <Menu className="w-6 h-6" />
-              {campaignsNew && <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-600" aria-hidden="true" />}
+              {moreHasNew && <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-600" aria-hidden="true" data-more-new />}
             </span>
             <span className="text-[10px] font-medium">{t('dash.nav.more', { defaultValue: 'More' })}</span>
           </button>
@@ -2109,38 +2176,35 @@ export function MerchantDashboard({
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowMobileMoreMenu(false)} />
           <div className="bg-white rounded-t-xl p-4 animate-in slide-in-from-bottom duration-300 relative z-10 pb-8">
             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              {([
-                ['OFFERS', Megaphone, t('dash.nav.offers', { defaultValue: 'Campaigns' })],
-                ['DEALS', BadgePercent, t('dash.nav.deals', { defaultValue: 'Deals' })],
-                ['ANALYTICS', BarChart3, t('dash.nav.insights', { defaultValue: 'Insights' })],
-                ['ACTIVITY', History, t('dash.nav.activity', { defaultValue: 'Activity' })],
-                ['VALUE', TrendingUp, t('dash.nav.payback', { defaultValue: 'Results' })],
-                ['STAFF', Users, t('dash.nav.staff', { defaultValue: 'Staff' })],
-                ['PAGE', Store, t('dash.nav.businessPageShort', { defaultValue: 'Page' })],
-                ['ADDONS', Puzzle, t('dash.nav.addons', { defaultValue: 'Add-ons' })],
-                ['PREVIEW', Eye, t('dash.nav.preview', { defaultValue: 'Preview' })],
-                ['SETTINGS', Settings, t('dash.nav.settings', { defaultValue: 'Settings' })],
-                ['HELP', LifeBuoy, t('dash.nav.getHelp', { defaultValue: 'Get help' })],
-              ] as const).filter(([id]) => !staffHidden.includes(id) && (id !== 'ANALYTICS' || orderingEnabled)).map(([id, Icon, label]) => (
-                <button key={id} onClick={() => handleTabChange(id)}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${
-                    activeTab === id ? 'bg-[#F7F7F5] border-[#37352F]' : 'bg-white border-transparent'
-                  }`}>
-                  <div className={`relative w-12 h-12 rounded-full flex items-center justify-center ${
-                    activeTab === id ? 'bg-[#37352F] text-white' : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    <Icon className="w-6 h-6" />
-                    {id === 'OFFERS' && campaignsNew && (
-                      <span className="absolute -top-1 -right-2 text-[8px] font-bold uppercase bg-blue-600 text-white px-1 py-0.5 rounded-full">{t('dash.nav.new', { defaultValue: 'New' })}</span>
-                    )}
-                    {id === 'PAGE' && unreadFeedback > 0 && (
-                      <span className="absolute -top-1 -right-2 text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">{unreadFeedback}</span>
-                    )}
-                  </div>
-                  <span className="text-xs font-medium">{label}</span>
-                </button>
-              ))}
+            {[
+              ...sidebarGroups.map((g) => ({ ...g, items: g.items.filter((it) => !barTabs.includes(it.id)) })),
+              { key: 'more', label: t('dash.nav.groupMore', { defaultValue: 'Settings and help' }), items: bottomItems },
+            ].filter((g) => g.items.length > 0).map((g) => (
+              <div key={g.key} className="mb-4" data-more-group={g.key}>
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2 px-1">{g.label}</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {g.items.map((it) => {
+                    const on = it.active ?? activeTab === it.id;
+                    return (
+                      <button key={it.id + it.label} onClick={it.go ?? (() => handleTabChange(it.id))} data-more-item={it.id}
+                        className={`flex flex-col items-center gap-2 p-2 rounded-xl border ${on ? 'bg-[#F7F7F5] border-[#37352F]' : 'bg-white border-transparent'}`}>
+                        <div className={`relative w-12 h-12 rounded-full flex items-center justify-center ${on ? 'bg-[#37352F] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                          <it.icon className="w-6 h-6" />
+                          {itemIsNew(it) && !(it.id === 'PAGE' && unreadFeedback > 0) && (
+                            <span className="absolute -top-1 -right-2 text-[8px] font-bold uppercase bg-blue-600 text-white px-1 py-0.5 rounded-full" data-nav-new>{t('dash.nav.new', { defaultValue: 'New' })}</span>
+                          )}
+                          {it.id === 'PAGE' && unreadFeedback > 0 && (
+                            <span className="absolute -top-1 -right-2 text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">{unreadFeedback}</span>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium text-center leading-tight">{it.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <div className="grid grid-cols-4 gap-2">
               {isStampfixAdmin && (
                 <button
                   onClick={() => { window.location.href = '/admin'; }}

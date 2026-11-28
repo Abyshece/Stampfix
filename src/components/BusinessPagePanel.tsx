@@ -862,10 +862,10 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
         <div className={`${box} flex flex-wrap items-center gap-3`} data-table-codes>
           <UtensilsCrossed className="w-5 h-5 shrink-0" />
           <div className="flex-1 min-w-[200px]">
-            <h3 className="font-semibold">{t('dash.page.tablesTitle', { defaultValue: 'Table QR codes' })}</h3>
-            <p className="text-sm text-gray-500">{t('dash.page.tablesHint', { defaultValue: 'Each table gets its own code. It opens your page at that table, with ordering first.' })}</p>
+            <h3 className="font-semibold">{t('dash.page.tablesTitle2', { defaultValue: 'Ordering at tables' })}</h3>
+            <p className="text-sm text-gray-500">{t('dash.page.tablesHint2', { defaultValue: 'This same QR code opens your menu. Guests add their table number at checkout. A code for each table is optional.' })}</p>
           </div>
-          <button type="button" className={btnLight} onClick={onOpenAddons}>{t('dash.page.tablesBtn', { defaultValue: 'Table codes' })}<ChevronRight className="w-4 h-4" /></button>
+          <button type="button" className={btnLight} onClick={onOpenAddons}>{t('dash.page.tablesBtn2', { defaultValue: 'Table codes (optional)' })}<ChevronRight className="w-4 h-4" /></button>
         </div>
       )}
 

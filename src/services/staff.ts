@@ -15,8 +15,9 @@ export const STAFF_HIDEABLE_SECTIONS: { key: string; label: string }[] = [
   { key: 'ANALYTICS', label: 'Insights' },
   { key: 'DEALS', label: 'Deals' },
   { key: 'VALUE', label: 'Results' },
+  // Staff and the card preview now live in Settings. 'STAFF' still hides the
+  // Staff part of Settings; a saved 'PREVIEW' choice is simply ignored.
   { key: 'STAFF', label: 'Staff' },
-  { key: 'PREVIEW', label: 'Preview Card' },
   // Kept as 'SHARE' so saved choices still apply: it now hides the Business page.
   { key: 'SHARE', label: 'Business page' },
   { key: 'ADDONS', label: 'Add-ons' },

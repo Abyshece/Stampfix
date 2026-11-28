@@ -78,7 +78,6 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
   });
   const [country, setCountry] = useState<string>('');
   const [offerTitle, setOfferTitle] = useState('Buy 6, get 1 free');
-  const [logoText, setLogoText] = useState('');
   const [phone, setPhone] = useState('');
   const [selectedColor, setSelectedColor] = useState(NOTION_COLORS[0].hex);
   const [selectedIcon, setSelectedIcon] = useState('☕️');
@@ -120,7 +119,9 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
       maxStamps,
       primaryColor: selectedColor,
       backgroundColor: '#F5F5F0',
-      logoText: logoText || busName.substring(0, 10).toUpperCase(),
+      // No logo text field any more: the same short default it got when the
+      // field was left empty (only the posters print it, down the side).
+      logoText: busName.substring(0, 10).toUpperCase(),
       cardPattern: 'solid',
       customIcon: selectedIcon,
       logoImage: null,
@@ -180,7 +181,7 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
         sessionStorage.setItem(
           'pending_campaign',
           JSON.stringify({
-            busName, offerTitle, maxStamps, selectedColor, selectedIcon, logoText,
+            busName, offerTitle, maxStamps, selectedColor, selectedIcon,
             primaryLocationName: primaryLocationName.trim() || busName,
           }),
         );
@@ -453,20 +454,6 @@ export function MerchantOnboarding({ onComplete, initialStep = 'FORM', onBack }:
                 <CountrySelect value={country} onChange={setCountry} />
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">{t('dash.signup.logoText', { defaultValue: 'Logo Text' })}</label>
-              <input
-                value={logoText}
-                onChange={(e) => setLogoText(e.target.value)}
-                className="w-full bg-[#F7F7F5] border-b notion-border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
-                placeholder={t('dash.signup.logoTextPh', { defaultValue: 'ACME' })}
-                maxLength={10}
-              />
-              <div className="flex gap-2 items-start text-[11px] text-blue-800 bg-blue-50 border border-blue-200 rounded-md p-2 mt-1.5">
-                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-blue-500" />
-                <span>{t('dash.signup.logoInfo', { defaultValue: 'This short text shows at the very top of your card — next to your logo — in both Apple Wallet and Google Wallet.' })}</span>
-              </div>
-            </div>
           </div>
 
           {/* Loyalty reward is set in the first onboarding step after signup,
@@ -544,7 +531,7 @@ export async function consumePendingCampaign(userId: string): Promise<boolean> {
       maxStamps: p.maxStamps,
       primaryColor: p.selectedColor,
       backgroundColor: '#F5F5F0',
-      logoText: p.logoText || p.busName.substring(0, 10).toUpperCase(),
+      logoText: (typeof p.logoText === 'string' && p.logoText) || p.busName.substring(0, 10).toUpperCase(),
       cardPattern: 'solid',
       customIcon: p.selectedIcon,
       logoImage: null,
