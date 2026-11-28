@@ -36,15 +36,17 @@ interface RailProps {
   bg: string;
   text: string;
   onOpen: (index: number) => void;
+  /** Line the bubbles up on the left (the page's layout) instead of centring them. */
+  start?: boolean;
 }
 
 /** The row of round bubbles. Centred when they fit, scrolls sideways when they don't. */
-export function StoryRail({ stories, seen, ring, seenRing, bg, text, onOpen }: RailProps) {
+export function StoryRail({ stories, seen, ring, seenRing, bg, text, onOpen, start = false }: RailProps) {
   const { t } = useTranslation();
   const anyLabel = stories.some((s) => s.label);
   return (
     <div className="-mx-5 px-5 overflow-x-auto no-scrollbar" data-story-rail aria-label={t('cust.page.stories', { defaultValue: 'Stories' })}>
-      <ul className="flex gap-3 w-max mx-auto py-1">
+      <ul className={`flex gap-3 w-max py-1 ${start ? '' : 'mx-auto'}`}>
         {stories.map((s, i) => {
           const isSeen = seen.has(s.id);
           return (
