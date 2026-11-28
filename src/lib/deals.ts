@@ -256,3 +256,38 @@ export function cityFromAddress(address: string | null | undefined): string {
   const cand = parts[1].replace(/^\d{4,5}\s+/, '').replace(/\s+[A-Z]{2}\s*[A-Z0-9 ]*$/, '').trim();
   return /\d/.test(cand) ? '' : cand;
 }
+
+// ---- Examples for an empty deals page ----------------------------------------------
+
+/**
+ * Example deals from made-up businesses, shown (labelled "Example") on the
+ * deals page only while no real deal is listed. Never stored anywhere.
+ */
+export function sampleDeals(t: (k: string, o: Record<string, unknown>) => string): Deal[] {
+  const day = 86400e3;
+  const at = (d: number) => new Date(Date.now() + d * day).toISOString();
+  const mk = (n: number, d: Partial<Deal> & Pick<Deal, 'deal_type' | 'category' | 'city'>, biz: { name: string; color: string; text?: string }, title: string, desc: string | null, terms: string | null = null): Deal => ({
+    id: `example-${n}`, value: null, currency: null, code: null, country: null, starts_at: at(-2), ends_at: at(21), days: [], start_minute: null, end_minute: null,
+    timezone: 'UTC', location: null, ...d,
+    // "On now" only for examples with no day or hour limits, so the label is never wrong.
+    live_now: d.live_now ?? !((d.days?.length ?? 0) > 0 || d.start_minute != null),
+    title: t(`deals.sample.s${n}.title`, { defaultValue: title }),
+    description: desc ? t(`deals.sample.s${n}.desc`, { defaultValue: desc }) : null,
+    terms: terms ? t(`deals.sample.s${n}.terms`, { defaultValue: terms }) : null,
+    business: { name: biz.name, logo_image: null, logo_text: null, color: biz.color, text_color: biz.text ?? '#FFFFFF', link: '#' },
+  });
+  return [
+    mk(1, { deal_type: 'bogo', category: 'cafe', city: 'Vancouver', days: [1, 2, 3, 4, 5], start_minute: 840, end_minute: 1020 },
+      { name: 'Morning Bloom Café', color: '#7C2D12' }, '2 for 1 on all lattes', 'Bring a friend in the afternoon: two lattes for the price of one.'),
+    mk(2, { deal_type: 'percent', value: 20, category: 'hairdresser', city: 'Toronto', code: 'WELCOME20' },
+      { name: 'Glow Studio', color: '#BE185D' }, '20% off your first cut', null, 'New clients only.'),
+    mk(3, { deal_type: 'free', category: 'gym', city: 'Berlin', starts_at: at(2), ends_at: at(30), live_now: false },
+      { name: 'Kraftwerk Gym', color: '#111318', text: '#FCFF54' }, 'Free trial class', 'Try any class this month, no sign-up needed.'),
+    mk(4, { deal_type: 'amount', value: 10, currency: 'CAD', category: 'carWash', city: 'Calgary', days: [1, 2, 3, 4] },
+      { name: 'Shine Car Wash', color: '#1132F5' }, 'Weekday full detail special', 'Inside and out, Monday to Thursday.'),
+    mk(5, { deal_type: 'free', category: 'bakery', city: 'Hamburg', start_minute: 420, end_minute: 600 },
+      { name: 'Backstube Elbe', color: '#B45309' }, 'Free croissant with any coffee', 'Every morning until 10.'),
+    mk(6, { deal_type: 'percent', value: 15, category: 'nailStudio', city: 'Vancouver', code: 'HAPPY15', days: [2, 3, 4], start_minute: 600, end_minute: 780 },
+      { name: 'Polished Nails', color: '#7C3AED' }, 'Happy hour: 15% off manicures', null, 'Show the code when you book.'),
+  ];
+}
