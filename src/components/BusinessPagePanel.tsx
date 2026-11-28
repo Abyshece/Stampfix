@@ -21,6 +21,7 @@ import { StoriesTab } from './BusinessPageStories';
 import { FeedbackTab } from './BusinessPageFeedback';
 import { LinksSettings, normalizeLink } from './LinksSettings';
 import { PosterSettings } from './PosterSettings';
+import { TableStickerDesigner } from './TableStickerDesigner';
 import { ProLockOverlay } from './ProLockOverlay';
 
 // Business page in the dashboard. One card at the top says whether the page
@@ -748,7 +749,7 @@ function PhotosFields({ campaign, page, canEdit, onPageSaved }: {
 
 /** Last step: the QR code(s), posters, the counter code and the rest. */
 function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, orderingEnabled, onUpgrade, onUpdateCampaign, onDownloadPoster, joinUrlForLocation,
-  stampUrlForLocation, onOpenSettings, onOpenAddons, onMarkOnboardingStep, onboarding, active, pageUrl, on, hasSwitch, switching, onTurnOn }: Props & {
+  stampUrlForLocation, onOpenSettings, onOpenAddons, onMarkOnboardingStep, onboarding, active, pageUrl, on, hasSwitch, switching, onTurnOn, onSection }: Props & {
     active: Location[]; pageUrl: string | null; on: boolean; hasSwitch: boolean; switching: boolean; onTurnOn: () => void;
   }) {
   const { t } = useTranslation();
@@ -758,6 +759,9 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
   const markPrinted = () => { if (!onboarding.page_qr_downloaded) void onMarkOnboardingStep({ page_qr_downloaded: true }); };
   const download = (loc: Location | null, lang: 'en' | 'de') => { onDownloadPoster(loc, 'loyalty', lang); markPrinted(); };
   const selfServe = campaign.stampingMode === 'self_serve';
+  // With the page on, its QR code opens the page: the table sticker is the print
+  // for it. The loyalty posters (stamp card only) are for shops without the page.
+  const stickerOn = !!page && !!pageUrl && on;
   const newCode = async () => {
     setCodeBusy(true); setCodeError(null);
     const r = await setCounterCode(campaign.id, null);
@@ -809,8 +813,10 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
                       {multi && loc && <p className="inline-flex items-center gap-1 text-xs font-medium text-gray-500"><MapPin className="w-3 h-3" />{loc.name}</p>}
                     </div>
                     <div className="grid grid-cols-2 gap-1.5">
-                      <button type="button" className={`${btnDark} !px-2 !py-2 text-xs`} onClick={() => download(loc, 'en')} data-download="en"><Download className="w-3.5 h-3.5" />{t('dash.page.posterEn', { defaultValue: 'Poster · EN' })}</button>
-                      <button type="button" className={`${btnDark} !px-2 !py-2 text-xs`} onClick={() => download(loc, 'de')} data-download="de"><Download className="w-3.5 h-3.5" />{t('dash.page.posterDe', { defaultValue: 'Poster · DE' })}</button>
+                      {!stickerOn && <>
+                        <button type="button" className={`${btnDark} !px-2 !py-2 text-xs`} onClick={() => download(loc, 'en')} data-download="en"><Download className="w-3.5 h-3.5" />{t('dash.page.posterEn', { defaultValue: 'Poster · EN' })}</button>
+                        <button type="button" className={`${btnDark} !px-2 !py-2 text-xs`} onClick={() => download(loc, 'de')} data-download="de"><Download className="w-3.5 h-3.5" />{t('dash.page.posterDe', { defaultValue: 'Poster · DE' })}</button>
+                      </>}
                       <CopyButton text={url} label={t('dash.page.copyLink', { defaultValue: 'Copy link' })} testId={loc?.id ?? 'shop'} small />
                       <a href={url} target="_blank" rel="noopener noreferrer" className={`${btnLight} !px-2.5 !py-1.5 text-xs`}><ExternalLink className="w-3.5 h-3.5" />{t('dash.page.open', { defaultValue: 'Open' })}</a>
                     </div>
@@ -824,6 +830,19 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
           <p className="text-sm text-gray-500">{t('dash.page.qrWaiting', { defaultValue: 'Your QR code shows here once your page has loaded.' })}</p>
         )}
       </div>
+
+      {/* The table sticker (page on). Off: a pointer to it; the posters below stay. */}
+      {stickerOn && page && (
+        <TableStickerDesigner campaign={campaign} page={page} orderingEnabled={orderingEnabled} canEdit={canEdit}
+          locations={multi ? active : []}
+          urlFor={(loc) => businessPageUrl(page.slug, { locationId: multi ? loc?.id : null })}
+          onDownloaded={markPrinted} onEditLogo={() => onSection('profile')} />
+      )}
+      {!stickerOn && page && hasSwitch && (
+        <div className="rounded-xl border border-dashed notion-border px-4 py-3 text-sm text-gray-500" data-sticker-off>
+          {t('dash.sticker.offNote', { defaultValue: 'Switch your page on to print the table sticker with your menu, Wi-Fi and more. Until then, the poster takes guests to sign-up.' })}
+        </div>
+      )}
 
       {/* Stamping from the page. */}
       <div className={`${box} space-y-3`} data-counter-card>
@@ -869,7 +888,7 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
         </div>
       )}
 
-      {canEdit && (
+      {canEdit && !stickerOn && (
         <details className={`${box} group`} data-poster-options>
           <summary className="cursor-pointer select-none font-medium flex items-center gap-2">
             <ChevronRight className="w-4 h-4 transition group-open:rotate-90" />{t('dash.page.morePoster', { defaultValue: 'Poster colours and more sizes' })}

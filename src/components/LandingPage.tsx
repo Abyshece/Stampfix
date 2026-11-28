@@ -307,7 +307,8 @@ export function LandingPage({
         <a href="/" aria-label="Stampfix home" className="relative flex items-center gap-2 font-semibold text-lg text-[#37352F] hover:opacity-80 transition">
           {xmas && <SantaHat className="absolute -top-[13px] -left-[7px] w-[26px] h-[23px] -rotate-[18deg]" />}
           <svg viewBox="0 0 282 90" className="h-6 w-auto text-[#37352F]" fill="currentColor" role="img" aria-label="Stampfix"><rect x="8" y="12" width="66" height="66" rx="4"/><circle cx="140" cy="45" r="34"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(45 240 45)"/><rect x="195" y="36" width="90" height="18" rx="9" transform="rotate(-45 240 45)"/></svg>
-          Stampfix
+          {/* The word gives way on the narrowest phones so the language globe fits. */}
+          <span className="max-[359px]:hidden">Stampfix</span>
         </a>
         <div className="flex items-center gap-2 md:gap-3 text-sm font-medium">
           <a href="/features" className="hidden md:inline text-gray-600 hover:text-[#37352F] px-2 transition">{t('nav.features')}</a>
@@ -324,6 +325,7 @@ export function LandingPage({
           >
             {t('nav.lostCard')}
           </a>
+          <LanguageSwitcher compact />
           {isAuthenticated && onResumeMerchant ? (
             <button
               onClick={onResumeMerchant}
@@ -339,7 +341,6 @@ export function LandingPage({
               {t('nav.login')}
             </button>
           )}
-          <LanguageSwitcher className="hidden sm:block" />
           <MobileNav
             links={[
               { href: '/find-card', label: t('nav.lostCardMobile') },
