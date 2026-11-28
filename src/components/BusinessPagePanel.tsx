@@ -22,6 +22,8 @@ import { FeedbackTab } from './BusinessPageFeedback';
 import { LinksSettings, normalizeLink } from './LinksSettings';
 import { PosterSettings } from './PosterSettings';
 import { TableStickerDesigner } from './TableStickerDesigner';
+import { StampStickerCard } from './StampStickerCard';
+import { useStickerDesign } from './stickerShared';
 import { ProLockOverlay } from './ProLockOverlay';
 
 // Business page in the dashboard. One card at the top says whether the page
@@ -762,6 +764,8 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
   // With the page on, its QR code opens the page: the table sticker is the print
   // for it. The loyalty posters (stamp card only) are for shops without the page.
   const stickerOn = !!page && !!pageUrl && on;
+  // One sticker design for the table and stamp stickers (loaded when either shows).
+  const sticker = useStickerDesign(campaign.id, stickerOn || selfServe);
   const newCode = async () => {
     setCodeBusy(true); setCodeError(null);
     const r = await setCounterCode(campaign.id, null);
@@ -833,7 +837,7 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
 
       {/* The table sticker (page on). Off: a pointer to it; the posters below stay. */}
       {stickerOn && page && (
-        <TableStickerDesigner campaign={campaign} page={page} orderingEnabled={orderingEnabled} canEdit={canEdit}
+        <TableStickerDesigner sticker={sticker} campaign={campaign} page={page} orderingEnabled={orderingEnabled} canEdit={canEdit}
           locations={multi ? active : []}
           urlFor={(loc) => businessPageUrl(page.slug, { locationId: multi ? loc?.id : null })}
           onDownloaded={markPrinted} onEditLogo={() => onSection('profile')} />
@@ -876,6 +880,11 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
           </div>
         )}
       </div>
+
+      {/* Self-serve: the stamp sticker for the till (the counter stamp QR code). */}
+      {selfServe && (
+        <StampStickerCard sticker={sticker} canEdit={canEdit} campaign={campaign} locations={active} stampUrlFor={(loc) => stampUrlForLocation(loc?.id ?? null)} />
+      )}
 
       {orderingEnabled && (
         <div className={`${box} flex flex-wrap items-center gap-3`} data-table-codes>
@@ -931,9 +940,8 @@ function ShareStep({ campaign, page, pageError, onPageSaved, canEdit, isPro, ord
                         <p className="text-xs text-gray-500">{t('dash.page.stampQrHint', { defaultValue: 'Keep behind the counter and show it on request.' })}</p>
                         <div className="flex flex-wrap gap-1.5">
                           <CopyButton text={stampUrl} label={t('dash.page.copyStampLink', { defaultValue: 'Copy stamp link' })} testId={`stamp-${loc?.id ?? 'shop'}`} small />
-                          <button type="button" className={`${btnDark} !px-2.5 !py-1.5 text-xs`} onClick={() => onDownloadPoster(loc, 'selfscan', 'en')}>{t('dash.page.stampPosterEn', { defaultValue: 'Stamp poster · EN' })}</button>
-                          <button type="button" className={`${btnDark} !px-2.5 !py-1.5 text-xs`} onClick={() => onDownloadPoster(loc, 'selfscan', 'de')}>{t('dash.page.stampPosterDe', { defaultValue: 'Stamp poster · DE' })}</button>
                         </div>
+                        <p className="text-xs text-gray-400">{t('dash.page.stampStickerAbove', { defaultValue: 'To print it, use the Stamp sticker above.' })}</p>
                       </div>
                     </div>
                   )}

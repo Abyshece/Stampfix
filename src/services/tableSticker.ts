@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import QRCode from 'react-qr-code';
-import { UtensilsCrossed, Gift, Wifi, Star, MessageSquare, Bike, ShoppingBag, Globe, Instagram, Gamepad2, type LucideIcon } from 'lucide-react';
+import { UtensilsCrossed, Gift, Wifi, Star, MessageSquare, Bike, ShoppingBag, Globe, Instagram, Gamepad2, Stamp, type LucideIcon } from 'lucide-react';
 import type { StickerDesign, StickerItem } from '../lib/businessPage';
 import { STICKER_ITEMS } from '../lib/businessPage';
 import { downloadPosterPng } from './posterImage';
@@ -139,6 +139,40 @@ function stickerElement(s: StickerInput, extraClass = ''): string {
 </div>`;
 }
 
+export interface StampStickerInput {
+  /** The counter stamp link (with its branch). */
+  url: string;
+  /** The shop's sticker design: its colour, background and NFC mark are used. */
+  design: StickerDesign;
+  cardColor: string | null | undefined;
+  businessName: string;
+  lang: 'en' | 'de';
+}
+
+/** The self-serve stamp sticker: the stamp QR code, a big "Scan or tap to get your stamp". */
+function stampElement(s: StampStickerInput, extraClass = ''): string {
+  const accent = stickerAccent(s.design, s.cardColor);
+  const brandBg = s.design.bg === 'brand';
+  const bg = brandBg ? accent : s.design.bg === 'cream' ? '#FAF7F2' : '#FFFFFF';
+  const ink = brandBg ? (lum(accent) > 160 ? '#1A1A1A' : '#FFFFFF') : '#2F2A26';
+  const big = s.design.nfc
+    ? (s.lang === 'de' ? 'Scannen oder auflegen für Ihren Stempel' : 'Scan or tap to get your stamp')
+    : (s.lang === 'de' ? 'Scannen für Ihren Stempel' : 'Scan to get your stamp');
+  const name = (s.design.name?.trim() || s.businessName || '').slice(0, 40);
+  const qr = renderToStaticMarkup(createElement(QRCode, { value: s.url, size: 256, level: 'M', bgColor: '#FFFFFF', fgColor: '#111111', style: { width: '100%', height: '100%', display: 'block' } }));
+  const stampSvg = renderToStaticMarkup(createElement(Stamp, { size: 16, color: brandBg ? accent : '#0EA5E9', strokeWidth: 2.1 }));
+  return `<div class="tsk stp ${extraClass}" style="background:${bg};color:${ink}" data-sticker-bg="${s.design.bg}">
+  <div class="q">
+    <div class="qr" style="${brandBg ? 'border-color:transparent' : ''}">${qr}${s.design.nfc ? `<span class="nfc" style="background:${brandBg ? '#FFFFFF' : accent};box-shadow:0 0 0 4px ${bg}">${NFC(brandBg ? accent : '#FFFFFF', 15)}</span>` : ''}</div>
+    <div class="by" style="${s.design.nfc ? 'margin-top:21px' : ''}">${MARK(ink, 8)}<span>Powered by Stampfix</span></div>
+  </div>
+  <div class="r2">
+    <div class="big" style="color:${brandBg ? ink : accent}">${esc(big)}</div>
+    <div class="sub"><span class="ch sm" style="background:${brandBg ? '#FFFFFF' : '#0EA5E91F'}">${stampSvg}</span><span class="nm">${esc(name)}</span></div>
+  </div>
+</div>`;
+}
+
 const CSS = `
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:transparent}
@@ -159,6 +193,10 @@ body{font-family:Inter,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;-webk
 .row{display:flex;gap:14px;justify-content:center}
 .it{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:12px;font-weight:600;letter-spacing:.15px;min-width:52px;white-space:nowrap}
 .ch{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:12px}
+.r2{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:18px;padding:0 34px 0 34px}
+.big{font-family:Lora,Georgia,serif;font-weight:600;font-size:35px;line-height:1.1;letter-spacing:-.6px}
+.sub{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:600;opacity:.8;min-width:0}
+.ch.sm{width:28px;height:28px;border-radius:9px;flex:none}
 .sheet{width:1050px;height:1485px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;position:relative}
 .sheet .tsk{outline:1.5px dashed #C9C4BD;outline-offset:6px}
 .sheet .note{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:13px;color:#8A8178}
@@ -175,14 +213,25 @@ export function buildStickerHtml(s: StickerInput, embeddedFonts?: string): strin
 }
 
 /** An A4 page with five stickers and cut lines, for printing at home. */
-export function buildStickerSheetHtml(s: StickerInput, embeddedFonts?: string): string {
-  const note = s.lang === 'de'
+function sheetHtml(element: string, lang: 'en' | 'de', embeddedFonts?: string): string {
+  const note = lang === 'de'
     ? 'Auf A4 drucken (100 %), an der gestrichelten Linie ausschneiden. Jeder Sticker: 12,5 × 5 cm.'
     : 'Print on A4 at 100%, cut along the dashed lines. Each sticker: 12.5 × 5 cm.';
-  return `<!doctype html><html><head><meta charset="utf-8">${fontsTag(embeddedFonts)}<style>${CSS}</style></head><body><div class="sheet size-stickersheet">${Array.from({ length: 5 }, () => stickerElement(s)).join('')}<div class="note">${note}</div></div></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8">${fontsTag(embeddedFonts)}<style>${CSS}</style></head><body><div class="sheet size-stickersheet">${Array.from({ length: 5 }, () => element).join('')}<div class="note">${note}</div></div></body></html>`;
+}
+export function buildStickerSheetHtml(s: StickerInput, embeddedFonts?: string): string {
+  return sheetHtml(stickerElement(s), s.lang, embeddedFonts);
 }
 
-const fileSlug = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stampfix';
+/** The stamp sticker: one (preview and PNG) or an A4 sheet of five. */
+export function buildStampStickerHtml(s: StampStickerInput, embeddedFonts?: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8">${fontsTag(embeddedFonts)}<style>${CSS}</style></head><body>${stampElement(s, 'size-tablesticker')}</body></html>`;
+}
+export function buildStampStickerSheetHtml(s: StampStickerInput, embeddedFonts?: string): string {
+  return sheetHtml(stampElement(s), s.lang, embeddedFonts);
+}
+
+const fileSlug = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stampfix';
 
 /**
  * Inter and Lora as @font-face rules with the font files inside (Latin and
@@ -225,5 +274,15 @@ export async function downloadStickerPng(s: StickerInput, kind: 'one' | 'sheet',
     await downloadPosterPng(buildStickerSheetHtml(s, fonts), 'stickersheet', `${base}-table-stickers-a4-${s.lang}.png`, errorMessage, PIXEL_RATIO, fonts || undefined);
   } else {
     await downloadPosterPng(buildStickerHtml(s, fonts), 'tablesticker', `${base}-table-sticker-${s.lang}.png`, errorMessage, PIXEL_RATIO, fonts || undefined);
+  }
+}
+
+export async function downloadStampStickerPng(s: StampStickerInput, kind: 'one' | 'sheet', errorMessage?: string): Promise<void> {
+  const base = fileSlug(s.design.name || s.businessName);
+  const fonts = fontsReady ?? await embeddedFonts();
+  if (kind === 'sheet') {
+    await downloadPosterPng(buildStampStickerSheetHtml(s, fonts), 'stickersheet', `${base}-stamp-stickers-a4-${s.lang}.png`, errorMessage, PIXEL_RATIO, fonts || undefined);
+  } else {
+    await downloadPosterPng(buildStampStickerHtml(s, fonts), 'tablesticker', `${base}-stamp-sticker-${s.lang}.png`, errorMessage, PIXEL_RATIO, fonts || undefined);
   }
 }
