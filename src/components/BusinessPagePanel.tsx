@@ -3,18 +3,19 @@ import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import {
   Check, Copy, ExternalLink, Loader2, RefreshCw, Download, ChevronRight, ChevronLeft, MapPin, Lock, UtensilsCrossed, Stamp,
-  Eye, X, Store, MessageSquareHeart, Settings2, Link2,
+  Eye, X, Store, MessageSquareHeart, Settings2, Link2, ImagePlus, Trash2,
 } from 'lucide-react';
 import type { Campaign, Location } from '../types';
 import type { OnboardingState } from '../lib/db';
 import type { PosterSize } from '../services/posterGenerator';
 import {
   businessPageUrl, saveBusinessPage, setCounterCode, setBusinessPageEnabled, savePageLook, savePageExtras, getMyPageStories, validSlug, pageIsOn,
-  ABOUT_MAX, DEFAULT_LOOK,
-  type MyBusinessPage, type PublicBusinessPage, type SavePageError, type MyPageStory, type PageLook, type PageExtras,
+  setPagePhoto, pagePhotoUrl, ABOUT_MAX, DEFAULT_LOOK,
+  type MyBusinessPage, type PublicBusinessPage, type SavePageError, type MyPageStory, type PageLook, type PageExtras, type PagePhotoKind,
 } from '../lib/businessPage';
+import { preparePagePhoto, PagePhotoPrepFailed } from '../lib/pagePhoto';
 import { downloadCounterCodePng } from '../services/posterImage';
-import { BusinessPageView, pageTheme } from './BusinessPage';
+import { BusinessPageView, pageTheme, pageBanner } from './BusinessPage';
 import { ButtonsFields, LookFields, sameExtras, sameLook, LOOK_ERRORS, EXTRA_ERRORS } from './BusinessPageLook';
 import { StoriesTab } from './BusinessPageStories';
 import { FeedbackTab } from './BusinessPageFeedback';
@@ -317,6 +318,8 @@ export function BusinessPagePanel(props: Props) {
     feedbackOn: hasExtras && extrasDraft.feedbackOn,
     gameOn: hasExtras && extrasDraft.gameOn,
     enabled: true,
+    coverImage: page.coverPath ? pagePhotoUrl(page.coverPath) : null,
+    avatarImage: page.avatarPath ? pagePhotoUrl(page.avatarPath) : null,
   } : null;
   const [showPreview, setShowPreview] = useState(false);
 
@@ -390,7 +393,8 @@ export function BusinessPagePanel(props: Props) {
     switch (step.id) {
       case 'profile':
         body = <BasicsFields campaign={campaign} page={page} slugDraft={slugDraft} setSlugDraft={(v) => { setSlugDraft(v); setStepError(null); }}
-          aboutDraft={aboutDraft} setAboutDraft={(v) => { setAboutDraft(v); setStepError(null); }} canEdit={canEdit} onOpenSettings={onOpenSettings} />;
+          aboutDraft={aboutDraft} setAboutDraft={(v) => { setAboutDraft(v); setStepError(null); }} canEdit={canEdit} onOpenSettings={onOpenSettings}
+          onPageSaved={onPageSaved} />;
         footer = <StepFooter onBack={back} primary={canEdit && basicsDirty ? saveCont : cont} onPrimary={canEdit && basicsDirty ? () => void saveBasics() : next}
           busy={busy} error={stepError} note={canEdit && basicsDirty ? unsaved : null} />;
         break;
@@ -575,9 +579,9 @@ export function BusinessPagePanel(props: Props) {
 }
 
 /** Step 1: the address and the few words. */
-function BasicsFields({ campaign, page, slugDraft, setSlugDraft, aboutDraft, setAboutDraft, canEdit, onOpenSettings }: {
+function BasicsFields({ campaign, page, slugDraft, setSlugDraft, aboutDraft, setAboutDraft, canEdit, onOpenSettings, onPageSaved }: {
   campaign: Campaign; page: MyBusinessPage; slugDraft: string; setSlugDraft: (v: string) => void; aboutDraft: string; setAboutDraft: (v: string) => void;
-  canEdit: boolean; onOpenSettings: Props['onOpenSettings'];
+  canEdit: boolean; onOpenSettings: Props['onOpenSettings']; onPageSaved: Props['onPageSaved'];
 }) {
   const { t } = useTranslation();
   const slug = slugDraft.trim().toLowerCase();
@@ -608,6 +612,7 @@ function BasicsFields({ campaign, page, slugDraft, setSlugDraft, aboutDraft, set
           className="mt-1.5 w-full border notion-border rounded-lg px-3 py-2.5 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#37352F]/15 disabled:bg-white disabled:text-gray-500" />
         <div className="text-xs text-gray-400 text-right">{aboutDraft.length}/{ABOUT_MAX}</div>
       </div>
+      {page.coverPath !== undefined && <PhotosFields campaign={campaign} page={page} canEdit={canEdit} onPageSaved={onPageSaved} />}
       {/* What comes from the card, in one line. */}
       <div className="rounded-xl bg-[#F7F7F5] p-4 flex flex-wrap items-center gap-3" data-from-card>
         <span className="w-10 h-10 rounded-full bg-white border notion-border overflow-hidden flex items-center justify-center text-lg shrink-0">
@@ -625,6 +630,118 @@ function BasicsFields({ campaign, page, slugDraft, setSlugDraft, aboutDraft, set
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+const PHOTO_ERRORS: Record<string, [string, string]> = {
+  unreadable: ['dash.page.photoErrUnreadable', "We couldn't open this photo. Use a JPG or PNG (on iPhone: share it as JPG)."],
+  too_big: ['dash.page.photoErrBig', 'This photo is too big. Try another one.'],
+  failed: ['dash.page.photoErrFailed', 'Something went wrong with this photo. Try again or use another one.'],
+  upload: ['dash.page.photoErrUpload', 'The upload failed. Check your connection and try again.'],
+  bad_file: ['dash.page.photoErrUpload', 'The upload failed. Check your connection and try again.'],
+  no_page: ['dash.page.photoErrUpload', 'The upload failed. Check your connection and try again.'],
+  network: ['dash.page.photoErrUpload', 'The upload failed. Check your connection and try again.'],
+};
+
+/** Header photo and profile photo (every plan). They save as soon as they are picked. */
+function PhotosFields({ campaign, page, canEdit, onPageSaved }: {
+  campaign: Campaign; page: MyBusinessPage; canEdit: boolean; onPageSaved: Props['onPageSaved'];
+}) {
+  const { t } = useTranslation();
+  const coverRef = useRef<HTMLInputElement>(null);
+  const avatarRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState<PagePhotoKind | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const latest = useRef(page);
+  latest.current = page;
+  const fail = (code: string) => { const e = PHOTO_ERRORS[code] ?? PHOTO_ERRORS.failed; setError(t(e[0], { defaultValue: e[1] })); };
+  const apply = (kind: PagePhotoKind, path: string | null) =>
+    onPageSaved({ ...latest.current, ...(kind === 'cover' ? { coverPath: path } : { avatarPath: path }) });
+
+  const pick = async (kind: PagePhotoKind, file: File) => {
+    setError(null);
+    setBusy(kind);
+    try {
+      const photo = await preparePagePhoto(file, kind);
+      const r = await setPagePhoto(campaign.id, kind, photo);
+      if (r.ok) apply(kind, r.path); else fail(r.error);
+    } catch (e) {
+      fail(e instanceof PagePhotoPrepFailed ? e.code : 'failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+  const remove = async (kind: PagePhotoKind) => {
+    setError(null);
+    setBusy(kind);
+    const r = await setPagePhoto(campaign.id, kind, null);
+    setBusy(null);
+    if (r.ok) apply(kind, null); else fail(r.error);
+  };
+
+  const cover = page.coverPath ? pagePhotoUrl(page.coverPath) : null;
+  const avatar = page.avatarPath ? pagePhotoUrl(page.avatarPath) : null;
+  const small = `${btnLight} !px-2.5 !py-1.5 text-xs`;
+  const spinner = <span className="absolute inset-0 bg-white/60 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-[#37352F]" /></span>;
+  const buttons = (kind: PagePhotoKind, has: boolean, ref: React.RefObject<HTMLInputElement | null>) => canEdit && (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <button type="button" className={small} disabled={!!busy} onClick={() => ref.current?.click()} data-photo-pick={kind}>
+        <ImagePlus className="w-3.5 h-3.5" />{has ? t('dash.page.photoChange', { defaultValue: 'Change' }) : t('dash.page.photoUpload', { defaultValue: 'Upload' })}
+      </button>
+      {has && (
+        <button type="button" className={`${small} !text-gray-500`} disabled={!!busy} onClick={() => void remove(kind)} data-photo-remove={kind}
+          aria-label={t('dash.page.photoRemove', { defaultValue: 'Remove' })}>
+          <Trash2 className="w-3.5 h-3.5" />{t('dash.page.photoRemove', { defaultValue: 'Remove' })}
+        </button>
+      )}
+    </div>
+  );
+  const input = (kind: PagePhotoKind, ref: React.RefObject<HTMLInputElement | null>) => (
+    <input ref={ref} type="file" accept="image/*" className="hidden" data-photo-file={kind}
+      onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void pick(kind, f); }} />
+  );
+
+  return (
+    <div data-page-photos>
+      <div className="text-sm font-medium">{t('dash.page.photos', { defaultValue: 'Photos' })}</div>
+      <p className="text-xs text-gray-500 mt-0.5">{t('dash.page.photosHint', { defaultValue: 'Optional. They make your page feel like your place. They save straight away.' })}</p>
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-5 items-start">
+        <div className="space-y-2 min-w-0" data-photo-slot="cover">
+          <div className="relative aspect-[3/1] rounded-xl overflow-hidden border notion-border">
+            {cover
+              ? <img src={cover} alt="" className="absolute inset-0 w-full h-full object-cover" data-photo-img="cover" />
+              : (
+                <div className="absolute inset-0 flex items-center justify-center" style={{ background: pageBanner(campaign.primaryColor) }}>
+                  <span className="text-[11px] font-medium text-white/90 bg-black/20 rounded-full px-2.5 py-1">{t('dash.page.coverNone', { defaultValue: 'Your colour shows until you add a photo' })}</span>
+                </div>
+              )}
+            {busy === 'cover' && spinner}
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold">{t('dash.page.cover', { defaultValue: 'Header photo' })}</div>
+              <div className="text-xs text-gray-500">{t('dash.page.coverHint', { defaultValue: 'A wide photo of your shop, your food or your team.' })}</div>
+            </div>
+            {buttons('cover', !!cover, coverRef)}
+          </div>
+          {input('cover', coverRef)}
+        </div>
+        <div className="space-y-2" data-photo-slot="avatar">
+          <div className="relative w-24 h-24 rounded-[22px] overflow-hidden border notion-border bg-white flex items-center justify-center text-3xl">
+            {avatar
+              ? <img src={avatar} alt="" className="w-full h-full object-cover" data-photo-img="avatar" />
+              : campaign.logoImage ? <img src={campaign.logoImage} alt="" className="w-full h-full object-contain p-2" />
+                : campaign.customIcon ? <span aria-hidden="true">{campaign.customIcon}</span> : <Store className="w-7 h-7 text-gray-400" />}
+            {busy === 'avatar' && spinner}
+          </div>
+          <div className="text-sm font-semibold">{t('dash.page.avatar', { defaultValue: 'Profile photo' })}</div>
+          <div className="text-xs text-gray-500 max-w-[200px]">{t('dash.page.avatarHint', { defaultValue: 'Square works best. Shows instead of your card logo.' })}</div>
+          {buttons('avatar', !!avatar, avatarRef)}
+          {input('avatar', avatarRef)}
+        </div>
+      </div>
+      {error && <p className="text-sm text-red-600 mt-2" role="alert" data-photo-error>{error}</p>}
     </div>
   );
 }

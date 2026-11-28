@@ -41,6 +41,9 @@ export interface MyBusinessPage {
   extras?: PageExtras;
   /** Guests see the page only when it is on. Missing (older database): on. */
   enabled?: boolean;
+  /** The header and profile photos (files in the page-photos bucket). Missing: older database. */
+  coverPath?: string | null;
+  avatarPath?: string | null;
 }
 
 /** Wi-Fi details and the feedback and game switches (every plan). */
@@ -82,6 +85,10 @@ export interface PublicBusinessPage {
   gameOn: boolean;
   /** Off: guests go straight to sign-up (or ordering at a table) instead. */
   enabled: boolean;
+  /** The shop's header photo across the top (web address), if it added one. */
+  coverImage: string | null;
+  /** The shop's profile photo in the logo tile (web address), if it added one. */
+  avatarImage: string | null;
 }
 
 export const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
@@ -115,6 +122,8 @@ export async function getMyBusinessPage(campaignId: string): Promise<MyBusinessP
     look: 'background' in d ? parseLook(d) ?? undefined : undefined,
     extras: 'feedback_enabled' in d ? parseExtras(d) : undefined,
     enabled: 'enabled' in d ? d.enabled === true : undefined,
+    coverPath: 'cover_path' in d ? (typeof d.cover_path === 'string' ? d.cover_path : null) : undefined,
+    avatarPath: 'avatar_path' in d ? (typeof d.avatar_path === 'string' ? d.avatar_path : null) : undefined,
   };
 }
 
@@ -225,7 +234,44 @@ export async function getPublicBusinessPage(slug: string): Promise<PublicBusines
     feedbackOn: d.feedback_on === true,
     gameOn: d.game_on === true,
     enabled: d.enabled !== false,
+    coverImage: typeof d.cover_path === 'string' && d.cover_path ? pagePhotoUrl(d.cover_path) : null,
+    avatarImage: typeof d.avatar_path === 'string' && d.avatar_path ? pagePhotoUrl(d.avatar_path) : null,
   };
+}
+
+// ---- Header and profile photos (every plan) ---------------------------------------
+
+export type PagePhotoKind = 'cover' | 'avatar';
+export type PagePhotoError = 'upload' | 'bad_file' | 'no_page' | 'network';
+
+/** The public web address of a header or profile photo. */
+export function pagePhotoUrl(path: string): string {
+  return supabase.storage.from('page-photos').getPublicUrl(path).data.publicUrl;
+}
+
+/**
+ * Puts a new header or profile photo on the page (a prepared JPEG), or removes
+ * it (null). The file goes into the shop's folder first; the old file is
+ * deleted once the page points at the new one.
+ */
+export async function setPagePhoto(campaignId: string, kind: PagePhotoKind, photo: Blob | null):
+  Promise<{ ok: true; path: string | null } | { ok: false; error: PagePhotoError }> {
+  const bucket = supabase.storage.from('page-photos');
+  let path: string | null = null;
+  if (photo) {
+    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    path = `${campaignId}/${kind}-${id}.jpg`;
+    const up = await bucket.upload(path, photo, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+    if (up.error) return { ok: false, error: 'upload' };
+  }
+  const { data, error } = await supabase.rpc('set_page_photo', { p_campaign: campaignId, p_kind: kind, p_path: path });
+  const d = data as { ok?: boolean; error?: PagePhotoError; old_path?: string | null } | null;
+  if (error || !d?.ok) {
+    if (path) await bucket.remove([path]);
+    return { ok: false, error: error ? 'network' : d?.error ?? 'network' };
+  }
+  if (d.old_path) await bucket.remove([d.old_path]);
+  return { ok: true, path };
 }
 
 function parseWifi(v: unknown): PublicBusinessPage['wifi'] {
