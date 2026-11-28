@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, Loader2, X, Ticket } from 'lucide-react';
 import { MarketingLayout, Eyebrow, StartButton, GradientBanner } from './MarketingLayout';
 import { DealCard } from '../DealCard';
-import { listPublicDeals, getDealFilters, type Deal, type DealFilters, type DealSort, type DealWhen } from '../../lib/deals';
+import { listPublicDeals, getDealFilters, sampleDeals, type Deal, type DealFilters, type DealSort, type DealWhen } from '../../lib/deals';
 
 const PAGE = 24;
 type Query = { q: string; country: string; city: string; category: string; type: string; when: DealWhen; sort: DealSort };
@@ -100,7 +100,7 @@ export function DealsPage() {
         </p>
       </section>
 
-      <section className="max-w-6xl mx-auto px-6 pb-6" data-deal-filters>
+      {!noDealsAtAll && <section className="max-w-6xl mx-auto px-6 pb-6" data-deal-filters>
         <div className="rounded-2xl border notion-border bg-white p-3 sm:p-4 space-y-3">
           <div className="flex flex-col md:flex-row gap-2">
             <label className="relative flex-1">
@@ -149,21 +149,22 @@ export function DealsPage() {
             </div>
           )}
         </div>
-      </section>
+      </section>}
 
       <section className="max-w-6xl mx-auto px-6 pb-16" data-deal-results>
-        <div className="flex items-center justify-between gap-3 mb-4 min-h-[28px]">
+        {!noDealsAtAll && <div className="flex items-center justify-between gap-3 mb-4 min-h-[28px]">
           <p className="text-sm text-gray-500" data-deal-count>
             {deals === null ? '' : total === 1 ? t('deals.page.countOne', { defaultValue: '1 deal' }) : t('deals.page.count', { defaultValue: '{{n}} deals', n: total })}
           </p>
           {anyFilter && <button type="button" onClick={clear} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#37352F]" data-deal-clear><X className="w-3.5 h-3.5" /> {t('deals.page.clear', { defaultValue: 'Clear filters' })}</button>}
-        </div>
+        </div>}
 
         {error && <p role="alert" className="text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-2 mb-4">{t('deals.page.error', { defaultValue: 'Could not load deals. Please try again.' })}</p>}
 
         {deals === null ? (
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
         ) : deals.length === 0 ? (
+          <>
           <div className="rounded-2xl border notion-border bg-[#F7F7F5] p-10 text-center" data-deal-empty>
             <Ticket className="w-8 h-8 mx-auto text-gray-300 mb-3" />
             <h2 className="font-semibold text-lg text-[#37352F]">
@@ -176,6 +177,16 @@ export function DealsPage() {
             {noDealsAtAll ? <StartButton label={t('deals.page.listCta', { defaultValue: 'List your deals for free' })} className="mt-5 px-5 py-2.5" />
               : anyFilter && <button type="button" onClick={clear} className="mt-5 text-sm underline text-[#37352F]">{t('deals.page.clear', { defaultValue: 'Clear filters' })}</button>}
           </div>
+          {noDealsAtAll && (
+          <div className="mt-12" data-deal-examples>
+            <h2 className="text-2xl md:text-3xl font-serif-display font-medium text-[#37352F] text-center">{t('deals.page.examplesTitle', { defaultValue: 'What deals look like' })}</h2>
+            <p className="text-gray-500 text-center mt-2 mb-6 max-w-xl mx-auto">{t('deals.page.examplesSub', { defaultValue: 'These are examples from made-up businesses. Real deals from Stampfix businesses show here as soon as they are listed.' })}</p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sampleDeals(t as unknown as (k: string, o: Record<string, unknown>) => string).map((d) => <DealCard key={d.id} deal={d} sample />)}
+            </div>
+          </div>
+          )}
+          </>
         ) : (
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{deals.map((d) => <DealCard key={d.id} deal={d} />)}</div>

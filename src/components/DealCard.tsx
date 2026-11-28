@@ -7,9 +7,10 @@ const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2)
 
 /**
  * One deal, as it looks on stampfix.app/deals. Also used as the live preview
- * in the dashboard form (preview: no links, the code shows straight away).
+ * in the dashboard form (preview: no links, the code shows straight away),
+ * and for the examples on an empty deals page (sample: labelled, no links).
  */
-export function DealCard({ deal, preview = false }: { deal: Deal; preview?: boolean }) {
+export function DealCard({ deal, preview = false, sample = false }: { deal: Deal; preview?: boolean; sample?: boolean }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.startsWith('de') ? 'de-DE' : 'en-GB';
   const [showCode, setShowCode] = useState(preview);
@@ -37,7 +38,10 @@ export function DealCard({ deal, preview = false }: { deal: Deal; preview?: bool
             ? <img src={deal.business.logo_image} alt="" className="w-10 h-10 rounded-xl object-cover border notion-border shrink-0" loading="lazy" />
             : <span className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0" style={{ background: accent, color: deal.business.text_color || '#fff' }} aria-hidden>{initials(deal.business.name)}</span>}
           <div className="min-w-0 flex-1">
-            <div className="font-semibold text-[#37352F] leading-tight truncate">{deal.business.name}</div>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-semibold text-[#37352F] leading-tight truncate">{deal.business.name}</span>
+              {sample && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide bg-gray-100 text-gray-500 rounded px-1.5 py-0.5" data-deal-example>{t('deals.card.example', { defaultValue: 'Example' })}</span>}
+            </div>
             <div className="text-xs text-gray-500 truncate">{deal.city} · {t(`industries.${deal.category}`, { defaultValue: deal.category === 'other' ? 'Other' : deal.category })}</div>
           </div>
           {badge && (
@@ -81,7 +85,7 @@ export function DealCard({ deal, preview = false }: { deal: Deal; preview?: bool
               <Ticket className="w-4 h-4" /> {t('deals.card.showCode', { defaultValue: 'Show code' })}
             </button>
           ))}
-          {!preview && (
+          {!preview && !sample && (
             <a href={deal.business.link} className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-[#37352F] hover:underline" data-deal-link>
               {t('deals.card.visit', { defaultValue: 'Visit' })} <ArrowRight className="w-3.5 h-3.5" />
             </a>
