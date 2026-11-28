@@ -113,6 +113,12 @@ const SETTINGS_SECTIONS: SettingsSection[] = ['general', 'wallet', 'stamping', '
 const SETTINGS_ALIASES: Record<string, SettingsSection> = { '/staff': 'staff', '/preview-card': 'wallet' };
 /** Insights, Results and Activity share one sidebar item, with pills to switch. */
 const INSIGHT_TABS: Tab[] = ['ANALYTICS', 'VALUE', 'ACTIVITY'];
+// Pages added recently get a blue "New" pill until the shop opens them once
+// (saved on the account, like Campaigns). These pills stop on 1 Feb 2027.
+const NEW_PILLS_UNTIL = Date.UTC(2027, 1, 1);
+const NEW_PAGE_FLAGS: Partial<Record<Tab, 'page_opened' | 'deals_opened' | 'addons_opened' | 'results_opened'>> = {
+  PAGE: 'page_opened', DEALS: 'deals_opened', ADDONS: 'addons_opened', VALUE: 'results_opened',
+};
 const PAGE_SECTIONS: PageSection[] = ['profile', 'look', 'stories', 'buttons', 'links', 'qr', 'feedback'];
 /** Old addresses of what is now on the Business page. */
 const PAGE_ALIASES: Record<string, PageSection> = { '/promote': 'qr', '/settings/links': 'links', '/settings/posters': 'qr' };
@@ -248,6 +254,21 @@ export function MerchantDashboard({
   useEffect(() => {
     if (activeTab === 'OFFERS' && !onboarding.campaigns_opened) void onMarkOnboardingStep({ campaigns_opened: true });
   }, [activeTab, onboarding.campaigns_opened, onMarkOnboardingStep]);
+  // "New" pill on a newer page: shown until it is opened once. Not for a shop
+  // that clearly used it already (page previewed or QR downloaded, ordering on).
+  const isNewTab = (id: Tab): boolean => {
+    if (id === 'OFFERS') return campaignsNew;
+    const flag = NEW_PAGE_FLAGS[id];
+    if (!flag || onboarding[flag] || Date.now() >= NEW_PILLS_UNTIL) return false;
+    if (id === 'PAGE' && (onboarding.page_previewed || onboarding.page_qr_downloaded)) return false;
+    if (id === 'ADDONS' && (!orderingKnown || orderingEnabled)) return false;
+    return true;
+  };
+  const activeIsNew = activeTab !== 'OFFERS' && isNewTab(activeTab);
+  useEffect(() => {
+    const flag = NEW_PAGE_FLAGS[activeTab];
+    if (activeIsNew && flag) void onMarkOnboardingStep({ [flag]: true });
+  }, [activeTab, activeIsNew, onMarkOnboardingStep]);
   useEffect(() => {
     let cancelled = false;
     listStaff(campaign.id)
@@ -794,7 +815,7 @@ export function MerchantDashboard({
   // -------------------- Render --------------------
 
   // ---- Sidebar: the everyday things first, grouped; Settings and Help at the bottom ----
-  type NavItem = { id: Tab; icon: typeof ScanLine; label: string; active?: boolean; go?: () => void };
+  type NavItem = { id: Tab; icon: typeof ScanLine; label: string; active?: boolean; go?: () => void; isNew?: boolean };
   const canSee = (id: Tab) => !staffHidden.includes(id);
   const sidebarGroups: { key: string; label: string; items: NavItem[] }[] = [
     { key: 'daily', label: t('dash.nav.groupDaily', { defaultValue: 'Every day' }), items: ([
@@ -810,7 +831,9 @@ export function MerchantDashboard({
     { key: 'manage', label: t('dash.nav.groupManage', { defaultValue: 'Manage' }), items: [
       ...(insightTabs.length ? [
         { id: insightTabs[0], icon: BarChart3, label: t('dash.nav.insights', { defaultValue: 'Insights' }),
-          active: INSIGHT_TABS.includes(activeTab), go: () => handleTabChange(INSIGHT_TABS.includes(activeTab) ? activeTab : insightTabs[0]) },
+          active: INSIGHT_TABS.includes(activeTab), go: () => handleTabChange(INSIGHT_TABS.includes(activeTab) ? activeTab : insightTabs[0]),
+          // Results is the new part of Insights.
+          isNew: insightTabs.includes('VALUE') && isNewTab('VALUE') },
       ] : []),
       ...([{ id: 'ADDONS', icon: Puzzle, label: t('dash.nav.addons', { defaultValue: 'Add-ons' }) }] as NavItem[]).filter((x) => canSee(x.id)),
     ] as NavItem[] },
@@ -819,6 +842,11 @@ export function MerchantDashboard({
     { id: 'SETTINGS', icon: Settings, label: t('dash.nav.settings', { defaultValue: 'Settings' }) },
     { id: 'HELP', icon: LifeBuoy, label: t('dash.nav.getHelp', { defaultValue: 'Get help' }) },
   ] as NavItem[]).filter((x) => canSee(x.id));
+  const itemIsNew = (it: NavItem) => it.isNew ?? isNewTab(it.id);
+  // Phone: the tabs in the bottom bar; everything else is under More.
+  const barTabs: Tab[] = ['DASHBOARD', 'CUSTOMERS', ...(orderingEnabled ? ['ORDERS' as Tab] : INSIGHT_TABS)];
+  const moreHasNew = sidebarGroups.some((g) => g.items.some((it) => !barTabs.includes(it.id) && itemIsNew(it)));
+  const newPill = <span className="text-[9px] font-bold uppercase tracking-wider bg-blue-600 text-white px-1.5 py-0.5 rounded-full flex-shrink-0" data-nav-new>{t('dash.nav.new', { defaultValue: 'New' })}</span>;
   const navButton = (it: NavItem) => {
     const on = it.active ?? activeTab === it.id;
     return (
@@ -826,9 +854,7 @@ export function MerchantDashboard({
         className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition ${on ? 'bg-[#EFEFEE] font-medium text-[#37352F]' : 'hover:bg-[#EFEFEE] text-gray-600'}`}>
         <it.icon className="w-4 h-4" />
         <span className="flex-1 text-left truncate">{it.label}</span>
-        {it.id === 'OFFERS' && campaignsNew && (
-          <span className="text-[9px] font-bold uppercase tracking-wider bg-blue-600 text-white px-1.5 py-0.5 rounded-full flex-shrink-0">{t('dash.nav.new', { defaultValue: 'New' })}</span>
-        )}
+        {itemIsNew(it) && newPill}
         {it.id === 'ORDERS' && newOrders > 0 && (
           <span className="text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center flex-shrink-0">{newOrders}</span>
         )}
@@ -1002,6 +1028,7 @@ export function MerchantDashboard({
                   </span>
                   {meta.label}
                   {id === 'ANALYTICS' && !isPro && <Lock className="w-3 h-3 opacity-60" />}
+                  {!on && isNewTab(id) && newPill}
                 </button>
               );
             })}
@@ -2124,17 +2151,20 @@ export function MerchantDashboard({
                 {id === 'ORDERS' && newOrders > 0 && (
                   <span className="absolute -top-1.5 -right-2.5 text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">{newOrders}</span>
                 )}
+                {id === 'ANALYTICS' && insightTabs.includes('VALUE') && isNewTab('VALUE') && (
+                  <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-600" aria-hidden="true" data-bar-new />
+                )}
               </span>
               <span className="text-[10px] font-medium">{label}</span>
             </button>
           ))}
           <button onClick={() => setShowMobileMoreMenu(true)} data-nav-more
             className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-              !(['DASHBOARD', 'CUSTOMERS', ...(orderingEnabled ? ['ORDERS'] : INSIGHT_TABS)] as Tab[]).includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
+              !barTabs.includes(activeTab) ? 'text-[#37352F]' : 'text-gray-400'
             }`}>
             <span className="relative">
               <Menu className="w-6 h-6" />
-              {campaignsNew && <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-600" aria-hidden="true" />}
+              {moreHasNew && <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-blue-600" aria-hidden="true" data-more-new />}
             </span>
             <span className="text-[10px] font-medium">{t('dash.nav.more', { defaultValue: 'More' })}</span>
           </button>
@@ -2147,7 +2177,7 @@ export function MerchantDashboard({
           <div className="bg-white rounded-t-xl p-4 animate-in slide-in-from-bottom duration-300 relative z-10 pb-8">
             <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
             {[
-              ...sidebarGroups.map((g) => ({ ...g, items: g.items.filter((it) => !['DASHBOARD', 'CUSTOMERS', ...(orderingEnabled ? ['ORDERS'] : ['ANALYTICS', 'VALUE', 'ACTIVITY'])].includes(it.id)) })),
+              ...sidebarGroups.map((g) => ({ ...g, items: g.items.filter((it) => !barTabs.includes(it.id)) })),
               { key: 'more', label: t('dash.nav.groupMore', { defaultValue: 'Settings and help' }), items: bottomItems },
             ].filter((g) => g.items.length > 0).map((g) => (
               <div key={g.key} className="mb-4" data-more-group={g.key}>
@@ -2160,8 +2190,8 @@ export function MerchantDashboard({
                         className={`flex flex-col items-center gap-2 p-2 rounded-xl border ${on ? 'bg-[#F7F7F5] border-[#37352F]' : 'bg-white border-transparent'}`}>
                         <div className={`relative w-12 h-12 rounded-full flex items-center justify-center ${on ? 'bg-[#37352F] text-white' : 'bg-gray-100 text-gray-600'}`}>
                           <it.icon className="w-6 h-6" />
-                          {it.id === 'OFFERS' && campaignsNew && (
-                            <span className="absolute -top-1 -right-2 text-[8px] font-bold uppercase bg-blue-600 text-white px-1 py-0.5 rounded-full">{t('dash.nav.new', { defaultValue: 'New' })}</span>
+                          {itemIsNew(it) && !(it.id === 'PAGE' && unreadFeedback > 0) && (
+                            <span className="absolute -top-1 -right-2 text-[8px] font-bold uppercase bg-blue-600 text-white px-1 py-0.5 rounded-full" data-nav-new>{t('dash.nav.new', { defaultValue: 'New' })}</span>
                           )}
                           {it.id === 'PAGE' && unreadFeedback > 0 && (
                             <span className="absolute -top-1 -right-2 text-[10px] font-bold bg-amber-500 text-white min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center">{unreadFeedback}</span>

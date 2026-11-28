@@ -764,7 +764,11 @@ export type OnboardingKey =
   | 'campaigns_opened'
   | 'campaigns_intro_done'
   | 'page_previewed'
-  | 'page_qr_downloaded';
+  | 'page_qr_downloaded'
+  | 'page_opened'
+  | 'deals_opened'
+  | 'addons_opened'
+  | 'results_opened';
 
 export interface OnboardingState {
   poster_downloaded?: boolean;
@@ -780,6 +784,11 @@ export interface OnboardingState {
   page_previewed?: boolean;
   /** Downloaded a poster or image with the Business page QR code. */
   page_qr_downloaded?: boolean;
+  /** Opened these newer pages once (hides their "NEW" pill). */
+  page_opened?: boolean;
+  deals_opened?: boolean;
+  addons_opened?: boolean;
+  results_opened?: boolean;
 }
 
 export async function getOnboardingState(merchantId: string): Promise<OnboardingState> {
